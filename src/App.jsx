@@ -18,6 +18,8 @@ import Challenges from './pages/Challenges';
 import Leaderboard from './pages/Leaderboard';
 import Badges from './pages/Badges';
 import AIStudio from './pages/AIStudio';
+import LyricsStudio from './pages/LyricsStudio';
+import MusicStudio from './pages/MusicStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
@@ -68,6 +70,8 @@ const AuthenticatedApp = () => {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/badges" element={<Badges />} />
           <Route path="/ai-studio" element={<AIStudio />} />
+          <Route path="/lyrics-studio" element={<LyricsStudio />} />
+          <Route path="/music-studio" element={<MusicStudio />} />
           <Route path="/submit" element={<SubmitTrack />} />
           <Route path="/artist/:id" element={<ArtistProfile />} />
           <Route path="/solana" element={<SolanaRegistry />} />
