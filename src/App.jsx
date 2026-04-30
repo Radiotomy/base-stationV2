@@ -29,6 +29,7 @@ import AdminChallenges from './pages/admin/AdminChallenges';
 import AdminFeatured from './pages/admin/AdminFeatured';
 import AdminArtists from './pages/admin/AdminArtists';
 import AdminSolana from './pages/admin/AdminSolana';
+import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -56,20 +57,22 @@ const AuthenticatedApp = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/playlists" element={<Playlists />} />
-        <Route path="/playlists/:id" element={<PlaylistDetail />} />
-        <Route path="/charts" element={<Charts />} />
-        <Route path="/radio" element={<Radio />} />
-        <Route path="/featured-artists" element={<FeaturedArtists />} />
-        <Route path="/challenges" element={<Challenges />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/badges" element={<Badges />} />
-        <Route path="/ai-studio" element={<AIStudio />} />
-        <Route path="/submit" element={<SubmitTrack />} />
-        <Route path="/artist/:id" element={<ArtistProfile />} />
-        <Route path="/solana" element={<SolanaRegistry />} />
-        <Route path="/blockchain" element={<BlockchainRegistry />} />
+        <Route element={<MobileLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/playlists" element={<Playlists />} />
+          <Route path="/playlists/:id" element={<PlaylistDetail />} />
+          <Route path="/charts" element={<Charts />} />
+          <Route path="/radio" element={<Radio />} />
+          <Route path="/featured-artists" element={<FeaturedArtists />} />
+          <Route path="/challenges" element={<Challenges />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/badges" element={<Badges />} />
+          <Route path="/ai-studio" element={<AIStudio />} />
+          <Route path="/submit" element={<SubmitTrack />} />
+          <Route path="/artist/:id" element={<ArtistProfile />} />
+          <Route path="/solana" element={<SolanaRegistry />} />
+          <Route path="/blockchain" element={<BlockchainRegistry />} />
+        </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />
           <Route path="tracks" element={<AdminTracks />} />
