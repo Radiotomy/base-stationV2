@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Film, Zap, Download } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Film, Zap, Download, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -39,6 +40,14 @@ export default function VideoStudio() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header with Back Button */}
+      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-6 h-14 flex items-center">
+        <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm font-semibold">Back</span>
+        </Link>
+      </div>
+
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-indigo-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-3 tracking-tight">🎬 Video Studio</h1>

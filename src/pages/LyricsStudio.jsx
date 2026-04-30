@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mic2, Zap, Copy, Download, RefreshCw, Save } from 'lucide-react';
+import { Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,14 @@ export default function LyricsStudio() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header with Back Button */}
+      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-6 h-14 flex items-center">
+        <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-5 h-5" />
+          <span className="text-sm font-semibold">Back</span>
+        </Link>
+      </div>
+
       {/* Hero */}
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-pink-900/30 to-black">
         <div className="max-w-5xl mx-auto">

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Radio, TrendingUp, Music, Star, Users, Zap, Play, ArrowRight,
-  Mic2, Headphones, Globe, ChevronRight, Upload
+  Mic2, Headphones, Globe, ChevronRight, Upload, Film
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -165,13 +165,17 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { to: "/radio", icon: Radio, title: "Multi-Channel Radio", desc: "6+ genre channels streaming 24/7. Tune into Discover, Hip-Hop, EDM, Lo-Fi and more.", color: "from-purple-900 to-violet-900", accent: "text-purple-400", badge: "Live" },
-              { to: "/charts", icon: TrendingUp, title: "Trending Charts", desc: "Real-time weekly, monthly, and all-time rankings powered by community votes — zero algorithms.", color: "from-orange-900 to-red-900", accent: "text-orange-400", badge: "🔥 Hot" },
-              { to: "/playlists", icon: Music, title: "Community Playlists", desc: "Curate and discover playlists from the world's most creative AI music artists.", color: "from-indigo-900 to-blue-900", accent: "text-indigo-400", badge: "New" },
-              { to: "/featured-artists", icon: Star, title: "Featured Artists", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Apply" },
-              { to: "/ai-studio", icon: Zap, title: "AI Tools Studio", desc: "Generate lyrics, music prompts & cover art with AI. Everything you need to create your next hit.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "New ✨" },
-              { to: "/submit", icon: Upload, title: "Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Open Now" },
-              { to: "/blockchain", icon: Globe, title: "Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and blockchain verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "⛓️ Multi-Chain" },
+              { to: "/lyrics-studio", icon: Mic2, title: "🎤 Lyrics Studio", desc: "Generate original lyrics with Nuro AI. Real-time refinement. Unlimited versions.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "✨ New" },
+              { to: "/music-studio", icon: Music, title: "🎵 Music Studio", desc: "Create AI tracks with Loudly, Nuro, Sonic, or Producer. Full BPM & key metadata.", color: "from-blue-900 to-cyan-900", accent: "text-cyan-400", badge: "✨ New" },
+              { to: "/video-studio", icon: Film, title: "🎬 Video Studio", desc: "Generate cinematic videos with LTX AI. Perfect for music visualizers and promos.", color: "from-indigo-900 to-purple-900", accent: "text-indigo-400", badge: "✨ New" },
+              { to: "/live-studio", icon: Radio, title: "🔴 Live Studio", desc: "Stream live sessions with multi-track mixing. Record for later. Interactive viewer chat.", color: "from-red-900 to-orange-900", accent: "text-red-400", badge: "✨ New" },
+              { to: "/radio", icon: Radio, title: "📻 Multi-Channel Radio", desc: "6+ genre channels streaming 24/7. Tune into Discover, Hip-Hop, EDM, Lo-Fi and more.", color: "from-purple-900 to-violet-900", accent: "text-purple-400", badge: "Live" },
+              { to: "/charts", icon: TrendingUp, title: "📊 Trending Charts", desc: "Real-time weekly, monthly, and all-time rankings powered by community votes — zero algorithms.", color: "from-orange-900 to-amber-900", accent: "text-orange-400", badge: "🔥 Hot" },
+              { to: "/playlists", icon: Music, title: "📝 Community Playlists", desc: "Curate and discover playlists from the world's most creative AI music artists.", color: "from-teal-900 to-blue-900", accent: "text-teal-400", badge: "Browse" },
+              { to: "/featured-artists", icon: Star, title: "⭐ Featured Artists", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Apply" },
+              { to: "/ai-studio", icon: Zap, title: "⚡ AI Tools", desc: "Advanced prompts, voice synthesis, cover generation and more creative tools.", color: "from-pink-600 to-rose-600", accent: "text-pink-300", badge: "Pro" },
+              { to: "/submit", icon: Upload, title: "📤 Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Go Live" },
+              { to: "/blockchain", icon: Globe, title: "⛓️ Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "Mint NFT" },
             ].map(({ to, icon: Icon, title, desc, color, accent, badge }, i) => (
               <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
                 <Link to={to} className={`group block p-6 rounded-3xl bg-gradient-to-br ${color} border border-white/5 hover:border-white/10 transition-all hover:scale-[1.02]`}>
