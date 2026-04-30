@@ -1,0 +1,66 @@
+{
+  "name": "UserAsset",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the asset owner"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the asset owner"
+    },
+    "asset_type": {
+      "type": "string",
+      "enum": [
+        "track",
+        "lyric",
+        "coverart",
+        "project"
+      ],
+      "description": "Type of asset"
+    },
+    "title": {
+      "type": "string",
+      "description": "Asset title or name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Asset description"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to the asset file"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Asset-specific metadata (BPM, key, duration, etc.)"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for organization and search"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether asset is publicly visible"
+    },
+    "thumbnail_url": {
+      "type": "string",
+      "description": "URL to thumbnail image for cover art or track"
+    },
+    "related_track_id": {
+      "type": "string",
+      "description": "ID of related track submission if applicable"
+    }
+  },
+  "required": [
+    "user_id",
+    "asset_type",
+    "title",
+    "file_url"
+  ]
+}

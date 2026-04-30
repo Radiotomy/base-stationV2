@@ -24,6 +24,7 @@ import LyricsStudio from './pages/LyricsStudio';
 import MusicStudio from './pages/MusicStudio';
 import VideoStudio from './pages/VideoStudio';
 import LiveStudio from './pages/LiveStudio';
+import CoverArtStudio from './pages/CoverArtStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
@@ -80,6 +81,7 @@ const AuthenticatedApp = () => {
           <Route path="/ai-studio" element={<AIStudio />} />
           <Route path="/lyrics-studio" element={<LyricsStudio />} />
           <Route path="/music-studio" element={<MusicStudio />} />
+          <Route path="/cover-art-studio" element={<CoverArtStudio />} />
           <Route path="/video-studio" element={<VideoStudio />} />
           <Route path="/live-studio" element={<LiveStudio />} />
           <Route path="/submit" element={<SubmitTrack />} />

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Radio, TrendingUp, Music, Star, Users, Zap, Play, ArrowRight,
-  Mic2, Headphones, Globe, ChevronRight, Upload, Film
+  Mic2, Headphones, Globe, ChevronRight, Upload, Film, Palette
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -142,6 +142,7 @@ export default function Home() {
             {[
               { to: "/lyrics-studio", icon: Mic2, title: "🎤 Lyrics Studio", desc: "Generate original lyrics with Nuro AI. Real-time refinement. Unlimited versions.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "✨ New" },
               { to: "/music-studio", icon: Music, title: "🎵 Music Studio", desc: "Create AI tracks with Loudly, Nuro, Sonic, or Producer. Full BPM & key metadata.", color: "from-blue-900 to-cyan-900", accent: "text-cyan-400", badge: "✨ New" },
+              { to: "/cover-art-studio", icon: Palette, title: "🎨 Cover Art Studio", desc: "Generate professional album artwork. Cheap auto-generated or custom high-quality designs.", color: "from-purple-900 to-violet-900", accent: "text-purple-400", badge: "✨ New" },
               { to: "/video-studio", icon: Film, title: "🎬 Video Studio", desc: "Generate cinematic videos with LTX AI. Perfect for music visualizers and promos.", color: "from-indigo-900 to-purple-900", accent: "text-indigo-400", badge: "✨ New" },
               { to: "/live-studio", icon: Radio, title: "🔴 Live Studio", desc: "Stream live sessions with multi-track mixing. Record for later. Interactive viewer chat.", color: "from-red-900 to-orange-900", accent: "text-red-400", badge: "✨ New" },
               { to: "/radio", icon: Radio, title: "📻 Multi-Channel Radio", desc: "6+ genre channels streaming 24/7. Tune into Discover, Hip-Hop, EDM, Lo-Fi and more.", color: "from-purple-900 to-violet-900", accent: "text-purple-400", badge: "Live" },
