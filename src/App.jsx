@@ -20,6 +20,7 @@ import Badges from './pages/Badges';
 import AIStudio from './pages/AIStudio';
 import LyricsStudio from './pages/LyricsStudio';
 import MusicStudio from './pages/MusicStudio';
+import VideoStudio from './pages/VideoStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
@@ -72,6 +73,7 @@ const AuthenticatedApp = () => {
           <Route path="/ai-studio" element={<AIStudio />} />
           <Route path="/lyrics-studio" element={<LyricsStudio />} />
           <Route path="/music-studio" element={<MusicStudio />} />
+          <Route path="/video-studio" element={<VideoStudio />} />
           <Route path="/submit" element={<SubmitTrack />} />
           <Route path="/artist/:id" element={<ArtistProfile />} />
           <Route path="/solana" element={<SolanaRegistry />} />
