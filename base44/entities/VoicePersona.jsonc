@@ -1,0 +1,99 @@
+{
+  "name": "VoicePersona",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of persona owner"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of persona owner"
+    },
+    "name": {
+      "type": "string",
+      "description": "Persona name (e.g., 'Jazz Singer', 'Rap MC')"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed persona description"
+    },
+    "voice_type": {
+      "type": "string",
+      "enum": [
+        "male",
+        "female",
+        "neutral"
+      ],
+      "description": "Voice gender type"
+    },
+    "age": {
+      "type": "string",
+      "enum": [
+        "child",
+        "teen",
+        "adult",
+        "senior"
+      ],
+      "description": "Apparent age of voice"
+    },
+    "accent": {
+      "type": "string",
+      "enum": [
+        "american",
+        "british",
+        "australian",
+        "neutral",
+        "other"
+      ],
+      "description": "Voice accent type"
+    },
+    "characteristics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Voice traits (e.g., 'raspy', 'breathy', 'monotone')"
+    },
+    "sample_url": {
+      "type": "string",
+      "description": "URL to voice sample audio"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "elevenlabs",
+        "google",
+        "azure",
+        "custom"
+      ],
+      "description": "Voice synthesis provider"
+    },
+    "provider_voice_id": {
+      "type": "string",
+      "description": "Provider's unique voice ID"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Search and organization tags"
+    },
+    "is_favorite": {
+      "type": "boolean",
+      "default": false
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of tracks using this voice"
+    }
+  },
+  "required": [
+    "user_id",
+    "name",
+    "voice_type",
+    "provider"
+  ]
+}
