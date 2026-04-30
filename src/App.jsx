@@ -14,6 +14,9 @@ import PlaylistDetail from './pages/PlaylistDetail';
 import Charts from './pages/Charts';
 import Radio from './pages/Radio';
 import FeaturedArtists from './pages/FeaturedArtists';
+import Challenges from './pages/Challenges';
+import Leaderboard from './pages/Leaderboard';
+import Badges from './pages/Badges';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -47,6 +50,9 @@ const AuthenticatedApp = () => {
         <Route path="/charts" element={<Charts />} />
         <Route path="/radio" element={<Radio />} />
         <Route path="/featured-artists" element={<FeaturedArtists />} />
+        <Route path="/challenges" element={<Challenges />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/badges" element={<Badges />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       <AIHelpAssistant />

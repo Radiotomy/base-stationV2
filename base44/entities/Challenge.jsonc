@@ -1,0 +1,72 @@
+{
+  "name": "Challenge",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "monthly",
+        "special"
+      ]
+    },
+    "genre": {
+      "type": "string"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "Creative prompt for the challenge"
+    },
+    "prize_description": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "upcoming",
+        "active",
+        "voting",
+        "completed"
+      ],
+      "default": "upcoming"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "submission_count": {
+      "type": "number",
+      "default": 0
+    },
+    "max_submissions": {
+      "type": "number"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "emoji": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "description",
+    "type"
+  ]
+}

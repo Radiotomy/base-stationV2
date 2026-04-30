@@ -14,7 +14,8 @@ const NAV_LINKS = [
   { to: "/radio", label: "Radio", icon: Radio },
   { to: "/charts", label: "Charts", icon: TrendingUp },
   { to: "/playlists", label: "Playlists", icon: Music },
-  { to: "/featured-artists", label: "Featured", icon: Star },
+  { to: "/challenges", label: "Challenges", icon: Zap },
+  { to: "/leaderboard", label: "Leaderboard", icon: Star },
 ];
 
 const STATS = [

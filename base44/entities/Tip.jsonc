@@ -1,0 +1,55 @@
+{
+  "name": "Tip",
+  "type": "object",
+  "properties": {
+    "from_user_id": {
+      "type": "string"
+    },
+    "from_user_name": {
+      "type": "string"
+    },
+    "from_user_email": {
+      "type": "string"
+    },
+    "to_artist_id": {
+      "type": "string"
+    },
+    "to_artist_name": {
+      "type": "string"
+    },
+    "to_artist_email": {
+      "type": "string"
+    },
+    "amount_cents": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "default": "usd"
+    },
+    "message": {
+      "type": "string"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed",
+        "refunded"
+      ],
+      "default": "pending"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "to_artist_id",
+    "to_artist_name",
+    "amount_cents"
+  ]
+}

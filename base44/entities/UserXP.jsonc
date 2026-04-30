@@ -1,0 +1,61 @@
+{
+  "name": "UserXP",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_avatar_url": {
+      "type": "string"
+    },
+    "total_xp": {
+      "type": "number",
+      "default": 0
+    },
+    "level": {
+      "type": "number",
+      "default": 1
+    },
+    "weekly_xp": {
+      "type": "number",
+      "default": 0
+    },
+    "monthly_xp": {
+      "type": "number",
+      "default": 0
+    },
+    "tracks_submitted": {
+      "type": "number",
+      "default": 0
+    },
+    "challenges_won": {
+      "type": "number",
+      "default": 0
+    },
+    "challenges_entered": {
+      "type": "number",
+      "default": 0
+    },
+    "tips_received_cents": {
+      "type": "number",
+      "default": 0
+    },
+    "followers_count": {
+      "type": "number",
+      "default": 0
+    },
+    "badge_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

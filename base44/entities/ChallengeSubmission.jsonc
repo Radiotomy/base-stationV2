@@ -1,0 +1,62 @@
+{
+  "name": "ChallengeSubmission",
+  "type": "object",
+  "properties": {
+    "challenge_id": {
+      "type": "string"
+    },
+    "challenge_title": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string"
+    },
+    "artist_id": {
+      "type": "string"
+    },
+    "artist_avatar_url": {
+      "type": "string"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "track_url": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "ai_tools_used": {
+      "type": "string"
+    },
+    "vote_count": {
+      "type": "number",
+      "default": 0
+    },
+    "play_count": {
+      "type": "number",
+      "default": 0
+    },
+    "rank": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "winner"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "challenge_id",
+    "track_title",
+    "artist_name"
+  ]
+}

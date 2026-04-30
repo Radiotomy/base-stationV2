@@ -1,0 +1,35 @@
+{
+  "name": "UserBadge",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "badge_id": {
+      "type": "string"
+    },
+    "badge_name": {
+      "type": "string"
+    },
+    "badge_emoji": {
+      "type": "string"
+    },
+    "badge_rarity": {
+      "type": "string"
+    },
+    "awarded_reason": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "badge_id",
+    "badge_name"
+  ]
+}
