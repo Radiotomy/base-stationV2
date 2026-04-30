@@ -1,0 +1,70 @@
+{
+  "name": "Playlist",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Playlist name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Playlist description"
+    },
+    "cover_image_url": {
+      "type": "string",
+      "description": "Cover art URL"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin-featured collection"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "genre": {
+      "type": "string",
+      "enum": [
+        "all",
+        "hip-hop",
+        "edm",
+        "pop",
+        "r&b",
+        "rock",
+        "lo-fi",
+        "jazz",
+        "classical",
+        "trap",
+        "other"
+      ]
+    },
+    "track_count": {
+      "type": "number",
+      "default": 0
+    },
+    "play_count": {
+      "type": "number",
+      "default": 0
+    },
+    "like_count": {
+      "type": "number",
+      "default": 0
+    },
+    "owner_name": {
+      "type": "string"
+    },
+    "owner_avatar_url": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

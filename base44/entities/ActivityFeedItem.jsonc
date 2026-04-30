@@ -1,0 +1,65 @@
+{
+  "name": "ActivityFeedItem",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "track_submitted",
+        "session_started",
+        "session_completed",
+        "artist_followed",
+        "playlist_created",
+        "featured_artist",
+        "premiere_scheduled",
+        "challenge_posted",
+        "new_member"
+      ]
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "User who triggered the event"
+    },
+    "actor_id": {
+      "type": "string"
+    },
+    "actor_avatar_url": {
+      "type": "string"
+    },
+    "actor_slug": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short event title"
+    },
+    "description": {
+      "type": "string"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the related entity"
+    },
+    "entity_type": {
+      "type": "string"
+    },
+    "link_url": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Extra context data"
+    }
+  },
+  "required": [
+    "type",
+    "title"
+  ]
+}

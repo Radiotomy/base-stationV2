@@ -1,0 +1,40 @@
+{
+  "name": "Follow",
+  "type": "object",
+  "properties": {
+    "follower_id": {
+      "type": "string",
+      "description": "User ID of the follower"
+    },
+    "follower_email": {
+      "type": "string"
+    },
+    "follower_name": {
+      "type": "string"
+    },
+    "follower_avatar_url": {
+      "type": "string"
+    },
+    "following_id": {
+      "type": "string",
+      "description": "User ID being followed"
+    },
+    "following_email": {
+      "type": "string"
+    },
+    "following_name": {
+      "type": "string"
+    },
+    "following_avatar_url": {
+      "type": "string"
+    },
+    "following_slug": {
+      "type": "string",
+      "description": "Artist slug for linking"
+    }
+  },
+  "required": [
+    "follower_id",
+    "following_id"
+  ]
+}

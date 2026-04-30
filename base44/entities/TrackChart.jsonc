@@ -1,0 +1,91 @@
+{
+  "name": "TrackChart",
+  "type": "object",
+  "properties": {
+    "track_title": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string"
+    },
+    "artist_id": {
+      "type": "string"
+    },
+    "artist_slug": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string",
+      "enum": [
+        "all",
+        "hip-hop",
+        "edm",
+        "pop",
+        "r&b",
+        "rock",
+        "lo-fi",
+        "jazz",
+        "classical",
+        "trap",
+        "other"
+      ]
+    },
+    "total_votes": {
+      "type": "number",
+      "default": 0
+    },
+    "total_plays": {
+      "type": "number",
+      "default": 0
+    },
+    "weekly_votes": {
+      "type": "number",
+      "default": 0
+    },
+    "monthly_votes": {
+      "type": "number",
+      "default": 0
+    },
+    "chart_rank": {
+      "type": "number"
+    },
+    "previous_rank": {
+      "type": "number"
+    },
+    "rank_change": {
+      "type": "number",
+      "description": "Positive = moved up, negative = moved down"
+    },
+    "period": {
+      "type": "string",
+      "enum": [
+        "weekly",
+        "monthly",
+        "all-time"
+      ],
+      "default": "weekly"
+    },
+    "source_session_id": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "track_title",
+    "artist_name"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "name": "FeaturedArtistApplication",
+  "type": "object",
+  "properties": {
+    "artist_name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Artist bio / about"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "sample_track_url": {
+      "type": "string",
+      "description": "Link to best work"
+    },
+    "social_links": {
+      "type": "string",
+      "description": "Social media links (comma separated)"
+    },
+    "why_featured": {
+      "type": "string",
+      "description": "Why should you be featured?"
+    },
+    "monthly_listeners": {
+      "type": "string",
+      "description": "Estimated monthly listeners"
+    },
+    "ai_tools_used": {
+      "type": "string",
+      "description": "AI tools they use"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "waitlisted"
+      ],
+      "default": "pending"
+    },
+    "admin_notes": {
+      "type": "string"
+    },
+    "featured_since": {
+      "type": "string",
+      "format": "date"
+    },
+    "profile_image_url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "artist_name",
+    "email",
+    "bio"
+  ]
+}

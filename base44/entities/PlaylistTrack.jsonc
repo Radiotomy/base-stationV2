@@ -1,0 +1,60 @@
+{
+  "name": "PlaylistTrack",
+  "type": "object",
+  "properties": {
+    "playlist_id": {
+      "type": "string",
+      "description": "Parent playlist ID"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string"
+    },
+    "artist_id": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "position": {
+      "type": "number",
+      "description": "Order within playlist"
+    },
+    "play_count": {
+      "type": "number",
+      "default": 0
+    },
+    "vote_count": {
+      "type": "number",
+      "default": 0
+    },
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "session",
+        "external"
+      ],
+      "default": "upload"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Reference to original session/submission ID"
+    }
+  },
+  "required": [
+    "playlist_id",
+    "track_title"
+  ]
+}
