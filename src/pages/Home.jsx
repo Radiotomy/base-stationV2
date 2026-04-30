@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
   { to: "/ai-studio", label: "AI Studio", icon: Headphones },
+  { to: "/solana", label: "Solana", icon: Globe },
 ];
 
 const STATS = [
@@ -162,7 +163,8 @@ export default function Home() {
               { to: "/playlists", icon: Music, title: "Community Playlists", desc: "Curate and discover playlists from the world's most creative AI music artists.", color: "from-indigo-900 to-blue-900", accent: "text-indigo-400", badge: "New" },
               { to: "/featured-artists", icon: Star, title: "Featured Artists", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Apply" },
               { to: "/ai-studio", icon: Zap, title: "AI Tools Studio", desc: "Generate lyrics, music prompts & cover art with AI. Everything you need to create your next hit.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "New ✨" },
-              { to: "/submit", icon: Globe, title: "Submit Your Track", desc: "Share your AI music with the AIVTV community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Open Now" },
+              { to: "/submit", icon: Upload, title: "Submit Your Track", desc: "Share your AI music with the AIVTV community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Open Now" },
+              { to: "/solana", icon: Globe, title: "Solana Provenance", desc: "Register your tracks on-chain with immutable authorship proof and blockchain verification on Solana.", color: "from-violet-900 to-slate-900", accent: "text-violet-400", badge: "⛓️ Phase 4" },
             ].map(({ to, icon: Icon, title, desc, color, accent, badge }, i) => (
               <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
                 <Link to={to} className={`group block p-6 rounded-3xl bg-gradient-to-br ${color} border border-white/5 hover:border-white/10 transition-all hover:scale-[1.02]`}>

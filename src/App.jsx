@@ -20,6 +20,7 @@ import Badges from './pages/Badges';
 import AIStudio from './pages/AIStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
+import SolanaRegistry from './pages/SolanaRegistry';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -59,6 +60,7 @@ const AuthenticatedApp = () => {
         <Route path="/ai-studio" element={<AIStudio />} />
         <Route path="/submit" element={<SubmitTrack />} />
         <Route path="/artist/:id" element={<ArtistProfile />} />
+        <Route path="/solana" element={<SolanaRegistry />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       <AIHelpAssistant />
