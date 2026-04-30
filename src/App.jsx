@@ -21,6 +21,7 @@ import AIStudio from './pages/AIStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
+import BlockchainRegistry from './pages/BlockchainRegistry';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminTracks from './pages/admin/AdminTracks';
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
         <Route path="/submit" element={<SubmitTrack />} />
         <Route path="/artist/:id" element={<ArtistProfile />} />
         <Route path="/solana" element={<SolanaRegistry />} />
+        <Route path="/blockchain" element={<BlockchainRegistry />} />
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />
           <Route path="tracks" element={<AdminTracks />} />

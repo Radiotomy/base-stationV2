@@ -17,7 +17,7 @@ const NAV_LINKS = [
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
   { to: "/ai-studio", label: "AI Studio", icon: Headphones },
-  { to: "/solana", label: "Solana", icon: Globe },
+  { to: "/blockchain", label: "Multi-Chain", icon: Globe },
 ];
 
 const STATS = [
@@ -46,8 +46,8 @@ export default function Home() {
       <nav className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="font-black text-xl tracking-tight">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">AI</span>
-            <span className="text-foreground">VTV</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
+            <span className="text-foreground">Station</span>
           </Link>
           <div className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map(({ to, label, icon: Icon }) => (
@@ -100,22 +100,22 @@ export default function Home() {
 
         <div className="relative text-center max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <Badge className="mb-8 bg-purple-500/20 text-purple-300 border-purple-500/30 px-5 py-2 text-xs tracking-widest uppercase font-semibold">
-              🎵 The Future of AI Music is Live
+            <Badge className="mb-8 bg-blue-500/20 text-blue-300 border-blue-500/30 px-5 py-2 text-xs tracking-widest uppercase font-semibold">
+              🎵 Multi-Chain AI Music on Base
             </Badge>
             <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white mb-6 tracking-tight leading-none">
               Where AI
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400">
-                Music Lives
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400">
+                Music Owns Itself
               </span>
             </h1>
             <p className="text-white/60 text-xl md:text-2xl max-w-2xl mx-auto mb-10 leading-relaxed">
-              Create, discover, and share AI-generated music with a global community of artists and fans. Live sessions, trending charts, and blockchain-verified tracks.
+              Create, discover, and own AI-generated music with immutable on-chain provenance. Multi-chain registration, instant tipping, and global community.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button onClick={() => user ? null : base44.auth.redirectToLogin()}
-                className="bg-white text-purple-900 hover:bg-purple-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-purple-900/30">
+                className="bg-white text-blue-900 hover:bg-blue-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-blue-900/30">
                 {user ? "Welcome Back 🎵" : "Join Free"}
               </Button>
               <Link to="/radio">
@@ -160,7 +160,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4">Everything a Creator Needs</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">From live sessions to trending charts — AIVTV is the complete platform for AI music creators.</p>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">From live sessions to trending charts — Base Station is the complete platform for AI music creators.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -170,8 +170,8 @@ export default function Home() {
               { to: "/playlists", icon: Music, title: "Community Playlists", desc: "Curate and discover playlists from the world's most creative AI music artists.", color: "from-indigo-900 to-blue-900", accent: "text-indigo-400", badge: "New" },
               { to: "/featured-artists", icon: Star, title: "Featured Artists", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Apply" },
               { to: "/ai-studio", icon: Zap, title: "AI Tools Studio", desc: "Generate lyrics, music prompts & cover art with AI. Everything you need to create your next hit.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "New ✨" },
-              { to: "/submit", icon: Upload, title: "Submit Your Track", desc: "Share your AI music with the AIVTV community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Open Now" },
-              { to: "/solana", icon: Globe, title: "Solana Provenance", desc: "Register your tracks on-chain with immutable authorship proof and blockchain verification on Solana.", color: "from-violet-900 to-slate-900", accent: "text-violet-400", badge: "⛓️ Phase 4" },
+              { to: "/submit", icon: Upload, title: "Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Open Now" },
+              { to: "/blockchain", icon: Globe, title: "Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and blockchain verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "⛓️ Multi-Chain" },
             ].map(({ to, icon: Icon, title, desc, color, accent, badge }, i) => (
               <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
                 <Link to={to} className={`group block p-6 rounded-3xl bg-gradient-to-br ${color} border border-white/5 hover:border-white/10 transition-all hover:scale-[1.02]`}>
@@ -297,14 +297,14 @@ export default function Home() {
         <div className="max-w-3xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6">
-              Human + AI<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">as Equals</span>
+              Human + AI<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">on Chain</span>
             </h2>
             <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
-              AIVTV believes AI is a co-creator, not a replacement. Your creativity drives the music — AI amplifies it. Every track you make, every vote you cast, every session you host shapes this community.
+              Base Station believes AI is a co-creator, not a replacement. Your creativity drives the music — AI amplifies it. Every track you make, every vote you cast, every transaction is on-chain and forever.
             </p>
             <Button onClick={() => user ? null : base44.auth.redirectToLogin()}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold px-12 py-4 rounded-full text-lg shadow-xl shadow-purple-900/40">
-              {user ? "Go to Radio →" : "Join the Movement"}
+              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-12 py-4 rounded-full text-lg shadow-xl shadow-blue-900/40">
+              {user ? "Go to Radio →" : "Join Base Station"}
             </Button>
           </motion.div>
         </div>
@@ -314,14 +314,14 @@ export default function Home() {
       <footer className="border-t border-border/50 py-12 px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="font-black text-lg">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">AI</span>
-            <span className="text-foreground">VTV</span>
-            <span className="text-muted-foreground font-normal text-sm ml-2">— AI Music for Everyone</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
+            <span className="text-foreground">Station</span>
+            <span className="text-muted-foreground font-normal text-sm ml-2">— Multi-Chain AI Music</span>
           </div>
           <div className="flex gap-6 text-sm text-muted-foreground">
             {NAV_LINKS.map(({ to, label }) => <Link key={to} to={to} className="hover:text-foreground transition-colors">{label}</Link>)}
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 AIVTV. Human + AI, always.</p>
+          <p className="text-xs text-muted-foreground">© 2026 Base Station. Multi-Chain, Always.</p>
         </div>
       </footer>
     </div>

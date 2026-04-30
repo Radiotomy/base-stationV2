@@ -1,0 +1,81 @@
+{
+  "name": "BaseTrackRegistry",
+  "type": "object",
+  "properties": {
+    "artist_id": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string"
+    },
+    "artist_email": {
+      "type": "string"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "track_url": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "ai_tools_used": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "wallet_address": {
+      "type": "string",
+      "description": "Base EVM wallet address"
+    },
+    "transaction_hash": {
+      "type": "string",
+      "description": "Base network transaction hash"
+    },
+    "metadata_uri": {
+      "type": "string",
+      "description": "IPFS or metadata URI"
+    },
+    "contract_address": {
+      "type": "string",
+      "description": "NFT or registry contract address on Base"
+    },
+    "registration_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "registered",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "fingerprint_hash": {
+      "type": "string",
+      "description": "SHA-256 of track metadata for provenance"
+    },
+    "registered_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "network": {
+      "type": "string",
+      "default": "base-mainnet"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "artist_id",
+    "track_title",
+    "wallet_address"
+  ]
+}

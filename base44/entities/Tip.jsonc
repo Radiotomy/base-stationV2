@@ -45,6 +45,16 @@
     },
     "stripe_payment_intent_id": {
       "type": "string"
+    },
+    "blockchain": {
+      "type": "string",
+      "enum": [
+        "base",
+        "solana",
+        "fiat"
+      ],
+      "default": "base",
+      "description": "Blockchain used for the tip"
     }
   },
   "required": [
