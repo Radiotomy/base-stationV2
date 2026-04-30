@@ -21,6 +21,7 @@ import AIStudio from './pages/AIStudio';
 import LyricsStudio from './pages/LyricsStudio';
 import MusicStudio from './pages/MusicStudio';
 import VideoStudio from './pages/VideoStudio';
+import LiveStudio from './pages/LiveStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
@@ -32,6 +33,7 @@ import AdminChallenges from './pages/admin/AdminChallenges';
 import AdminFeatured from './pages/admin/AdminFeatured';
 import AdminArtists from './pages/admin/AdminArtists';
 import AdminSolana from './pages/admin/AdminSolana';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -74,6 +76,7 @@ const AuthenticatedApp = () => {
           <Route path="/lyrics-studio" element={<LyricsStudio />} />
           <Route path="/music-studio" element={<MusicStudio />} />
           <Route path="/video-studio" element={<VideoStudio />} />
+          <Route path="/live-studio" element={<LiveStudio />} />
           <Route path="/submit" element={<SubmitTrack />} />
           <Route path="/artist/:id" element={<ArtistProfile />} />
           <Route path="/solana" element={<SolanaRegistry />} />
@@ -85,6 +88,7 @@ const AuthenticatedApp = () => {
           <Route path="challenges" element={<AdminChallenges />} />
           <Route path="featured" element={<AdminFeatured />} />
           <Route path="artists" element={<AdminArtists />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="solana" element={<AdminSolana />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />

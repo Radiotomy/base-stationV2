@@ -1,0 +1,59 @@
+{
+  "name": "AnalyticsEvent",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "generation_started",
+        "generation_completed",
+        "generation_failed",
+        "session_started",
+        "session_ended",
+        "track_submitted",
+        "track_downloaded",
+        "effect_applied",
+        "studio_visit"
+      ]
+    },
+    "event_data": {
+      "type": "object",
+      "description": "Flexible event metadata"
+    },
+    "session_id": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "duration_ms": {
+      "type": "number"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "credits_used": {
+      "type": "number"
+    },
+    "ip_address": {
+      "type": "string"
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "event_type"
+  ]
+}

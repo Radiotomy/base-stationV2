@@ -1,0 +1,73 @@
+{
+  "name": "LiveSession",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "streaming",
+        "completed",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "stream_url": {
+      "type": "string"
+    },
+    "viewer_count": {
+      "type": "number",
+      "default": 0
+    },
+    "peak_viewers": {
+      "type": "number",
+      "default": 0
+    },
+    "tracks_used": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "output_url": {
+      "type": "string"
+    },
+    "recording_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ]
+}
