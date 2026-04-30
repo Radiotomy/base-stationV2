@@ -1,0 +1,92 @@
+{
+  "name": "TrackSubmission",
+  "type": "object",
+  "properties": {
+    "artist_id": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string"
+    },
+    "artist_email": {
+      "type": "string"
+    },
+    "artist_avatar_url": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "track_url": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string",
+      "enum": [
+        "hip-hop",
+        "edm",
+        "pop",
+        "r&b",
+        "rock",
+        "lo-fi",
+        "jazz",
+        "classical",
+        "trap",
+        "other"
+      ]
+    },
+    "ai_tools_used": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "play_count": {
+      "type": "number",
+      "default": 0
+    },
+    "like_count": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "lyrics": {
+      "type": "string"
+    },
+    "bpm": {
+      "type": "number"
+    },
+    "key": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "artist_name",
+    "track_url"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "name": "ArtistProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "display_name": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly unique identifier"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "banner_url": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "website_url": {
+      "type": "string"
+    },
+    "social_links": {
+      "type": "object"
+    },
+    "ai_tools": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "track_count": {
+      "type": "number",
+      "default": 0
+    },
+    "follower_count": {
+      "type": "number",
+      "default": 0
+    },
+    "following_count": {
+      "type": "number",
+      "default": 0
+    },
+    "total_plays": {
+      "type": "number",
+      "default": 0
+    },
+    "total_tips_received_cents": {
+      "type": "number",
+      "default": 0
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "tipping_enabled": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "user_id",
+    "display_name"
+  ]
+}

@@ -17,6 +17,9 @@ import FeaturedArtists from './pages/FeaturedArtists';
 import Challenges from './pages/Challenges';
 import Leaderboard from './pages/Leaderboard';
 import Badges from './pages/Badges';
+import AIStudio from './pages/AIStudio';
+import SubmitTrack from './pages/SubmitTrack';
+import ArtistProfile from './pages/ArtistProfile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +56,9 @@ const AuthenticatedApp = () => {
         <Route path="/challenges" element={<Challenges />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/badges" element={<Badges />} />
+        <Route path="/ai-studio" element={<AIStudio />} />
+        <Route path="/submit" element={<SubmitTrack />} />
+        <Route path="/artist/:id" element={<ArtistProfile />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       <AIHelpAssistant />

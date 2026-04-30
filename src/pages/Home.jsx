@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Radio, TrendingUp, Music, Star, Users, Zap, Play, ArrowRight,
-  Mic2, Headphones, Globe, ChevronRight
+  Mic2, Headphones, Globe, ChevronRight, Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ const NAV_LINKS = [
   { to: "/playlists", label: "Playlists", icon: Music },
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
+  { to: "/ai-studio", label: "AI Studio", icon: Headphones },
 ];
 
 const STATS = [
@@ -55,6 +56,13 @@ export default function Home() {
             ))}
           </div>
           <div className="flex items-center gap-3">
+            {user && (
+              <Link to="/submit">
+                <Button variant="outline" className="rounded-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-semibold px-4 hidden md:flex">
+                  <Upload className="w-4 h-4 mr-1.5" /> Submit
+                </Button>
+              </Link>
+            )}
             {user ? (
               <Link to="/radio">
                 <Button className="rounded-full bg-purple-600 hover:bg-purple-500 text-white font-semibold px-5">
@@ -153,8 +161,8 @@ export default function Home() {
               { to: "/charts", icon: TrendingUp, title: "Trending Charts", desc: "Real-time weekly, monthly, and all-time rankings powered by community votes — zero algorithms.", color: "from-orange-900 to-red-900", accent: "text-orange-400", badge: "🔥 Hot" },
               { to: "/playlists", icon: Music, title: "Community Playlists", desc: "Curate and discover playlists from the world's most creative AI music artists.", color: "from-indigo-900 to-blue-900", accent: "text-indigo-400", badge: "New" },
               { to: "/featured-artists", icon: Star, title: "Featured Artists", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Apply" },
-              { to: "/playlists", icon: Zap, title: "AI Tools Studio", desc: "Generate music, write lyrics, create cover art, and master your tracks — all in one place.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "Coming Soon" },
-              { to: "/featured-artists", icon: Globe, title: "Solana Provenance", desc: "Register your tracks on-chain with immutable authorship proof and blockchain verification.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Phase 4" },
+              { to: "/ai-studio", icon: Zap, title: "AI Tools Studio", desc: "Generate lyrics, music prompts & cover art with AI. Everything you need to create your next hit.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "New ✨" },
+              { to: "/submit", icon: Globe, title: "Submit Your Track", desc: "Share your AI music with the AIVTV community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Open Now" },
             ].map(({ to, icon: Icon, title, desc, color, accent, badge }, i) => (
               <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
                 <Link to={to} className={`group block p-6 rounded-3xl bg-gradient-to-br ${color} border border-white/5 hover:border-white/10 transition-all hover:scale-[1.02]`}>
