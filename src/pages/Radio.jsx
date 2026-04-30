@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 
 const DEFAULT_CHANNELS = [
   { id: "discover", name: "Discover", slug: "discover", genre: "discover", emoji: "🌟", color_theme: "#7C3AED", description: "Fresh AI music from the community", listener_count: 0, is_active: true },
-  { id: "staff-picks", name: "Staff Picks", slug: "staff-picks", genre: "staff-picks", emoji: "⭐", color_theme: "#F59E0B", description: "Curated by the AIVTV team", listener_count: 0, is_active: true },
+  { id: "staff-picks", name: "Staff Picks", slug: "staff-picks", genre: "staff-picks", emoji: "⭐", color_theme: "#F59E0B", description: "Curated by the Base Station team", listener_count: 0, is_active: true },
   { id: "hip-hop", name: "Hip-Hop & Trap", slug: "hip-hop", genre: "hip-hop", emoji: "🎤", color_theme: "#EF4444", description: "AI beats, bars & trap bangers", listener_count: 0, is_active: true },
   { id: "edm", name: "EDM & Electronic", slug: "edm", genre: "edm", emoji: "⚡", color_theme: "#06B6D4", description: "Synths, drops & AI energy", listener_count: 0, is_active: true },
   { id: "rb-soul", name: "R&B / Soul", slug: "rb-soul", genre: "r&b", emoji: "🎵", color_theme: "#EC4899", description: "Smooth AI R&B and neo-soul", listener_count: 0, is_active: true },
@@ -80,7 +80,7 @@ export default function Radio() {
         <div className="relative max-w-5xl mx-auto">
           <div className="flex items-center gap-3 mb-6">
             <RadioIcon className="w-5 h-5 text-white/60" />
-            <span className="text-white/60 text-sm font-medium tracking-widest uppercase">AIVTV Radio</span>
+            <span className="text-white/60 text-sm font-medium tracking-widest uppercase">Base Station Radio</span>
             <span className="flex items-center gap-1.5 text-xs text-emerald-400">
               <Wifi className="w-3 h-3" /> Live
             </span>
