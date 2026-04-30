@@ -42,50 +42,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Nav */}
-      <nav className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="font-black text-xl tracking-tight">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
-            <span className="text-foreground">Station</span>
-          </Link>
-          <div className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map(({ to, label, icon: Icon }) => (
-              <Link key={to} to={to} className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all">
-                <Icon className="w-4 h-4" />{label}
-              </Link>
-            ))}
-          </div>
-          <div className="flex items-center gap-3">
-            {user?.role === "admin" && (
-              <Link to="/admin">
-                <Button variant="outline" className="rounded-full border-purple-500/40 text-purple-400 hover:bg-purple-500/10 font-semibold px-4 hidden md:flex text-xs">
-                  Admin
-                </Button>
-              </Link>
-            )}
-            {user && (
-              <Link to="/submit">
-                <Button variant="outline" className="rounded-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-semibold px-4 hidden md:flex">
-                  <Upload className="w-4 h-4 mr-1.5" /> Submit
-                </Button>
-              </Link>
-            )}
-            {user ? (
-              <Link to="/radio">
-                <Button className="rounded-full bg-purple-600 hover:bg-purple-500 text-white font-semibold px-5">
-                  <Radio className="w-4 h-4 mr-2" /> Tune In
-                </Button>
-              </Link>
-            ) : (
-              <Button onClick={() => base44.auth.redirectToLogin()} className="rounded-full bg-purple-600 hover:bg-purple-500 text-white font-semibold px-5">
-                Get Started
-              </Button>
-            )}
-          </div>
-        </div>
-      </nav>
-
       {/* Hero */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 pt-16">
         {/* Background */}
@@ -114,15 +70,34 @@ export default function Home() {
               Create, discover, and own AI-generated music with immutable on-chain provenance. Multi-chain registration, instant tipping, and global community.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={() => user ? null : base44.auth.redirectToLogin()}
-                className="bg-white text-blue-900 hover:bg-blue-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-blue-900/30">
-                {user ? "Welcome Back 🎵" : "Join Free"}
-              </Button>
-              <Link to="/radio">
-                <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 font-bold px-10 py-4 rounded-full text-lg backdrop-blur">
-                  <Headphones className="w-5 h-5 mr-2" /> Tune Into Radio
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <Link to={user?.is_creator ? "/creator-dashboard" : "/radio"}>
+                    <Button className="bg-white text-blue-900 hover:bg-blue-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-blue-900/30">
+                      {user.is_creator ? "Go to Studio 🎵" : "Tune In 📻"}
+                    </Button>
+                  </Link>
+                  {user.is_creator && (
+                    <Link to="/music-studio">
+                      <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 font-bold px-10 py-4 rounded-full text-lg backdrop-blur">
+                        <Music className="w-5 h-5 mr-2" /> Create Music
+                      </Button>
+                    </Link>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => base44.auth.redirectToLogin()}
+                    className="bg-white text-blue-900 hover:bg-blue-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-blue-900/30">
+                    Join Free
+                  </Button>
+                  <Link to="/radio">
+                    <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 font-bold px-10 py-4 rounded-full text-lg backdrop-blur">
+                      <Headphones className="w-5 h-5 mr-2" /> Explore
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
 
@@ -316,14 +291,11 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border/50 py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="font-black text-lg">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="font-black text-lg mb-4">
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
             <span className="text-foreground">Station</span>
             <span className="text-muted-foreground font-normal text-sm ml-2">— Multi-Chain AI Music</span>
-          </div>
-          <div className="flex gap-6 text-sm text-muted-foreground">
-            {NAV_LINKS.map(({ to, label }) => <Link key={to} to={to} className="hover:text-foreground transition-colors">{label}</Link>)}
           </div>
           <p className="text-xs text-muted-foreground">© 2026 Base Station. Multi-Chain, Always.</p>
         </div>

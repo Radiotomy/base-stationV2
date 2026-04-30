@@ -6,6 +6,8 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
+import Header from '@/components/layout/Header';
+import Breadcrumbs from '@/components/layout/Breadcrumbs';
 
 // Pages
 import Home from './pages/Home';
@@ -34,10 +36,11 @@ import AdminFeatured from './pages/admin/AdminFeatured';
 import AdminArtists from './pages/admin/AdminArtists';
 import AdminSolana from './pages/admin/AdminSolana';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import CreatorDashboard from './pages/CreatorDashboard';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -61,6 +64,8 @@ const AuthenticatedApp = () => {
 
   return (
     <>
+      {user && <Header user={user} />}
+      {user && <Breadcrumbs />}
       <Routes>
         <Route element={<MobileLayout />}>
           <Route path="/" element={<Home />} />
@@ -81,6 +86,7 @@ const AuthenticatedApp = () => {
           <Route path="/artist/:id" element={<ArtistProfile />} />
           <Route path="/solana" element={<SolanaRegistry />} />
           <Route path="/blockchain" element={<BlockchainRegistry />} />
+          <Route path="/creator-dashboard" element={<CreatorDashboard />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />
