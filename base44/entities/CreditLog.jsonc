@@ -1,0 +1,52 @@
+{
+  "name": "CreditLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "transaction_type": {
+      "type": "string",
+      "enum": [
+        "generation",
+        "purchase",
+        "refund",
+        "bonus",
+        "admin_adjustment"
+      ],
+      "description": "Type of credit transaction"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Credits added or deducted"
+    },
+    "balance_before": {
+      "type": "number"
+    },
+    "balance_after": {
+      "type": "number"
+    },
+    "related_job_id": {
+      "type": "string",
+      "description": "GenerationJob ID if applicable"
+    },
+    "provider": {
+      "type": "string",
+      "description": "Provider used (if generation)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "user_id",
+    "transaction_type",
+    "amount"
+  ]
+}

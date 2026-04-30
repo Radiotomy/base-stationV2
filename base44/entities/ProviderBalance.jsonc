@@ -1,0 +1,57 @@
+{
+  "name": "ProviderBalance",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "type": "string",
+      "enum": [
+        "loudly",
+        "nuro",
+        "sonic",
+        "producer",
+        "tempcolor",
+        "ltx"
+      ],
+      "description": "External API provider"
+    },
+    "api_key": {
+      "type": "string",
+      "description": "Encrypted API key reference"
+    },
+    "balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Current account balance with provider"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "last_checked": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "error"
+      ],
+      "default": "active"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "monthly_usage": {
+      "type": "number",
+      "default": 0
+    },
+    "monthly_limit": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "provider"
+  ]
+}

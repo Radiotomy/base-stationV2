@@ -1,0 +1,79 @@
+{
+  "name": "GenerationJob",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "job_type": {
+      "type": "string",
+      "enum": [
+        "music",
+        "lyrics",
+        "cover_art",
+        "video"
+      ],
+      "description": "Type of generation task"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "loudly",
+        "nuro",
+        "sonic",
+        "producer",
+        "tempcolor",
+        "ltx"
+      ],
+      "description": "Which provider handled the generation"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "input_data": {
+      "type": "object",
+      "description": "Generation parameters (mood, genre, duration, etc.)"
+    },
+    "output_url": {
+      "type": "string",
+      "description": "URL to generated file"
+    },
+    "output_metadata": {
+      "type": "object",
+      "description": "BPM, key, duration, etc."
+    },
+    "credits_used": {
+      "type": "number",
+      "default": 0
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "provider_job_id": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "job_type",
+    "provider"
+  ]
+}

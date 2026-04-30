@@ -1,0 +1,48 @@
+{
+  "name": "UserCredit",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "balance": {
+      "type": "number",
+      "default": 0,
+      "description": "Total credits available"
+    },
+    "lifetime_earned": {
+      "type": "number",
+      "default": 0
+    },
+    "lifetime_spent": {
+      "type": "number",
+      "default": 0
+    },
+    "monthly_limit": {
+      "type": "number",
+      "default": 1000
+    },
+    "monthly_used": {
+      "type": "number",
+      "default": 0
+    },
+    "reset_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_premium": {
+      "type": "boolean",
+      "default": false
+    },
+    "last_purchase": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}
