@@ -57,6 +57,13 @@ export default function Home() {
             ))}
           </div>
           <div className="flex items-center gap-3">
+            {user?.role === "admin" && (
+              <Link to="/admin">
+                <Button variant="outline" className="rounded-full border-purple-500/40 text-purple-400 hover:bg-purple-500/10 font-semibold px-4 hidden md:flex text-xs">
+                  Admin
+                </Button>
+              </Link>
+            )}
             {user && (
               <Link to="/submit">
                 <Button variant="outline" className="rounded-full border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 font-semibold px-4 hidden md:flex">

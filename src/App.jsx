@@ -21,6 +21,13 @@ import AIStudio from './pages/AIStudio';
 import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminOverview from './pages/admin/AdminOverview';
+import AdminTracks from './pages/admin/AdminTracks';
+import AdminChallenges from './pages/admin/AdminChallenges';
+import AdminFeatured from './pages/admin/AdminFeatured';
+import AdminArtists from './pages/admin/AdminArtists';
+import AdminSolana from './pages/admin/AdminSolana';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -61,6 +68,14 @@ const AuthenticatedApp = () => {
         <Route path="/submit" element={<SubmitTrack />} />
         <Route path="/artist/:id" element={<ArtistProfile />} />
         <Route path="/solana" element={<SolanaRegistry />} />
+        <Route path="/admin" element={<AdminDashboard />}>
+          <Route index element={<AdminOverview />} />
+          <Route path="tracks" element={<AdminTracks />} />
+          <Route path="challenges" element={<AdminChallenges />} />
+          <Route path="featured" element={<AdminFeatured />} />
+          <Route path="artists" element={<AdminArtists />} />
+          <Route path="solana" element={<AdminSolana />} />
+        </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       <AIHelpAssistant />
