@@ -48,8 +48,8 @@ export default function AdminDashboard() {
       <aside className={`fixed inset-y-0 left-0 z-50 w-60 bg-card border-r border-border flex flex-col transform transition-transform duration-200 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:flex`}>
         <div className="p-5 border-b border-border flex items-center justify-between">
           <Link to="/" className="font-black text-lg">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">AI</span>
-            <span className="text-foreground">VTV</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
+            <span className="text-foreground">Station</span>
             <span className="text-muted-foreground font-normal text-xs ml-1.5">Admin</span>
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-muted-foreground hover:text-foreground">
@@ -96,8 +96,8 @@ export default function AdminDashboard() {
             <Menu className="w-5 h-5" />
           </button>
           <span className="font-black text-sm">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">AI</span>
-            <span className="text-foreground">VTV</span> Admin
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
+            <span className="text-foreground">Station</span> Admin
           </span>
         </header>
 
