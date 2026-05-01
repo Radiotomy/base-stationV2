@@ -51,7 +51,7 @@ const AuthenticatedApp = () => {
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground text-sm">Loading AIVTV…</p>
+          <p className="text-muted-foreground text-sm">Loading Base Station…</p>
         </div>
       </div>
     );

@@ -5,7 +5,7 @@ import { MessageCircle, X, Send, Bot, Minimize2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const SYSTEM_CONTEXT = `You are AiVTV, the friendly AI assistant for the AIVTV platform — the world's premier AI music and creator community. 
+const SYSTEM_CONTEXT = `You are Base Station AI, the friendly AI assistant for the Base Station platform — the world's premier multi-chain AI music and creator community. 
 Help users with:
 - How to create and join live music sessions
 - How to submit tracks and vote
@@ -24,14 +24,14 @@ const SUGGESTED = [
   "How do I create a playlist?",
   "How do trending charts work?",
   "How do I apply to be a featured artist?",
-  "What is AIVTV Radio?",
+  "What is Base Station Radio?",
   "How do I follow an artist?",
 ];
 
 export default function AIHelpAssistant() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hey! I'm AiVTV 🎵 Your AI guide to the platform. What can I help you with today?" }
+    { role: "assistant", content: "Hey! I'm Base Station AI 🎵 Your guide to the platform. What can I help you with today?" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,8 +52,8 @@ export default function AIHelpAssistant() {
     setMessages(newMessages);
     setLoading(true);
 
-    const conversationHistory = newMessages.map(m => `${m.role === "user" ? "User" : "AiVTV"}: ${m.content}`).join("\n");
-    const prompt = `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nAiVTV:`;
+    const conversationHistory = newMessages.map(m => `${m.role === "user" ? "User" : "Base Station AI"}: ${m.content}`).join("\n");
+    const prompt = `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nBase Station AI:`;
 
     const response = await base44.integrations.Core.InvokeLLM({ prompt });
     setMessages(prev => [...prev, { role: "assistant", content: response }]);
@@ -86,7 +86,7 @@ export default function AIHelpAssistant() {
                 <Bot className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1">
-                <p className="font-bold text-white text-sm">AiVTV</p>
+                <p className="font-bold text-white text-sm">Base Station AI</p>
                 <p className="text-white/50 text-xs flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
                   Always online · AI-powered guide

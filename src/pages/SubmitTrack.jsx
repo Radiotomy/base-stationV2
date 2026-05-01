@@ -75,7 +75,7 @@ export default function SubmitTrack() {
       <div className="text-center max-w-sm">
         <Music className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-40" />
         <h2 className="text-2xl font-black text-foreground mb-2">Sign In Required</h2>
-        <p className="text-muted-foreground mb-6">You need to be signed in to submit tracks to AIVTV.</p>
+        <p className="text-muted-foreground mb-6">You need to be signed in to submit tracks to Base Station.</p>
         <Button onClick={() => base44.auth.redirectToLogin(window.location.href)} className="rounded-full bg-purple-600 hover:bg-purple-500 text-white px-8">
           Sign In to Submit
         </Button>
@@ -97,7 +97,7 @@ export default function SubmitTrack() {
               Share Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Music</span>
             </h1>
             <p className="text-emerald-200/70 text-lg max-w-xl mx-auto">
-              Submit your AI-generated track to AIVTV. Get on the charts, enter challenges, and build your fanbase.
+              Submit your AI-generated track to Base Station. Get on the charts, enter challenges, and build your fanbase.
             </p>
           </motion.div>
         </div>
