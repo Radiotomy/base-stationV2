@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ActivityFeed from "@/components/feed/ActivityFeed";
+import CommunityMetrics from "@/components/home/CommunityMetrics";
 
 const NAV_LINKS = [
   { to: "/radio", label: "Radio", icon: Radio },
@@ -61,14 +62,12 @@ export default function Home() {
               🎵 Multi-Chain AI Music on Base
             </Badge>
             <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white mb-5 tracking-tight leading-none">
-              Where AI
+              Where <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400">All Creators</span>
               <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400">
-                Music Owns Itself
-              </span>
+              Own Their Music
             </h1>
             <p className="text-white/60 text-base md:text-xl max-w-2xl mx-auto mb-8 leading-relaxed px-2">
-              Create, discover, and own AI-generated music with immutable on-chain provenance. Multi-chain registration, instant tipping, and global community.
+              Base Station celebrates human, AI, and hybrid creators equally. Secure blockchain ownership, powerful creation tools, and a community that values your unique voice—however you create.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 sm:px-0">
               {user ? (
@@ -85,6 +84,11 @@ export default function Home() {
                       </Button>
                     </Link>
                   )}
+                  <Link to="/why-base-station" className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
+                      Learn Why 🔗
+                    </Button>
+                  </Link>
                 </>
               ) : (
                 <>
@@ -93,9 +97,14 @@ export default function Home() {
                     Join Free
                   </Button>
                   <Link to="/radio" className="w-full sm:w-auto">
-                    <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
-                      <Headphones className="w-5 h-5 mr-2" /> Explore
-                    </Button>
+                   <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
+                     <Headphones className="w-5 h-5 mr-2" /> Explore
+                   </Button>
+                  </Link>
+                  <Link to="/why-base-station" className="w-full sm:w-auto">
+                   <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
+                     Why Join 🔗
+                   </Button>
                   </Link>
                 </>
               )}
@@ -118,16 +127,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Live Community Metrics */}
       <section className="py-16 px-6 border-y border-border/50 bg-muted/20">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-          {STATS.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="text-center">
-              <Icon className="w-6 h-6 mx-auto mb-3 text-purple-400" />
-              <p className="text-3xl font-black text-foreground">{value}</p>
-              <p className="text-sm text-muted-foreground mt-1">{label}</p>
-            </div>
-          ))}
+        <div className="max-w-5xl mx-auto">
+          <CommunityMetrics />
+        </div>
+      </section>
+
+      {/* Static Stats */}
+      <section className="py-16 px-6 bg-background border-b border-border/50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h3 className="text-2xl font-black text-foreground mb-2">Base Station by the Numbers</h3>
+            <p className="text-muted-foreground text-sm">Powered by creators of all kinds</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {STATS.map(({ label, value, icon: Icon }) => (
+              <div key={label} className="text-center">
+                <Icon className="w-6 h-6 mx-auto mb-3 text-purple-400" />
+                <p className="text-3xl font-black text-foreground">{value}</p>
+                <p className="text-sm text-muted-foreground mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -135,8 +157,8 @@ export default function Home() {
       <section className="py-20 px-6">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4">Everything a Creator Needs</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">From live sessions to trending charts — Base Station is the complete platform for AI music creators.</p>
+            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4">Everything Every Creator Needs</h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Whether you compose, collaborate with AI, or blend both—Base Station provides the tools, community, and on-chain ownership to support your unique creative vision.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">

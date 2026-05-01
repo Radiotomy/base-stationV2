@@ -45,6 +45,7 @@ import CreatorDashboard from './pages/CreatorDashboard';
 import Credits from './pages/Credits';
 import CommunityTemplates from './pages/CommunityTemplates';
 import SocialMediaAutomation from './pages/SocialMediaAutomation';
+import WhyBaseStation from './pages/WhyBaseStation';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -102,6 +103,7 @@ const AuthenticatedApp = () => {
           <Route path="/credits" element={<Credits />} />
           <Route path="/templates" element={<CommunityTemplates />} />
           <Route path="/social-automation" element={<SocialMediaAutomation />} />
+          <Route path="/why-base-station" element={<WhyBaseStation />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />
