@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
 import {
-  Zap, RefreshCw, CheckCircle, AlertCircle, Clock, TrendingUp,
-  Users, Activity, BarChart3, Download, Filter
+  Zap, RefreshCw, CheckCircle, AlertCircle, TrendingUp,
+  Users, Activity, Download, Bell, BellOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const PROVIDER_META = {
   loudly:    { label: "Loudly",     color: "bg-blue-500/20 text-blue-300 border-blue-500/30",    dot: "bg-blue-400" },
@@ -26,11 +27,12 @@ function StatusDot({ status }) {
   return <span className={`w-2 h-2 rounded-full inline-block ${colors[status] || "bg-gray-400"}`} />;
 }
 
-function StatCard({ icon: Icon, label, value, sub, color = "text-purple-400" }) {
+function StatCard({ label, value, sub, color = "text-purple-400", icon }) {
+  const IconComp = icon;
   return (
     <div className="p-5 rounded-2xl bg-card border border-border">
       <div className="flex items-center gap-2 mb-3">
-        <Icon className={`w-4 h-4 ${color}`} />
+        {IconComp && <IconComp className={`w-4 h-4 ${color}`} />}
         <span className="text-xs text-muted-foreground font-semibold uppercase">{label}</span>
       </div>
       <p className="text-2xl font-black text-foreground">{value}</p>
@@ -48,6 +50,8 @@ export default function AdminAIIntegrations() {
   const [filterTask, setFilterTask] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [stats, setStats] = useState({ total: 0, success: 0, failed: 0, credits: 0, users: new Set() });
+  const [alertThreshold, setAlertThreshold] = useState(100);
+  const [showAlertInput, setShowAlertInput] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -104,6 +108,36 @@ export default function AdminAIIntegrations() {
     credits: logs.filter(l => l.provider === p).reduce((s, l) => s + (l.credits_used || 0), 0),
   })).sort((a, b) => b.count - a.count);
 
+  // Top users by credits consumed
+  const userMap = {};
+  logs.forEach(l => {
+    const key = l.user_email || l.user_id || "unknown";
+    if (!userMap[key]) userMap[key] = { email: key, credits: 0, calls: 0 };
+    userMap[key].credits += l.credits_used || 0;
+    userMap[key].calls += 1;
+  });
+  const topUsers = Object.values(userMap).sort((a, b) => b.credits - a.credits).slice(0, 8);
+
+  // Daily trends (last 14 days)
+  const dailyMap = {};
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    dailyMap[key] = { date: key, calls: 0, credits: 0 };
+  }
+  logs.forEach(l => {
+    if (!l.created_date) return;
+    const key = new Date(l.created_date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    if (dailyMap[key]) {
+      dailyMap[key].calls += 1;
+      dailyMap[key].credits += l.credits_used || 0;
+    }
+  });
+  const dailyTrends = Object.values(dailyMap);
+
+  // Low balance providers
+  const lowBalanceProviders = balances.filter(b => b.balance != null && b.balance < alertThreshold);
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -149,13 +183,42 @@ export default function AdminAIIntegrations() {
         </div>
       </div>
 
+      {/* Low Balance Alerts */}
+      {lowBalanceProviders.length > 0 && (
+        <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-bold text-red-400 mb-1">⚠ Low Balance Alert</p>
+            <p className="text-xs text-red-300">
+              {lowBalanceProviders.map(b => `${PROVIDER_META[b.provider]?.label || b.provider} (${b.balance} credits)`).join(" · ")} — below {alertThreshold} threshold
+            </p>
+          </div>
+          <button onClick={() => setShowAlertInput(p => !p)} className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+            <Bell className="w-3 h-3" /> Set threshold
+          </button>
+        </div>
+      )}
+
+      {showAlertInput && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+          <Bell className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+          <span className="text-xs text-muted-foreground">Alert when balance below:</span>
+          <input type="number" value={alertThreshold} onChange={e => setAlertThreshold(Number(e.target.value))}
+            className="w-24 rounded-lg border border-input bg-muted/50 px-3 py-1 text-xs text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+          <button onClick={() => { setShowAlertInput(false); toast.success("Alert threshold saved!"); }}
+            className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold">Save</button>
+        </div>
+      )}
+
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <StatCard icon={Activity} label="Total API Calls" value={stats.total.toLocaleString()} color="text-blue-400" />
         <StatCard icon={CheckCircle} label="Successful" value={stats.success.toLocaleString()}
           sub={stats.total ? `${Math.round(stats.success / stats.total * 100)}% success rate` : ""} color="text-emerald-400" />
         <StatCard icon={AlertCircle} label="Failed" value={stats.failed.toLocaleString()} color="text-red-400" />
         <StatCard icon={Zap} label="Credits Used" value={stats.credits.toLocaleString()} color="text-yellow-400" />
+        <StatCard icon={Users} label="Unique Users" value={stats.users.size.toLocaleString()} color="text-purple-400" />
+        <StatCard icon={TrendingUp} label="Avg Credits/Call" value={stats.total ? (stats.credits / stats.total).toFixed(1) : "—"} color="text-cyan-400" />
       </div>
 
       {/* Provider Usage Breakdown */}
@@ -175,6 +238,58 @@ export default function AdminAIIntegrations() {
           })}
         </div>
       </div>
+
+      {/* Daily Trends Chart */}
+      <div>
+        <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3">Daily API Calls — Last 14 Days</h3>
+        <div className="p-5 rounded-2xl bg-card border border-border">
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={dailyTrends} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} allowDecimals={false} />
+              <Tooltip
+                contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12 }}
+                labelStyle={{ color: "hsl(var(--foreground))" }}
+              />
+              <Bar dataKey="calls" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="API Calls" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Top Users */}
+      {topUsers.length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold text-muted-foreground uppercase mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4" /> Top Users by Credit Consumption
+          </h3>
+          <div className="rounded-2xl border border-border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  {["Rank", "User", "Credits Used", "API Calls", "Avg / Call"].map(h => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {topUsers.map((u, i) => (
+                  <tr key={u.email} className="hover:bg-muted/30 transition-colors">
+                    <td className="px-4 py-3 text-xs font-bold text-muted-foreground">
+                      {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-foreground max-w-[180px] truncate">{u.email}</td>
+                    <td className="px-4 py-3 text-xs text-yellow-400 font-bold">{u.credits.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{u.calls}</td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">{u.calls ? (u.credits / u.calls).toFixed(1) : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Usage Logs Table */}
       <div>
