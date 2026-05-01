@@ -136,6 +136,8 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
       ctx2d.fillStyle = 'hsl(240,10%,6%)';
       ctx2d.fillRect(0, 0, canvas.width, canvas.height);
 
+      let drewData = false;
+
       // Try to get real analyser data if available and playing
       if (analyserRef.current && isPlaying) {
         try {
@@ -152,14 +154,14 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
             ctx2d.fillRect(x, canvas.height - h, bw, h);
             x += bw + 1;
           });
-          return;
+          drewData = true;
         } catch (e) {
           console.warn('Analyser error:', e);
         }
       }
 
-      // Draw placeholder waveform when audio loaded but not playing
-      if (duration > 0) {
+      // Always draw placeholder as fallback or when not playing
+      if (!drewData && duration > 0) {
         ctx2d.fillStyle = 'hsl(270,60%,40%)';
         const barWidth = 4;
         const gap = 2;
