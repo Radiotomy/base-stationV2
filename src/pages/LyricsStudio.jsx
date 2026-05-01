@@ -1,17 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
+  CheckCircle, Sparkles, Keyboard, Plus, X, History
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
-const MOODS = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill'];
-const STYLES = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country'];
-const LENGTHS = ['Short (8-16 bars)', 'Medium (32 bars)', 'Long (64+ bars)'];
+const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
+const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Soul', 'Drill', 'Afrobeats'];
+const LENGTHS      = ['Short (8–16 bars)', 'Medium (32 bars)', 'Long (64+ bars)', 'Full Song'];
+
+const STRUCTURE_TEMPLATES = [
+  { label: '🎵 Standard', text: '[Intro]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Bridge]\n\n[Outro]' },
+  { label: '🔥 Hip-Hop',  text: '[Intro]\n\n[Verse 1]\n\n[Hook]\n\n[Verse 2]\n\n[Hook]\n\n[Verse 3]\n\n[Outro]' },
+  { label: '✨ Minimal',  text: '[Verse]\n\n[Chorus]\n\n[Verse]\n\n[Chorus]' },
+];
+
+const TOPIC_SUGGESTIONS = [
+  'overcoming heartbreak', 'late night drives', 'chasing dreams', 'loyalty and trust',
+  'making it from nothing', 'toxic love', 'nostalgia for childhood', 'finding yourself',
+];
 
 export default function LyricsStudio() {
   const [topic, setTopic] = useState('');
@@ -20,169 +34,255 @@ export default function LyricsStudio() {
   const [length, setLength] = useState('Medium (32 bars)');
   const [lyrics, setLyrics] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [versions, setVersions] = useState([]);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const textareaRef = useRef(null);
 
-  const generateLyrics = async () => {
-    if (!topic) {
-      toast.error('Enter a topic first');
-      return;
-    }
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 's')     { e.preventDefault(); saveLyrics(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k')     { e.preventDefault(); setShowShortcuts(p => !p); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [topic, mood, style, length, lyrics]);
+
+  const generate = async () => {
+    if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
     try {
-      const job = await base44.functions.invoke('generateLyrics', {
-        topic,
-        mood,
-        style,
-        length
-      });
-      // In production, poll for job completion
-      setLyrics('Generated lyrics will appear here...');
-      toast.success('Lyrics generation started!');
-    } catch (error) {
-      toast.error(error.message);
+      const res = await base44.functions.invoke('generateLyrics', { topic, mood, style, length });
+      const text = res.data?.lyrics || res.data?.text || res.data?.content || '';
+      if (text) {
+        // Save previous as version
+        if (lyrics) setVersions(v => [{ text: lyrics, timestamp: Date.now() }, ...v].slice(0, 5));
+        setLyrics(text);
+        toast.success('Lyrics generated!');
+      } else {
+        toast.error('No lyrics returned — check backend function');
+      }
+    } catch (err) {
+      toast.error(err.message);
     }
     setLoading(false);
   };
 
+  const saveLyrics = async () => {
+    if (!lyrics) { toast.error('No lyrics to save'); return; }
+    setSaving(true);
+    try {
+      const user = await base44.auth.me();
+      const blob = new Blob([lyrics], { type: 'text/plain' });
+      const file = new File([blob], `${topic || 'lyrics'}.txt`, { type: 'text/plain' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.UserAsset.create({
+        user_id: user.id,
+        user_email: user.email,
+        asset_type: 'lyric',
+        title: topic || 'Untitled Lyrics',
+        file_url,
+        is_public: false,
+        metadata: { mood, style, length, topic },
+      });
+      toast.success('Saved to library!');
+    } catch (err) {
+      toast.error(err.message);
+    }
+    setSaving(false);
+  };
+
+  const exportTxt = () => {
+    const blob = new Blob([lyrics], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `${topic || 'lyrics'}.txt`; a.click();
+  };
+
+  const applyStructure = (tpl) => {
+    if (lyrics) setVersions(v => [{ text: lyrics, timestamp: Date.now() }, ...v].slice(0, 5));
+    setLyrics(tpl.text);
+  };
+
+  const restoreVersion = (v) => {
+    if (lyrics) setVersions(vs => [{ text: lyrics, timestamp: Date.now() }, ...vs].slice(0, 5));
+    setLyrics(v.text);
+    toast.success('Version restored');
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header with Back Button */}
-      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-6 h-14 flex items-center">
+      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-6 h-14 flex items-center gap-3">
         <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
           <span className="text-sm font-semibold">Back</span>
         </Link>
+        <div className="flex-1" />
+        <button onClick={() => setShowShortcuts(p => !p)}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-pink-500/30">
+          <Keyboard className="w-3.5 h-3.5" /> Shortcuts ⌘K
+        </button>
       </div>
 
-      {/* Hero */}
+      {/* Keyboard shortcuts panel */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="fixed top-14 right-4 z-50 bg-card border border-border rounded-2xl p-4 shadow-2xl w-64">
+            <p className="font-bold text-sm text-foreground mb-3 flex items-center gap-2"><Keyboard className="w-4 h-4" /> Keyboard Shortcuts</p>
+            {[
+              ['⌘ + Enter', 'Generate lyrics'],
+              ['⌘ + S', 'Save to library'],
+              ['⌘ + K', 'Toggle shortcuts'],
+            ].map(([key, action]) => (
+              <div key={key} className="flex justify-between text-xs py-1.5 border-b border-border/50 last:border-0">
+                <span className="text-muted-foreground">{action}</span>
+                <kbd className="bg-muted px-2 py-0.5 rounded text-foreground font-mono">{key}</kbd>
+              </div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-pink-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-3 tracking-tight">🎤 Lyrics Studio</h1>
-          <p className="text-white/60 text-lg">Create original lyrics powered by Nuro AI. Real-time refinement. Unlimited versions.</p>
+          <p className="text-white/60 text-lg">Create original lyrics powered by Nuro AI. Real-time generation, version history & library save.</p>
         </div>
       </div>
 
-      {/* Editor */}
-      <div className="max-w-6xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Input Panel */}
-          <div className="lg:col-span-1 space-y-4">
-            <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+
+          {/* Left Panel */}
+          <div className="lg:col-span-1 space-y-5">
+            <div className="bg-card rounded-2xl border border-border p-5 space-y-5">
               <h3 className="font-black text-foreground">Generation Settings</h3>
 
+              {/* Topic */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Topic / Theme</label>
-                <Input
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="e.g., lost love, overcoming fears, success"
-                  className="rounded-xl"
-                />
+                <Input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()}
+                  placeholder="e.g., lost love, overcoming fears…" className="rounded-xl" />
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {TOPIC_SUGGESTIONS.map(s => (
+                    <button key={s} type="button" onClick={() => setTopic(s)}
+                      className="px-2 py-0.5 rounded-md bg-muted text-muted-foreground text-xs hover:bg-pink-500/20 hover:text-pink-300 transition-all">
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* Mood Chips */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Mood</label>
-                <Select value={mood} onValueChange={setMood}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MOODS.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {m}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-1.5">
+                  {MOOD_CHIPS.map(m => (
+                    <button key={m} type="button" onClick={() => setMood(m)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${mood === m ? 'bg-pink-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* Style Chips */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Style</label>
-                <Select value={style} onValueChange={setStyle}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STYLES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-1.5">
+                  {STYLE_CHIPS.map(s => (
+                    <button key={s} type="button" onClick={() => setStyle(s)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${style === s ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
 
+              {/* Length Chips */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Length</label>
-                <Select value={length} onValueChange={setLength}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LENGTHS.map((l) => (
-                      <SelectItem key={l} value={l}>
-                        {l}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-wrap gap-1.5">
+                  {LENGTHS.map(l => (
+                    <button key={l} type="button" onClick={() => setLength(l)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${length === l ? 'bg-pink-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <Button
-                onClick={generateLyrics}
-                disabled={loading || !topic}
-                className="w-full bg-pink-600 hover:bg-pink-500 rounded-xl font-bold gap-2"
-              >
+              <Button onClick={generate} disabled={loading || !topic}
+                className="w-full bg-pink-600 hover:bg-pink-500 rounded-xl font-bold gap-2">
                 <Zap className="w-4 h-4" />
-                {loading ? 'Generating…' : 'Generate Lyrics'}
+                {loading ? 'Generating…' : 'Generate  (⌘↵)'}
               </Button>
             </div>
+
+            {/* Structure Templates */}
+            <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+              <h3 className="font-black text-foreground text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
+              {STRUCTURE_TEMPLATES.map(t => (
+                <button key={t.label} type="button" onClick={() => applyStructure(t)}
+                  className="w-full text-left px-3 py-2 rounded-xl bg-muted text-sm text-muted-foreground hover:bg-pink-500/10 hover:text-pink-300 transition-all">
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Version History */}
+            {versions.length > 0 && (
+              <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+                <h3 className="font-black text-foreground text-sm flex items-center gap-2"><History className="w-4 h-4 text-muted-foreground" /> Version History</h3>
+                {versions.map((v, i) => (
+                  <button key={v.timestamp} type="button" onClick={() => restoreVersion(v)}
+                    className="w-full text-left px-3 py-2 rounded-xl bg-muted text-xs text-muted-foreground hover:bg-purple-500/10 hover:text-purple-300 transition-all truncate">
+                    v{versions.length - i}: {v.text.slice(0, 40)}…
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Output Panel */}
           <div className="lg:col-span-2">
-            <div className="bg-card rounded-2xl border border-border p-6 min-h-96">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-card rounded-2xl border border-border p-6 min-h-96 space-y-4">
+              <div className="flex items-center justify-between">
                 <h3 className="font-black text-foreground">Your Lyrics</h3>
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      navigator.clipboard.writeText(lyrics);
-                      toast.success('Copied!');
-                    }}
-                    className="rounded-xl h-8 gap-1.5"
-                  >
+                  <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(lyrics); toast.success('Copied!'); }}
+                    disabled={!lyrics} className="rounded-xl h-8 gap-1.5 text-xs">
                     <Copy className="w-3.5 h-3.5" /> Copy
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-xl h-8 gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Export
+                  <Button size="sm" variant="outline" onClick={exportTxt} disabled={!lyrics} className="rounded-xl h-8 gap-1.5 text-xs">
+                    <Download className="w-3.5 h-3.5" /> .txt
                   </Button>
                 </div>
               </div>
 
-              <Textarea
-                value={lyrics}
-                onChange={(e) => setLyrics(e.target.value)}
-                placeholder="Generated lyrics will appear here. Edit freely!"
-                className="w-full h-80 rounded-xl font-mono text-sm resize-none"
-              />
+              <AnimatePresence>
+                {loading && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-pink-500/10 border border-pink-500/20">
+                    <div className="w-4 h-4 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin flex-shrink-0" />
+                    <p className="text-xs text-pink-300">Nuro AI is writing your lyrics…</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              <div className="flex gap-2 mt-4">
-                <Button
-                  variant="outline"
-                  className="rounded-xl gap-1.5"
-                >
+              <Textarea ref={textareaRef} value={lyrics} onChange={e => setLyrics(e.target.value)}
+                placeholder={`Your lyrics will appear here after generation.\n\nTip: Use ⌘+Enter to generate, ⌘+S to save.`}
+                className="w-full h-96 rounded-xl font-mono text-sm resize-none" />
+
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="outline" onClick={generate} disabled={loading || !topic} className="rounded-xl gap-1.5 text-sm">
                   <RefreshCw className="w-4 h-4" /> Regenerate
                 </Button>
-                <Button
-                  className="bg-pink-600 hover:bg-pink-500 rounded-xl gap-1.5"
-                >
-                  <Save className="w-4 h-4" /> Save Version
+                <Button onClick={saveLyrics} disabled={saving || !lyrics}
+                  className="bg-pink-600 hover:bg-pink-500 rounded-xl gap-1.5 text-sm font-bold">
+                  <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save (⌘S)'}
                 </Button>
               </div>
             </div>
