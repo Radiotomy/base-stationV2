@@ -29,7 +29,7 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
 }
 
 // ── Nuro (instrument music — no lyrics) ─────────────────────────────────────
-async function generateWithNuro({ genre, mood, duration }) {
+async function generateWithNuro({ genre, mood, duration, nuro_version }) {
   const res = await fetch(`${AI_BASE}/nuro/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${NURO_API_KEY}`, 'Content-Type': 'application/json' },
@@ -38,6 +38,7 @@ async function generateWithNuro({ genre, mood, duration }) {
       genre: genre || 'Pop',
       mood: mood || 'Dynamic/Energetic',
       duration: Math.min(Math.max(duration || 60, 30), 240),
+      ...(nuro_version && { version: nuro_version }),
     }),
   });
   const data = await res.json();
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version } = await req.json();
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
@@ -105,7 +106,7 @@ Deno.serve(async (req) => {
       if (provider === 'loudly' && LOUDLY_API_KEY)
         providerResult = await generateWithLoudly({ genre, mood, tempo, duration });
       else if (provider === 'nuro')
-        providerResult = await generateWithNuro({ genre, mood, duration });
+        providerResult = await generateWithNuro({ genre, mood, duration, nuro_version });
       else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
       else // default: sonic

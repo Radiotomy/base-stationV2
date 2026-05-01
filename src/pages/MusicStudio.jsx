@@ -20,12 +20,18 @@ const PROVIDERS = [
 ];
 
 const SONIC_MODELS = [
-  { value: 'sonic-v3-5',      label: 'v3.5',      desc: 'Legacy' },
-  { value: 'sonic-v4',        label: 'v4',         desc: 'Improved quality' },
-  { value: 'sonic-v4-5',      label: 'v4.5',       desc: 'Enhanced vocals' },
-  { value: 'sonic-v4-5-plus', label: 'v4.5 Plus',  desc: 'Premium quality' },
-  { value: 'sonic-v5',        label: 'v5',         desc: 'Latest' },
-  { value: 'sonic-v5-5',      label: 'v5.5',       desc: 'Best quality' },
+  { value: 'sonic-v3-5',      label: 'v3.5',        desc: 'Legacy' },
+  { value: 'sonic-v4',        label: 'v4',           desc: 'Improved quality' },
+  { value: 'sonic-v4-5',      label: 'v4.5',         desc: 'Enhanced vocals' },
+  { value: 'sonic-v4-5-all',  label: 'v4.5 All',    desc: 'Fast variant' },
+  { value: 'sonic-v4-5-plus', label: 'v4.5 Plus',   desc: 'Premium quality' },
+  { value: 'sonic-v5',        label: 'v5',           desc: 'Latest' },
+  { value: 'sonic-v5-5',      label: 'v5.5',         desc: 'Best quality' },
+];
+
+const NURO_MODELS = [
+  { value: 'v1.0', label: 'v1.0', desc: 'Classic' },
+  { value: 'v2.0', label: 'v2.0', desc: 'Structure control' },
 ];
 
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
@@ -54,6 +60,7 @@ function CreditEstimate({ provider, duration }) {
 export default function MusicStudio() {
   const [provider, setProvider] = useState('sonic');
   const [sonicModel, setSonicModel] = useState('sonic-v4-5');
+  const [nuroModel, setNuroModel] = useState('v1.0');
   const [duration, setDuration] = useState(30);
   const [genre, setGenre] = useState('Hip-Hop');
   const [mood, setMood] = useState('Energetic');
@@ -89,6 +96,7 @@ export default function MusicStudio() {
         tempo: parseInt(tempo) || 120,
         sound_prompt: soundPrompt || `${mood} ${genre} track`,
         ...(provider === 'sonic' && { model: sonicModel }),
+        ...(provider === 'nuro' && { nuro_version: nuroModel }),
       });
       if (res.data?.audio_url || res.data?.output_url) {
         // Synchronous result
@@ -223,6 +231,39 @@ export default function MusicStudio() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Nuro Model Version (BGM mode only) */}
+            {provider === 'nuro' && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model Version <span className="normal-case text-muted-foreground/60">(BGM)</span></p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {NURO_MODELS.map(m => (
+                    <button key={m.value} type="button" onClick={() => setNuroModel(m.value)}
+                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${nuroModel === m.value ? 'border-pink-500 bg-pink-500/10' : 'border-border bg-card hover:border-pink-500/40'}`}>
+                      <p className="text-xs font-bold text-foreground">{m.label}</p>
+                      <p className="text-xs text-muted-foreground">{m.desc}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground/60 mt-1">v2.0 adds segment/structure control</p>
+              </div>
+            )}
+
+            {/* Producer — single model note */}
+            {provider === 'producer' && (
+              <div className="px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <p className="text-xs font-bold text-purple-300">Google Lyria 3 Pro</p>
+                <p className="text-xs text-muted-foreground">Single model — studio-grade quality, ~30s generation</p>
+              </div>
+            )}
+
+            {/* Loudly — no model versions */}
+            {provider === 'loudly' && (
+              <div className="px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                <p className="text-xs font-bold text-blue-300">Loudly Engine</p>
+                <p className="text-xs text-muted-foreground">Single optimized model — no version selection</p>
               </div>
             )}
 
