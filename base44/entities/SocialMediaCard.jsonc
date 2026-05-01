@@ -1,0 +1,114 @@
+{
+  "name": "SocialMediaCard",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "artist_name": {
+      "type": "string"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "release_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "cover_image_url": {
+      "type": "string",
+      "description": "Album/track cover art"
+    },
+    "artist_avatar_url": {
+      "type": "string"
+    },
+    "bio_snippet": {
+      "type": "string",
+      "description": "Short bio or tagline"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "mood": {
+      "type": "string"
+    },
+    "spotify_url": {
+      "type": "string"
+    },
+    "apple_music_url": {
+      "type": "string"
+    },
+    "youtube_url": {
+      "type": "string"
+    },
+    "instagram_handle": {
+      "type": "string"
+    },
+    "tiktok_handle": {
+      "type": "string"
+    },
+    "twitter_handle": {
+      "type": "string"
+    },
+    "primary_color": {
+      "type": "string",
+      "description": "Hex color for branding"
+    },
+    "template_style": {
+      "type": "string",
+      "enum": [
+        "modern_minimal",
+        "vibrant_gradient",
+        "dark_moody",
+        "playful_bold",
+        "sleek_premium"
+      ],
+      "default": "modern_minimal"
+    },
+    "generated_cards": {
+      "type": "object",
+      "description": "URLs for platform-specific generated images",
+      "properties": {
+        "instagram_post": {
+          "type": "string"
+        },
+        "instagram_story": {
+          "type": "string"
+        },
+        "twitter_card": {
+          "type": "string"
+        },
+        "facebook_cover": {
+          "type": "string"
+        },
+        "tiktok_thumbnail": {
+          "type": "string"
+        },
+        "pinterest_pin": {
+          "type": "string"
+        },
+        "linkedin_post": {
+          "type": "string"
+        }
+      }
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "user_id",
+    "artist_name",
+    "track_title"
+  ]
+}
