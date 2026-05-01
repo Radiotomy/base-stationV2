@@ -6,7 +6,9 @@ import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
   LogOut, User, BarChart3, Mic2, Film, Upload, Settings
 } from "lucide-react";
+// Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
+import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: Home },
@@ -86,6 +88,7 @@ export default function Header({ user }) {
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
+          {user && <CreditBalanceWidget />}
           {user && (
             <div className="relative">
               <button
@@ -114,6 +117,13 @@ export default function Header({ user }) {
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
                       >
                         <User className="w-4 h-4" /> My Profile
+                      </Link>
+                      <Link
+                        to="/credits"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-yellow-400 hover:bg-yellow-500/10 transition-all"
+                      >
+                        <Zap className="w-4 h-4" /> Credits & Plans
                       </Link>
                       {isCreator && (
                         <Link

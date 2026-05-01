@@ -42,6 +42,7 @@ import AdminSolana from './pages/admin/AdminSolana';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminAIIntegrations from './pages/admin/AdminAIIntegrations';
 import CreatorDashboard from './pages/CreatorDashboard';
+import Credits from './pages/Credits';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -96,6 +97,7 @@ const AuthenticatedApp = () => {
           <Route path="/solana" element={<SolanaRegistry />} />
           <Route path="/blockchain" element={<BlockchainRegistry />} />
           <Route path="/creator-dashboard" element={<CreatorDashboard />} />
+          <Route path="/credits" element={<Credits />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />

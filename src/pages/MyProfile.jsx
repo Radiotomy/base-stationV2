@@ -645,7 +645,7 @@ export default function MyProfile() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-12">
           {[
             { to: "/creator-dashboard", label: "🎵 My Studio", color: "from-purple-600 to-indigo-600" },
-            { to: "/submit", label: "📤 Submit Track", color: "from-emerald-600 to-teal-600" },
+            { to: "/credits", label: "⚡ Credits & Plans", color: "from-yellow-600 to-orange-600" },
             { to: "/music-studio", label: "🎛️ Music Studio", color: "from-blue-600 to-cyan-600" },
             { to: "/voice-creator", label: "🎤 Voice Creator", color: "from-pink-600 to-rose-600" },
           ].map(({ to, label, color }) => (

@@ -7,6 +7,7 @@ import {
   Download, Trash2, Edit, Mic2, Film, Image, FileText,
   Plus, ExternalLink, Clock, CheckCircle, AlertCircle, Folder
 } from "lucide-react";
+import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -130,9 +131,19 @@ export default function CreatorDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
       {/* Hero */}
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 Studio Dashboard</h1>
-        <p className="text-muted-foreground">Your tracks, generated assets, analytics & earnings — all in one place.</p>
+      <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 Studio Dashboard</h1>
+          <p className="text-muted-foreground">Your tracks, generated assets, analytics & earnings — all in one place.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <CreditBalanceWidget />
+          <Link to="/credits">
+            <Button variant="outline" className="rounded-xl gap-2 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10 text-sm">
+              <Zap className="w-4 h-4" /> Get Credits
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}
