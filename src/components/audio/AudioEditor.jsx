@@ -160,8 +160,8 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
         }
       }
 
-      // Always draw placeholder as fallback or when not playing
-      if (!drewData && duration > 0) {
+      // Always draw placeholder as fallback
+      if (!drewData) {
         ctx2d.fillStyle = 'hsl(270,60%,40%)';
         const barWidth = 4;
         const gap = 2;
