@@ -62,27 +62,27 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
 
         if (!sourceConnected.current && ctx.createMediaElementAudioSource) {
           const source = ctx.createMediaElementAudioSource(audio);
-      const gain = ctx.createGain();
-      const bassFilter = ctx.createBiquadFilter();
-      const midFilter = ctx.createBiquadFilter();
-      const trebleFilter = ctx.createBiquadFilter();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
+        const gain = ctx.createGain();
+        const bassFilter = ctx.createBiquadFilter();
+        const midFilter = ctx.createBiquadFilter();
+        const trebleFilter = ctx.createBiquadFilter();
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
 
-      bassFilter.type = 'lowshelf';
-      bassFilter.frequency.value = 200;
-      midFilter.type = 'peaking';
-      midFilter.frequency.value = 1000;
-      midFilter.Q.value = 1;
-      trebleFilter.type = 'highshelf';
-      trebleFilter.frequency.value = 4000;
+        bassFilter.type = 'lowshelf';
+        bassFilter.frequency.value = 200;
+        midFilter.type = 'peaking';
+        midFilter.frequency.value = 1000;
+        midFilter.Q.value = 1;
+        trebleFilter.type = 'highshelf';
+        trebleFilter.frequency.value = 4000;
 
-      source.connect(bassFilter);
-      bassFilter.connect(midFilter);
-      midFilter.connect(trebleFilter);
-      trebleFilter.connect(gain);
-      gain.connect(analyser);
-      analyser.connect(ctx.destination);
+        source.connect(bassFilter);
+        bassFilter.connect(midFilter);
+        midFilter.connect(trebleFilter);
+        trebleFilter.connect(gain);
+        gain.connect(analyser);
+        analyser.connect(ctx.destination);
 
           gainNodeRef.current = gain;
           bassRef.current = bassFilter;
@@ -90,6 +90,7 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
           trebleRef.current = trebleFilter;
           analyserRef.current = analyser;
           sourceConnected.current = true;
+          console.log('✅ Web Audio graph initialized:', { audioUrl, contextState: ctx.state, analyserBins: analyser.frequencyBinCount });
         }
       } catch (err) {
         console.error('Web Audio API initialization failed:', err);
@@ -184,14 +185,19 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
       let frame = 0;
       const draw = () => {
         frame++;
+        if (frame === 1) console.log('🎬 Animation loop started, analyser:', analyserRef.current ? 'ready' : 'null');
         drawFrame();
         rafRef.current = requestAnimationFrame(draw);
       };
       draw();
-      return () => cancelAnimationFrame(rafRef.current);
+      return () => {
+        console.log('🛑 Animation stopped after', frame, 'frames');
+        cancelAnimationFrame(rafRef.current);
+      };
     }
 
     // Draw static once when not playing
+    console.log('📊 Drawing static waveform, duration:', duration);
     drawFrame();
   }, [isPlaying, duration, analyserRef]);
 
@@ -205,8 +211,19 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
     const audio = audioRef.current;
     if (!audio) return;
     if (ctxRef.current?.state === 'suspended') ctxRef.current.resume();
-    if (isPlaying) { audio.pause(); setIsPlaying(false); }
-    else { audio.play(); setIsPlaying(true); }
+    if (isPlaying) { 
+      audio.pause(); 
+      setIsPlaying(false);
+      console.log('⏸️ Audio paused');
+    }
+    else { 
+      audio.play().then(() => {
+        console.log('▶️ Audio playing, analyser ready:', analyserRef.current ? 'YES' : 'NO');
+      }).catch(err => {
+        console.error('❌ Play failed:', err);
+      });
+      setIsPlaying(true); 
+    }
   };
 
   const handleSave = () => {
