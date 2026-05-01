@@ -1,21 +1,33 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   BarChart3, Music, Zap, DollarSign, TrendingUp, Eye, Heart,
-  Download, Trash2, Edit
+  Download, Trash2, Edit, Mic2, Film, Image, FileText,
+  Plus, ExternalLink, Clock, CheckCircle, AlertCircle, Folder
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+
+const STATUS_COLOR = {
+  approved: "bg-emerald-500/20 text-emerald-400",
+  pending:  "bg-yellow-500/20 text-yellow-400",
+  rejected: "bg-destructive/20 text-destructive",
+};
+
+const ASSET_ICONS = {
+  track:    { icon: Music,    color: "from-blue-600 to-cyan-700" },
+  lyric:    { icon: FileText, color: "from-pink-600 to-rose-700" },
+  coverart: { icon: Image,    color: "from-purple-600 to-violet-700" },
+  project:  { icon: Film,     color: "from-indigo-600 to-purple-700" },
+};
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="p-5 rounded-2xl bg-card border border-border space-y-2"
-    >
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      className="p-5 rounded-2xl bg-card border border-border space-y-2">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground font-semibold">{label}</p>
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
@@ -27,38 +39,87 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
+function AssetCard({ asset, onDelete }) {
+  const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all flex items-center gap-4 group">
+      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
+        {asset.thumbnail_url
+          ? <img src={asset.thumbnail_url} alt="" className="w-full h-full object-cover" />
+          : <Icon className="w-5 h-5 text-white/70" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-bold text-sm text-foreground truncate">{asset.title}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <Badge variant="outline" className="text-xs capitalize px-1.5 py-0">{asset.asset_type}</Badge>
+          {asset.metadata?.genre && <span className="text-xs text-muted-foreground capitalize">{asset.metadata.genre}</span>}
+          {asset.metadata?.bpm && <span className="text-xs text-muted-foreground">{asset.metadata.bpm} BPM</span>}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        {asset.file_url && (
+          <a href={asset.file_url} target="_blank" rel="noopener noreferrer">
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Button>
+          </a>
+        )}
+        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(asset.id)}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CreatorDashboard() {
   const [user, setUser] = useState(null);
   const [tracks, setTracks] = useState([]);
+  const [assets, setAssets] = useState([]);
+  const [activeTab, setActiveTab] = useState("library");
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.all([
-      base44.auth.me(),
-      base44.entities.TrackSubmission.filter({ artist_id: "current_user" }, "-created_date", 100),
-      base44.entities.UserCredit.filter({}, "-created_date", 1),
-    ])
-      .then(([authUser, userTracks, creditData]) => {
-        if (!authUser?.is_creator) {
-          navigate("/");
-          return;
-        }
-        setUser(authUser);
+    base44.auth.me().then(u => {
+      if (!u) { navigate("/"); return; }
+      setUser(u);
+      Promise.all([
+        base44.entities.TrackSubmission.filter({ artist_id: u.id }, "-created_date", 50),
+        base44.entities.UserAsset.filter({ user_id: u.id }, "-created_date", 100),
+      ]).then(([userTracks, userAssets]) => {
         setTracks(userTracks);
+        setAssets(userAssets);
         setStats({
           total_tracks: userTracks.length,
           published: userTracks.filter(t => t.status === "approved").length,
-          drafts: userTracks.filter(t => t.status === "pending").length,
-          total_plays: userTracks.reduce((sum, t) => sum + (t.play_count || 0), 0),
-          total_likes: userTracks.reduce((sum, t) => sum + (t.like_count || 0), 0),
-          revenue_cents: creditData[0]?.tips_received_cents || 0,
+          pending: userTracks.filter(t => t.status === "pending").length,
+          total_plays: userTracks.reduce((s, t) => s + (t.play_count || 0), 0),
+          total_likes: userTracks.reduce((s, t) => s + (t.like_count || 0), 0),
+          total_assets: userAssets.length,
         });
         setLoading(false);
-      })
-      .catch(() => navigate("/"));
+      });
+    }).catch(() => navigate("/"));
   }, [navigate]);
+
+  const deleteAsset = async (id) => {
+    await base44.entities.UserAsset.delete(id);
+    setAssets(a => a.filter(x => x.id !== id));
+    toast.success("Asset deleted");
+  };
+
+  const assetsByType = {
+    all: assets,
+    track: assets.filter(a => a.asset_type === "track"),
+    lyric: assets.filter(a => a.asset_type === "lyric"),
+    coverart: assets.filter(a => a.asset_type === "coverart"),
+    project: assets.filter(a => a.asset_type === "project"),
+  };
+  const [assetFilter, setAssetFilter] = useState("all");
 
   if (loading) return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -69,126 +130,141 @@ export default function CreatorDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
       {/* Hero */}
-      <div className="mb-12">
-        <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">
-          🎵 Studio Dashboard
-        </h1>
-        <p className="text-muted-foreground">Manage your tracks, analytics, and earnings.</p>
+      <div className="mb-10">
+        <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 Studio Dashboard</h1>
+        <p className="text-muted-foreground">Your tracks, generated assets, analytics & earnings — all in one place.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-12">
-        <StatCard
-          icon={Music}
-          label="Total Tracks"
-          value={stats.total_tracks}
-          color="bg-purple-600"
-        />
-        <StatCard
-          icon={Zap}
-          label="Published"
-          value={stats.published}
-          color="bg-emerald-600"
-        />
-        <StatCard
-          icon={Edit}
-          label="Drafts"
-          value={stats.drafts}
-          color="bg-blue-600"
-        />
-        <StatCard
-          icon={Eye}
-          label="Total Plays"
-          value={stats.total_plays.toLocaleString()}
-          color="bg-orange-600"
-        />
-        <StatCard
-          icon={Heart}
-          label="Total Likes"
-          value={stats.total_likes.toLocaleString()}
-          color="bg-pink-600"
-        />
-        <StatCard
-          icon={DollarSign}
-          label="Revenue"
-          value={`$${(stats.revenue_cents / 100).toFixed(2)}`}
-          color="bg-yellow-600"
-        />
-      </div>
+      {stats && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+          <StatCard icon={Music}      label="Submitted"   value={stats.total_tracks}          color="bg-purple-600" />
+          <StatCard icon={CheckCircle} label="Published"  value={stats.published}              color="bg-emerald-600" />
+          <StatCard icon={Clock}      label="Pending"     value={stats.pending}                color="bg-yellow-600" />
+          <StatCard icon={Eye}        label="Total Plays" value={stats.total_plays.toLocaleString()} color="bg-orange-600" />
+          <StatCard icon={Heart}      label="Total Likes" value={stats.total_likes.toLocaleString()} color="bg-pink-600" />
+          <StatCard icon={Folder}     label="Assets"      value={stats.total_assets}           color="bg-blue-600" />
+        </div>
+      )}
 
-      {/* Creation Shortcuts */}
-      <div className="mb-12">
-        <h2 className="text-xl font-black text-foreground mb-4">Quick Create</h2>
+      {/* Quick Create */}
+      <div className="mb-10">
+        <h2 className="text-lg font-black text-foreground mb-4">Quick Create</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { to: "/lyrics-studio", label: "🎤 Write Lyrics", color: "from-pink-600 to-rose-600" },
-            { to: "/music-studio", label: "🎵 Generate Music", color: "from-blue-600 to-cyan-600" },
-            { to: "/video-studio", label: "🎬 Create Video", color: "from-indigo-600 to-purple-600" },
-            { to: "/submit", label: "📤 Submit Track", color: "from-emerald-600 to-teal-600" },
+            { to: "/lyrics-studio",   label: "🎤 Write Lyrics",    color: "from-pink-600 to-rose-600" },
+            { to: "/music-studio",    label: "🎵 Generate Music",   color: "from-blue-600 to-cyan-600" },
+            { to: "/cover-art-studio",label: "🎨 Cover Art",        color: "from-purple-600 to-violet-600" },
+            { to: "/video-studio",    label: "🎬 Create Video",     color: "from-indigo-600 to-purple-600" },
           ].map(({ to, label, color }) => (
-            <Button
-              key={to}
-              onClick={() => navigate(to)}
-              className={`bg-gradient-to-r ${color} text-white font-bold rounded-xl py-6 h-auto flex flex-col gap-1`}
-            >
+            <Link key={to} to={to}
+              className={`bg-gradient-to-r ${color} text-white font-bold rounded-xl py-4 text-center text-sm hover:opacity-90 transition-opacity`}>
               {label}
-            </Button>
+            </Link>
           ))}
         </div>
       </div>
 
-      {/* Tracks Library */}
-      <div>
-        <h2 className="text-xl font-black text-foreground mb-4">📚 Your Library</h2>
-        {tracks.length === 0 ? (
-          <div className="text-center py-12 border border-dashed border-border rounded-2xl">
-            <Music className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">No tracks yet. Create your first one!</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {tracks.map((track) => (
-              <motion.div
-                key={track.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 hover:bg-purple-500/5 transition-all flex items-center justify-between group"
-              >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
-                  <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-800 to-indigo-900 flex-shrink-0 flex items-center justify-center">
-                    <Music className="w-5 h-5 text-white/30" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-foreground truncate">{track.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className={`text-xs ${
-                        track.status === "approved"
-                          ? "bg-emerald-500/20 text-emerald-400 border-0"
-                          : track.status === "rejected"
-                          ? "bg-destructive/20 text-destructive border-0"
-                          : "bg-yellow-500/20 text-yellow-400 border-0"
-                      }`}>
-                        {track.status}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {track.play_count || 0} plays · {track.like_count || 0} likes
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </motion.div>
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 border-b border-border">
+        {[
+          { key: "library", label: `📂 Asset Library (${assets.length})` },
+          { key: "tracks",  label: `📤 Submissions (${tracks.length})` },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setActiveTab(key)}
+            className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === key ? "border-purple-500 text-purple-400" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Asset Library Tab */}
+      {activeTab === "library" && (
+        <div>
+          {/* Filter chips */}
+          <div className="flex gap-2 mb-5 flex-wrap">
+            {[
+              { key: "all",      label: `All (${assets.length})` },
+              { key: "track",    label: `🎵 Tracks (${assetsByType.track.length})` },
+              { key: "lyric",    label: `📝 Lyrics (${assetsByType.lyric.length})` },
+              { key: "coverart", label: `🎨 Cover Art (${assetsByType.coverart.length})` },
+              { key: "project",  label: `🎬 Videos (${assetsByType.project.length})` },
+            ].map(({ key, label }) => (
+              <button key={key} onClick={() => setAssetFilter(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${assetFilter === key ? "bg-purple-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                {label}
+              </button>
             ))}
           </div>
-        )}
-      </div>
+
+          {assetsByType[assetFilter].length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-border rounded-2xl">
+              <Folder className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
+              <p className="text-muted-foreground text-sm">No assets yet — generate something in the studios!</p>
+              <Link to="/music-studio" className="text-purple-400 text-xs hover:text-purple-300 mt-2 block">Go to Music Studio →</Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {assetsByType[assetFilter].map(asset => (
+                <AssetCard key={asset.id} asset={asset} onDelete={deleteAsset} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Submissions Tab */}
+      {activeTab === "tracks" && (
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-sm text-muted-foreground">{tracks.length} track{tracks.length !== 1 ? "s" : ""} submitted</p>
+            <Link to="/submit">
+              <Button className="rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-500 text-sm font-bold">
+                <Plus className="w-4 h-4" /> Submit New Track
+              </Button>
+            </Link>
+          </div>
+
+          {tracks.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-border rounded-2xl">
+              <Music className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
+              <p className="text-muted-foreground text-sm">No tracks submitted yet.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {tracks.map(track => (
+                <motion.div key={track.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all flex items-center gap-4 group">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-800 to-indigo-900 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                    {track.cover_image_url
+                      ? <img src={track.cover_image_url} alt={track.title} className="w-full h-full object-cover" />
+                      : <Music className="w-5 h-5 text-white/30" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm text-foreground truncate">{track.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Badge className={`text-xs border-0 ${STATUS_COLOR[track.status] || "bg-muted text-muted-foreground"}`}>
+                        {track.status}
+                      </Badge>
+                      {track.genre && <span className="text-xs text-muted-foreground capitalize">{track.genre}</span>}
+                      <span className="text-xs text-muted-foreground">{track.play_count || 0} plays · {track.like_count || 0} likes</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    {track.track_url && (
+                      <a href={track.track_url} target="_blank" rel="noopener noreferrer">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
