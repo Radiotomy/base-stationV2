@@ -14,6 +14,8 @@ const NAV = [
   { to: "/admin/artists", label: "Artists", icon: Users },
   { to: "/admin/challenges", label: "Challenges", icon: Trophy },
   { to: "/admin/featured", label: "Featured", icon: Star },
+  { to: "/admin/analytics", label: "Analytics", icon: TrendingUp },
+  { to: "/admin/ai-integrations", label: "AI Integrations", icon: Zap },
   { to: "/admin/solana", label: "Solana Registry", icon: Shield },
 ];
 

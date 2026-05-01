@@ -40,6 +40,7 @@ import AdminFeatured from './pages/admin/AdminFeatured';
 import AdminArtists from './pages/admin/AdminArtists';
 import AdminSolana from './pages/admin/AdminSolana';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminAIIntegrations from './pages/admin/AdminAIIntegrations';
 import CreatorDashboard from './pages/CreatorDashboard';
 import MobileLayout from './components/layout/MobileLayout';
 
@@ -103,6 +104,7 @@ const AuthenticatedApp = () => {
           <Route path="featured" element={<AdminFeatured />} />
           <Route path="artists" element={<AdminArtists />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="ai-integrations" element={<AdminAIIntegrations />} />
           <Route path="solana" element={<AdminSolana />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />

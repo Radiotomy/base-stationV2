@@ -1,0 +1,65 @@
+{
+  "name": "APIUsageLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "loudly",
+        "nuro",
+        "sonic",
+        "producer",
+        "tempcolor",
+        "ltx",
+        "core"
+      ]
+    },
+    "task": {
+      "type": "string",
+      "description": "e.g. generate_music, generate_lyrics, generate_video"
+    },
+    "credits_used": {
+      "type": "number",
+      "default": 0
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "pending"
+      ],
+      "default": "pending"
+    },
+    "duration_ms": {
+      "type": "number"
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "job_id": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "provider",
+    "task"
+  ]
+}
