@@ -66,7 +66,7 @@ export default function Leaderboard() {
               Top <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">Creators</span>
             </h1>
             <p className="text-yellow-200/70 text-lg max-w-xl mx-auto">
-              Earn XP by creating, competing, and engaging. Rise through the ranks to become an AIVTV Legend.
+              Earn XP by creating, competing, and engaging. Rise through the ranks to become a Base Station Legend.
             </p>
           </motion.div>
         </div>
