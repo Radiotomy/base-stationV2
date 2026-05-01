@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import VoicePersonaForm from '@/components/voice/VoicePersonaForm';
 import VoicePersonaCard from '@/components/voice/VoicePersonaCard';
+import VoiceSynthesisPanel from '@/components/voice/VoiceSynthesisPanel';
 
 export default function VoiceCreator() {
   const [user, setUser] = useState(null);
@@ -182,69 +183,55 @@ export default function VoiceCreator() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-12 bg-card rounded-2xl border border-border p-8"
+            className="mt-12 space-y-6"
           >
-            <div className="flex items-start justify-between mb-6">
-              <h3 className="text-2xl font-black text-foreground">{selectedPersona.name}</h3>
-              <Button
-                onClick={() => setSelectedPersona(null)}
-                variant="ghost"
-                size="sm"
-                className="rounded-xl"
-              >
-                ✕
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Info */}
-              <div className="space-y-4">
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Description</p>
-                  <p className="text-foreground">{selectedPersona.description}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Voice Type</p>
-                    <Badge className="capitalize bg-pink-500/20 text-pink-300 border-0">{selectedPersona.voice_type}</Badge>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Age</p>
-                    <Badge className="capitalize bg-blue-500/20 text-blue-300 border-0">{selectedPersona.age}</Badge>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Characteristics</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedPersona.characteristics?.map((char, i) => (
-                      <Badge key={i} variant="outline" className="capitalize text-xs">
-                        {char}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Usage Count</p>
-                  <p className="text-lg font-bold text-foreground">{selectedPersona.usage_count} tracks</p>
-                </div>
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="flex items-start justify-between mb-4">
+                <h3 className="text-2xl font-black text-foreground">{selectedPersona.name}</h3>
+                <Button onClick={() => setSelectedPersona(null)} variant="ghost" size="sm" className="rounded-xl">✕</Button>
               </div>
 
-              {/* Audio Sample */}
-              {selectedPersona.sample_url && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
+                  {selectedPersona.description && (
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Description</p>
+                      <p className="text-foreground text-sm">{selectedPersona.description}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Voice Type</p>
+                      <Badge className="capitalize bg-pink-500/20 text-pink-300 border-0">{selectedPersona.voice_type}</Badge>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold mb-1">Age</p>
+                      <Badge className="capitalize bg-blue-500/20 text-blue-300 border-0">{selectedPersona.age}</Badge>
+                    </div>
+                  </div>
+                  {selectedPersona.characteristics?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Characteristics</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPersona.characteristics.map((c, i) => (
+                          <Badge key={i} variant="outline" className="capitalize text-xs">{c}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {selectedPersona.sample_url && (
                   <div>
                     <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Voice Sample</p>
                     <audio controls className="w-full rounded-xl" src={selectedPersona.sample_url} />
                   </div>
-                  <Button className="w-full bg-pink-600 hover:bg-pink-500 rounded-xl gap-2">
-                    <Play className="w-4 h-4" /> Use This Voice
-                  </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
+
+            {/* Live Synthesis Test */}
+            <VoiceSynthesisPanel persona={selectedPersona} />
           </motion.div>
         )}
       </div>
