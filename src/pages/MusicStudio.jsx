@@ -19,6 +19,15 @@ const PROVIDERS = [
   { value: 'producer', label: 'Producer',  desc: 'Full production',       color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
 ];
 
+const SONIC_MODELS = [
+  { value: 'sonic-v3-5',      label: 'v3.5',      desc: 'Legacy' },
+  { value: 'sonic-v4',        label: 'v4',         desc: 'Improved quality' },
+  { value: 'sonic-v4-5',      label: 'v4.5',       desc: 'Enhanced vocals' },
+  { value: 'sonic-v4-5-plus', label: 'v4.5 Plus',  desc: 'Premium quality' },
+  { value: 'sonic-v5',        label: 'v5',         desc: 'Latest' },
+  { value: 'sonic-v5-5',      label: 'v5.5',       desc: 'Best quality' },
+];
+
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
 const MOOD_CHIPS  = ['Energetic', 'Chill', 'Dark', 'Happy', 'Sad', 'Uplifting', 'Aggressive', 'Romantic', 'Melancholic'];
 
@@ -43,7 +52,8 @@ function CreditEstimate({ provider, duration }) {
 }
 
 export default function MusicStudio() {
-  const [provider, setProvider] = useState('loudly');
+  const [provider, setProvider] = useState('sonic');
+  const [sonicModel, setSonicModel] = useState('sonic-v4-5');
   const [duration, setDuration] = useState(30);
   const [genre, setGenre] = useState('Hip-Hop');
   const [mood, setMood] = useState('Energetic');
@@ -78,6 +88,7 @@ export default function MusicStudio() {
         provider, duration, genre, mood,
         tempo: parseInt(tempo) || 120,
         sound_prompt: soundPrompt || `${mood} ${genre} track`,
+        ...(provider === 'sonic' && { model: sonicModel }),
       });
       if (res.data?.audio_url || res.data?.output_url) {
         // Synchronous result
@@ -198,6 +209,22 @@ export default function MusicStudio() {
                 ))}
               </div>
             </div>
+
+            {/* Sonic Model Version */}
+            {provider === 'sonic' && (
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model Version</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {SONIC_MODELS.map(m => (
+                    <button key={m.value} type="button" onClick={() => setSonicModel(m.value)}
+                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${sonicModel === m.value ? 'border-cyan-500 bg-cyan-500/10' : 'border-border bg-card hover:border-cyan-500/40'}`}>
+                      <p className="text-xs font-bold text-foreground">{m.label}</p>
+                      <p className="text-xs text-muted-foreground">{m.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* BPM */}
             <div>

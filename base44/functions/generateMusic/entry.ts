@@ -7,14 +7,14 @@ const PRODUCER_API_KEY = Deno.env.get('PRODUCER_API_KEY');
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
 // ── Sonic (description mode — no lyrics required) ────────────────────────────
-async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo }) {
+async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model }) {
   const tags = [genre, mood, tempo ? `${tempo}bpm` : null].filter(Boolean).join(', ');
   const res = await fetch(`${AI_BASE}/sonic/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       custom_mode: false,
-      mv: 'sonic-v4-5',
+      mv: model || 'sonic-v4-5',
       title: `${mood} ${genre} Track`,
       tags,
       gpt_description_prompt: sound_prompt || `A ${mood.toLowerCase()} ${genre} track at ${tempo || 120} BPM`,
@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics } = await req.json();
+            tempo, sound_prompt, lyrics, model } = await req.json();
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
       else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
       else // default: sonic
-        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo });
+        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model });
     } catch (providerErr) {
       // Try sonic as fallback
       if (provider !== 'sonic' && SONIC_API_KEY) {
