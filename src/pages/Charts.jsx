@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { TrendingUp, TrendingDown, Minus, Play, ChevronRight, Music, Flame, Calendar, Clock, Globe } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Play, Music, Flame, Calendar, Globe, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -12,23 +12,46 @@ const PERIODS = [
 ];
 
 const GENRES = ["all", "hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "trap", "other"];
+const MOODS = ["all", "Energetic", "Chill", "Dark", "Happy", "Uplifting", "Aggressive", "Romantic"];
 
 export default function Charts() {
   const [tracks, setTracks] = useState([]);
+  const [allTracks, setAllTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState("weekly");
   const [genre, setGenre] = useState("all");
-  const [playingId, setPlayingId] = useState(null);
+  const [mood, setMood] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     loadCharts();
   }, [period, genre]);
+
+  useEffect(() => {
+    if (!search.trim() && mood === "all") {
+      setTracks(allTracks);
+      return;
+    }
+    let filtered = allTracks;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(t =>
+        t.track_title?.toLowerCase().includes(q) ||
+        t.artist_name?.toLowerCase().includes(q)
+      );
+    }
+    if (mood !== "all") {
+      filtered = filtered.filter(t => t.tags?.includes(mood.toLowerCase()) || t.track_title?.toLowerCase().includes(mood.toLowerCase()));
+    }
+    setTracks(filtered);
+  }, [search, mood, allTracks]);
 
   const loadCharts = async () => {
     setLoading(true);
     const query = { period };
     if (genre !== "all") query.genre = genre;
     const data = await base44.entities.TrackChart.filter(query, "-total_votes", 50);
+    setAllTracks(data);
     setTracks(data);
     setLoading(false);
   };
@@ -77,12 +100,38 @@ export default function Charts() {
           ))}
         </div>
 
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search tracks or artists…"
+            className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-input bg-card text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         {/* Genre Filter */}
-        <div className="flex gap-2 flex-wrap mb-8">
+        <div className="flex gap-2 flex-wrap mb-3">
           {GENRES.map(g => (
             <button key={g} onClick={() => setGenre(g)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all capitalize ${genre === g ? "bg-orange-600 border-orange-600 text-white" : "border-border text-muted-foreground hover:border-orange-500 hover:text-orange-400"}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all capitalize ${genre === g ? "bg-orange-600 border-orange-600 text-white" : "border-border text-muted-foreground hover:border-orange-500 hover:text-orange-400"}`}>
               {g}
+            </button>
+          ))}
+        </div>
+
+        {/* Mood Filter */}
+        <div className="flex gap-2 flex-wrap mb-8">
+          {MOODS.map(m => (
+            <button key={m} onClick={() => setMood(m)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${mood === m ? "bg-purple-600 border-purple-600 text-white" : "border-border text-muted-foreground hover:border-purple-500 hover:text-purple-400"}`}>
+              {m}
             </button>
           ))}
         </div>

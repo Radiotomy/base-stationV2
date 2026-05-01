@@ -1,0 +1,25 @@
+{
+  "name": "Reaction",
+  "type": "object",
+  "properties": {
+    "track_id": {
+      "type": "string",
+      "description": "ID of the TrackSubmission"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "emoji": {
+      "type": "string",
+      "description": "Reaction emoji: fire, heart, goat, mind_blown, clap"
+    }
+  },
+  "required": [
+    "track_id",
+    "user_id",
+    "emoji"
+  ]
+}

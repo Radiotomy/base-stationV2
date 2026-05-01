@@ -1,0 +1,39 @@
+{
+  "name": "Comment",
+  "type": "object",
+  "properties": {
+    "track_id": {
+      "type": "string",
+      "description": "ID of the TrackSubmission"
+    },
+    "track_title": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "parent_id": {
+      "type": "string",
+      "description": "For replies \u2014 parent comment ID"
+    },
+    "like_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "track_id",
+    "user_id",
+    "body"
+  ]
+}
