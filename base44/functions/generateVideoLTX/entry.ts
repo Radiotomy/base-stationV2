@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
 
     if (!LTX_API_KEY) return Response.json({ error: 'LTX_API_KEY not configured' }, { status: 500 });
 
-    const { prompt, duration = 5, aspect_ratio = '16:9' } = await req.json();
+    const { prompt, duration = 5, aspect_ratio = '16:9', mode = 'text', reference_image_url, reference_audio_url } = await req.json();
     if (!prompt) return Response.json({ error: 'Missing prompt' }, { status: 400 });
 
     // Create job record
@@ -18,15 +18,20 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email,
       job_type: 'video', provider: 'ltx',
       status: 'processing',
-      input_data: { prompt, duration, aspect_ratio },
+      input_data: { prompt, duration, aspect_ratio, mode },
       started_at: new Date().toISOString(),
     });
+
+    // Build request body based on mode
+    const ltxBody = { prompt, duration, aspect_ratio, style: 'cinematic' };
+    if (mode === 'image' && reference_image_url) ltxBody.reference_image_url = reference_image_url;
+    if (mode === 'audio' && reference_audio_url) ltxBody.reference_audio_url = reference_audio_url;
 
     // Call LTX Video API
     const ltxRes = await fetch('https://api.ltx.video/v1/video/generate', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${LTX_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, duration, aspect_ratio, style: 'cinematic' }),
+      body: JSON.stringify(ltxBody),
     });
 
     if (!ltxRes.ok) {

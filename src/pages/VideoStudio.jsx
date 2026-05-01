@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Film, Zap, Download, ArrowLeft, Save, RotateCcw,
-  CheckCircle, Sparkles, Clock, Image
+  CheckCircle, Sparkles, Clock, Image, Music, Upload, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,8 +33,14 @@ const PROMPT_TEMPLATES = [
 ];
 
 const STYLE_CHIPS = ['Cinematic', 'Dreamlike', 'Dark & Moody', 'Vibrant', 'Abstract', 'Realistic', 'Vintage', 'Futuristic'];
+const MODES = [
+  { id: 'text', label: '✍️ Text to Video', desc: 'Generate from a text prompt' },
+  { id: 'image', label: '🖼️ Image to Video', desc: 'Animate a reference image' },
+  { id: 'audio', label: '🎵 Audio to Video', desc: 'Visual synced to your track' },
+];
 
 export default function VideoStudio() {
+  const [mode, setMode] = useState('text');
   const [prompt, setPrompt] = useState('');
   const [duration, setDuration] = useState(5);
   const [aspectRatio, setAspectRatio] = useState('16:9');
@@ -44,6 +50,9 @@ export default function VideoStudio() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [versions, setVersions] = useState([]);
+  const [referenceImageUrl, setReferenceImageUrl] = useState('');
+  const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
+  const [uploadingRef, setUploadingRef] = useState(false);
 
   const onComplete = useCallback((data) => {
     setGenerating(false);
@@ -60,17 +69,35 @@ export default function VideoStudio() {
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
   const isProcessing = generating || (jobId && status === 'processing');
 
+  const handleRefUpload = async (e, type) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingRef(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      if (type === 'image') setReferenceImageUrl(file_url);
+      else setReferenceAudioUrl(file_url);
+      toast.success(`${type === 'image' ? 'Image' : 'Audio'} uploaded!`);
+    } catch (err) { toast.error(err.message); }
+    setUploadingRef(false);
+  };
+
   const generate = async () => {
-    if (!prompt) { toast.error('Enter a prompt'); return; }
+    if (!prompt && mode === 'text') { toast.error('Enter a prompt'); return; }
+    if (mode === 'image' && !referenceImageUrl) { toast.error('Upload a reference image'); return; }
+    if (mode === 'audio' && !referenceAudioUrl) { toast.error('Upload a reference audio track'); return; }
     setGenerating(true);
     setResult(null);
     setJobId('');
     try {
       const fullPrompt = style ? `${prompt}, ${style} style` : prompt;
       const res = await base44.functions.invoke('generateVideoLTX', {
-        prompt: fullPrompt,
+        prompt: fullPrompt || 'cinematic music visualizer',
         duration,
         aspect_ratio: aspectRatio,
+        mode,
+        reference_image_url: mode === 'image' ? referenceImageUrl : undefined,
+        reference_audio_url: mode === 'audio' ? referenceAudioUrl : undefined,
       });
       if (res.data?.video_url) {
         setResult(res.data);
@@ -134,6 +161,46 @@ export default function VideoStudio() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-10 space-y-6">
+
+        {/* Mode Switcher */}
+        <div className="flex gap-2 flex-wrap">
+          {MODES.map(m => (
+            <button key={m.id} type="button" onClick={() => setMode(m.id)}
+              className={`flex-1 min-w-[140px] p-3 rounded-xl border text-left transition-all ${mode === m.id ? 'border-indigo-500 bg-indigo-500/10' : 'border-border bg-card hover:border-indigo-500/40'}`}>
+              <p className="text-sm font-bold text-foreground">{m.label}</p>
+              <p className="text-xs text-muted-foreground">{m.desc}</p>
+            </button>
+          ))}
+        </div>
+
+        {/* Reference Upload for Image/Audio modes */}
+        {mode === 'image' && (
+          <div className="p-4 rounded-xl bg-card border border-border space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5"><Image className="w-3.5 h-3.5" /> Reference Image</p>
+            <label className="block cursor-pointer">
+              <input type="file" accept="image/*" onChange={e => handleRefUpload(e, 'image')} className="hidden" />
+              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${referenceImageUrl ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-indigo-500'}`}>
+                {uploadingRef ? <Loader2 className="w-5 h-5 mx-auto text-indigo-400 animate-spin" /> :
+                  referenceImageUrl ? <><img src={referenceImageUrl} className="w-24 h-24 object-cover rounded-lg mx-auto mb-1" alt="ref" /><p className="text-xs text-emerald-400">Image ready</p></> :
+                  <><Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" /><p className="text-xs text-muted-foreground">Click to upload image</p></>}
+              </div>
+            </label>
+          </div>
+        )}
+
+        {mode === 'audio' && (
+          <div className="p-4 rounded-xl bg-card border border-border space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5"><Music className="w-3.5 h-3.5" /> Reference Audio Track</p>
+            <label className="block cursor-pointer">
+              <input type="file" accept="audio/*" onChange={e => handleRefUpload(e, 'audio')} className="hidden" />
+              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${referenceAudioUrl ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-indigo-500'}`}>
+                {uploadingRef ? <Loader2 className="w-5 h-5 mx-auto text-indigo-400 animate-spin" /> :
+                  referenceAudioUrl ? <><audio controls src={referenceAudioUrl} className="w-full mb-1" /><p className="text-xs text-emerald-400">Audio ready</p></> :
+                  <><Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" /><p className="text-xs text-muted-foreground">Click to upload audio (MP3, WAV)</p></>}
+              </div>
+            </label>
+          </div>
+        )}
 
         {/* Prompt Templates */}
         <div>
