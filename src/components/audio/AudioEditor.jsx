@@ -136,15 +136,13 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
       ctx2d.fillStyle = 'hsl(240,10%,6%)';
       ctx2d.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Try to get real analyser data if available
-      if (analyserRef.current) {
-        const analyser = analyserRef.current;
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(data);
-        
-        // Only draw if we have actual data
-        const hasData = data.some(v => v > 0);
-        if (hasData || isPlaying) {
+      // Try to get real analyser data if available and playing
+      if (analyserRef.current && isPlaying) {
+        try {
+          const analyser = analyserRef.current;
+          const data = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(data);
+          
           const bw = (canvas.width / data.length) * 2.5;
           let x = 0;
           data.forEach(v => {
@@ -155,6 +153,8 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
             x += bw + 1;
           });
           return;
+        } catch (e) {
+          console.warn('Analyser error:', e);
         }
       }
 
@@ -172,9 +172,11 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
 
     // Animate while playing
     if (isPlaying) {
+      let frame = 0;
       const draw = () => {
-        rafRef.current = requestAnimationFrame(draw);
+        frame++;
         drawFrame();
+        rafRef.current = requestAnimationFrame(draw);
       };
       draw();
       return () => cancelAnimationFrame(rafRef.current);
@@ -182,7 +184,7 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
 
     // Draw static once when not playing
     drawFrame();
-  }, [isPlaying, duration]);
+  }, [isPlaying, duration, analyserRef]);
 
   // EQ handlers
   const applyBass = (val) => { setBass(val); if (bassRef.current) bassRef.current.gain.value = val; };

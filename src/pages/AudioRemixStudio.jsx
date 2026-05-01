@@ -125,10 +125,21 @@ export default function AudioRemixStudio() {
     setAnalyzingMeta(true);
     try {
       const res = await base44.functions.invoke('extractAudioMetadata', { audioUrl });
-      setMetadata(res.data);
-      toast.success('Analysis complete!');
-    } catch (err) { toast.error(err.message); }
-    setAnalyzingMeta(false);
+      if (res.data?.metadata) {
+        setMetadata(res.data.metadata);
+        toast.success('Analysis complete!');
+      } else if (res.data) {
+        setMetadata(res.data);
+        toast.success('Analysis complete!');
+      } else {
+        throw new Error('No metadata returned');
+      }
+    } catch (err) { 
+      console.error('Metadata analysis error:', err);
+      toast.error('Analysis failed: ' + err.message); 
+    } finally {
+      setAnalyzingMeta(false);
+    }
   };
 
   const saveToLibrary = async () => {
