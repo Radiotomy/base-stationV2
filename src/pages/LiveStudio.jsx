@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Radio, Play, Square, Users, Share2, Settings, Zap, ArrowLeft } from 'lucide-react';
+import { Radio, Play, Square, Zap, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import MultiTrackMixer from '@/components/audio/MultiTrackMixer';
+import LiveChatPanel from '@/components/live/LiveChatPanel';
 
 export default function LiveStudio() {
   const [title, setTitle] = useState('');
@@ -18,7 +19,12 @@ export default function LiveStudio() {
   const [viewerCount, setViewerCount] = useState(0);
   const [duration, setDuration] = useState(0);
   const [tracks, setTracks] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const mediaStream = useRef(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
 
   const createSession = async () => {
     if (!title) {
@@ -186,9 +192,9 @@ export default function LiveStudio() {
 
           {/* Editor Panel */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Waveform would go here */}
-            <div className="bg-card rounded-2xl border border-border p-6 min-h-48 flex items-center justify-center">
-              <p className="text-muted-foreground text-center">Live audio waveform visualization goes here</p>
+            {/* Waveform placeholder */}
+            <div className="bg-card rounded-2xl border border-border p-6 min-h-32 flex items-center justify-center">
+              <p className="text-muted-foreground text-center text-sm">Live audio waveform visualization</p>
             </div>
 
             {/* Multi-Track Mixer */}
@@ -198,6 +204,11 @@ export default function LiveStudio() {
                 <MultiTrackMixer tracks={tracks} onChange={() => {}} />
               </div>
             )}
+
+            {/* Live Chat */}
+            <div className="h-96">
+              <LiveChatPanel sessionId={sessionId} currentUser={currentUser} isLive={isLive} />
+            </div>
           </div>
         </div>
       </div>

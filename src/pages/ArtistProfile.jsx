@@ -12,6 +12,7 @@ import TipModal from "@/components/tipping/TipModal";
 import FollowButton from "@/components/follow/FollowButton";
 import TrackReactions from "@/components/community/TrackReactions";
 import TrackComments from "@/components/community/TrackComments";
+import TopFans from "@/components/community/TopFans";
 
 function StatBox({ value, label }) {
   return (
@@ -258,6 +259,9 @@ export default function ArtistProfile() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Top Fans */}
+        <TopFans artistId={id} />
 
         {/* Tracks */}
         <div className="mb-12">

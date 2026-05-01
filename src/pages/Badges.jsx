@@ -11,7 +11,18 @@ const RARITY_STYLES = {
   legendary: { border: "border-yellow-500/60", bg: "bg-yellow-900/20", label: "text-yellow-400", glow: "shadow-yellow-500/30 shadow-lg" },
 };
 
-const CATEGORY_FILTERS = ["all", "creator", "community", "challenge", "milestone", "special"];
+const CATEGORY_FILTERS = ["all", "creator", "community", "challenge", "milestone", "special", "fan"];
+
+const FAN_BADGE_SHOWCASE = [
+  { emoji: "🎧", name: "First Listener", desc: "Follow your first artist", rarity: "common", xp: 50 },
+  { emoji: "💬", name: "Voice of the Crowd", desc: "Leave 10 track comments", rarity: "common", xp: 100 },
+  { emoji: "🔥", name: "Hype Machine", desc: "React to 50 tracks", rarity: "rare", xp: 250 },
+  { emoji: "🐐", name: "Superfan", desc: "Follow 10 artists & comment 50×", rarity: "epic", xp: 500 },
+  { emoji: "👑", name: "Community Pillar", desc: "Top fan of 3 different artists", rarity: "legendary", xp: 1000 },
+  { emoji: "💸", name: "Tip Legend", desc: "Tip 5 artists", rarity: "rare", xp: 300 },
+  { emoji: "📻", name: "Radio Head", desc: "Listen to 20+ radio sessions", rarity: "common", xp: 150 },
+  { emoji: "🗳️", name: "Chart Maker", desc: "Vote on 25 tracks", rarity: "rare", xp: 200 },
+];
 
 export default function Badges() {
   const [allBadges, setAllBadges] = useState([]);
@@ -74,6 +85,32 @@ export default function Badges() {
             </button>
           ))}
         </div>
+
+        {/* Fan Badge Showcase */}
+        {(category === "all" || category === "fan") && (
+          <div className="mb-10">
+            <h2 className="text-lg font-black text-foreground mb-1 flex items-center gap-2">🎧 Fan Badges</h2>
+            <p className="text-xs text-muted-foreground mb-4">Earned by being an active listener & community member — no music creation needed.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {FAN_BADGE_SHOWCASE.map((badge, i) => {
+                const style = RARITY_STYLES[badge.rarity] || RARITY_STYLES.common;
+                return (
+                  <motion.div key={badge.name} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03 }}
+                    className={`relative p-4 rounded-2xl border ${style.border} ${style.bg} ${style.glow} flex flex-col items-center text-center`}>
+                    <div className="text-4xl mb-3">{badge.emoji}</div>
+                    <p className={`text-xs font-bold ${style.label}`}>{badge.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1 leading-tight">{badge.desc}</p>
+                    <div className={`mt-2 text-xs font-semibold capitalize ${style.label}`}>{badge.rarity}</div>
+                    <div className="text-xs text-yellow-400 mt-1">+{badge.xp} XP</div>
+                    <div className="absolute top-2 right-2">
+                      <Lock className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">

@@ -35,7 +35,10 @@ export default function Playlists() {
   };
 
   const filtered = playlists.filter(p => {
-    const matchesTab = tab === "featured" ? p.is_featured : tab === "mine" ? p.created_by === user?.email : true;
+    const matchesTab = tab === "featured" ? p.is_featured
+      : tab === "mine" ? p.created_by === user?.email
+      : tab === "community" ? !p.is_featured && p.is_public
+      : true;
     const matchesGenre = genre === "all" || p.genre === genre;
     const matchesSearch = !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.owner_name?.toLowerCase().includes(search.toLowerCase());
     return matchesTab && matchesGenre && matchesSearch;
@@ -75,10 +78,10 @@ export default function Playlists() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           {/* Tabs */}
-          <div className="flex gap-2 bg-muted/50 rounded-xl p-1 w-fit">
-            {[["featured", "⭐ Featured"], ["all", "🌍 All"], ["mine", "👤 Mine"]].map(([key, label]) => (
+          <div className="flex gap-2 bg-muted/50 rounded-xl p-1 w-fit flex-wrap">
+            {[["featured", "⭐ Featured"], ["community", "🎧 Fan Picks"], ["all", "🌍 All"], ["mine", "👤 Mine"]].map(([key, label]) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === key ? "bg-white dark:bg-zinc-800 shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === key ? "bg-white dark:bg-zinc-800 shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 {label}
               </button>
             ))}

@@ -1,0 +1,40 @@
+{
+  "name": "LiveChatMessage",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "chat",
+        "reaction",
+        "tip",
+        "system"
+      ],
+      "default": "chat"
+    },
+    "emoji": {
+      "type": "string",
+      "description": "For reaction type messages"
+    }
+  },
+  "required": [
+    "session_id",
+    "user_id",
+    "message"
+  ]
+}
