@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette } from 'lucide-react';
+import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
+import { cacheManager } from '@/utils/cacheManager';
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
@@ -31,6 +32,7 @@ export default function QuickGenerateTab() {
   const [selectedPersona, setSelectedPersona] = useState('auto');
   const [generating, setGenerating] = useState(false);
   const [generatingCover, setGeneratingCover] = useState(false);
+  const [extending, setExtending] = useState(false);
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -80,6 +82,41 @@ export default function QuickGenerateTab() {
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
   const isProcessing = generating || (jobId && status === 'processing');
 
+  // Keyboard shortcut: ⌘+Enter to generate
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [prompt, provider, selectedPersona]);
+
+  const extendTrack = async () => {
+    const audioUrl = result?.audio_url || result?.output_url;
+    if (!audioUrl) return;
+    setExtending(true);
+    try {
+      const res = await base44.functions.invoke('generateMusic', {
+        provider: 'tempcolor',
+        sound_prompt: `Continue and extend: ${aiParams?.sound_prompt || prompt}`,
+        genre: aiParams?.genre || 'Pop',
+        mood: aiParams?.mood || 'Energetic',
+        duration: 60,
+        model: 'TemPolor v4.6',
+        tempolor_mode: 'instrumental',
+        extend_audio_url: audioUrl,
+      });
+      const extUrl = res.data?.audio_url || res.data?.output_url;
+      if (extUrl) {
+        setResult(prev => ({ ...prev, extended_url: extUrl }));
+        toast.success('Track extended!');
+      } else {
+        toast.error('Extension failed');
+      }
+    } catch (err) { toast.error(err.message); }
+    setExtending(false);
+  };
+
   const generate = async () => {
     if (!prompt.trim()) { toast.error('Enter a description for your track'); return; }
     setGenerating(true);
@@ -88,8 +125,12 @@ export default function QuickGenerateTab() {
     setAiParams(null);
 
     try {
-      // Step 1: AI determines all parameters from prompt
-      const aiDecision = await base44.integrations.Core.InvokeLLM({
+      // Step 1: AI determines all parameters — check cache first
+      const cacheKey = `ai_params:${prompt.trim().toLowerCase()}`;
+      let aiDecision = cacheManager.get(cacheKey);
+
+      if (!aiDecision) {
+      aiDecision = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a music production AI. Given this track description: "${prompt}"
         
         Return JSON with these fields:
@@ -113,6 +154,8 @@ export default function QuickGenerateTab() {
           }
         }
       });
+        cacheManager.set(cacheKey, aiDecision, 600); // cache 10 min
+      }
 
       setAiParams(aiDecision);
 
@@ -337,6 +380,12 @@ export default function QuickGenerateTab() {
             )}
 
             <audio controls className="w-full rounded-xl" src={audioUrl} />
+            {result?.extended_url && (
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground font-semibold">🎵 Extended Version</p>
+                <audio controls className="w-full rounded-xl" src={result.extended_url} />
+              </div>
+            )}
             <div className="flex gap-2 flex-wrap">
               <Button onClick={saveToLibrary} disabled={saving} className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
                 <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save to Library'}
@@ -346,6 +395,10 @@ export default function QuickGenerateTab() {
                   <Download className="w-4 h-4" /> Download
                 </Button>
               </a>
+              <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
+                {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
+                {extending ? 'Extending…' : 'Extend'}
+              </Button>
               <Button variant="outline" onClick={() => { setResult(null); setJobId(''); setAiParams(null); }} className="gap-2 rounded-xl">
                 <RotateCcw className="w-4 h-4" />
               </Button>

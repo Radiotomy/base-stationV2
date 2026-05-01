@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { Music, Upload, Zap, Save, ArrowLeft, Loader2, Download, CheckCircle } from 'lucide-react';
+import { Music, Upload, Zap, Save, ArrowLeft, Loader2, Download, CheckCircle, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,6 +32,8 @@ export default function AudioRemixStudio() {
   const [assetTitle, setAssetTitle] = useState('Edited Mix');
   const [jobId, setJobId] = useState(null);
   const [jobStatus, setJobStatus] = useState(null); // pending|processing|completed|failed
+  const [metadata, setMetadata] = useState(null); // BPM, key, duration
+  const [analyzingMeta, setAnalyzingMeta] = useState(false);
 
   // Poll job status
   useEffect(() => {
@@ -113,6 +115,17 @@ export default function AudioRemixStudio() {
         toast.info('Processing complete');
       }
     } catch (error) { toast.error(error.message); setProcessing(false); }
+  };
+
+  const analyzeMetadata = async () => {
+    if (!audioUrl) return;
+    setAnalyzingMeta(true);
+    try {
+      const res = await base44.functions.invoke('extractAudioMetadata', { audioUrl });
+      setMetadata(res.data);
+      toast.success('Analysis complete!');
+    } catch (err) { toast.error(err.message); }
+    setAnalyzingMeta(false);
   };
 
   const saveToLibrary = async () => {
@@ -239,6 +252,27 @@ export default function AudioRemixStudio() {
             {audioUrl ? (
               <>
                 <AudioEditor audioUrl={audioUrl} title="Source Audio" onSave={(edits) => console.log('edit pts', edits)} />
+
+                {/* BPM / Metadata Analysis */}
+                <div className="bg-card rounded-2xl border border-border p-5">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-black text-foreground text-sm flex items-center gap-2"><Activity className="w-4 h-4 text-cyan-400" /> Audio Analysis</h3>
+                    <Button onClick={analyzeMetadata} disabled={analyzingMeta} size="sm" variant="outline" className="rounded-xl gap-1.5 text-xs">
+                      {analyzingMeta ? <Loader2 className="w-3 h-3 animate-spin" /> : <Activity className="w-3 h-3" />}
+                      {analyzingMeta ? 'Analyzing…' : 'Analyze BPM & Key'}
+                    </Button>
+                  </div>
+                  {metadata ? (
+                    <div className="flex flex-wrap gap-3">
+                      {metadata.bpm && <div className="text-center"><p className="text-2xl font-black text-cyan-400">{metadata.bpm}</p><p className="text-xs text-muted-foreground">BPM</p></div>}
+                      {metadata.key && <div className="text-center"><p className="text-2xl font-black text-purple-400">{metadata.key}</p><p className="text-xs text-muted-foreground">Key</p></div>}
+                      {metadata.duration && <div className="text-center"><p className="text-2xl font-black text-emerald-400">{Math.round(metadata.duration)}s</p><p className="text-xs text-muted-foreground">Duration</p></div>}
+                      {metadata.loudness && <div className="text-center"><p className="text-2xl font-black text-orange-400">{metadata.loudness}</p><p className="text-xs text-muted-foreground">Loudness</p></div>}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Click Analyze to extract BPM, musical key, duration and loudness.</p>
+                  )}
+                </div>
 
                 {/* Stems */}
                 {stems.length > 0 && (
