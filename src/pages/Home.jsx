@@ -56,30 +56,30 @@ export default function Home() {
 
         <div className="relative text-center max-w-5xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <Badge className="mb-8 bg-blue-500/20 text-blue-300 border-blue-500/30 px-5 py-2 text-xs tracking-widest uppercase font-semibold">
+            <Badge className="mb-6 bg-blue-500/20 text-blue-300 border-blue-500/30 px-4 py-1.5 text-xs tracking-widest uppercase font-semibold">
               🎵 Multi-Chain AI Music on Base
             </Badge>
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white mb-6 tracking-tight leading-none">
+            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white mb-5 tracking-tight leading-none">
               Where AI
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400">
                 Music Owns Itself
               </span>
             </h1>
-            <p className="text-white/60 text-xl md:text-2xl max-w-2xl mx-auto mb-10 leading-relaxed">
+            <p className="text-white/60 text-base md:text-xl max-w-2xl mx-auto mb-8 leading-relaxed px-2">
               Create, discover, and own AI-generated music with immutable on-chain provenance. Multi-chain registration, instant tipping, and global community.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 sm:px-0">
               {user ? (
                 <>
-                  <Link to={user?.is_creator ? "/creator-dashboard" : "/radio"}>
-                    <Button className="bg-white text-blue-900 hover:bg-blue-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-blue-900/30">
+                  <Link to={user?.is_creator ? "/creator-dashboard" : "/radio"} className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto bg-white text-blue-900 hover:bg-blue-50 active:bg-blue-100 font-bold px-8 py-3 rounded-full text-base shadow-xl shadow-blue-900/30">
                       {user.is_creator ? "Go to Studio 🎵" : "Tune In 📻"}
                     </Button>
                   </Link>
                   {user.is_creator && (
-                    <Link to="/music-studio">
-                      <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 font-bold px-10 py-4 rounded-full text-lg backdrop-blur">
+                    <Link to="/music-studio" className="w-full sm:w-auto">
+                      <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
                         <Music className="w-5 h-5 mr-2" /> Create Music
                       </Button>
                     </Link>
@@ -88,11 +88,11 @@ export default function Home() {
               ) : (
                 <>
                   <Button onClick={() => base44.auth.redirectToLogin()}
-                    className="bg-white text-blue-900 hover:bg-blue-50 font-bold px-10 py-4 rounded-full text-lg shadow-xl shadow-blue-900/30">
+                    className="w-full sm:w-auto bg-white text-blue-900 hover:bg-blue-50 active:bg-blue-100 font-bold px-8 py-3 rounded-full text-base shadow-xl shadow-blue-900/30">
                     Join Free
                   </Button>
-                  <Link to="/radio">
-                    <Button variant="outline" className="border-white/20 text-white hover:bg-white/10 font-bold px-10 py-4 rounded-full text-lg backdrop-blur">
+                  <Link to="/radio" className="w-full sm:w-auto">
+                    <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
                       <Headphones className="w-5 h-5 mr-2" /> Explore
                     </Button>
                   </Link>
@@ -138,7 +138,7 @@ export default function Home() {
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">From live sessions to trending charts — Base Station is the complete platform for AI music creators.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {[
               { to: "/lyrics-studio", icon: Mic2, title: "🎤 Lyrics Studio", desc: "Generate original lyrics with Nuro AI. Real-time refinement. Unlimited versions.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "✨ New" },
               { to: "/music-studio", icon: Music, title: "🎵 Music Studio", desc: "Create AI tracks with Loudly, Nuro, Sonic, or Producer. Full BPM & key metadata.", color: "from-blue-900 to-cyan-900", accent: "text-cyan-400", badge: "✨ New" },
@@ -154,16 +154,16 @@ export default function Home() {
               { to: "/submit", icon: Upload, title: "📤 Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Go Live" },
               { to: "/blockchain", icon: Globe, title: "⛓️ Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "Mint NFT" },
             ].map(({ to, icon: Icon, title, desc, color, accent, badge }, i) => (
-              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
-                <Link to={to} className={`group block p-6 rounded-3xl bg-gradient-to-br ${color} border border-white/5 hover:border-white/10 transition-all hover:scale-[1.02]`}>
-                  <div className="flex items-start justify-between mb-4">
-                    <Icon className={`w-8 h-8 ${accent}`} />
+              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
+                <Link to={to} className={`group block p-5 md:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-br ${color} border border-white/5 active:border-white/20 active:scale-[0.98] transition-all`}>
+                  <div className="flex items-start justify-between mb-3">
+                    <Icon className={`w-7 h-7 md:w-8 md:h-8 ${accent}`} />
                     <Badge className="bg-white/10 text-white/70 border-0 text-xs">{badge}</Badge>
                   </div>
-                  <h3 className="text-white font-bold text-lg mb-2">{title}</h3>
-                  <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
-                  <div className={`flex items-center gap-1 mt-4 ${accent} text-sm font-semibold group-hover:gap-2 transition-all`}>
-                    Explore <ArrowRight className="w-4 h-4" />
+                  <h3 className="text-white font-bold text-base md:text-lg mb-1.5">{title}</h3>
+                  <p className="text-white/50 text-xs md:text-sm leading-relaxed">{desc}</p>
+                  <div className={`flex items-center gap-1 mt-3 ${accent} text-xs md:text-sm font-semibold`}>
+                    Explore <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   </div>
                 </Link>
               </motion.div>
@@ -283,10 +283,18 @@ export default function Home() {
             <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
               Base Station believes AI is a co-creator, not a replacement. Your creativity drives the music — AI amplifies it. Every track you make, every vote you cast, every transaction is on-chain and forever.
             </p>
-            <Button onClick={() => user ? null : base44.auth.redirectToLogin()}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold px-12 py-4 rounded-full text-lg shadow-xl shadow-blue-900/40">
-              {user ? "Go to Radio →" : "Join Base Station"}
-            </Button>
+            {user ? (
+              <Link to="/radio">
+                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:from-blue-700 active:to-cyan-700 text-white font-bold px-10 py-3 rounded-full text-base shadow-xl shadow-blue-900/40">
+                  Go to Radio →
+                </Button>
+              </Link>
+            ) : (
+              <Button onClick={() => base44.auth.redirectToLogin()}
+                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:from-blue-700 active:to-cyan-700 text-white font-bold px-10 py-3 rounded-full text-base shadow-xl shadow-blue-900/40">
+                Join Base Station
+              </Button>
+            )}
           </motion.div>
         </div>
       </section>

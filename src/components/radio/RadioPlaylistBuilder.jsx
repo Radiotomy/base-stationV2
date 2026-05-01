@@ -38,14 +38,20 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }}
-        className="bg-card border border-border rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <motion.div initial={{ scale: 0.96, y: 30 }} animate={{ scale: 1, y: 0 }}
+        className="bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl overflow-hidden max-h-[92dvh] flex flex-col">
+
+        {/* Drag handle (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-border" />
+        </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center flex-shrink-0">
               <Radio className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -53,12 +59,12 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
               <p className="text-xs text-muted-foreground">Mix Loudly catalog + community tracks</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-5 space-y-5 overflow-y-auto overscroll-contain flex-1">
           {!result ? (
             <>
               {/* Name */}
