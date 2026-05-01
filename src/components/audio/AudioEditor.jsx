@@ -144,17 +144,24 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
           const analyser = analyserRef.current;
           const data = new Uint8Array(analyser.frequencyBinCount);
           analyser.getByteFrequencyData(data);
+          const maxVal = Math.max(...data);
           
-          const bw = (canvas.width / data.length) * 2.5;
-          let x = 0;
-          data.forEach(v => {
-            const h = (v / 255) * canvas.height;
-            const pct = v / 255;
-            ctx2d.fillStyle = `hsl(${270 - pct * 60},70%,${40 + pct * 30}%)`;
-            ctx2d.fillRect(x, canvas.height - h, bw, h);
-            x += bw + 1;
-          });
-          drewData = true;
+          if (maxVal > 0) {
+            // Real audio data detected
+            const bw = (canvas.width / data.length) * 2.5;
+            let x = 0;
+            data.forEach(v => {
+              const h = (v / 255) * canvas.height;
+              const pct = v / 255;
+              ctx2d.fillStyle = `hsl(${270 - pct * 60},70%,${40 + pct * 30}%)`;
+              ctx2d.fillRect(x, canvas.height - h, bw, h);
+              x += bw + 1;
+            });
+            drewData = true;
+            console.log('🎵 Real analyser data detected, max freq:', maxVal);
+          } else {
+            console.log('⚠️ Analyser connected but no audio data (silence or CORS issue)');
+          }
         } catch (e) {
           console.warn('Analyser error:', e);
         }
