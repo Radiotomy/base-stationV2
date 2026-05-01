@@ -33,11 +33,6 @@ export default function ActivityFeed({ limit = 10 }) {
     base44.entities.ActivityFeedItem.list("-created_date", limit)
       .then(data => { setItems(data); setLoading(false); })
       .catch(() => setLoading(false));
-
-    const unsub = base44.entities.ActivityFeedItem.subscribe(evt => {
-      if (evt.type === "create") setItems(prev => [evt.data, ...prev].slice(0, limit));
-    });
-    return unsub;
   }, [limit]);
 
   if (loading) return (

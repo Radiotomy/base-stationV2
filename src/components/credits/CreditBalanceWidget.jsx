@@ -3,17 +3,33 @@ import { base44 } from "@/api/base44Client";
 import { Zap, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 
+// Simple module-level cache so multiple widget mounts don't fire duplicate requests
+let _cachedBalance = null;
+let _cachedPremium = false;
+let _cacheTime = 0;
+const CACHE_TTL = 60000; // 60 seconds
+
 export default function CreditBalanceWidget({ className = "" }) {
-  const [balance, setBalance] = useState(null);
-  const [isPremium, setIsPremium] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState(_cachedBalance);
+  const [isPremium, setIsPremium] = useState(_cachedPremium);
+  const [loading, setLoading] = useState(_cachedBalance === null);
 
   useEffect(() => {
+    const now = Date.now();
+    if (_cachedBalance !== null && now - _cacheTime < CACHE_TTL) {
+      setBalance(_cachedBalance);
+      setIsPremium(_cachedPremium);
+      setLoading(false);
+      return;
+    }
     const load = async () => {
       try {
         const res = await base44.functions.invoke("getUserCredits", {});
-        setBalance(res.data.balance ?? 0);
-        setIsPremium(res.data.is_premium ?? false);
+        _cachedBalance = res.data.balance ?? 0;
+        _cachedPremium = res.data.is_premium ?? false;
+        _cacheTime = Date.now();
+        setBalance(_cachedBalance);
+        setIsPremium(_cachedPremium);
       } catch {
         setBalance(null);
       }

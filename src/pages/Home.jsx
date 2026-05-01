@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+
 import {
   Radio, TrendingUp, Music, Star, Users, Zap, Play, ArrowRight,
   Mic2, Headphones, Globe, ChevronRight, Upload, Film, Palette
@@ -47,8 +48,8 @@ export default function Home() {
         {/* Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-950 via-black to-indigo-950" />
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-purple-600/20 blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-pink-600/15 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-purple-600/20 blur-3xl" />
+          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-pink-600/15 blur-3xl" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-600/10 blur-3xl" />
         </div>
         {/* Grid overlay */}
@@ -120,12 +121,12 @@ export default function Home() {
       {/* Stats */}
       <section className="py-16 px-6 border-y border-border/50 bg-muted/20">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-          {STATS.map(({ label, value, icon: Icon }, i) => (
-            <motion.div key={label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center">
+          {STATS.map(({ label, value, icon: Icon }) => (
+            <div key={label} className="text-center">
               <Icon className="w-6 h-6 mx-auto mb-3 text-purple-400" />
               <p className="text-3xl font-black text-foreground">{value}</p>
               <p className="text-sm text-muted-foreground mt-1">{label}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </section>
@@ -153,20 +154,18 @@ export default function Home() {
               { to: "/ai-studio", icon: Zap, title: "⚡ AI Tools", desc: "Advanced prompts, voice synthesis, cover generation and more creative tools.", color: "from-pink-600 to-rose-600", accent: "text-pink-300", badge: "Pro" },
               { to: "/submit", icon: Upload, title: "📤 Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Go Live" },
               { to: "/blockchain", icon: Globe, title: "⛓️ Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "Mint NFT" },
-            ].map(({ to, icon: Icon, title, desc, color, accent, badge }, i) => (
-              <motion.div key={title} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.06 }}>
-                <Link to={to} className={`group block p-5 md:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-br ${color} border border-white/5 active:border-white/20 active:scale-[0.98] transition-all`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <Icon className={`w-7 h-7 md:w-8 md:h-8 ${accent}`} />
-                    <Badge className="bg-white/10 text-white/70 border-0 text-xs">{badge}</Badge>
-                  </div>
-                  <h3 className="text-white font-bold text-base md:text-lg mb-1.5">{title}</h3>
-                  <p className="text-white/50 text-xs md:text-sm leading-relaxed">{desc}</p>
-                  <div className={`flex items-center gap-1 mt-3 ${accent} text-xs md:text-sm font-semibold`}>
-                    Explore <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                  </div>
-                </Link>
-              </motion.div>
+            ].map(({ to, icon: Icon, title, desc, color, accent, badge }) => (
+              <Link key={title} to={to} className={`group block p-5 md:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-br ${color} border border-white/5 active:border-white/20 active:scale-[0.98] transition-all`}>
+                <div className="flex items-start justify-between mb-3">
+                  <Icon className={`w-7 h-7 md:w-8 md:h-8 ${accent}`} />
+                  <Badge className="bg-white/10 text-white/70 border-0 text-xs">{badge}</Badge>
+                </div>
+                <h3 className="text-white font-bold text-base md:text-lg mb-1.5">{title}</h3>
+                <p className="text-white/50 text-xs md:text-sm leading-relaxed">{desc}</p>
+                <div className={`flex items-center gap-1 mt-3 ${accent} text-xs md:text-sm font-semibold`}>
+                  Explore <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -276,7 +275,7 @@ export default function Home() {
       {/* CTA */}
       <section className="py-24 px-6 text-center">
         <div className="max-w-3xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
+          <div>
             <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6">
               Human + AI<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">on Chain</span>
             </h2>
@@ -295,7 +294,7 @@ export default function Home() {
                 Join Base Station
               </Button>
             )}
-          </motion.div>
+          </div>
         </div>
       </section>
 

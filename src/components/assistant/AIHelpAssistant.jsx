@@ -69,7 +69,7 @@ export default function AIHelpAssistant() {
             onClick={() => setOpen(true)}
             className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 shadow-2xl shadow-purple-900/50 flex items-center justify-center hover:scale-110 transition-transform">
             <MessageCircle className="w-6 h-6 text-white" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-background animate-pulse" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-background" />
           </motion.button>
         )}
       </AnimatePresence>
