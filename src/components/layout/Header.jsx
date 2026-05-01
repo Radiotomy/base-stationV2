@@ -109,7 +109,7 @@ export default function Header({ user }) {
                     </div>
                     <div className="space-y-1 p-2">
                       <Link
-                        to={`/artist/${user.id}`}
+                        to="/my-profile"
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
                       >

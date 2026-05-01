@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Music, Users, Play, Heart, Globe, Twitter, Instagram, Youtube, ExternalLink, Star, Trophy, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ function StatBox({ value, label }) {
 
 export default function ArtistProfile() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [tracks, setTracks] = useState([]);
   const [xpData, setXpData] = useState(null);
@@ -51,15 +52,22 @@ export default function ArtistProfile() {
     </div>
   );
 
-  if (!profile) return (
-    <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
-      <div className="text-center">
-        <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
-        <p>Artist profile not found.</p>
-        <Link to="/" className="text-purple-400 text-sm mt-2 block">Go Home</Link>
+  if (!profile) {
+    // If viewing own profile and it doesn't exist, redirect to setup
+    if (currentUser && currentUser.id === id) {
+      navigate("/my-profile");
+      return null;
+    }
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground">
+        <div className="text-center">
+          <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+          <p>Artist profile not found.</p>
+          <Link to="/" className="text-purple-400 text-sm mt-2 block">Go Home</Link>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   const isOwner = currentUser && currentUser.id === profile.user_id;
   const level = xpData ? Math.min(10, Math.floor(Math.sqrt((xpData.total_xp || 0) / 100)) + 1) : 1;
@@ -122,7 +130,11 @@ export default function ArtistProfile() {
               </>
             )}
             {isOwner && (
-              <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">Your Profile</Badge>
+              <Link to="/my-profile">
+                <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 cursor-pointer hover:bg-purple-500/30 transition-colors">
+                  ✏️ Edit Profile
+                </Badge>
+              </Link>
             )}
           </div>
         </div>
