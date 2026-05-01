@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 const SONIC_API_KEY    = Deno.env.get('SONIC_API_KEY');
 const NURO_API_KEY     = Deno.env.get('NURO_API_KEY');
 const PRODUCER_API_KEY = Deno.env.get('PRODUCER_API_KEY');
+const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
@@ -67,6 +68,28 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
   return { task_id: taskId, provider: 'producer' };
 }
 
+// ── Tempolor ──────────────────────────────────────────────────────────────────
+const TEMPOLOR_BASE = 'https://api.tempolor.com/open-apis/v1';
+async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode }) {
+  const isInstrumental = tempolor_mode === 'instrumental';
+  const endpoint = isInstrumental ? `${TEMPOLOR_BASE}/instrumental/generate` : `${TEMPOLOR_BASE}/song/generate`;
+  const defaultModel = isInstrumental ? 'TemPolor i3.5' : 'TemPolor v4.6';
+  const body = isInstrumental
+    ? { prompt: sound_prompt || `${mood} ${genre} instrumental music`, model: model || defaultModel, callback_url: 'https://placeholder.invalid/cb' }
+    : { prompt: sound_prompt || `${mood} ${genre} music`, model: model || defaultModel, lyrics: lyrics || null, callback_url: 'https://placeholder.invalid/cb' };
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Authorization': TEMPCOLOR_API_KEY, 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok || data.status !== 200000) throw new Error(data.message || JSON.stringify(data));
+  const itemId = data.data?.item_ids?.[0];
+  if (!itemId) throw new Error('No item_id from Tempolor');
+  return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song' };
+}
+
 // ── Loudly (if key available) ─────────────────────────────────────────────────
 const LOUDLY_API_KEY = Deno.env.get('LOUDLY_API_KEY');
 async function generateWithLoudly({ genre, mood, tempo, duration }) {
@@ -91,7 +114,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode } = await req.json();
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
@@ -109,6 +132,8 @@ Deno.serve(async (req) => {
         providerResult = await generateWithNuro({ genre, mood, duration, nuro_version });
       else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
+      else if (provider === 'tempcolor')
+        providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode });
       else // default: sonic
         providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model });
     } catch (providerErr) {

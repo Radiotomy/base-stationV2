@@ -13,10 +13,11 @@ import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
 
 const PROVIDERS = [
-  { value: 'loudly',   label: 'Loudly',    desc: 'Fast, high quality',    color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
-  { value: 'nuro',     label: 'Nuro',      desc: 'Vocals + lyrics',       color: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
-  { value: 'sonic',    label: 'Sonic',     desc: 'Stem extraction',       color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
-  { value: 'producer', label: 'Producer',  desc: 'Full production',       color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  { value: 'sonic',      label: 'Sonic',      desc: 'Stem extraction',      color: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' },
+  { value: 'tempcolor',  label: 'Tempolor',   desc: 'Song & instrumental',  color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+  { value: 'producer',  label: 'Producer',   desc: 'Google Lyria 3 Pro',   color: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  { value: 'nuro',      label: 'Nuro',       desc: 'Vocals + BGM',         color: 'bg-pink-500/20 text-pink-300 border-pink-500/30' },
+  { value: 'loudly',    label: 'Loudly',     desc: 'Fast generation',      color: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
 ];
 
 const SONIC_MODELS = [
@@ -32,6 +33,16 @@ const SONIC_MODELS = [
 const NURO_MODELS = [
   { value: 'v1.0', label: 'v1.0', desc: 'Classic' },
   { value: 'v2.0', label: 'v2.0', desc: 'Structure control' },
+];
+
+// Tempolor — separate song vs instrumental models
+const TEMPOLOR_SONG_MODELS = [
+  { value: 'TemPolor v4.6', label: 'v4.6', desc: 'Best quality, 5 min' },
+  { value: 'TemPolor v3',   label: 'v3',   desc: 'Fast, up to 2 min' },
+];
+const TEMPOLOR_INSTRUMENTAL_MODELS = [
+  { value: 'TemPolor i3.5', label: 'i3.5', desc: 'High quality, 270s' },
+  { value: 'TemPolor i3',   label: 'i3',   desc: 'Fast, 120s' },
 ];
 
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
@@ -61,6 +72,8 @@ export default function MusicStudio() {
   const [provider, setProvider] = useState('sonic');
   const [sonicModel, setSonicModel] = useState('sonic-v4-5');
   const [nuroModel, setNuroModel] = useState('v1.0');
+  const [temporlorMode, setTemporlorMode] = useState('song'); // 'song' | 'instrumental'
+  const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
   const [duration, setDuration] = useState(30);
   const [genre, setGenre] = useState('Hip-Hop');
   const [mood, setMood] = useState('Energetic');
@@ -97,6 +110,7 @@ export default function MusicStudio() {
         sound_prompt: soundPrompt || `${mood} ${genre} track`,
         ...(provider === 'sonic' && { model: sonicModel }),
         ...(provider === 'nuro' && { nuro_version: nuroModel }),
+        ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
       });
       if (res.data?.audio_url || res.data?.output_url) {
         // Synchronous result
@@ -164,7 +178,7 @@ export default function MusicStudio() {
         {/* Provider Chips */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Provider</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {PROVIDERS.map(p => (
               <button key={p.value} type="button" onClick={() => setProvider(p.value)}
                 className={`p-3 rounded-xl border text-left transition-all ${provider === p.value ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-blue-500/40 bg-card'}`}>
@@ -248,6 +262,39 @@ export default function MusicStudio() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground/60 mt-1">v2.0 adds segment/structure control</p>
+              </div>
+            )}
+
+            {/* Tempolor — Song vs Instrumental + model */}
+            {provider === 'tempcolor' && (
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Mode</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { value: 'song',         label: '🎤 Song',         desc: 'Vocals + lyrics' },
+                    { value: 'instrumental', label: '🎼 Instrumental', desc: 'No vocals, beat-driven' },
+                  ].map(m => (
+                    <button key={m.value} type="button"
+                      onClick={() => {
+                        setTemporlorMode(m.value);
+                        setTemporlorModel(m.value === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6');
+                      }}
+                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${temporlorMode === m.value ? 'border-amber-500 bg-amber-500/10' : 'border-border bg-card hover:border-amber-500/40'}`}>
+                      <p className="text-xs font-bold text-foreground">{m.label}</p>
+                      <p className="text-xs text-muted-foreground">{m.desc}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Model Version</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(temporlorMode === 'instrumental' ? TEMPOLOR_INSTRUMENTAL_MODELS : TEMPOLOR_SONG_MODELS).map(m => (
+                    <button key={m.value} type="button" onClick={() => setTemporlorModel(m.value)}
+                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${temporlorModel === m.value ? 'border-amber-500 bg-amber-500/10' : 'border-border bg-card hover:border-amber-500/40'}`}>
+                      <p className="text-xs font-bold text-foreground">{m.label}</p>
+                      <p className="text-xs text-muted-foreground">{m.desc}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 

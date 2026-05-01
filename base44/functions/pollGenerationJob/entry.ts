@@ -1,9 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SONIC_API_KEY    = Deno.env.get('SONIC_API_KEY');
-const NURO_API_KEY     = Deno.env.get('NURO_API_KEY');
-const PRODUCER_API_KEY = Deno.env.get('PRODUCER_API_KEY');
-const LTX_API_KEY      = Deno.env.get('LTX_API_KEY');
+const SONIC_API_KEY     = Deno.env.get('SONIC_API_KEY');
+const NURO_API_KEY      = Deno.env.get('NURO_API_KEY');
+const PRODUCER_API_KEY  = Deno.env.get('PRODUCER_API_KEY');
+const LTX_API_KEY       = Deno.env.get('LTX_API_KEY');
+const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
@@ -65,6 +66,39 @@ async function pollProvider(provider, providerTaskId) {
       return { status: 'completed', video_url: data.video_url || data.url };
     }
     if (state === 'failed' || state === 'error') return { status: 'failed', error: data.error || 'LTX failed' };
+    return { status: 'processing' };
+  }
+
+  if (provider === 'tempcolor') {
+    // Determine if song or instrumental by checking what the job stored
+    // Try song query first, then instrumental
+    const tryQuery = async (endpoint) => {
+      const r = await fetch(`https://api.tempolor.com/open-apis/v1/${endpoint}/query`, {
+        method: 'POST',
+        headers: { 'Authorization': TEMPCOLOR_API_KEY, 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ item_ids: [providerTaskId] }),
+      });
+      return r.json();
+    };
+
+    // Try song query, fall back to instrumental
+    let qdata = await tryQuery('song');
+    let items = qdata?.data?.songs || qdata?.data?.items || [];
+    if (!items.length) {
+      qdata = await tryQuery('instrumental');
+      items = qdata?.data?.instrumentals || qdata?.data?.items || qdata?.data?.songs || [];
+    }
+
+    const item = items[0];
+    if (!item) return { status: 'processing' };
+
+    const itemStatus = item.status || '';
+    if (itemStatus === 'succeeded' || item.audio_url || item.audio_hi_url) {
+      return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
+    }
+    if (itemStatus === 'failed' || itemStatus === 'error') {
+      return { status: 'failed', error: item.event || 'Tempolor generation failed' };
+    }
     return { status: 'processing' };
   }
 
