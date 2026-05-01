@@ -115,19 +115,16 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
     }
   }, [audioUrl]);
 
-  // Draw waveform loop — only while playing
+  // Draw waveform (animated while playing, static when loaded)
   useEffect(() => {
-    if (!isPlaying || !analyserRef.current || !canvasRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      return;
-    }
+    if (!analyserRef.current || !canvasRef.current) return;
+    
     const canvas = canvasRef.current;
     const ctx2d = canvas.getContext('2d');
     const analyser = analyserRef.current;
     const data = new Uint8Array(analyser.frequencyBinCount);
 
-    const draw = () => {
-      rafRef.current = requestAnimationFrame(draw);
+    const drawFrame = () => {
       analyser.getByteFrequencyData(data);
       ctx2d.fillStyle = 'hsl(240,10%,6%)';
       ctx2d.fillRect(0, 0, canvas.width, canvas.height);
@@ -141,9 +138,21 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
         x += bw + 1;
       });
     };
+
+    // Draw static waveform if not playing
+    if (!isPlaying) {
+      drawFrame();
+      return;
+    }
+
+    // Animate while playing
+    const draw = () => {
+      rafRef.current = requestAnimationFrame(draw);
+      drawFrame();
+    };
     draw();
     return () => cancelAnimationFrame(rafRef.current);
-  }, [isPlaying]);
+  }, [isPlaying, duration]);
 
   // EQ handlers
   const applyBass = (val) => { setBass(val); if (bassRef.current) bassRef.current.gain.value = val; };
