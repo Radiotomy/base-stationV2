@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   User, Music, Mic2, Save, Camera, Globe, Twitter, Instagram,
-  Youtube, ArrowLeft, CheckCircle2, Edit2, ExternalLink
+  Youtube, ArrowLeft, CheckCircle2, Edit2, ExternalLink, Upload, Plus, X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 const GENRES = ["hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "classical", "trap", "other"];
-const AI_TOOLS = ["Loudly", "Nuro", "Sonic", "Producer", "LTX", "ElevenLabs", "Suno", "Udio", "Other"];
+const DEFAULT_AI_TOOLS = ["Loudly", "Nuro", "Sonic", "Producer", "LTX", "ElevenLabs", "Suno", "Udio"];
 
 export default function MyProfile() {
   const [user, setUser] = useState(null);
@@ -23,6 +23,9 @@ export default function MyProfile() {
   const [saving, setSaving] = useState(false);
   const [mode, setMode] = useState("view"); // "view" | "edit" | "setup"
   const [selectedTools, setSelectedTools] = useState([]);
+  const [customToolInput, setCustomToolInput] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -76,6 +79,26 @@ export default function MyProfile() {
     setSelectedTools(prev =>
       prev.includes(tool) ? prev.filter(t => t !== tool) : [...prev, tool]
     );
+  };
+
+  const addCustomTool = () => {
+    const trimmed = customToolInput.trim();
+    if (!trimmed || selectedTools.includes(trimmed)) return;
+    setSelectedTools(prev => [...prev, trimmed]);
+    setCustomToolInput("");
+  };
+
+  const uploadImage = async (file, field) => {
+    const setter = field === "avatar_url" ? setUploadingAvatar : setUploadingBanner;
+    setter(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setForm(f => ({ ...f, [field]: file_url }));
+      toast.success("Image uploaded!");
+    } catch (err) {
+      toast.error("Upload failed: " + err.message);
+    }
+    setter(false);
   };
 
   const handleSave = async () => {
@@ -208,45 +231,64 @@ export default function MyProfile() {
               </div>
             </div>
 
-            {/* Avatar & Banner URLs */}
-            <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
+            {/* Avatar & Banner */}
+            <div className="bg-card rounded-2xl border border-border p-6 space-y-6">
               <h3 className="font-black text-foreground">Images</h3>
+
+              {/* Avatar */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                  Avatar URL
-                </label>
-                <Input
-                  value={form.avatar_url}
-                  onChange={e => setForm(f => ({ ...f, avatar_url: e.target.value }))}
-                  placeholder="https://..."
-                  className="rounded-xl"
-                />
-                {form.avatar_url && (
-                  <img src={form.avatar_url} alt="Avatar preview" className="w-16 h-16 rounded-xl mt-2 object-cover" />
-                )}
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-3 block">Avatar</label>
+                <div className="flex items-start gap-4">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-purple-700 to-indigo-700 flex-shrink-0 flex items-center justify-center">
+                    {form.avatar_url
+                      ? <img src={form.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                      : <Camera className="w-6 h-6 text-white/40" />}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-border hover:border-purple-500/50 cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-all w-full justify-center">
+                      {uploadingAvatar
+                        ? <div className="w-4 h-4 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+                        : <><Upload className="w-4 h-4" /> Upload Image</>}
+                      <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && uploadImage(e.target.files[0], "avatar_url")} />
+                    </label>
+                    <p className="text-xs text-muted-foreground text-center">or paste a URL below</p>
+                    <Input
+                      value={form.avatar_url}
+                      onChange={e => setForm(f => ({ ...f, avatar_url: e.target.value }))}
+                      placeholder="https://..."
+                      className="rounded-xl text-xs"
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Banner */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">
-                  Banner URL
-                </label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-3 block">Banner</label>
+                <div className="relative h-28 w-full rounded-xl overflow-hidden bg-gradient-to-br from-purple-900 via-indigo-900 to-pink-900 mb-2">
+                  {form.banner_url && <img src={form.banner_url} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />}
+                  <label className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/40 hover:bg-black/50 transition-colors">
+                    {uploadingBanner
+                      ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      : <div className="flex flex-col items-center gap-1 text-white/70 hover:text-white"><Upload className="w-5 h-5" /><span className="text-xs font-semibold">Upload Banner</span></div>}
+                    <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && uploadImage(e.target.files[0], "banner_url")} />
+                  </label>
+                </div>
                 <Input
                   value={form.banner_url}
                   onChange={e => setForm(f => ({ ...f, banner_url: e.target.value }))}
-                  placeholder="https://..."
-                  className="rounded-xl"
+                  placeholder="or paste banner URL: https://..."
+                  className="rounded-xl text-xs"
                 />
-                {form.banner_url && (
-                  <img src={form.banner_url} alt="Banner preview" className="h-20 w-full rounded-xl mt-2 object-cover" />
-                )}
               </div>
             </div>
 
             {/* AI Tools */}
             <div className="bg-card rounded-2xl border border-border p-6 space-y-3">
               <h3 className="font-black text-foreground">AI Tools You Use</h3>
-              <p className="text-xs text-muted-foreground">Select all that apply</p>
+              <p className="text-xs text-muted-foreground">Select presets or add your own</p>
               <div className="flex flex-wrap gap-2">
-                {AI_TOOLS.map(tool => (
+                {DEFAULT_AI_TOOLS.map(tool => (
                   <button
                     key={tool}
                     type="button"
@@ -260,6 +302,34 @@ export default function MyProfile() {
                     {tool}
                   </button>
                 ))}
+              </div>
+
+              {/* Custom tools added by user */}
+              {selectedTools.filter(t => !DEFAULT_AI_TOOLS.includes(t)).length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {selectedTools.filter(t => !DEFAULT_AI_TOOLS.includes(t)).map(tool => (
+                    <span key={tool} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-600 text-white">
+                      {tool}
+                      <button type="button" onClick={() => toggleTool(tool)} className="hover:text-red-300 transition-colors">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Add custom tool */}
+              <div className="flex gap-2 pt-1">
+                <Input
+                  value={customToolInput}
+                  onChange={e => setCustomToolInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && addCustomTool()}
+                  placeholder="Add a tool (e.g. Suno, ChatGPT…)"
+                  className="rounded-xl text-sm"
+                />
+                <Button type="button" onClick={addCustomTool} variant="outline" className="rounded-xl px-3 flex-shrink-0 gap-1">
+                  <Plus className="w-4 h-4" /> Add
+                </Button>
               </div>
             </div>
 
