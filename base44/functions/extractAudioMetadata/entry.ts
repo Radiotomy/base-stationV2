@@ -6,8 +6,9 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { audio_url } = await req.json();
-    if (!audio_url) return Response.json({ error: 'Missing audio_url' }, { status: 400 });
+    const body = await req.json();
+    const audio_url = body.audio_url || body.audioUrl;
+    if (!audio_url) return Response.json({ error: 'Missing audio_url parameter' }, { status: 400 });
 
     // TODO: Fetch audio file and extract metadata using Web Audio API or jsmidgen
     // For MVP, return stub with placeholder values
