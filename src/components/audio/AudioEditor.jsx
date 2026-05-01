@@ -43,11 +43,17 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
     // Clean up previous
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    ctxRef.current = ctx;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      ctxRef.current = ctx;
 
-    if (!sourceConnected.current) {
-      const source = ctx.createMediaElementAudioSource(audio);
+      // Resume context if suspended (required by browsers)
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(err => console.warn('Failed to resume AudioContext:', err));
+      }
+
+      if (!sourceConnected.current) {
+        const source = ctx.createMediaElementAudioSource(audio);
       const gain = ctx.createGain();
       const bassFilter = ctx.createBiquadFilter();
       const midFilter = ctx.createBiquadFilter();
@@ -70,39 +76,43 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
       gain.connect(analyser);
       analyser.connect(ctx.destination);
 
-      gainNodeRef.current = gain;
-      bassRef.current = bassFilter;
-      midRef.current = midFilter;
-      trebleRef.current = trebleFilter;
-      analyserRef.current = analyser;
-      sourceConnected.current = true;
-    }
-
-    const onMeta = () => { setDuration(audio.duration); setTrimEnd(audio.duration); };
-    const onTime = () => {
-      setCurrentTime(audio.currentTime);
-      // Apply fade in/out gain automation
-      if (gainNodeRef.current) {
-        const t = audio.currentTime;
-        const dur = audio.duration;
-        let g = volume / 100;
-        if (fadeIn > 0 && t < fadeIn) g = (t / fadeIn) * (volume / 100);
-        if (fadeOut > 0 && dur > 0 && t > dur - fadeOut) g = ((dur - t) / fadeOut) * (volume / 100);
-        gainNodeRef.current.gain.value = Math.max(0, g);
+        gainNodeRef.current = gain;
+        bassRef.current = bassFilter;
+        midRef.current = midFilter;
+        trebleRef.current = trebleFilter;
+        analyserRef.current = analyser;
+        sourceConnected.current = true;
       }
-    };
-    const onEnded = () => setIsPlaying(false);
 
-    audio.addEventListener('loadedmetadata', onMeta);
-    audio.addEventListener('timeupdate', onTime);
-    audio.addEventListener('ended', onEnded);
+      const onMeta = () => { setDuration(audio.duration); setTrimEnd(audio.duration); };
+      const onTime = () => {
+        setCurrentTime(audio.currentTime);
+        // Apply fade in/out gain automation
+        if (gainNodeRef.current) {
+          const t = audio.currentTime;
+          const dur = audio.duration;
+          let g = volume / 100;
+          if (fadeIn > 0 && t < fadeIn) g = (t / fadeIn) * (volume / 100);
+          if (fadeOut > 0 && dur > 0 && t > dur - fadeOut) g = ((dur - t) / fadeOut) * (volume / 100);
+          gainNodeRef.current.gain.value = Math.max(0, g);
+        }
+      };
+      const onEnded = () => setIsPlaying(false);
 
-    return () => {
-      audio.removeEventListener('loadedmetadata', onMeta);
-      audio.removeEventListener('timeupdate', onTime);
-      audio.removeEventListener('ended', onEnded);
-      cancelAnimationFrame(rafRef.current);
-    };
+      audio.addEventListener('loadedmetadata', onMeta);
+      audio.addEventListener('timeupdate', onTime);
+      audio.addEventListener('ended', onEnded);
+
+      return () => {
+        audio.removeEventListener('loadedmetadata', onMeta);
+        audio.removeEventListener('timeupdate', onTime);
+        audio.removeEventListener('ended', onEnded);
+        cancelAnimationFrame(rafRef.current);
+      };
+    } catch (err) {
+      console.error('Web Audio API initialization failed:', err);
+      toast.error('Audio editor unavailable on this device');
+    }
   }, [audioUrl]);
 
   // Draw waveform loop — only while playing
