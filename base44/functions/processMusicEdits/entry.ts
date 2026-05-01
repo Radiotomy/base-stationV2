@@ -121,6 +121,87 @@ Deno.serve(async (req) => {
         break;
       }
 
+      case 'vox_isolate': {
+        // VOX — vocal isolation using Sonic API
+        const sonicApiKeyVox = Deno.env.get('SONIC_API_KEY');
+        const voxResponse = await fetch('https://api.aimusicapi.ai/api/v1/sonic/separate', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sonicApiKeyVox}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            audio_url: audioUrl,
+            separate_type: 'vocals', // isolate only vocals
+            output_format: 'mp3',
+          }),
+        });
+
+        if (!voxResponse.ok) {
+          throw new Error(`Sonic VOX API error: ${voxResponse.statusText}`);
+        }
+
+        const voxData = await voxResponse.json();
+        result.outputUrl = voxData.vocals_url || voxData.output_url;
+        result.task_id = voxData.task_id;
+        result.vox_type = 'isolated_vocals';
+        break;
+      }
+
+      case 'vox_remove': {
+        // VOX — instrumental only (remove vocals)
+        const sonicApiKeyVoxRm = Deno.env.get('SONIC_API_KEY');
+        const voxRmResponse = await fetch('https://api.aimusicapi.ai/api/v1/sonic/separate', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sonicApiKeyVoxRm}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            audio_url: audioUrl,
+            separate_type: 'instrumental', // remove vocals, keep instruments
+            output_format: 'mp3',
+          }),
+        });
+
+        if (!voxRmResponse.ok) {
+          throw new Error(`Sonic VOX remove error: ${voxRmResponse.statusText}`);
+        }
+
+        const voxRmData = await voxRmResponse.json();
+        result.outputUrl = voxRmData.instrumental_url || voxRmData.output_url;
+        result.task_id = voxRmData.task_id;
+        result.vox_type = 'instrumental_only';
+        break;
+      }
+
+      case 'vox_enhance': {
+        // VOX — vocal enhancement/de-noise via Sonic remaster with vocal focus
+        const sonicApiKeyVoxEnh = Deno.env.get('SONIC_API_KEY');
+        const voxEnhResponse = await fetch('https://api.aimusicapi.ai/api/v1/sonic/enhance-vocals', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sonicApiKeyVoxEnh}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            audio_url: audioUrl,
+            denoise: parameters.denoise !== false,
+            clarity: parameters.clarity || 'high',
+          }),
+        });
+
+        if (!voxEnhResponse.ok) {
+          throw new Error(`Sonic VOX enhance error: ${voxEnhResponse.statusText}`);
+        }
+
+        const voxEnhData = await voxEnhResponse.json();
+        result.outputUrl = voxEnhData.output_url;
+        result.task_id = voxEnhData.task_id;
+        result.vox_type = 'enhanced_vocals';
+        break;
+      }
+
       case 'replace_section': {
         // Advanced edit - replace audio section
         if (!parameters.startTime || !parameters.endTime || !parameters.newSegmentUrl) {

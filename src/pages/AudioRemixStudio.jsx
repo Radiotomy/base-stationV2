@@ -14,6 +14,9 @@ import StemTrack from '@/components/audio/StemTrack';
 const EDIT_TASKS = [
   { value: 'extract_stems', label: '🎚️ Extract Stems', desc: 'Separate vocals, drums, bass & other' },
   { value: 'remaster', label: '✨ Remaster', desc: 'Enhance & normalize audio levels' },
+  { value: 'vox_isolate', label: '🎙️ VOX Isolate', desc: 'Extract clean vocal track only', group: 'vox' },
+  { value: 'vox_remove', label: '🔇 VOX Remove', desc: 'Remove vocals — instrumental only', group: 'vox' },
+  { value: 'vox_enhance', label: '✨ VOX Enhance', desc: 'De-noise & enhance vocal clarity', group: 'vox' },
   { value: 'add_vocals', label: '🎤 Add AI Vocals', desc: 'Add AI vocals to instrumental track' },
   { value: 'add_instrumental', label: '🎸 Add Instrumental', desc: 'Add backing track to vocals' },
   { value: 'replace_section', label: '✂️ Replace Section', desc: 'Swap a segment of the audio' },
@@ -162,7 +165,7 @@ export default function AudioRemixStudio() {
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-blue-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-3 tracking-tight">🎛️ Audio Remix Studio</h1>
-          <p className="text-white/60 text-lg">Extract stems, remaster, add vocals or instruments via AI.</p>
+          <p className="text-white/60 text-lg">Extract stems, VOX isolation, remaster, add vocals or instruments via AI.</p>
         </div>
       </div>
 
@@ -202,7 +205,9 @@ export default function AudioRemixStudio() {
                       </SelectTrigger>
                       <SelectContent>
                         {EDIT_TASKS.map(t => (
-                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          <SelectItem key={t.value} value={t.value}>
+                            {t.label}{t.group === 'vox' ? ' 🎙' : ''}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
