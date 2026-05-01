@@ -16,6 +16,14 @@ import { toast } from "sonner";
 const GENRES = ["hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "classical", "trap", "other"];
 const DEFAULT_AI_TOOLS = ["Loudly", "Nuro", "Sonic", "Producer", "LTX", "ElevenLabs", "Suno", "Udio"];
 
+const BANNER_TEMPLATES = [
+  { url: "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/5562b0990_generated_image.png", label: "Hip-Hop × AI" },
+  { url: "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/7dac9ae6f_generated_image.png", label: "EDM × AI" },
+  { url: "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/5c9927c16_generated_image.png", label: "Lo-Fi × AI" },
+  { url: "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/75c98e094_generated_image.png", label: "R&B × AI" },
+  { url: "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/e2dc7ab95_generated_image.png", label: "Trap × AI" },
+];
+
 export default function MyProfile() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -265,12 +273,42 @@ export default function MyProfile() {
               {/* Banner */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase mb-3 block">Banner</label>
+
+                {/* Template picker */}
+                <p className="text-xs text-muted-foreground mb-2">Choose a template or upload your own:</p>
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {BANNER_TEMPLATES.map((tpl) => (
+                    <button
+                      key={tpl.url}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, banner_url: tpl.url }))}
+                      className={`relative h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                        form.banner_url === tpl.url ? "border-purple-500 ring-2 ring-purple-500/40" : "border-transparent hover:border-purple-500/40"
+                      }`}
+                      title={tpl.label}
+                    >
+                      <img src={tpl.url} alt={tpl.label} className="w-full h-full object-cover" />
+                      {form.banner_url === tpl.url && (
+                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
+                          <CheckCircle2 className="w-4 h-4 text-white drop-shadow" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {BANNER_TEMPLATES.map((tpl) => (
+                    <span key={tpl.url} className="text-xs text-muted-foreground">{tpl.label}</span>
+                  )).reduce((acc, el, i) => i === 0 ? [el] : [...acc, <span key={`sep-${i}`} className="text-muted-foreground/40 text-xs">·</span>, el], [])}
+                </div>
+
+                {/* Preview */}
                 <div className="relative h-28 w-full rounded-xl overflow-hidden bg-gradient-to-br from-purple-900 via-indigo-900 to-pink-900 mb-2">
                   {form.banner_url && <img src={form.banner_url} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />}
                   <label className="absolute inset-0 flex items-center justify-center cursor-pointer bg-black/40 hover:bg-black/50 transition-colors">
                     {uploadingBanner
                       ? <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      : <div className="flex flex-col items-center gap-1 text-white/70 hover:text-white"><Upload className="w-5 h-5" /><span className="text-xs font-semibold">Upload Banner</span></div>}
+                      : <div className="flex flex-col items-center gap-1 text-white/70 hover:text-white"><Upload className="w-5 h-5" /><span className="text-xs font-semibold">Upload Custom Banner</span></div>}
                     <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && uploadImage(e.target.files[0], "banner_url")} />
                   </label>
                 </div>
