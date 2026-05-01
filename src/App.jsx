@@ -43,6 +43,7 @@ import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminAIIntegrations from './pages/admin/AdminAIIntegrations';
 import CreatorDashboard from './pages/CreatorDashboard';
 import Credits from './pages/Credits';
+import CommunityTemplates from './pages/CommunityTemplates';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -98,6 +99,7 @@ const AuthenticatedApp = () => {
           <Route path="/blockchain" element={<BlockchainRegistry />} />
           <Route path="/creator-dashboard" element={<CreatorDashboard />} />
           <Route path="/credits" element={<Credits />} />
+          <Route path="/templates" element={<CommunityTemplates />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />

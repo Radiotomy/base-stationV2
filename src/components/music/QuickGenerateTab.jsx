@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
+import MidiExportButton from '@/components/music/MidiExportButton';
 import { cacheManager } from '@/utils/cacheManager';
 
 const PROVIDERS = [
@@ -395,6 +396,7 @@ export default function QuickGenerateTab() {
                   <Download className="w-4 h-4" /> Download
                 </Button>
               </a>
+              <MidiExportButton audioUrl={audioUrl} bpm={result?.bpm} musicalKey={result?.key} title={aiParams?.title || 'Track'} />
               <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
                 {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
                 {extending ? 'Extending…' : 'Extend'}

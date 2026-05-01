@@ -1,0 +1,74 @@
+{
+  "name": "PromptTemplate",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_avatar_url": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short name for the template"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this template creates"
+    },
+    "studio_type": {
+      "type": "string",
+      "enum": [
+        "music",
+        "lyrics",
+        "cover_art",
+        "video"
+      ],
+      "description": "Which studio this template applies to"
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The actual prompt text"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "mood": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "use_count": {
+      "type": "number",
+      "default": 0
+    },
+    "like_count": {
+      "type": "number",
+      "default": 0
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "user_id",
+    "title",
+    "studio_type",
+    "prompt"
+  ]
+}
