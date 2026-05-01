@@ -2,14 +2,13 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Plus, Music, Play, Heart, MoreHorizontal, Star, Search, Filter } from "lucide-react";
+import { Plus, Music, Play, Heart, Search, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+import { AnimatePresence } from "framer-motion";
 import CreatePlaylistModal from "@/components/playlists/CreatePlaylistModal";
+import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
 
 const GENRES = ["all", "hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "trap", "other"];
 
@@ -20,6 +19,7 @@ export default function Playlists() {
   const [genre, setGenre] = useState("all");
   const [search, setSearch] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [showRadioBuilder, setShowRadioBuilder] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -58,9 +58,14 @@ export default function Playlists() {
               Build and discover playlists from the world's most creative AI music artists.
             </p>
             {user && (
-              <Button onClick={() => setShowCreate(true)} className="bg-white text-purple-900 hover:bg-purple-50 font-bold px-8 py-3 rounded-full text-sm">
-                <Plus className="w-4 h-4 mr-2" /> Create Playlist
-              </Button>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <Button onClick={() => setShowCreate(true)} className="bg-white text-purple-900 hover:bg-purple-50 font-bold px-8 py-3 rounded-full text-sm">
+                  <Plus className="w-4 h-4 mr-2" /> Create Playlist
+                </Button>
+                <Button onClick={() => setShowRadioBuilder(true)} className="bg-purple-600/80 hover:bg-purple-600 border border-purple-400/40 text-white font-bold px-8 py-3 rounded-full text-sm">
+                  <Radio className="w-4 h-4 mr-2" /> Build Radio Mix
+                </Button>
+              </div>
             )}
           </motion.div>
         </div>
@@ -120,6 +125,14 @@ export default function Playlists() {
       </div>
 
       {showCreate && <CreatePlaylistModal onClose={() => setShowCreate(false)} onCreated={loadPlaylists} />}
+      <AnimatePresence>
+        {showRadioBuilder && (
+          <RadioPlaylistBuilder
+            onClose={() => setShowRadioBuilder(false)}
+            onCreated={() => { setShowRadioBuilder(false); loadPlaylists(); }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
