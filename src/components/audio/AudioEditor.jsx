@@ -124,43 +124,64 @@ export default function AudioEditor({ audioUrl, onSave, title = 'Audio Editor' }
     };
   }, [audioUrl]);
 
-  // Draw waveform (animated while playing, static when loaded)
+  // Draw waveform (animated while playing, static placeholder when loaded)
   useEffect(() => {
-    if (!analyserRef.current || !canvasRef.current) return;
+    if (!canvasRef.current) return;
     
     const canvas = canvasRef.current;
     const ctx2d = canvas.getContext('2d');
-    const analyser = analyserRef.current;
-    const data = new Uint8Array(analyser.frequencyBinCount);
+    if (!ctx2d) return;
 
     const drawFrame = () => {
-      analyser.getByteFrequencyData(data);
       ctx2d.fillStyle = 'hsl(240,10%,6%)';
       ctx2d.fillRect(0, 0, canvas.width, canvas.height);
-      const bw = (canvas.width / data.length) * 2.5;
-      let x = 0;
-      data.forEach(v => {
-        const h = (v / 255) * canvas.height;
-        const pct = v / 255;
-        ctx2d.fillStyle = `hsl(${270 - pct * 60},70%,${40 + pct * 30}%)`;
-        ctx2d.fillRect(x, canvas.height - h, bw, h);
-        x += bw + 1;
-      });
-    };
 
-    // Draw static waveform if not playing
-    if (!isPlaying) {
-      drawFrame();
-      return;
-    }
+      // Try to get real analyser data if available
+      if (analyserRef.current) {
+        const analyser = analyserRef.current;
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(data);
+        
+        // Only draw if we have actual data
+        const hasData = data.some(v => v > 0);
+        if (hasData || isPlaying) {
+          const bw = (canvas.width / data.length) * 2.5;
+          let x = 0;
+          data.forEach(v => {
+            const h = (v / 255) * canvas.height;
+            const pct = v / 255;
+            ctx2d.fillStyle = `hsl(${270 - pct * 60},70%,${40 + pct * 30}%)`;
+            ctx2d.fillRect(x, canvas.height - h, bw, h);
+            x += bw + 1;
+          });
+          return;
+        }
+      }
+
+      // Draw placeholder waveform when audio loaded but not playing
+      if (duration > 0) {
+        ctx2d.fillStyle = 'hsl(270,60%,40%)';
+        const barWidth = 4;
+        const gap = 2;
+        for (let x = 0; x < canvas.width; x += barWidth + gap) {
+          const height = Math.sin(x * 0.05) * (canvas.height * 0.3) + (canvas.height * 0.4);
+          ctx2d.fillRect(x, canvas.height - height, barWidth, height);
+        }
+      }
+    };
 
     // Animate while playing
-    const draw = () => {
-      rafRef.current = requestAnimationFrame(draw);
-      drawFrame();
-    };
-    draw();
-    return () => cancelAnimationFrame(rafRef.current);
+    if (isPlaying) {
+      const draw = () => {
+        rafRef.current = requestAnimationFrame(draw);
+        drawFrame();
+      };
+      draw();
+      return () => cancelAnimationFrame(rafRef.current);
+    }
+
+    // Draw static once when not playing
+    drawFrame();
   }, [isPlaying, duration]);
 
   // EQ handlers
