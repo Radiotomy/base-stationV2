@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  BarChart3, Music, Zap, DollarSign, TrendingUp, Eye, Heart,
-  Download, Trash2, Edit, Mic2, Film, Image, FileText,
-  Plus, ExternalLink, Clock, CheckCircle, AlertCircle, Folder
+  BarChart3, Music, Zap, TrendingUp, Eye, Heart,
+  Trash2, Image, FileText, Film,
+  Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw
 } from "lucide-react";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
+import XPWidget from "@/components/dashboard/XPWidget";
+import ProjectsTab from "@/components/dashboard/ProjectsTab";
+import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -82,45 +85,69 @@ export default function CreatorDashboard() {
   const [activeTab, setActiveTab] = useState("library");
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [assetFilter, setAssetFilter] = useState("all");
   const navigate = useNavigate();
+
+  const loadData = useCallback(async (userId) => {
+    const [userTracks, userAssets] = await Promise.all([
+      base44.entities.TrackSubmission.filter({ artist_id: userId }, "-created_date", 50),
+      base44.entities.UserAsset.filter({ user_id: userId }, "-created_date", 100),
+    ]);
+    setTracks(userTracks);
+    setAssets(userAssets);
+    setStats({
+      total_tracks: userTracks.length,
+      published: userTracks.filter(t => t.status === "approved").length,
+      pending: userTracks.filter(t => t.status === "pending").length,
+      total_plays: userTracks.reduce((s, t) => s + (t.play_count || 0), 0),
+      total_likes: userTracks.reduce((s, t) => s + (t.like_count || 0), 0),
+      total_assets: userAssets.length,
+    });
+  }, []);
 
   useEffect(() => {
     base44.auth.me().then(u => {
       if (!u) { navigate("/"); return; }
       setUser(u);
-      Promise.all([
-        base44.entities.TrackSubmission.filter({ artist_id: u.id }, "-created_date", 50),
-        base44.entities.UserAsset.filter({ user_id: u.id }, "-created_date", 100),
-      ]).then(([userTracks, userAssets]) => {
-        setTracks(userTracks);
-        setAssets(userAssets);
-        setStats({
-          total_tracks: userTracks.length,
-          published: userTracks.filter(t => t.status === "approved").length,
-          pending: userTracks.filter(t => t.status === "pending").length,
-          total_plays: userTracks.reduce((s, t) => s + (t.play_count || 0), 0),
-          total_likes: userTracks.reduce((s, t) => s + (t.like_count || 0), 0),
-          total_assets: userAssets.length,
-        });
-        setLoading(false);
-      });
+      loadData(u.id).finally(() => setLoading(false));
     }).catch(() => navigate("/"));
-  }, [navigate]);
+  }, [navigate, loadData]);
+
+  // Real-time subscription to asset changes
+  useEffect(() => {
+    if (!user) return;
+    const unsub = base44.entities.UserAsset.subscribe((event) => {
+      if (event.type === 'create' && event.data?.user_id === user.id) {
+        setAssets(prev => [event.data, ...prev]);
+        setStats(s => s ? { ...s, total_assets: s.total_assets + 1 } : s);
+      } else if (event.type === 'delete') {
+        setAssets(prev => prev.filter(a => a.id !== event.id));
+        setStats(s => s ? { ...s, total_assets: Math.max(0, s.total_assets - 1) } : s);
+      } else if (event.type === 'update' && event.data?.user_id === user.id) {
+        setAssets(prev => prev.map(a => a.id === event.id ? event.data : a));
+      }
+    });
+    return unsub;
+  }, [user]);
 
   const deleteAsset = async (id) => {
     await base44.entities.UserAsset.delete(id);
-    setAssets(a => a.filter(x => x.id !== id));
     toast.success("Asset deleted");
   };
 
   const assetsByType = {
-    all: assets,
-    track: assets.filter(a => a.asset_type === "track"),
-    lyric: assets.filter(a => a.asset_type === "lyric"),
+    all:      assets,
+    track:    assets.filter(a => a.asset_type === "track"),
+    lyric:    assets.filter(a => a.asset_type === "lyric"),
     coverart: assets.filter(a => a.asset_type === "coverart"),
-    project: assets.filter(a => a.asset_type === "project"),
   };
-  const [assetFilter, setAssetFilter] = useState("all");
+
+  const TABS = [
+    { key: "library",  label: `📂 Library (${assets.length})` },
+    { key: "projects", label: "🗂️ Projects" },
+    { key: "tracks",   label: `📤 Submissions (${tracks.length})` },
+    { key: "history",  label: "🕐 History" },
+  ];
 
   if (loading) return (
     <div className="min-h-[60vh] flex items-center justify-center">
@@ -131,45 +158,52 @@ export default function CreatorDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
       {/* Hero */}
-      <div className="mb-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 Studio Dashboard</h1>
-          <p className="text-muted-foreground">Your tracks, generated assets, analytics & earnings — all in one place.</p>
+          <p className="text-muted-foreground">Your tracks, assets, projects & generation history.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <CreditBalanceWidget />
           <Link to="/credits">
             <Button variant="outline" className="rounded-xl gap-2 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10 text-sm">
               <Zap className="w-4 h-4" /> Get Credits
             </Button>
           </Link>
+          <Button onClick={() => user && loadData(user.id)} variant="ghost" size="icon" className="rounded-xl">
+            <RefreshCw className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
+      {/* XP Widget */}
+      {user && <div className="mb-8"><XPWidget userId={user.id} /></div>}
+
       {/* Stats Grid */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
-          <StatCard icon={Music}      label="Submitted"   value={stats.total_tracks}          color="bg-purple-600" />
-          <StatCard icon={CheckCircle} label="Published"  value={stats.published}              color="bg-emerald-600" />
-          <StatCard icon={Clock}      label="Pending"     value={stats.pending}                color="bg-yellow-600" />
-          <StatCard icon={Eye}        label="Total Plays" value={stats.total_plays.toLocaleString()} color="bg-orange-600" />
-          <StatCard icon={Heart}      label="Total Likes" value={stats.total_likes.toLocaleString()} color="bg-pink-600" />
-          <StatCard icon={Folder}     label="Assets"      value={stats.total_assets}           color="bg-blue-600" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+          <StatCard icon={Music}       label="Submitted"   value={stats.total_tracks}               color="bg-purple-600" />
+          <StatCard icon={CheckCircle} label="Published"   value={stats.published}                   color="bg-emerald-600" />
+          <StatCard icon={Clock}       label="Pending"     value={stats.pending}                     color="bg-yellow-600" />
+          <StatCard icon={Eye}         label="Total Plays" value={stats.total_plays.toLocaleString()} color="bg-orange-600" />
+          <StatCard icon={Heart}       label="Likes"       value={stats.total_likes.toLocaleString()} color="bg-pink-600" />
+          <StatCard icon={Folder}      label="Assets"      value={stats.total_assets}                 color="bg-blue-600" />
         </div>
       )}
 
       {/* Quick Create */}
-      <div className="mb-10">
+      <div className="mb-8">
         <h2 className="text-lg font-black text-foreground mb-4">Quick Create</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { to: "/lyrics-studio",   label: "🎤 Write Lyrics",    color: "from-pink-600 to-rose-600" },
-            { to: "/music-studio",    label: "🎵 Generate Music",   color: "from-blue-600 to-cyan-600" },
-            { to: "/cover-art-studio",label: "🎨 Cover Art",        color: "from-purple-600 to-violet-600" },
-            { to: "/video-studio",    label: "🎬 Create Video",     color: "from-indigo-600 to-purple-600" },
+            { to: "/lyrics-studio",    label: "🎤 Lyrics",    color: "from-pink-600 to-rose-600" },
+            { to: "/music-studio",     label: "🎵 Music",     color: "from-blue-600 to-cyan-600" },
+            { to: "/cover-art-studio", label: "🎨 Cover Art", color: "from-purple-600 to-violet-600" },
+            { to: "/video-studio",     label: "🎬 Video",     color: "from-indigo-600 to-purple-600" },
+            { to: "/audio-remix-studio", label: "🎛️ Remix",   color: "from-teal-600 to-cyan-600" },
           ].map(({ to, label, color }) => (
             <Link key={to} to={to}
-              className={`bg-gradient-to-r ${color} text-white font-bold rounded-xl py-4 text-center text-sm hover:opacity-90 transition-opacity`}>
+              className={`bg-gradient-to-r ${color} text-white font-bold rounded-xl py-3 text-center text-sm hover:opacity-90 transition-opacity`}>
               {label}
             </Link>
           ))}
@@ -177,13 +211,10 @@ export default function CreatorDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-border">
-        {[
-          { key: "library", label: `📂 Asset Library (${assets.length})` },
-          { key: "tracks",  label: `📤 Submissions (${tracks.length})` },
-        ].map(({ key, label }) => (
+      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
+        {TABS.map(({ key, label }) => (
           <button key={key} onClick={() => setActiveTab(key)}
-            className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${activeTab === key ? "border-purple-500 text-purple-400" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-all ${activeTab === key ? "border-purple-500 text-purple-400" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {label}
           </button>
         ))}
@@ -192,14 +223,12 @@ export default function CreatorDashboard() {
       {/* Asset Library Tab */}
       {activeTab === "library" && (
         <div>
-          {/* Filter chips */}
           <div className="flex gap-2 mb-5 flex-wrap">
             {[
               { key: "all",      label: `All (${assets.length})` },
               { key: "track",    label: `🎵 Tracks (${assetsByType.track.length})` },
               { key: "lyric",    label: `📝 Lyrics (${assetsByType.lyric.length})` },
               { key: "coverart", label: `🎨 Cover Art (${assetsByType.coverart.length})` },
-              { key: "project",  label: `🎬 Videos (${assetsByType.project.length})` },
             ].map(({ key, label }) => (
               <button key={key} onClick={() => setAssetFilter(key)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${assetFilter === key ? "bg-purple-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
@@ -207,8 +236,7 @@ export default function CreatorDashboard() {
               </button>
             ))}
           </div>
-
-          {assetsByType[assetFilter].length === 0 ? (
+          {(assetsByType[assetFilter] || []).length === 0 ? (
             <div className="text-center py-12 border border-dashed border-border rounded-2xl">
               <Folder className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
               <p className="text-muted-foreground text-sm">No assets yet — generate something in the studios!</p>
@@ -216,12 +244,17 @@ export default function CreatorDashboard() {
             </div>
           ) : (
             <div className="space-y-3">
-              {assetsByType[assetFilter].map(asset => (
+              {(assetsByType[assetFilter] || []).map(asset => (
                 <AssetCard key={asset.id} asset={asset} onDelete={deleteAsset} />
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {/* Projects Tab */}
+      {activeTab === "projects" && user && (
+        <ProjectsTab userId={user.id} assets={assets} />
       )}
 
       {/* Submissions Tab */}
@@ -235,7 +268,6 @@ export default function CreatorDashboard() {
               </Button>
             </Link>
           </div>
-
           {tracks.length === 0 ? (
             <div className="text-center py-12 border border-dashed border-border rounded-2xl">
               <Music className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
@@ -261,20 +293,24 @@ export default function CreatorDashboard() {
                       <span className="text-xs text-muted-foreground">{track.play_count || 0} plays · {track.like_count || 0} likes</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    {track.track_url && (
-                      <a href={track.track_url} target="_blank" rel="noopener noreferrer">
-                        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Button>
-                      </a>
-                    )}
-                  </div>
+                  {track.track_url && (
+                    <a href={track.track_url} target="_blank" rel="noopener noreferrer"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </Button>
+                    </a>
+                  )}
                 </motion.div>
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {/* Generation History Tab */}
+      {activeTab === "history" && user && (
+        <GenerationHistoryTab userId={user.id} />
       )}
     </div>
   );

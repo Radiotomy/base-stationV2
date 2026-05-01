@@ -1,0 +1,85 @@
+{
+  "name": "Project",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Project name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "in_progress",
+        "complete",
+        "published"
+      ],
+      "default": "draft"
+    },
+    "track_asset_id": {
+      "type": "string",
+      "description": "Linked UserAsset ID for the track"
+    },
+    "track_url": {
+      "type": "string"
+    },
+    "lyrics_asset_id": {
+      "type": "string",
+      "description": "Linked UserAsset ID for lyrics"
+    },
+    "lyrics_text": {
+      "type": "string"
+    },
+    "cover_art_asset_id": {
+      "type": "string"
+    },
+    "video_asset_id": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "mood": {
+      "type": "string"
+    },
+    "bpm": {
+      "type": "number"
+    },
+    "musical_key": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false
+    },
+    "submission_id": {
+      "type": "string",
+      "description": "Linked TrackSubmission ID if published"
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ]
+}
