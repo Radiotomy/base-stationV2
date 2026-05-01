@@ -9,12 +9,57 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-const GENRES = ["hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "classical", "trap", "other"];
-const DEFAULT_AI_TOOLS = ["Loudly", "Nuro", "Sonic", "Producer", "LTX", "ElevenLabs", "Suno", "Udio"];
+const BASE_GENRES = [
+  "hip-hop", "trap", "drill", "afrobeats", "afro-trap",
+  "edm", "house", "deep house", "tech house", "future bass", "dubstep", "drum & bass", "trance", "ambient electronic",
+  "pop", "dark pop", "hyperpop", "synth-pop", "indie pop",
+  "r&b", "neo soul", "alternative r&b",
+  "lo-fi", "lo-fi hip-hop", "lo-fi beats",
+  "jazz", "jazz fusion", "nu jazz",
+  "rock", "indie rock", "alternative", "post-rock",
+  "classical", "cinematic", "orchestral",
+  "reggaeton", "latin trap", "cumbia",
+  "country", "folk", "americana",
+  "soul", "funk", "disco",
+  "metal", "punk",
+  "world", "experimental", "other"
+];
+
+const BASE_AI_TOOLS = [
+  // Music generation
+  "Suno", "Udio", "Loudly", "Nuro", "Sonic", "Producer", "Beatoven", "Aiva", "Soundraw",
+  "Mubert", "Boomy", "Stable Audio", "MusicGen", "AudioCraft",
+  // Voice / vocal AI
+  "ElevenLabs", "Kling", "Resemble AI", "Voicify", "SpliceAI", "Kits.ai",
+  // Video & visuals
+  "LTX", "Runway ML", "Pika Labs", "Kling AI", "Luma AI", "Sora", "Midjourney", "DALL-E", "Stable Diffusion", "Adobe Firefly",
+  // Production & mixing
+  "iZotope RX", "LANDR", "Accusonus", "Neutron AI", "Ozone AI",
+  // Lyrics & writing
+  "ChatGPT", "Claude", "Gemini", "Jasper",
+  // DAW / Tools
+  "Logic Pro", "Ableton", "FL Studio", "GarageBand",
+];
+
+const STORAGE_KEY_TOOLS = "aivtv_custom_tools";
+const STORAGE_KEY_GENRES = "aivtv_custom_genres";
+
+function getStoredList(key, base) {
+  try {
+    const stored = JSON.parse(localStorage.getItem(key) || "[]");
+    const merged = [...base];
+    stored.forEach(item => { if (!merged.includes(item)) merged.push(item); });
+    return merged;
+  } catch { return base; }
+}
+
+function saveToStorage(key, base, extras) {
+  const newItems = extras.filter(e => !base.includes(e));
+  try { localStorage.setItem(key, JSON.stringify(newItems)); } catch {}
+}
 
 const BANNER_TEMPLATES = [
   { url: "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/5562b0990_generated_image.png", label: "Hip-Hop × AI" },
@@ -32,6 +77,9 @@ export default function MyProfile() {
   const [mode, setMode] = useState("view"); // "view" | "edit" | "setup"
   const [selectedTools, setSelectedTools] = useState([]);
   const [customToolInput, setCustomToolInput] = useState("");
+  const [customGenreInput, setCustomGenreInput] = useState("");
+  const [availableTools, setAvailableTools] = useState(() => getStoredList(STORAGE_KEY_TOOLS, BASE_AI_TOOLS));
+  const [availableGenres, setAvailableGenres] = useState(() => getStoredList(STORAGE_KEY_GENRES, BASE_GENRES));
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const navigate = useNavigate();
@@ -91,9 +139,22 @@ export default function MyProfile() {
 
   const addCustomTool = () => {
     const trimmed = customToolInput.trim();
-    if (!trimmed || selectedTools.includes(trimmed)) return;
-    setSelectedTools(prev => [...prev, trimmed]);
+    if (!trimmed) return;
+    const updated = availableTools.includes(trimmed) ? availableTools : [...availableTools, trimmed];
+    setAvailableTools(updated);
+    saveToStorage(STORAGE_KEY_TOOLS, BASE_AI_TOOLS, updated);
+    if (!selectedTools.includes(trimmed)) setSelectedTools(prev => [...prev, trimmed]);
     setCustomToolInput("");
+  };
+
+  const addCustomGenre = () => {
+    const trimmed = customGenreInput.trim().toLowerCase();
+    if (!trimmed) return;
+    const updated = availableGenres.includes(trimmed) ? availableGenres : [...availableGenres, trimmed];
+    setAvailableGenres(updated);
+    saveToStorage(STORAGE_KEY_GENRES, BASE_GENRES, updated);
+    setForm(f => ({ ...f, genre: trimmed }));
+    setCustomGenreInput("");
   };
 
   const uploadImage = async (file, field) => {
@@ -213,29 +274,47 @@ export default function MyProfile() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Genre</label>
-                  <Select value={form.genre} onValueChange={v => setForm(f => ({ ...f, genre: v }))}>
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select genre" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GENRES.map(g => (
-                        <SelectItem key={g} value={g} className="capitalize">{g}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Genre</label>
+                <div className="flex flex-wrap gap-1.5 mb-2 max-h-36 overflow-y-auto pr-1">
+                  {availableGenres.map(g => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, genre: g }))}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-all ${
+                        form.genre === g
+                          ? "bg-purple-600 text-white"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Location</label>
+                <div className="flex gap-2">
                   <Input
-                    value={form.location}
-                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                    placeholder="City, Country"
-                    className="rounded-xl"
+                    value={customGenreInput}
+                    onChange={e => setCustomGenreInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addCustomGenre()}
+                    placeholder="Add genre (e.g. phonk, afrobeats…)"
+                    className="rounded-xl text-sm"
                   />
+                  <Button type="button" onClick={addCustomGenre} variant="outline" className="rounded-xl px-3 flex-shrink-0 gap-1">
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
+                {form.genre && <p className="text-xs text-purple-400 mt-1">Selected: <span className="capitalize font-semibold">{form.genre}</span></p>}
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase mb-2 block">Location</label>
+                <Input
+                  value={form.location}
+                  onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                  placeholder="City, Country"
+                  className="rounded-xl"
+                />
               </div>
             </div>
 
@@ -325,8 +404,8 @@ export default function MyProfile() {
             <div className="bg-card rounded-2xl border border-border p-6 space-y-3">
               <h3 className="font-black text-foreground">AI Tools You Use</h3>
               <p className="text-xs text-muted-foreground">Select presets or add your own</p>
-              <div className="flex flex-wrap gap-2">
-                {DEFAULT_AI_TOOLS.map(tool => (
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+                {availableTools.map(tool => (
                   <button
                     key={tool}
                     type="button"
@@ -341,20 +420,6 @@ export default function MyProfile() {
                   </button>
                 ))}
               </div>
-
-              {/* Custom tools added by user */}
-              {selectedTools.filter(t => !DEFAULT_AI_TOOLS.includes(t)).length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {selectedTools.filter(t => !DEFAULT_AI_TOOLS.includes(t)).map(tool => (
-                    <span key={tool} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium bg-purple-600 text-white">
-                      {tool}
-                      <button type="button" onClick={() => toggleTool(tool)} className="hover:text-red-300 transition-colors">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
 
               {/* Add custom tool */}
               <div className="flex gap-2 pt-1">
