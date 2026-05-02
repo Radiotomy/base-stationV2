@@ -227,8 +227,11 @@ async function generateWithLoudly({ genre, mood, tempo, duration }) {
   // Ensure genre is valid; fallback to Pop
   const validGenre = genre && LOUDLY_GENRE_IDS[genre] ? genre : 'Pop';
   const genreId = LOUDLY_GENRE_IDS[validGenre];
+  if (!genreId) throw new Error(`Invalid genre "${validGenre}" — not found in LOUDLY_GENRE_IDS`);
   const energy = LOUDLY_ENERGY_MAP[mood] || 'medium';
 
+  console.log('Loudly params:', { genre, validGenre, genreId, mood, energy, tempo, duration });
+  
   const form = new FormData();
   form.append('genre_id', String(genreId));
   form.append('duration', String(Math.min(Math.max(duration || 30, 30), 420)));
