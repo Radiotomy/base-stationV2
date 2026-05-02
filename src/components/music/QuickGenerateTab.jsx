@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight } from 'lucide-react';
+import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -86,19 +86,26 @@ export default function QuickGenerateTab() {
     }
   }, [prompt, provider]);
 
+  // Use a ref so onComplete always has access to the latest aiParams even when called from polling
+  const aiParamsRef = React.useRef(null);
+  const promptRef = React.useRef('');
+
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
     setResult(data);
     toast.success(data?.audio_urls?.length > 1 ? `🎵 ${data.audio_urls.length} tracks ready!` : '🎵 Track ready!');
 
-    // Generate cover art first if needed, then save all tracks with cover art together
+    const params = aiParamsRef.current;
+    const currentPrompt = promptRef.current;
+
+    // Always generate cover art for every track
     let coverImageUrl = data.cover_image_url || null;
     if (!coverImageUrl) {
       setGeneratingCover(true);
       coverImageUrl = await generateCoverArtUrl(
-        aiParams?.title || prompt.slice(0, 40),
-        aiParams?.mood || 'energetic',
-        aiParams?.genre || 'music'
+        params?.title || currentPrompt.slice(0, 40) || 'Track',
+        params?.mood || 'Energetic',
+        params?.genre || 'music'
       );
       setGeneratingCover(false);
       if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
@@ -106,20 +113,20 @@ export default function QuickGenerateTab() {
 
     // Save primary track (with cover art)
     const primaryUrl = data.audio_url || data.output_url;
-    await saveTrackToLibrary(primaryUrl, coverImageUrl, aiParams);
+    await saveTrackToLibrary(primaryUrl, coverImageUrl, params);
 
     // Save additional tracks (e.g. Sonic track 2) — same cover art
     if (data.audio_urls?.length > 1) {
       for (let i = 1; i < data.audio_urls.length; i++) {
         await saveTrackToLibrary(data.audio_urls[i], coverImageUrl, {
-          ...aiParams,
-          title: aiParams?.title ? `${aiParams.title} (Take ${i + 1})` : `Track ${i + 1}`,
+          ...params,
+          title: params?.title ? `${params.title} (Take ${i + 1})` : `Track ${i + 1}`,
         });
       }
     }
 
     toast.success('✅ Auto-saved to library!');
-  }, [aiParams, prompt, saveTrackToLibrary]);
+  }, [saveTrackToLibrary]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -205,8 +212,10 @@ export default function QuickGenerateTab() {
       }
 
       setAiParams(aiDecision);
+      aiParamsRef.current = aiDecision;
+      promptRef.current = prompt;
 
-      // Step 2: Generate lyrics if needed
+      // Step 2: Generate lyrics if needed (vocal providers: sonic, nuro, tempcolor song mode, producer)
       let lyrics = '';
       if (aiDecision.needs_lyrics) {
         try {
@@ -217,7 +226,8 @@ export default function QuickGenerateTab() {
             length: 'medium',
           });
           lyrics = lyricsRes.data?.lyrics || '';
-        } catch { /* lyrics optional */ }
+          if (lyrics) toast.success('🎤 Lyrics generated!');
+        } catch { /* lyrics optional — provider will generate instrumentally */ }
       }
 
       // Step 3: Generate the music track
@@ -353,16 +363,26 @@ export default function QuickGenerateTab() {
       <AnimatePresence>
         {aiParams && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-            <p className="text-xs font-semibold text-purple-300 mb-2 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> AI Decided:</p>
+            className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 space-y-2">
+            <p className="text-xs font-semibold text-purple-300 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> AI Decided:</p>
             <div className="flex flex-wrap gap-1.5">
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">{aiParams.genre}</Badge>
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">{aiParams.mood}</Badge>
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">{aiParams.bpm} BPM</Badge>
               <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30 text-xs">{aiParams.duration}s</Badge>
-              {aiParams.needs_lyrics && <Badge className="bg-pink-500/20 text-pink-300 border-pink-500/30 text-xs">🎤 Lyrics</Badge>}
+              {aiParams.needs_lyrics
+                ? <Badge className="bg-pink-500/20 text-pink-300 border-pink-500/30 text-xs">🎤 Auto-lyrics on</Badge>
+                : <Badge className="bg-muted text-muted-foreground border-border text-xs">🎼 Instrumental</Badge>}
             </div>
-            {aiParams.title && <p className="text-xs text-purple-200 mt-1.5 font-semibold">"{aiParams.title}"</p>}
+            {aiParams.title && <p className="text-xs text-purple-200 font-semibold">"{aiParams.title}"</p>}
+            {aiParams.needs_lyrics && (
+              <p className="text-xs text-pink-300/80 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                Lyrics auto-generated. For custom lyrics, use{' '}
+                <Link to="/lyrics-studio" className="underline hover:text-pink-200">Lyrics Studio</Link>
+                {' '}then paste into Advanced tab.
+              </p>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -402,26 +422,31 @@ export default function QuickGenerateTab() {
               {result?.key && <Badge variant="outline" className="text-xs">{result.key}</Badge>}
             </div>
 
-            {/* Cover Art */}
-            {(result?.cover_image_url || generatingCover) && (
-              <div className="flex items-start gap-4">
-                {generatingCover ? (
-                  <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                    <div className="w-5 h-5 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-                  </div>
-                ) : result?.cover_image_url ? (
-                  <img src={result.cover_image_url} alt="Cover art" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-border" />
-                ) : null}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1"><Image className="w-3 h-3" /> Auto-generated cover art</p>
-                  <Link to="/cover-art-studio">
-                    <Button variant="outline" size="sm" className="text-xs gap-1 rounded-lg">
-                      <Palette className="w-3 h-3" /> Upgrade in Cover Art Studio
-                    </Button>
-                  </Link>
+            {/* Cover Art — always shown after track completes */}
+            <div className="flex items-start gap-4">
+              {generatingCover ? (
+                <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                  <div className="w-5 h-5 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
                 </div>
+              ) : result?.cover_image_url ? (
+                <img src={result.cover_image_url} alt="Cover art" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-border" />
+              ) : (
+                <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 border border-border">
+                  <Image className="w-6 h-6 text-muted-foreground opacity-30" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1">
+                  <Image className="w-3 h-3" />
+                  {generatingCover ? 'Generating cover art…' : result?.cover_image_url ? 'Auto-generated cover art' : 'Cover art'}
+                </p>
+                <Link to="/cover-art-studio">
+                  <Button variant="outline" size="sm" className="text-xs gap-1 rounded-lg">
+                    <Palette className="w-3 h-3" /> Upgrade in Cover Art Studio
+                  </Button>
+                </Link>
               </div>
-            )}
+            </div>
 
             {/* Primary track */}
             <audio controls className="w-full rounded-xl" src={audioUrl} />
