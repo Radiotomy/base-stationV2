@@ -1,8 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SONIC_API_KEY    = Deno.env.get('SONIC_API_KEY');
-const NURO_API_KEY     = Deno.env.get('NURO_API_KEY');
-const PRODUCER_API_KEY = Deno.env.get('PRODUCER_API_KEY');
+// All aimusicapi.ai providers share one API key
+const API_KEY          = Deno.env.get('SONIC_API_KEY') || Deno.env.get('NURO_API_KEY') || Deno.env.get('PRODUCER_API_KEY');
+const SONIC_API_KEY    = API_KEY;
+const NURO_API_KEY     = API_KEY;
+const PRODUCER_API_KEY = API_KEY;
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
@@ -30,26 +32,41 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
 }
 
 // ── Nuro ─────────────────────────────────────────────────────────────────────
-// Docs: POST /api/v1/nuro/create
-// type: "vocal" (needs lyrics) | "bgm" (instrumental)
-// Poll: GET /api/v1/nuro/task/{task_id} → { status: "pending"|"running"|"succeeded", audio_url }
-async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics }) {
+// vocal: POST /api/v1/nuro/create { type:"vocal", lyrics, genre(str), mood(str), duration }
+// bgm:   POST /api/v1/nuro/create { type:"bgm", description, genre(arr), mood(arr), duration, version }
+// Poll:  GET  /api/v1/nuro/task/{task_id} → { status: "pending"|"running"|"succeeded", audio_url }
+async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics, sound_prompt }) {
   const hasLyrics = lyrics && lyrics.trim().length > 0;
-  const body = hasLyrics
-    ? {
-        type: 'vocal',
-        lyrics,
-        genre: genre || 'Pop',
-        mood: mood || 'Dynamic/Energetic',
-        duration: Math.min(Math.max(duration || 120, 30), 240),
-      }
-    : {
-        type: 'bgm',
-        genre: genre || 'Pop',
-        mood: mood || 'Dynamic/Energetic',
-        duration: Math.min(Math.max(duration || 60, 30), 60), // bgm max 60s v1
-        ...(nuro_version && { version: nuro_version }),
-      };
+
+  let body;
+  if (hasLyrics) {
+    // Vocal mode — needs lyrics, genre/mood are strings
+    body = {
+      type: 'vocal',
+      lyrics,
+      genre: genre || 'Pop',
+      mood: mood || 'Dynamic/Energetic',
+      duration: Math.min(Math.max(duration || 120, 30), 240),
+    };
+  } else {
+    // BGM / instrumental mode — uses description, genre/mood are arrays
+    const genreMap = {
+      'Hip-Hop': 'hip hop', 'EDM': 'dance/edm', 'Pop': 'pop', 'R&B': 'pop',
+      'Lo-Fi': 'chill out', 'Jazz': 'jazz', 'Rock': 'rock', 'Trap': 'hip hop',
+    };
+    const moodMap = {
+      'Energetic': 'energetic', 'Chill': 'calm', 'Dark': 'dramatic',
+      'Happy': 'happy', 'Uplifting': 'uplifting', 'Aggressive': 'intense',
+    };
+    body = {
+      type: 'bgm',
+      description: sound_prompt || `${mood} ${genre} instrumental music`,
+      genre: [genreMap[genre] || 'pop'],
+      mood: [moodMap[mood] || 'energetic'],
+      duration: Math.min(Math.max(duration || 60, 1), 60),
+      version: nuro_version || 'v2.0',
+    };
+  }
 
   const res = await fetch(`${AI_BASE}/nuro/create`, {
     method: 'POST',
@@ -59,7 +76,7 @@ async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics })
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || JSON.stringify(data));
   const taskId = data.task_id || data.id;
-  if (!taskId) throw new Error('No task_id from Nuro');
+  if (!taskId) throw new Error('No task_id from Nuro: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'nuro' };
 }
 

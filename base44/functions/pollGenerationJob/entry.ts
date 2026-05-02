@@ -1,8 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SONIC_API_KEY     = Deno.env.get('SONIC_API_KEY');
-const NURO_API_KEY      = Deno.env.get('NURO_API_KEY');
-const PRODUCER_API_KEY  = Deno.env.get('PRODUCER_API_KEY');
+// All aimusicapi.ai providers share one API key
+const API_KEY           = Deno.env.get('SONIC_API_KEY') || Deno.env.get('NURO_API_KEY') || Deno.env.get('PRODUCER_API_KEY');
+const SONIC_API_KEY     = API_KEY;
+const NURO_API_KEY      = API_KEY;
+const PRODUCER_API_KEY  = API_KEY;
 const LTX_API_KEY       = Deno.env.get('LTX_API_KEY');
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
