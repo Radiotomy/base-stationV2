@@ -27,9 +27,12 @@ const QUICK_EXAMPLES = [
   'Smooth neo-soul R&B with soulful vocals and live bass',
 ];
 
+const GENRE_OPTIONS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Country', 'Red Dirt Country', 'Afrobeats', 'Drill', 'Ambient', 'Indie'];
+
 export default function QuickGenerateTab() {
   const [prompt, setPrompt] = useState('');
   const [provider, setProvider] = useState('sonic');
+  const [selectedGenre, setSelectedGenre] = useState(''); // user-selected genre (overrides AI)
   const [voicePersonas, setVoicePersonas] = useState([]);
   const [selectedPersona, setSelectedPersona] = useState('auto');
   const [generating, setGenerating] = useState(false);
@@ -179,15 +182,15 @@ export default function QuickGenerateTab() {
 
     try {
       // Step 1: AI determines all parameters — check cache first
-      const cacheKey = `ai_params:${prompt.trim().toLowerCase()}`;
+      const cacheKey = `ai_params:${prompt.trim().toLowerCase()}:${selectedGenre}`;
       let aiDecision = cacheManager.get(cacheKey);
 
       if (!aiDecision) {
       aiDecision = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a music production AI. Given this track description: "${prompt}"
-        
+        prompt: `You are a music production AI. Given this track description: "${prompt}"${selectedGenre ? ` and the user-selected genre: "${selectedGenre}"` : ''}
+
         Return JSON with these fields:
-        - genre: one of [Hip-Hop, Trap, EDM, House, Pop, R&B, Lo-Fi, Jazz, Rock, Afrobeats, Drill, Ambient]
+        - genre: ${selectedGenre ? `"${selectedGenre}" (MUST match user selection, or hybrid like "Red Dirt Country")` : 'one of [Hip-Hop, Trap, EDM, House, Pop, R&B, Lo-Fi, Jazz, Rock, Country, Red Dirt Country, Afrobeats, Drill, Ambient, Indie]'}
         - mood: one of [Energetic, Chill, Dark, Happy, Sad, Uplifting, Aggressive, Romantic, Melancholic]
         - bpm: integer between 60-200 appropriate for the genre
         - duration: integer, one of [30, 60, 90, 120] in seconds
@@ -314,6 +317,21 @@ export default function QuickGenerateTab() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Genre Selection */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Genre (Optional)</p>
+        <ChipSelector
+          chipType="genre"
+          defaults={GENRE_OPTIONS}
+          selected={selectedGenre}
+          onSelect={setSelectedGenre}
+          activeClass="bg-blue-600 text-white"
+          allowAny
+          anyLabel="Let AI Decide"
+        />
+        {selectedGenre && <p className="text-xs text-blue-300 mt-1.5">✓ AI will respect "{selectedGenre}" and tailor lyrics accordingly.</p>}
       </div>
 
       {/* Voice Persona Selection */}
