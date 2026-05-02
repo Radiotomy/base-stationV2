@@ -104,14 +104,36 @@ export default function AdvancedGenerateTab() {
     setGeneratingCover(false);
   };
 
+  const autoSaveToLibrary = useCallback(async (data) => {
+    const audioUrl = data?.audio_url || data?.output_url;
+    if (!audioUrl) return;
+    try {
+      const user = await base44.auth.me();
+      await base44.entities.UserAsset.create({
+        user_id: user.id,
+        user_email: user.email,
+        asset_type: 'track',
+        title: `${mood} ${genre} — ${provider}`,
+        file_url: audioUrl,
+        thumbnail_url: data.cover_image_url || '',
+        is_public: false,
+        metadata: { genre, mood, tempo, provider, duration, bpm: data.bpm, key: data.key, auto_saved: true },
+      });
+      toast.success('✅ Auto-saved to library!');
+    } catch (err) {
+      console.warn('Auto-save failed:', err.message);
+    }
+  }, [mood, genre, provider, tempo, duration]);
+
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
     setResult(data);
     toast.success('🎵 Track ready!');
+    await autoSaveToLibrary(data);
     if (!data.cover_image_url) {
       await autoGenerateCoverArt(`${mood} ${genre} Track`, mood, genre);
     }
-  }, [mood, genre]);
+  }, [mood, genre, autoSaveToLibrary]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -189,6 +211,7 @@ export default function AdvancedGenerateTab() {
         setResult(res.data);
         setGenerating(false);
         toast.success('🎵 Track ready!');
+        await autoSaveToLibrary(res.data);
         if (!res.data.cover_image_url) {
           await autoGenerateCoverArt(`${mood} ${genre} Track`, mood, genre);
         }

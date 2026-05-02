@@ -61,11 +61,43 @@ export default function QuickGenerateTab() {
     setGeneratingCover(false);
   };
 
+  const autoSaveToLibrary = useCallback(async (data, params) => {
+    const audioUrl = data?.audio_url || data?.output_url;
+    if (!audioUrl) return;
+    try {
+      const user = await base44.auth.me();
+      await base44.entities.UserAsset.create({
+        user_id: user.id,
+        user_email: user.email,
+        asset_type: 'track',
+        title: params?.title || prompt.slice(0, 40) || 'Generated Track',
+        file_url: audioUrl,
+        thumbnail_url: data.cover_image_url || '',
+        is_public: false,
+        metadata: {
+          genre: params?.genre,
+          mood: params?.mood,
+          bpm: params?.bpm || data.bpm,
+          provider,
+          duration: params?.duration,
+          ai_assisted: true,
+          prompt,
+          auto_saved: true,
+        },
+      });
+      toast.success('✅ Auto-saved to library!');
+    } catch (err) {
+      console.warn('Auto-save failed:', err.message);
+    }
+  }, [prompt, provider]);
+
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
     setResult(data);
     toast.success('🎵 Track ready!');
-    // Auto-generate cover art if Sonic didn't provide one
+    // Auto-save to library
+    await autoSaveToLibrary(data, aiParams);
+    // Auto-generate cover art if not provided
     if (!data.cover_image_url) {
       await autoGenerateCoverArt(
         aiParams?.title || prompt.slice(0, 40),
@@ -73,7 +105,7 @@ export default function QuickGenerateTab() {
         aiParams?.genre || 'music'
       );
     }
-  }, [aiParams, prompt]);
+  }, [aiParams, prompt, autoSaveToLibrary]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -195,6 +227,8 @@ export default function QuickGenerateTab() {
         setResult(trackData);
         setGenerating(false);
         toast.success('🎵 Track ready!');
+        // Auto-save to library
+        await autoSaveToLibrary(res.data, aiDecision);
         if (!res.data.cover_image_url) {
           await autoGenerateCoverArt(aiDecision.title, aiDecision.mood, aiDecision.genre);
         }
