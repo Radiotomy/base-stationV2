@@ -5,6 +5,7 @@ import { Radio, Zap, X, Music2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import ChipSelector from "@/components/music/ChipSelector";
 
 const GENRES = ["hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "trap", "ambient", "other"];
 const MOODS  = ["Energetic", "Chill", "Dark", "Happy", "Uplifting", "Romantic"];
@@ -76,27 +77,25 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
               {/* Genre */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Genre</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {GENRES.map(g => (
-                    <button key={g} type="button" onClick={() => setGenre(g)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${genre === g ? "bg-purple-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                      {g}
-                    </button>
-                  ))}
-                </div>
+                <ChipSelector
+                  chipType="genre"
+                  defaults={GENRES}
+                  selected={genre}
+                  onSelect={setGenre}
+                  activeClass="bg-purple-600 text-white"
+                />
               </div>
 
               {/* Mood */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Mood</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {MOODS.map(m => (
-                    <button key={m} type="button" onClick={() => setMood(m)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${mood === m ? "bg-pink-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
+                <ChipSelector
+                  chipType="mood"
+                  defaults={MOODS}
+                  selected={mood}
+                  onSelect={setMood}
+                  activeClass="bg-pink-600 text-white"
+                />
               </div>
 
               {/* Info */}
