@@ -98,7 +98,7 @@ export default function QuickGenerateTab() {
     const params = aiParamsRef.current;
     const currentPrompt = promptRef.current;
 
-    // Always generate cover art for every track
+    // Always generate cover art
     let coverImageUrl = data.cover_image_url || null;
     if (!coverImageUrl) {
       setGeneratingCover(true);
@@ -111,18 +111,16 @@ export default function QuickGenerateTab() {
       if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
     }
 
-    // Save primary track (with cover art)
-    const primaryUrl = data.audio_url || data.output_url;
-    await saveTrackToLibrary(primaryUrl, coverImageUrl, params);
+    // Build list of all distinct audio URLs to save
+    const allUrls = data.audio_urls?.length > 0
+      ? data.audio_urls
+      : [data.audio_url || data.output_url].filter(Boolean);
 
-    // Save additional tracks (e.g. Sonic track 2) — same cover art
-    if (data.audio_urls?.length > 1) {
-      for (let i = 1; i < data.audio_urls.length; i++) {
-        await saveTrackToLibrary(data.audio_urls[i], coverImageUrl, {
-          ...params,
-          title: params?.title ? `${params.title} (Take ${i + 1})` : `Track ${i + 1}`,
-        });
-      }
+    for (let i = 0; i < allUrls.length; i++) {
+      const title = i === 0
+        ? (params?.title || currentPrompt.slice(0, 40) || 'Generated Track')
+        : `${params?.title || currentPrompt.slice(0, 40) || 'Track'} (Take ${i + 1})`;
+      await saveTrackToLibrary(allUrls[i], coverImageUrl, { ...params, title });
     }
 
     toast.success('✅ Auto-saved to library!');
@@ -247,9 +245,7 @@ export default function QuickGenerateTab() {
       });
 
       if (res.data?.audio_url || res.data?.output_url) {
-        setResult(res.data);
         setGenerating(false);
-        // Reuse onComplete logic for consistent save+cover art behaviour
         await onComplete(res.data);
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);

@@ -135,14 +135,16 @@ export default function AdvancedGenerateTab() {
       if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
     }
 
-    const primaryUrl = data.audio_url || data.output_url;
-    await saveTrackToLibrary(primaryUrl, coverImageUrl);
+    // Build list of all distinct audio URLs to save
+    const allUrls = data.audio_urls?.length > 0
+      ? data.audio_urls
+      : [data.audio_url || data.output_url].filter(Boolean);
 
-    // Save additional Sonic tracks with same cover art
-    if (data.audio_urls?.length > 1) {
-      for (let i = 1; i < data.audio_urls.length; i++) {
-        await saveTrackToLibrary(data.audio_urls[i], coverImageUrl, `${mood} ${genre} — ${provider} (Take ${i + 1})`);
-      }
+    for (let i = 0; i < allUrls.length; i++) {
+      const title = i === 0
+        ? `${mood} ${genre} — ${provider}`
+        : `${mood} ${genre} — ${provider} (Take ${i + 1})`;
+      await saveTrackToLibrary(allUrls[i], coverImageUrl, title);
     }
 
     toast.success('✅ Auto-saved to library!');
@@ -221,7 +223,6 @@ export default function AdvancedGenerateTab() {
       });
 
       if (res.data?.audio_url || res.data?.output_url) {
-        setResult(res.data);
         setGenerating(false);
         await onComplete(res.data);
       } else if (res.data?.job_id) {

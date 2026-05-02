@@ -321,6 +321,8 @@ Deno.serve(async (req) => {
             bpm: providerData.bpm, key: providerData.key,
             duration: job.input_data?.duration,
             cover_image_url: providerData.cover_image_url,
+            audio_urls: providerData.audio_urls || null,
+            cover_image_urls: providerData.cover_image_urls || null,
           },
           credits_used: 10,
           completed_at: new Date().toISOString(),
@@ -336,6 +338,9 @@ Deno.serve(async (req) => {
         return Response.json({
           status: 'completed',
           audio_url: job.job_type === 'music' ? outputUrl : undefined,
+          audio_urls: providerData.audio_urls || undefined,
+          cover_image_url: providerData.cover_image_url || undefined,
+          cover_image_urls: providerData.cover_image_urls || undefined,
           video_url: job.job_type === 'video' ? outputUrl : undefined,
           bpm: providerData.bpm, key: providerData.key,
         });
