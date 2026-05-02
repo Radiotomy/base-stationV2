@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import AudioEditor from '@/components/audio/AudioEditor';
+import WaveformVisualizer from '@/components/audio/WaveformVisualizer';
 import StemTrack from '@/components/audio/StemTrack';
 
 const EDIT_TASKS = [
@@ -37,6 +37,8 @@ export default function AudioRemixStudio() {
   const [jobStatus, setJobStatus] = useState(null); // pending|processing|completed|failed
   const [metadata, setMetadata] = useState(null); // BPM, key, duration
   const [analyzingMeta, setAnalyzingMeta] = useState(false);
+  const [selectedSegment, setSelectedSegment] = useState(null);
+  const [applyingEffect, setApplyingEffect] = useState(false);
 
   // Poll job status
   useEffect(() => {
@@ -160,6 +162,26 @@ export default function AudioRemixStudio() {
     } catch (error) { toast.error(error.message); }
   };
 
+  const applySegmentEffect = async (effect) => {
+    if (!audioUrl || !selectedSegment) return;
+    setApplyingEffect(true);
+    try {
+      const res = await base44.functions.invoke('applyAudioEffects', {
+        audio_url: audioUrl,
+        effect: effect,
+        start_time: selectedSegment.startTime,
+        end_time: selectedSegment.endTime,
+      });
+      if (res.data?.output_url) {
+        setEditedAudio(res.data.output_url);
+        toast.success('Effect applied!');
+      }
+    } catch (err) {
+      toast.error('Effect failed: ' + err.message);
+    }
+    setApplyingEffect(false);
+  };
+
   const jobStatusLabel = { pending: 'Queued…', processing: 'Processing…', completed: 'Done', failed: 'Failed' }[jobStatus] || '';
 
   return (
@@ -267,7 +289,58 @@ export default function AudioRemixStudio() {
           <div className="lg:col-span-2 space-y-4">
             {audioUrl ? (
               <>
-                <AudioEditor audioUrl={audioUrl} title="Source Audio" onSave={(edits) => console.log('edit pts', edits)} />
+                <WaveformVisualizer
+                  audioUrl={audioUrl}
+                  onSegmentSelect={(segment) => {
+                    setSelectedSegment(segment);
+                    toast.success(`Selected ${segment.duration.toFixed(2)}s segment`);
+                  }}
+                  disabled={processing}
+                />
+
+                {selectedSegment && (
+                  <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+                    <h3 className="font-black text-foreground text-sm">Apply Effect to Selection</h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applySegmentEffect('reverb')}
+                        disabled={applyingEffect}
+                        className="rounded-lg text-xs"
+                      >
+                        {applyingEffect ? '⏳' : '💫'} Reverb
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applySegmentEffect('delay')}
+                        disabled={applyingEffect}
+                        className="rounded-lg text-xs"
+                      >
+                        {applyingEffect ? '⏳' : '🔁'} Delay
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applySegmentEffect('normalize')}
+                        disabled={applyingEffect}
+                        className="rounded-lg text-xs"
+                      >
+                        {applyingEffect ? '⏳' : '📊'} Normalize
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => applySegmentEffect('pitch_shift')}
+                        disabled={applyingEffect}
+                        className="rounded-lg text-xs"
+                      >
+                        {applyingEffect ? '⏳' : '🎵'} Pitch
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* BPM / Metadata Analysis */}
                 <div className="bg-card rounded-2xl border border-border p-5">
