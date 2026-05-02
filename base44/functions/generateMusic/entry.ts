@@ -107,14 +107,28 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
 }
 
 // ── Tempolor ──────────────────────────────────────────────────────────────────
+// Auth: Authorization header = raw API key (e.g. "Tempo-xxx-3w"), NOT Bearer
+// Song:         POST /open-apis/v1/song/generate          { prompt, model, lyrics?, voice_id?, callback_url }
+// Instrumental: POST /open-apis/v1/instrumental/generate  { prompt, model, callback_url }
+// callback_url is required but we pass a no-op placeholder
 const TEMPOLOR_BASE = 'https://api.tempolor.com/open-apis/v1';
 async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode }) {
-  const isInstrumental = tempolor_mode === 'instrumental';
+  const isInstrumental = tempolor_mode === 'instrumental' || !lyrics;
   const endpoint = isInstrumental ? `${TEMPOLOR_BASE}/instrumental/generate` : `${TEMPOLOR_BASE}/song/generate`;
   const defaultModel = isInstrumental ? 'TemPolor i3.5' : 'TemPolor v4.6';
+
   const body = isInstrumental
-    ? { prompt: sound_prompt || `${mood} ${genre} instrumental music`, model: model || defaultModel, callback_url: 'https://placeholder.invalid/cb' }
-    : { prompt: sound_prompt || `${mood} ${genre} music`, model: model || defaultModel, lyrics: lyrics || null, callback_url: 'https://placeholder.invalid/cb' };
+    ? {
+        prompt: sound_prompt || `${mood} ${genre} instrumental music`,
+        model: model || defaultModel,
+        callback_url: 'https://webhook.site/tempolor-callback',
+      }
+    : {
+        prompt: sound_prompt || `${mood} ${genre} music`,
+        model: model || defaultModel,
+        lyrics: lyrics || null,
+        callback_url: 'https://webhook.site/tempolor-callback',
+      };
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -122,9 +136,10 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
     body: JSON.stringify(body),
   });
   const data = await res.json();
+  console.log('Tempolor generate response:', JSON.stringify(data));
   if (!res.ok || data.status !== 200000) throw new Error(data.message || JSON.stringify(data));
   const itemId = data.data?.item_ids?.[0];
-  if (!itemId) throw new Error('No item_id from Tempolor');
+  if (!itemId) throw new Error('No item_id from Tempolor: ' + JSON.stringify(data));
   return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song' };
 }
 

@@ -82,34 +82,46 @@ async function pollProvider(provider, providerTaskId) {
   }
 
   if (provider === 'tempcolor') {
-    // Determine if song or instrumental by checking what the job stored
-    // Try song query first, then instrumental
-    const tryQuery = async (endpoint) => {
-      const r = await fetch(`https://api.tempolor.com/open-apis/v1/${endpoint}/query`, {
+    // Determine endpoint from stored tempolor_mode in job input_data, default to instrumental
+    // Song query:         POST /open-apis/v1/song/query         → data.songs[0]
+    // Instrumental query: POST /open-apis/v1/instrumental/query → data.instrumentals[0]
+
+    // We store tempolor_mode in output_metadata or check job input_data
+    // Try both endpoints: instrumental first, then song fallback
+    const queryEndpoint = async (type) => {
+      const r = await fetch(`https://api.tempolor.com/open-apis/v1/${type}/query`, {
         method: 'POST',
         headers: { 'Authorization': TEMPCOLOR_API_KEY, 'Content-Type': 'application/json; charset=utf-8' },
         body: JSON.stringify({ item_ids: [providerTaskId] }),
       });
-      return r.json();
+      const d = await r.json();
+      console.log(`Tempolor ${type} query response:`, JSON.stringify(d));
+      return d;
     };
 
-    // Try song query, fall back to instrumental
-    let qdata = await tryQuery('song');
-    let items = qdata?.data?.songs || qdata?.data?.items || [];
+    // Try instrumental first; if no items found, try song
+    let qdata = await queryEndpoint('instrumental');
+    let items = qdata?.data?.instrumentals || [];
+    let isInstrumental = true;
+
     if (!items.length) {
-      qdata = await tryQuery('instrumental');
-      items = qdata?.data?.instrumentals || qdata?.data?.items || qdata?.data?.songs || [];
+      qdata = await queryEndpoint('song');
+      items = qdata?.data?.songs || [];
+      isInstrumental = false;
     }
 
     const item = items[0];
     if (!item) return { status: 'processing' };
 
-    const itemStatus = item.status || '';
-    if (itemStatus === 'succeeded' || item.audio_url || item.audio_hi_url) {
+    console.log('Tempolor item status:', item.status, 'audio_url:', item.audio_url);
+
+    const st = item.status || '';
+    // succeeded or main_succeeded = audio is ready
+    if (st === 'succeeded' || st === 'main_succeeded' || item.audio_url) {
       return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
     }
-    if (itemStatus === 'failed' || itemStatus === 'error') {
-      return { status: 'failed', error: item.event || 'Tempolor generation failed' };
+    if (st === 'failed') {
+      return { status: 'failed', error: 'Tempolor generation failed' };
     }
     return { status: 'processing' };
   }
