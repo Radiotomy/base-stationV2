@@ -14,7 +14,7 @@ const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
  * Poll the provider's status endpoint for a given task_id.
  * Returns normalized: { status: 'completed'|'processing'|'failed', audio_url?, video_url?, error? }
  */
-async function pollProvider(provider, providerTaskId) {
+async function pollProvider(provider, providerTaskId, job) {
   let url, headers, res, data;
 
   if (provider === 'sonic') {
@@ -82,20 +82,66 @@ async function pollProvider(provider, providerTaskId) {
   }
 
   if (provider === 'tempcolor') {
-    const queryEndpoint = async (type) => {
+    // Detect UUID-format IDs (old jobs that stored request_id instead of item_id)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(providerTaskId);
+
+    const queryByItemIds = async (type, ids) => {
       const r = await fetch(`https://api.tempolor.com/open-apis/v1/${type}/query`, {
         method: 'POST',
         headers: { 'Authorization': TEMPCOLOR_API_KEY, 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ item_ids: [providerTaskId] }),
+        body: JSON.stringify({ item_ids: ids }),
       });
-      const d = await r.json();
-      return d;
+      return r.json();
     };
 
-    // Try both endpoints in parallel — whichever has the item wins
+    // For UUID-format (old request_id), try listing recent items to recover
+    if (isUUID) {
+      console.log('Tempolor: UUID-format provider_job_id detected, attempting recovery via list...');
+      // Try to list recent songs/instrumentals and find one that matches our job timeframe
+      // Tempolor list endpoint: GET /open-apis/v1/song/list or /instrumental/list
+      const tryList = async (type) => {
+        const r = await fetch(`https://api.tempolor.com/open-apis/v1/${type}/list?page=1&page_size=20`, {
+          headers: { 'Authorization': TEMPCOLOR_API_KEY },
+        });
+        return r.json();
+      };
+      const [songList, instrList] = await Promise.all([tryList('song'), tryList('instrumental')]);
+      console.log('Tempolor song list:', JSON.stringify(songList?.data?.total), 'instr list:', JSON.stringify(instrList?.data?.total));
+
+      // Look for items that are completed and match the job's creation time (within 5 mins)
+      const allItems = [
+        ...(songList?.data?.songs || songList?.data?.items || []),
+        ...(instrList?.data?.instrumentals || instrList?.data?.items || []),
+      ];
+      // Find completed item closest to job creation time
+      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
+      const recovered = allItems.find(item => {
+        if (!item.audio_url) return false;
+        const itemTime = item.created_at ? new Date(item.created_at).getTime() : 0;
+        return Math.abs(itemTime - jobCreatedAt) < 5 * 60 * 1000; // within 5 minutes
+      });
+
+      if (recovered) {
+        console.log('Tempolor: recovered item via list:', recovered.id, recovered.audio_url);
+        return { status: 'completed', audio_url: recovered.audio_hi_url || recovered.audio_url };
+      }
+
+      // Check if any recent item is still processing
+      const processing = allItems.find(item => {
+        if (item.audio_url) return false;
+        const itemTime = item.created_at ? new Date(item.created_at).getTime() : 0;
+        return Math.abs(itemTime - jobCreatedAt) < 5 * 60 * 1000;
+      });
+      if (processing) return { status: 'processing' };
+
+      // Can't recover — too old or not found
+      return { status: 'failed', error: 'Could not recover job — item ID was not stored correctly. Please regenerate.' };
+    }
+
+    // Normal path: query by item_id
     const [songData, instrData] = await Promise.all([
-      queryEndpoint('song'),
-      queryEndpoint('instrumental'),
+      queryByItemIds('song', [providerTaskId]),
+      queryByItemIds('instrumental', [providerTaskId]),
     ]);
 
     const item =
@@ -110,7 +156,6 @@ async function pollProvider(provider, providerTaskId) {
     if (st === 'failed' || item.err_code) {
       return { status: 'failed', error: item.err_msg || 'Tempolor generation failed' };
     }
-    // Use audio_url as primary signal — it's populated once generation completes
     if (item.audio_url) {
       return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
     }
@@ -152,7 +197,7 @@ Deno.serve(async (req) => {
     // Poll provider
     if (job.provider_job_id) {
       let providerData = null;
-      try { providerData = await pollProvider(job.provider, job.provider_job_id); } catch {}
+      try { providerData = await pollProvider(job.provider, job.provider_job_id, job); } catch {}
 
       if (providerData?.status === 'completed') {
         const outputUrl = providerData.audio_url || providerData.video_url;
