@@ -29,42 +29,63 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
   return { task_id: taskId, provider: 'sonic' };
 }
 
-// ── Nuro (instrument music — no lyrics) ─────────────────────────────────────
-async function generateWithNuro({ genre, mood, duration, nuro_version }) {
+// ── Nuro ─────────────────────────────────────────────────────────────────────
+// Docs: POST /api/v1/nuro/create
+// type: "vocal" (needs lyrics) | "bgm" (instrumental)
+// Poll: GET /api/v1/nuro/task/{task_id} → { status: "pending"|"running"|"succeeded", audio_url }
+async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics }) {
+  const hasLyrics = lyrics && lyrics.trim().length > 0;
+  const body = hasLyrics
+    ? {
+        type: 'vocal',
+        lyrics,
+        genre: genre || 'Pop',
+        mood: mood || 'Dynamic/Energetic',
+        duration: Math.min(Math.max(duration || 120, 30), 240),
+      }
+    : {
+        type: 'bgm',
+        genre: genre || 'Pop',
+        mood: mood || 'Dynamic/Energetic',
+        duration: Math.min(Math.max(duration || 60, 30), 60), // bgm max 60s v1
+        ...(nuro_version && { version: nuro_version }),
+      };
+
   const res = await fetch(`${AI_BASE}/nuro/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${NURO_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: 'bgm', // bgm = instrument music
-      genre: genre || 'Pop',
-      mood: mood || 'Dynamic/Energetic',
-      duration: Math.min(Math.max(duration || 60, 30), 240),
-      ...(nuro_version && { version: nuro_version }),
-    }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-  const taskId = data.task_id || data.id || (Array.isArray(data) && data[0]?.id);
+  const taskId = data.task_id || data.id;
   if (!taskId) throw new Error('No task_id from Nuro');
   return { task_id: taskId, provider: 'nuro' };
 }
 
 // ── Producer ─────────────────────────────────────────────────────────────────
+// Docs: POST /api/v1/producer/create
+// Required: task_type: "create_music", plus sound and/or lyrics
+// Poll: GET /api/v1/producer/task/{task_id} → { status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [{audio_url,...}] }
 async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
+  const body = {
+    task_type: 'create_music',
+    sound: sound_prompt || `${mood} ${genre} music`,
+    mv: 'FUZZ-2.0',
+    title: `${mood} ${genre}`,
+    ...(lyrics && { lyrics, make_instrumental: false }),
+    ...(!lyrics && { make_instrumental: true }),
+  };
   const res = await fetch(`${AI_BASE}/producer/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      gpt_description_prompt: sound_prompt || `${mood} ${genre} instrumental music`,
-      lyrics: lyrics || '',
-      style: `${genre}, ${mood}`,
-      title: `${mood} ${genre}`,
-    }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-  const taskId = data.task_id || data.id || (Array.isArray(data) && data[0]?.id);
-  if (!taskId) throw new Error('No task_id from Producer');
+  // Docs: response is { message: "success", task_id: "uuid" }
+  const taskId = data.task_id;
+  if (!taskId) throw new Error('No task_id from Producer: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'producer' };
 }
 
@@ -129,7 +150,7 @@ Deno.serve(async (req) => {
       if (provider === 'loudly' && LOUDLY_API_KEY)
         providerResult = await generateWithLoudly({ genre, mood, tempo, duration });
       else if (provider === 'nuro')
-        providerResult = await generateWithNuro({ genre, mood, duration, nuro_version });
+        providerResult = await generateWithNuro({ genre, mood, duration, nuro_version, lyrics });
       else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
       else if (provider === 'tempcolor')

@@ -33,28 +33,36 @@ async function pollProvider(provider, providerTaskId) {
   }
 
   if (provider === 'nuro') {
+    // Docs: GET /api/v1/nuro/task/{task_id}
+    // Response: { task_id, status: "pending"|"running"|"succeeded", progress, audio_url, ... }
     url = `${AI_BASE}/nuro/task/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${NURO_API_KEY}` };
     res = await fetch(url, { headers });
     data = await res.json();
-    const state = data?.status || data?.state || '';
-    if (state === 'completed' || state === 'succeeded' || data?.audio_url) {
-      return { status: 'completed', audio_url: data.audio_url || data.url };
+    console.log('Nuro poll response:', JSON.stringify(data));
+    const state = data?.status || '';
+    if (state === 'succeeded' || data?.audio_url) {
+      return { status: 'completed', audio_url: data.audio_url };
     }
     if (state === 'failed' || state === 'error') return { status: 'failed', error: data.error || 'Nuro failed' };
     return { status: 'processing' };
   }
 
   if (provider === 'producer') {
+    // Docs: GET /api/v1/producer/task/{task_id}
+    // Response: { code: 200, status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [...] }
+    // data[0] for create_music: { audio_url, wav_url, image_url, ... }
     url = `${AI_BASE}/producer/task/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${PRODUCER_API_KEY}` };
     res = await fetch(url, { headers });
     data = await res.json();
-    const state = data?.status || data?.state || '';
-    if (state === 'completed' || state === 'succeeded' || data?.audio_url) {
-      return { status: 'completed', audio_url: data.audio_url || data.url, cover_image_url: data.image_url };
+    console.log('Producer poll response:', JSON.stringify(data));
+    const state = data?.status || '';
+    if (state === 'SUCCESS') {
+      const clip = Array.isArray(data?.data) ? data.data[0] : data?.data;
+      return { status: 'completed', audio_url: clip?.audio_url || clip?.wav_url, cover_image_url: clip?.image_url };
     }
-    if (state === 'failed' || state === 'error') return { status: 'failed', error: data.error || 'Producer failed' };
+    if (state === 'FAILED') return { status: 'failed', error: data.message || 'Producer failed' };
     return { status: 'processing' };
   }
 
