@@ -6,6 +6,7 @@ import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
   CheckCircle, Sparkles, Keyboard, Plus, X, History
 } from 'lucide-react';
+import ChipSelector from '@/components/music/ChipSelector';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -178,40 +179,37 @@ export default function LyricsStudio() {
               {/* Mood Chips */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Mood</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {MOOD_CHIPS.map(m => (
-                    <button key={m} type="button" onClick={() => setMood(m)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${mood === m ? 'bg-pink-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
+                <ChipSelector
+                  chipType="mood"
+                  defaults={MOOD_CHIPS}
+                  selected={mood}
+                  onSelect={setMood}
+                  activeClass="bg-pink-600 text-white"
+                />
               </div>
 
               {/* Style Chips */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Style</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {STYLE_CHIPS.map(s => (
-                    <button key={s} type="button" onClick={() => setStyle(s)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${style === s ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                      {s}
-                    </button>
-                  ))}
-                </div>
+                <ChipSelector
+                  chipType="genre"
+                  defaults={STYLE_CHIPS}
+                  selected={style}
+                  onSelect={setStyle}
+                  activeClass="bg-purple-600 text-white"
+                />
               </div>
 
               {/* Length Chips */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase">Length</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {LENGTHS.map(l => (
-                    <button key={l} type="button" onClick={() => setLength(l)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${length === l ? 'bg-pink-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
+                <ChipSelector
+                  chipType="duration"
+                  defaults={LENGTHS}
+                  selected={length}
+                  onSelect={setLength}
+                  activeClass="bg-pink-600 text-white"
+                />
               </div>
 
               <Button onClick={generate} disabled={loading || !topic}
