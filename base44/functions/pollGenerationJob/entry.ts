@@ -20,13 +20,15 @@ async function pollProvider(provider, providerTaskId) {
     headers = { 'Authorization': `Bearer ${SONIC_API_KEY}` };
     res = await fetch(url, { headers });
     data = await res.json();
-    // Sonic returns array of clip objects
-    const clip = Array.isArray(data) ? data[0] : data?.clips?.[0] || data;
-    const state = clip?.status || clip?.state || '';
+    console.log('Sonic poll response:', JSON.stringify(data));
+    // Docs: { code: 200, data: [...clips...], message: "success" }
+    const clips = Array.isArray(data) ? data : (data?.data || []);
+    const clip = Array.isArray(clips) ? clips[0] : clips;
+    const state = clip?.state || clip?.status || '';
     if (state === 'succeeded' || state === 'complete' || clip?.audio_url) {
-      return { status: 'completed', audio_url: clip.audio_url || clip.url };
+      return { status: 'completed', audio_url: clip.audio_url || clip.url, cover_image_url: clip.image_url };
     }
-    if (state === 'error' || state === 'failed') return { status: 'failed', error: clip.error_message || 'Sonic failed' };
+    if (state === 'failed' || state === 'error') return { status: 'failed', error: clip.error_message || 'Sonic failed' };
     return { status: 'processing' };
   }
 
