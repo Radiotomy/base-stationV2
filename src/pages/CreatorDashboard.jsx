@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import {
   BarChart3, Music, Zap, TrendingUp, Eye, Heart,
   Trash2, Image, FileText, Film,
-  Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw
+  Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw, AlertTriangle
 } from "lucide-react";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
 import XPWidget from "@/components/dashboard/XPWidget";
@@ -46,6 +46,8 @@ function StatCard({ icon: Icon, label, value, color }) {
 function AssetCard({ asset, onDelete }) {
   const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
   const isTrack = asset.asset_type === 'track';
+  const [audioError, setAudioError] = useState(false);
+
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all group">
@@ -78,7 +80,15 @@ function AssetCard({ asset, onDelete }) {
         </div>
       </div>
       {isTrack && asset.file_url && (
-        <audio controls className="w-full mt-3 rounded-xl h-9" src={asset.file_url} />
+        audioError ? (
+          <div className="mt-3 px-3 py-2 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-400 flex-shrink-0" />
+            <p className="text-xs text-yellow-300">Audio link expired (Sonic CDN URLs are temporary). Please regenerate this track.</p>
+          </div>
+        ) : (
+          <audio controls className="w-full mt-3 rounded-xl h-9" src={asset.file_url}
+            onError={() => setAudioError(true)} />
+        )
       )}
     </motion.div>
   );
