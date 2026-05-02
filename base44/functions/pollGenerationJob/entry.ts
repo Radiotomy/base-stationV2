@@ -82,12 +82,6 @@ async function pollProvider(provider, providerTaskId) {
   }
 
   if (provider === 'tempcolor') {
-    // Determine endpoint from stored tempolor_mode in job input_data, default to instrumental
-    // Song query:         POST /open-apis/v1/song/query         → data.songs[0]
-    // Instrumental query: POST /open-apis/v1/instrumental/query → data.instrumentals[0]
-
-    // We store tempolor_mode in output_metadata or check job input_data
-    // Try both endpoints: instrumental first, then song fallback
     const queryEndpoint = async (type) => {
       const r = await fetch(`https://api.tempolor.com/open-apis/v1/${type}/query`, {
         method: 'POST',
@@ -95,33 +89,30 @@ async function pollProvider(provider, providerTaskId) {
         body: JSON.stringify({ item_ids: [providerTaskId] }),
       });
       const d = await r.json();
-      console.log(`Tempolor ${type} query response:`, JSON.stringify(d));
       return d;
     };
 
-    // Try instrumental first; if no items found, try song
-    let qdata = await queryEndpoint('instrumental');
-    let items = qdata?.data?.instrumentals || [];
-    let isInstrumental = true;
+    // Try both endpoints in parallel — whichever has the item wins
+    const [songData, instrData] = await Promise.all([
+      queryEndpoint('song'),
+      queryEndpoint('instrumental'),
+    ]);
 
-    if (!items.length) {
-      qdata = await queryEndpoint('song');
-      items = qdata?.data?.songs || [];
-      isInstrumental = false;
-    }
+    const item =
+      songData?.data?.songs?.[0] ||
+      instrData?.data?.instrumentals?.[0];
 
-    const item = items[0];
     if (!item) return { status: 'processing' };
 
-    console.log('Tempolor item status:', item.status, 'audio_url:', item.audio_url);
-
     const st = item.status || '';
-    // succeeded or main_succeeded = audio is ready
-    if (st === 'succeeded' || st === 'main_succeeded' || item.audio_url) {
-      return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
+    console.log('Tempolor item status:', st, '| audio_url:', item.audio_url, '| audio_hi_url:', item.audio_hi_url);
+
+    if (st === 'failed' || item.err_code) {
+      return { status: 'failed', error: item.err_msg || 'Tempolor generation failed' };
     }
-    if (st === 'failed') {
-      return { status: 'failed', error: 'Tempolor generation failed' };
+    // Use audio_url as primary signal — it's populated once generation completes
+    if (item.audio_url) {
+      return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
     }
     return { status: 'processing' };
   }
