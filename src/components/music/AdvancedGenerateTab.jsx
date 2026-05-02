@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import MidiExportButton from '@/components/music/MidiExportButton';
+import ChipSelector from '@/components/music/ChipSelector';
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
@@ -63,7 +64,7 @@ export default function AdvancedGenerateTab() {
   const [nuroModel, setNuroModel] = useState('v1.0');
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
-  const [duration, setDuration] = useState(30);
+  const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)
   const [genre, setGenre] = useState('Hip-Hop');
   const [mood, setMood] = useState('Energetic');
   const [tempo, setTempo] = useState('120');
@@ -114,7 +115,7 @@ export default function AdvancedGenerateTab() {
         file_url: audioUrl,
         thumbnail_url: coverImageUrl || '',
         is_public: false,
-        metadata: { genre, mood, tempo, provider, duration, auto_saved: true },
+        metadata: { genre, mood, tempo, provider, ...(duration && { duration }), auto_saved: true },
       });
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
@@ -212,7 +213,9 @@ export default function AdvancedGenerateTab() {
     setJobId('');
     try {
       const res = await base44.functions.invoke('generateMusic', {
-        provider, duration, genre, mood,
+        provider,
+        ...(duration && { duration }),
+        genre, mood,
         tempo: parseInt(tempo) || 120,
         sound_prompt: soundPrompt || `${mood} ${genre} track`,
         ...(lyrics && lyricsMode !== 'none' && { lyrics }),
@@ -285,40 +288,42 @@ export default function AdvancedGenerateTab() {
           {/* Genre */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Genre</p>
-            <div className="flex flex-wrap gap-1.5">
-              {GENRE_CHIPS.map(g => (
-                <button key={g} onClick={() => setGenre(g)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${genre === g ? 'bg-blue-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                  {g}
-                </button>
-              ))}
-            </div>
+            <ChipSelector
+              chipType="genre"
+              defaults={GENRE_CHIPS}
+              selected={genre}
+              onSelect={setGenre}
+              activeClass="bg-blue-600 text-white"
+            />
           </div>
 
           {/* Mood */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Mood</p>
-            <div className="flex flex-wrap gap-1.5">
-              {MOOD_CHIPS.map(m => (
-                <button key={m} onClick={() => setMood(m)}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${mood === m ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                  {m}
-                </button>
-              ))}
-            </div>
+            <ChipSelector
+              chipType="mood"
+              defaults={MOOD_CHIPS}
+              selected={mood}
+              onSelect={setMood}
+              activeClass="bg-purple-600 text-white"
+            />
           </div>
 
           {/* Duration */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Duration: <span className="text-foreground">{duration}s</span></p>
-            <div className="flex gap-2 flex-wrap">
-              {DURATIONS.map(d => (
-                <button key={d} onClick={() => setDuration(d)}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${duration === d ? 'bg-cyan-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                  {d}s
-                </button>
-              ))}
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
+              Duration: <span className="text-foreground">{duration ? `${duration}s` : 'Any'}</span>
+            </p>
+            <ChipSelector
+              chipType="duration"
+              defaults={DURATIONS.map(String)}
+              selected={duration ? String(duration) : null}
+              onSelect={v => setDuration(v ? parseInt(v) : null)}
+              activeClass="bg-cyan-600 text-white"
+              labelSuffix="s"
+              allowAny
+              anyLabel="Any"
+            />
           </div>
 
           {/* BPM */}

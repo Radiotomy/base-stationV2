@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import { cacheManager } from '@/utils/cacheManager';
+import ChipSelector from '@/components/music/ChipSelector';
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },

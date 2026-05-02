@@ -1,0 +1,27 @@
+{
+  "name": "CustomChip",
+  "type": "object",
+  "properties": {
+    "chip_type": {
+      "type": "string",
+      "enum": [
+        "genre",
+        "mood",
+        "duration"
+      ],
+      "description": "Which chip list this belongs to"
+    },
+    "value": {
+      "type": "string",
+      "description": "The chip value (e.g. 'Country', 'Dreamy', '45')"
+    },
+    "added_by": {
+      "type": "string",
+      "description": "User email who added it"
+    }
+  },
+  "required": [
+    "chip_type",
+    "value"
+  ]
+}
