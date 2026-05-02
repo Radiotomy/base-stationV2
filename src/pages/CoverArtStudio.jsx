@@ -6,9 +6,9 @@ import { Palette, Download, RefreshCw, Save, ArrowLeft, Copy, Zap, Loader } from
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import ChipSelector from '@/components/music/ChipSelector';
 
 const GENRES = ['Hip-Hop', 'EDM', 'Pop', 'R&B', 'Rock', 'Lo-Fi', 'Jazz', 'Classical', 'Trap', 'Other'];
 const MOODS = ['Happy', 'Sad', 'Energetic', 'Chill', 'Dark', 'Uplifting', 'Romantic', 'Angry'];
@@ -157,44 +157,35 @@ export default function CoverArtStudio() {
                 <>
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">Genre</label>
-                    <Select value={genre} onValueChange={setGenre}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {GENRES.map((g) => (
-                          <SelectItem key={g} value={g}>{g}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ChipSelector
+                      chipType="genre"
+                      defaults={GENRES}
+                      selected={genre}
+                      onSelect={setGenre}
+                      activeClass="bg-purple-600 text-white"
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">Mood</label>
-                    <Select value={mood} onValueChange={setMood}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MOODS.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ChipSelector
+                      chipType="mood"
+                      defaults={MOODS}
+                      selected={mood}
+                      onSelect={setMood}
+                      activeClass="bg-pink-600 text-white"
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">Style</label>
-                    <Select value={style} onValueChange={setStyle}>
-                      <SelectTrigger className="rounded-xl">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STYLES.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <ChipSelector
+                      chipType="style"
+                      defaults={STYLES}
+                      selected={style}
+                      onSelect={setStyle}
+                      activeClass="bg-indigo-600 text-white"
+                    />
                   </div>
 
                   <Button

@@ -7,13 +7,14 @@
       "enum": [
         "genre",
         "mood",
-        "duration"
+        "duration",
+        "style"
       ],
       "description": "Which chip list this belongs to"
     },
     "value": {
       "type": "string",
-      "description": "The chip value (e.g. 'Country', 'Dreamy', '45')"
+      "description": "The chip value (e.g. 'Country', 'Dreamy', '45', 'Cyberpunk')"
     },
     "added_by": {
       "type": "string",
