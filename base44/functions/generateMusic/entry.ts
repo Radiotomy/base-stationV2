@@ -224,7 +224,9 @@ const LOUDLY_ENERGY_MAP = {
 };
 
 async function generateWithLoudly({ genre, mood, tempo, duration }) {
-  const genreId = LOUDLY_GENRE_IDS[genre] || 9; // default to Pop
+  // Ensure genre is valid; fallback to Pop
+  const validGenre = genre && LOUDLY_GENRE_IDS[genre] ? genre : 'Pop';
+  const genreId = LOUDLY_GENRE_IDS[validGenre];
   const energy = LOUDLY_ENERGY_MAP[mood] || 'medium';
 
   const form = new FormData();

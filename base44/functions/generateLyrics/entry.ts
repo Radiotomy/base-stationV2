@@ -11,13 +11,15 @@ async function generateWithAIMusicAPI({ topic, mood, style, length }) {
   const lengthHint = { 'Short (8–16 bars)': 'short', 'Short (8-16 bars)': 'short',
     'Medium (32 bars)': 'medium', 'Long (64+ bars)': 'long', 'Full Song': 'full' }[length] || 'medium';
 
-  const topicShort = topic.substring(0, 80);
+  const topicShort = topic.substring(0, 50);
+  const styleShort = style.substring(0, 15);
+  const moodShort = mood.substring(0, 15);
+  const desc = `${styleShort} lyrics: ${topicShort}. ${moodShort}.`;
+  if (desc.length > 119) throw new Error('Prompt too long for AI Music API');
   const res = await fetch(`${AI_BASE}/sonic/lyrics`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      description: `Write ${style} lyrics about "${topicShort}". Mood: ${mood}.`,
-    }),
+    body: JSON.stringify({ description: desc }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || JSON.stringify(data));
