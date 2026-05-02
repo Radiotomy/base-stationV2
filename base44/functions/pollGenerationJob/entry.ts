@@ -127,6 +127,53 @@ async function pollProvider(provider, providerTaskId, job) {
     return { status: 'processing' };
   }
 
+  if (provider === 'loudly') {
+    // Loudly is normally synchronous but if a job ended up in polling, check their task status
+    url = `https://api.loudly.com/v1/tasks/${providerTaskId}`;
+    headers = { 'Authorization': `Bearer ${Deno.env.get('LOUDLY_API_KEY')}` };
+    try {
+      res = await fetch(url, { headers });
+      data = await res.json();
+      console.log('Loudly poll response:', JSON.stringify(data));
+      const state = data?.status || data?.state || '';
+      if (state === 'completed' || state === 'succeeded' || data?.audio_url || data?.url) {
+        return { status: 'completed', audio_url: data.audio_url || data.url, bpm: data.bpm, key: data.key };
+      }
+      if (state === 'failed' || state === 'error') return { status: 'failed', error: data.message || 'Loudly failed' };
+
+      // Recovery: list recent Loudly generations
+      if (!state || res.status === 404) {
+        console.log('Loudly: task not found, attempting recovery via list...');
+        const listRes = await fetch('https://api.loudly.com/v1/tracks?limit=20', { headers: { 'Authorization': `Bearer ${Deno.env.get('LOUDLY_API_KEY')}` } });
+        const listData = await listRes.json();
+        const listItems = listData?.tracks || listData?.data || listData || [];
+        const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
+        const recovered = (Array.isArray(listItems) ? listItems : []).find(item => {
+          if (!item.audio_url && !item.url) return false;
+          const t = item.created_at ? new Date(item.created_at).getTime() : 0;
+          return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
+        });
+        if (recovered) {
+          console.log('Loudly: recovered via list');
+          return { status: 'completed', audio_url: recovered.audio_url || recovered.url, bpm: recovered.bpm };
+        }
+        // Loudly is synchronous — if we can't find it after 10 mins, it's gone
+        const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
+        if (elapsed > 10 * 60 * 1000) {
+          return { status: 'failed', error: 'Loudly generation timed out. Please regenerate.' };
+        }
+      }
+    } catch (e) {
+      console.warn('Loudly poll error:', e.message);
+      // If Loudly API is unreachable and job is old, fail it
+      const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
+      if (elapsed > 10 * 60 * 1000) {
+        return { status: 'failed', error: 'Loudly generation timed out. Please regenerate.' };
+      }
+    }
+    return { status: 'processing' };
+  }
+
   if (provider === 'ltx') {
     url = `https://api.ltx.video/v1/tasks/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${LTX_API_KEY}` };
