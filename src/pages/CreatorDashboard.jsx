@@ -46,6 +46,7 @@ function StatCard({ icon: Icon, label, value, color }) {
 function AssetCard({ asset, onDelete }) {
   const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
   const isTrack = asset.asset_type === 'track';
+  const [audioError, setAudioError] = useState(false);
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all group">
@@ -77,8 +78,9 @@ function AssetCard({ asset, onDelete }) {
           </Button>
         </div>
       </div>
-      {isTrack && asset.file_url && (
-        <audio controls className="w-full mt-3 rounded-xl h-9" src={asset.file_url} />
+      {isTrack && asset.file_url && !audioError && (
+        <audio controls className="w-full mt-3 rounded-xl h-9" src={asset.file_url}
+          onError={() => setAudioError(true)} />
       )}
     </motion.div>
   );
