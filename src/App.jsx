@@ -32,6 +32,7 @@ import SubmitTrack from './pages/SubmitTrack';
 import ArtistProfile from './pages/ArtistProfile';
 import SolanaRegistry from './pages/SolanaRegistry';
 import BlockchainRegistry from './pages/BlockchainRegistry';
+import ID3TagStudio from './pages/ID3TagStudio';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminTracks from './pages/admin/AdminTracks';
@@ -99,6 +100,7 @@ const AuthenticatedApp = () => {
           <Route path="/artist/:id" element={<ArtistProfile />} />
           <Route path="/solana" element={<SolanaRegistry />} />
           <Route path="/blockchain" element={<BlockchainRegistry />} />
+          <Route path="/id3-studio" element={<ID3TagStudio />} />
           <Route path="/creator-dashboard" element={<CreatorDashboard />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/templates" element={<CommunityTemplates />} />
