@@ -14,7 +14,7 @@ import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
 
 // Genres match Loudly's exact tag values from GET /api/songs/tags
 const DEFAULT_CHANNELS = [
-  { id: "discover",   name: "Discover",         slug: "discover",  genre: null,              emoji: "🌟", color_theme: "#7C3AED", description: "Fresh AI music from Loudly + the community" },
+  { id: "discover",   name: "Discover",         slug: "discover",  genre: null,              emoji: "🌟", color_theme: "#7C3AED", description: "Fresh AI music from Loudly + the BASE Station community" },
   { id: "hiphop",     name: "Hip-Hop & Trap",   slug: "hiphop",    genre: "Hip Hop & Trap",  emoji: "🎤", color_theme: "#EF4444", description: "AI beats, bars & trap bangers" },
   { id: "edm",        name: "EDM",               slug: "edm",       genre: "EDM",             emoji: "⚡", color_theme: "#06B6D4", description: "Synths, drops & AI energy" },
   { id: "rb",         name: "Soul / R&B",        slug: "rb",        genre: "Soul/R&B",        emoji: "🎵", color_theme: "#EC4899", description: "Smooth AI R&B and neo-soul" },
