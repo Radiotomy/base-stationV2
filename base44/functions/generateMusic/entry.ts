@@ -14,24 +14,56 @@ const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 // Response: { code: 200, task_id: "uuid", message: "success" }
 // Poll: GET /api/v1/sonic/task/{task_id}
 //   → { code: 200, data: [ { clip_id, state: "pending"|"running"|"succeeded"|"failed", audio_url, image_url, ... } ] }
-async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model }) {
-  const tags = [genre, mood, tempo ? `${tempo}bpm` : null].filter(Boolean).join(', ');
+//
+// Mode selection:
+//   - With lyrics: custom_mode:true, prompt=lyrics, tags=genre+mood style descriptor
+//   - No lyrics (Quick Gen): auto_lyrics:true + custom_mode:true — Sonic reads the full
+//     sound_prompt directly as the style descriptor and auto-generates lyrics/tags from it.
+//     This gives much better genre fidelity than custom_mode:false + gpt_description_prompt
+//     which only uses the AI-parsed genre/mood tags and ignores the user's actual description.
+//
+// Model suitability: sonic-v3-5 and sonic-v4 have no vocal support and should not be used
+// for vocal or auto-lyrics generation. Force a minimum of sonic-v4-5 for those cases.
+async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics }) {
+  // Ensure a vocal-capable model is used
+  const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
+  const safeModel = (!model || LEGACY_MODELS.includes(model)) ? 'sonic-v4-5' : model;
+
+  let body;
+  if (lyrics && lyrics.trim().length > 0) {
+    // Custom mode with provided lyrics
+    const tags = [genre, mood, sound_prompt ? sound_prompt.slice(0, 100) : null].filter(Boolean).join(', ');
+    body = {
+      task_type: 'create_music',
+      custom_mode: true,
+      mv: safeModel,
+      title: `${mood} ${genre} Track`,
+      tags,
+      prompt: lyrics,
+    };
+  } else {
+    // Auto-lyrics mode: Sonic reads sound_prompt as full style descriptor and auto-generates
+    // lyrics + tags from it — preserves genre nuance like "Red Dirt Texas Country Rock Blues"
+    const fullDescription = sound_prompt || `A ${mood.toLowerCase()} ${genre} track${tempo ? ` at ${tempo} BPM` : ''}`;
+    body = {
+      task_type: 'create_music',
+      custom_mode: true,
+      auto_lyrics: true,
+      mv: safeModel,
+      title: `${mood} ${genre} Track`,
+      tags: genre, // seed tag — Sonic will enrich from prompt
+      prompt: fullDescription,
+    };
+  }
+
   const res = await fetch(`${AI_BASE}/sonic/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      task_type: 'create_music',
-      custom_mode: false,
-      mv: model || 'sonic-v4-5',
-      title: `${mood} ${genre} Track`,
-      tags,
-      gpt_description_prompt: sound_prompt || `A ${mood.toLowerCase()} ${genre} track at ${tempo || 120} BPM`,
-    }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   console.log('Sonic create response:', JSON.stringify(data));
   if (!res.ok || data.code !== 200) throw new Error(data.message || JSON.stringify(data));
-  // Response is { code: 200, task_id: "...", message: "success" }
   const taskId = data.task_id;
   if (!taskId) throw new Error('No task_id from Sonic: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'sonic' };
@@ -248,11 +280,11 @@ Deno.serve(async (req) => {
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode });
       else // default: sonic
-        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model });
+        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics });
     } catch (providerErr) {
       // Try sonic as fallback
       if (provider !== 'sonic' && SONIC_API_KEY) {
-        try { providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo }); }
+        try { providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, lyrics }); }
         catch {}
       }
       if (!providerResult) {

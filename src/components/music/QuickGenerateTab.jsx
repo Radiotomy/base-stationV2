@@ -230,15 +230,22 @@ export default function QuickGenerateTab() {
 
       // Step 3: Generate the music track
       const voiceId = selectedPersona !== 'auto' ? selectedPersona : undefined;
+      // For Sonic: use the full user prompt as sound_prompt so genre nuance (e.g. "Red Dirt Texas
+      // Country Rock Blues") is preserved — auto_lyrics mode reads this directly.
+      const effectiveSoundPrompt = provider === 'sonic'
+        ? `${prompt}. ${aiDecision.sound_prompt || ''}`.trim()
+        : aiDecision.sound_prompt;
+
       const res = await base44.functions.invoke('generateMusic', {
         provider,
         duration: aiDecision.duration,
         genre: aiDecision.genre,
         mood: aiDecision.mood,
         tempo: aiDecision.bpm,
-        sound_prompt: aiDecision.sound_prompt,
+        sound_prompt: effectiveSoundPrompt,
         ...(lyrics && { lyrics }),
         ...(voiceId && { voice_persona_id: voiceId }),
+        // sonic-v4-5 minimum — legacy models (v3-5, v4) have no vocal support
         ...(provider === 'sonic' && { model: 'sonic-v4-5' }),
         ...(provider === 'nuro' && { nuro_version: 'v1.0' }),
         ...(provider === 'tempcolor' && { model: 'TemPolor v4.6', tempolor_mode: aiDecision.needs_lyrics ? 'song' : 'instrumental' }),
