@@ -143,19 +143,52 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song' };
 }
 
-// ── Loudly (if key available) ─────────────────────────────────────────────────
+// ── Loudly ────────────────────────────────────────────────────────────────────
+// Base: https://soundtracks.loudly.com
+// AI Generation: POST /api/ai/songs  (multipart/form-data)
+//   Fields: genre_id (int), duration (int, 30-420s), energy ('low'|'medium'|'high'), bpm (int)
+// Response: { id, title, music_file_path, bpm, key: { name }, duration, ... }
+// Synchronous — returns the song directly (no polling needed).
+// Genre IDs (from Loudly catalog): 1=Ambient, 2=Classical, 3=Country, 4=Electronic,
+//   5=Folk, 6=Hip Hop & Trap, 7=Jazz, 8=Latin, 9=Pop, 10=R&B/Soul, 11=Rock, 12=World
 const LOUDLY_API_KEY = Deno.env.get('LOUDLY_API_KEY');
+const LOUDLY_GENRE_IDS = {
+  'Ambient': 1, 'Classical': 2, 'Country': 3, 'EDM': 4, 'Electronic': 4,
+  'Folk': 5, 'Hip-Hop': 6, 'Trap': 6, 'Jazz': 7, 'Latin': 8,
+  'Pop': 9, 'R&B': 10, 'Rock': 11, 'World': 12,
+  'Lo-Fi': 4, 'House': 4, 'Drill': 6, 'Afrobeats': 12,
+};
+const LOUDLY_ENERGY_MAP = {
+  'Energetic': 'high', 'Aggressive': 'high', 'Happy': 'high', 'Uplifting': 'high',
+  'Chill': 'low', 'Melancholic': 'low', 'Romantic': 'low', 'Sad': 'low',
+  'Dark': 'medium', 'default': 'medium',
+};
+
 async function generateWithLoudly({ genre, mood, tempo, duration }) {
-  const res = await fetch('https://api.loudly.com/v1/generate', {
+  const genreId = LOUDLY_GENRE_IDS[genre] || 9; // default to Pop
+  const energy = LOUDLY_ENERGY_MAP[mood] || 'medium';
+
+  const form = new FormData();
+  form.append('genre_id', String(genreId));
+  form.append('duration', String(Math.min(Math.max(duration || 30, 30), 420)));
+  form.append('energy', energy);
+  if (tempo) form.append('bpm', String(tempo));
+
+  const res = await fetch('https://soundtracks.loudly.com/api/ai/songs', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${LOUDLY_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ genre, mood, bpm: tempo || 120, length: duration || 30 }),
+    headers: { 'API-KEY': LOUDLY_API_KEY },
+    body: form,
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
+  console.log('Loudly generate response:', JSON.stringify(data));
+  if (!res.ok) throw new Error(data.error || data.message || `Loudly error ${res.status}`);
+  // Response: { id, title, music_file_path, bpm, key: { name }, duration, ... }
+  const audioUrl = data.music_file_path || data.audio_url;
+  if (!audioUrl) throw new Error('Loudly returned no audio URL: ' + JSON.stringify(data));
   return {
-    audio_url: data.audio_url || data.url,
-    bpm: data.bpm, key: data.key,
+    audio_url: audioUrl,
+    bpm: data.bpm,
+    key: data.key?.name || data.key,
     provider: 'loudly', credits_used: 1,
   };
 }

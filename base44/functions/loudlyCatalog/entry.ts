@@ -7,19 +7,20 @@ function loudlyHeaders() {
   return { 'API-KEY': LOUDLY_API_KEY, 'Accept': 'application/json' };
 }
 
-// Normalize a Loudly catalog song to our internal track shape
+// Normalize a Loudly catalog/AI song to our internal track shape
 function normalizeTrack(t, position = 0) {
   return {
     track_title: t.title || t.name || 'Untitled',
     artist_name: t.artist || 'Loudly',
     cover_image_url: t.cover_art_url || t.image_url || t.thumbnail_url || t.cover || '',
-    audio_url: t.audio_url || t.url || t.preview_url || '',
-    duration_seconds: t.duration || 0,
+    // AI songs use music_file_path; catalog songs use audio_url/url/preview_url
+    audio_url: t.music_file_path || t.audio_url || t.url || t.preview_url || '',
+    duration_seconds: Math.round((t.duration || 0) / (t.music_file_path ? 1 : 1)), // AI songs: seconds; catalog: check
     genre: t.genre || '',
     source: 'loudly',
     loudly_id: t.id || '',
     bpm: t.bpm || null,
-    key: t.key || '',
+    key: t.key?.name || t.key || '',
     position,
   };
 }
@@ -47,10 +48,20 @@ async function getTags() {
   return data;
 }
 
+// Genre IDs for Loudly AI generation
+const LOUDLY_GENRE_IDS = {
+  'Ambient': 1, 'Classical': 2, 'Country': 3, 'Electronic': 4, 'EDM': 4,
+  'Folk': 5, 'Hip Hop & Trap': 6, 'Hip-Hop': 6, 'Trap': 6,
+  'Jazz': 7, 'Latin': 8, 'Pop': 9, 'R&B/Soul': 10, 'R&B': 10,
+  'Rock': 11, 'World': 12, 'Lo-Fi': 4, 'House': 4, 'Drill': 6, 'Afrobeats': 12,
+};
+
 // Generate an AI song via Loudly: POST /api/ai/songs (multipart/form-data)
+// genre_id (int) is required — NOT a string genre name
 async function generateAISong({ genre, duration = 60, energy = 'high', bpm }) {
+  const genreId = LOUDLY_GENRE_IDS[genre] || 9; // default Pop
   const form = new FormData();
-  form.append('genre', genre);
+  form.append('genre_id', String(genreId));
   form.append('duration', String(Math.min(Math.max(duration, 30), 420)));
   if (energy) form.append('energy', energy);
   if (bpm) form.append('bpm', String(bpm));
@@ -61,7 +72,9 @@ async function generateAISong({ genre, duration = 60, energy = 'high', bpm }) {
     body: form,
   });
   const data = await res.json();
+  console.log('Loudly AI generate response:', JSON.stringify(data));
   if (!res.ok) throw new Error(data.error || `AI generation error ${res.status}`);
+  // Response: { id, title, music_file_path, bpm, key: { name }, duration }
   return data;
 }
 
@@ -225,12 +238,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── Generate a new Loudly AI track and add to library ──────────────────
+    // ── Generate a new Loudly AI track ─────────────────────────────────────
     if (action === 'generate') {
       const { genre, duration = 60, energy = 'high', bpm } = body;
       const song = await generateAISong({ genre, duration, energy, bpm });
+      // song.music_file_path is the audio URL; song.duration is in seconds
       const track = normalizeTrack(song);
-      return Response.json({ track });
+      return Response.json({ track, raw: song });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });

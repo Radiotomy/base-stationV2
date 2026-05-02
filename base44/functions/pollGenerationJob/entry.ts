@@ -139,48 +139,30 @@ async function pollProvider(provider, providerTaskId, job) {
   }
 
   if (provider === 'loudly') {
-    // Loudly is normally synchronous but if a job ended up in polling, check their task status
-    url = `https://api.loudly.com/v1/tasks/${providerTaskId}`;
-    headers = { 'Authorization': `Bearer ${Deno.env.get('LOUDLY_API_KEY')}` };
+    // Loudly AI songs are synchronous — the result (music_file_path) is returned immediately.
+    // If a job somehow landed here, the output_url should already be set on the job.
+    // As a fallback, try to fetch the song by ID from soundtracks.loudly.com/api/ai/songs/{id}
+    const LOUDLY_KEY = Deno.env.get('LOUDLY_API_KEY');
     try {
-      res = await fetch(url, { headers });
-      data = await res.json();
-      console.log('Loudly poll response:', JSON.stringify(data));
-      const state = data?.status || data?.state || '';
-      if (state === 'completed' || state === 'succeeded' || data?.audio_url || data?.url) {
-        return { status: 'completed', audio_url: data.audio_url || data.url, bpm: data.bpm, key: data.key };
+      const songRes = await fetch(`https://soundtracks.loudly.com/api/ai/songs/${providerTaskId}`, {
+        headers: { 'API-KEY': LOUDLY_KEY, 'Accept': 'application/json' },
+      });
+      const songData = await songRes.json();
+      console.log('Loudly poll response:', JSON.stringify(songData));
+      const audioUrl = songData?.music_file_path || songData?.audio_url;
+      if (audioUrl) {
+        return { status: 'completed', audio_url: audioUrl, bpm: songData.bpm, key: songData.key?.name || songData.key };
       }
-      if (state === 'failed' || state === 'error') return { status: 'failed', error: data.message || 'Loudly failed' };
-
-      // Recovery: list recent Loudly generations
-      if (!state || res.status === 404) {
-        console.log('Loudly: task not found, attempting recovery via list...');
-        const listRes = await fetch('https://api.loudly.com/v1/tracks?limit=20', { headers: { 'Authorization': `Bearer ${Deno.env.get('LOUDLY_API_KEY')}` } });
-        const listData = await listRes.json();
-        const listItems = listData?.tracks || listData?.data || listData || [];
-        const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
-        const recovered = (Array.isArray(listItems) ? listItems : []).find(item => {
-          if (!item.audio_url && !item.url) return false;
-          const t = item.created_at ? new Date(item.created_at).getTime() : 0;
-          return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
-        });
-        if (recovered) {
-          console.log('Loudly: recovered via list');
-          return { status: 'completed', audio_url: recovered.audio_url || recovered.url, bpm: recovered.bpm };
-        }
-        // Loudly is synchronous — if we can't find it after 10 mins, it's gone
-        const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
-        if (elapsed > 10 * 60 * 1000) {
-          return { status: 'failed', error: 'Loudly generation timed out. Please regenerate.' };
-        }
+      if (songData?.error || songRes.status === 404) {
+        return { status: 'failed', error: songData?.error || 'Loudly song not found' };
       }
     } catch (e) {
       console.warn('Loudly poll error:', e.message);
-      // If Loudly API is unreachable and job is old, fail it
-      const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
-      if (elapsed > 10 * 60 * 1000) {
-        return { status: 'failed', error: 'Loudly generation timed out. Please regenerate.' };
-      }
+    }
+    // Loudly is synchronous — if it still has no result after 5 mins, fail it
+    const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
+    if (elapsed > 5 * 60 * 1000) {
+      return { status: 'failed', error: 'Loudly generation timed out. Please regenerate.' };
     }
     return { status: 'processing' };
   }
@@ -275,6 +257,9 @@ async function pollProvider(provider, providerTaskId, job) {
     }
 
     // Normal path: query by item_id
+    // Song query:         POST /open-apis/v1/song/query         { item_ids: [...] }
+    // Instrumental query: POST /open-apis/v1/instrumental/query { item_ids: [...] }
+    // Status values: running | main_succeeded | succeeded | part_failed | failed
     const [songData, instrData] = await Promise.all([
       queryByItemIds('song', [providerTaskId]),
       queryByItemIds('instrumental', [providerTaskId]),
@@ -289,10 +274,11 @@ async function pollProvider(provider, providerTaskId, job) {
     const st = item.status || '';
     console.log('Tempolor item status:', st, '| audio_url:', item.audio_url, '| audio_hi_url:', item.audio_hi_url);
 
-    if (st === 'failed' || item.err_code) {
+    if (st === 'failed' || st === 'part_failed') {
       return { status: 'failed', error: item.err_msg || 'Tempolor generation failed' };
     }
-    if (item.audio_url) {
+    // succeeded or main_succeeded both mean audio is ready
+    if (st === 'succeeded' || st === 'main_succeeded' || item.audio_url) {
       return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
     }
     return { status: 'processing' };
