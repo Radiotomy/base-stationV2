@@ -27,6 +27,25 @@ async function pollProvider(provider, providerTaskId, job) {
     const clips = Array.isArray(data) ? data : (data?.data || []);
     const clip = Array.isArray(clips) ? clips[0] : clips;
     const state = clip?.state || clip?.status || '';
+
+    // Recovery: if task not found or errored, try listing recent generations
+    if (!clip || data?.code === 404 || data?.message === 'task not found') {
+      console.log('Sonic: task not found, attempting recovery via feed list...');
+      const feedRes = await fetch(`${AI_BASE}/sonic/feed?page_size=20`, { headers: { 'Authorization': `Bearer ${SONIC_API_KEY}` } });
+      const feedData = await feedRes.json();
+      const feedItems = feedData?.data || feedData || [];
+      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
+      const recovered = (Array.isArray(feedItems) ? feedItems : []).find(item => {
+        if (!item.audio_url) return false;
+        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
+        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
+      });
+      if (recovered) {
+        console.log('Sonic: recovered via feed:', recovered.id);
+        return { status: 'completed', audio_url: recovered.audio_url || recovered.url, cover_image_url: recovered.image_url };
+      }
+    }
+
     if (state === 'succeeded' || state === 'complete' || clip?.audio_url) {
       return { status: 'completed', audio_url: clip.audio_url || clip.url, cover_image_url: clip.image_url };
     }
@@ -43,6 +62,25 @@ async function pollProvider(provider, providerTaskId, job) {
     data = await res.json();
     console.log('Nuro poll response:', JSON.stringify(data));
     const state = data?.status || '';
+
+    // Recovery: task not found — list recent Nuro history
+    if (!data?.task_id || data?.code === 404 || state === 'not_found') {
+      console.log('Nuro: task not found, attempting recovery via history...');
+      const histRes = await fetch(`${AI_BASE}/nuro/list?page_size=20`, { headers: { 'Authorization': `Bearer ${NURO_API_KEY}` } });
+      const histData = await histRes.json();
+      const histItems = histData?.data || histData || [];
+      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
+      const recovered = (Array.isArray(histItems) ? histItems : []).find(item => {
+        if (!item.audio_url) return false;
+        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
+        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
+      });
+      if (recovered) {
+        console.log('Nuro: recovered via history:', recovered.task_id);
+        return { status: 'completed', audio_url: recovered.audio_url };
+      }
+    }
+
     if (state === 'succeeded' || data?.audio_url) {
       return { status: 'completed', audio_url: data.audio_url };
     }
@@ -60,6 +98,27 @@ async function pollProvider(provider, providerTaskId, job) {
     data = await res.json();
     console.log('Producer poll response:', JSON.stringify(data));
     const state = data?.status || '';
+
+    // Recovery: task not found — list recent Producer history
+    if (!state || data?.code === 404 || data?.message === 'task not found') {
+      console.log('Producer: task not found, attempting recovery via history...');
+      const histRes = await fetch(`${AI_BASE}/producer/list?page_size=20`, { headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}` } });
+      const histData = await histRes.json();
+      const histItems = histData?.data || histData || [];
+      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
+      const recovered = (Array.isArray(histItems) ? histItems : []).find(item => {
+        const clip = Array.isArray(item?.data) ? item.data[0] : item;
+        if (!clip?.audio_url) return false;
+        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
+        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
+      });
+      if (recovered) {
+        const clip = Array.isArray(recovered?.data) ? recovered.data[0] : recovered;
+        console.log('Producer: recovered via history');
+        return { status: 'completed', audio_url: clip?.audio_url || clip?.wav_url, cover_image_url: clip?.image_url };
+      }
+    }
+
     if (state === 'SUCCESS') {
       const clip = Array.isArray(data?.data) ? data.data[0] : data?.data;
       return { status: 'completed', audio_url: clip?.audio_url || clip?.wav_url, cover_image_url: clip?.image_url };
@@ -74,6 +133,25 @@ async function pollProvider(provider, providerTaskId, job) {
     res = await fetch(url, { headers });
     data = await res.json();
     const state = data?.status || data?.state || '';
+
+    // Recovery: task not found — list recent LTX tasks
+    if (!state || data?.error?.includes('not found') || res.status === 404) {
+      console.log('LTX: task not found, attempting recovery via list...');
+      const listRes = await fetch('https://api.ltx.video/v1/tasks?limit=20', { headers: { 'Authorization': `Bearer ${LTX_API_KEY}` } });
+      const listData = await listRes.json();
+      const listItems = listData?.tasks || listData?.data || listData || [];
+      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
+      const recovered = (Array.isArray(listItems) ? listItems : []).find(item => {
+        if (!item.video_url && !item.url) return false;
+        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
+        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
+      });
+      if (recovered) {
+        console.log('LTX: recovered via list:', recovered.id);
+        return { status: 'completed', video_url: recovered.video_url || recovered.url };
+      }
+    }
+
     if (state === 'completed' || state === 'succeeded' || data?.video_url) {
       return { status: 'completed', video_url: data.video_url || data.url };
     }
