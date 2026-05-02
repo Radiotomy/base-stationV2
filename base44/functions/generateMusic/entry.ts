@@ -9,13 +9,18 @@ const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
-// ── Sonic (description mode — no lyrics required) ────────────────────────────
+// ── Sonic ─────────────────────────────────────────────────────────────────────
+// Docs: POST /api/v1/sonic/create
+// Response: { code: 200, task_id: "uuid", message: "success" }
+// Poll: GET /api/v1/sonic/task/{task_id}
+//   → { code: 200, data: [ { clip_id, state: "pending"|"running"|"succeeded"|"failed", audio_url, image_url, ... } ] }
 async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model }) {
   const tags = [genre, mood, tempo ? `${tempo}bpm` : null].filter(Boolean).join(', ');
   const res = await fetch(`${AI_BASE}/sonic/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      task_type: 'create_music',
       custom_mode: false,
       mv: model || 'sonic-v4-5',
       title: `${mood} ${genre} Track`,
@@ -24,45 +29,66 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
     }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-  // Returns task_id array
-  const taskId = Array.isArray(data) ? data[0]?.id : data.task_id || data.id;
-  if (!taskId) throw new Error('No task_id from Sonic');
+  console.log('Sonic create response:', JSON.stringify(data));
+  if (!res.ok || data.code !== 200) throw new Error(data.message || JSON.stringify(data));
+  // Response is { code: 200, task_id: "...", message: "success" }
+  const taskId = data.task_id;
+  if (!taskId) throw new Error('No task_id from Sonic: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'sonic' };
 }
 
 // ── Nuro ─────────────────────────────────────────────────────────────────────
-// vocal: POST /api/v1/nuro/create { type:"vocal", lyrics, genre(str), mood(str), duration }
-// bgm:   POST /api/v1/nuro/create { type:"bgm", description, genre(arr), mood(arr), duration, version }
-// Poll:  GET  /api/v1/nuro/task/{task_id} → { status: "pending"|"running"|"succeeded", audio_url }
+// Vocal: POST /api/v1/nuro/create { type:"vocal", lyrics(required), genre(string enum), mood(string enum), duration(30-240) }
+//   genre enum: Folk|Pop|Rock|"Hip Hop/Rap"|"R&B/Soul"|Electronic|Jazz|...
+//   mood enum:  Happy|"Dynamic/Energetic"|Chill|Romantic|...
+// BGM:   POST /api/v1/nuro/create { type:"bgm", description, genre(array of enum), mood(array of enum), duration(1-60), version }
+//   genre array enum: pop|"hip hop"|"dance/edm"|jazz|rock|"chill out"|...
+//   mood array enum:  energetic|happy|calm|intense|dramatic|uplifting|relaxed|...
+// Poll:  GET  /api/v1/nuro/task/{task_id} → { task_id, status: "pending"|"running"|"succeeded", progress, audio_url }
 async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics, sound_prompt }) {
   const hasLyrics = lyrics && lyrics.trim().length > 0;
 
   let body;
   if (hasLyrics) {
-    // Vocal mode — needs lyrics, genre/mood are strings
+    // Vocal mode — genre and mood are STRINGS matching the vocal enum
+    const vocalGenreMap = {
+      'Hip-Hop': 'Hip Hop/Rap', 'Trap': 'Hip Hop/Rap', 'Drill': 'Hip Hop/Rap',
+      'R&B': 'R&B/Soul', 'Pop': 'Pop', 'Rock': 'Rock', 'Jazz': 'Jazz',
+      'EDM': 'Electronic', 'House': 'Electronic', 'Lo-Fi': 'Folk',
+      'Afrobeats': 'Pop', 'Ambient': 'Folk', 'Classical': 'Folk',
+    };
+    const vocalMoodMap = {
+      'Energetic': 'Dynamic/Energetic', 'Chill': 'Chill', 'Happy': 'Happy',
+      'Sad': 'Sorrow/Sad', 'Uplifting': 'Inspirational/Hopeful',
+      'Romantic': 'Romantic', 'Dark': 'Sentimental/Melancholic/Lonely',
+      'Melancholic': 'Sentimental/Melancholic/Lonely', 'Aggressive': 'Dynamic/Energetic',
+    };
     body = {
       type: 'vocal',
       lyrics,
-      genre: genre || 'Pop',
-      mood: mood || 'Dynamic/Energetic',
+      genre: vocalGenreMap[genre] || 'Pop',
+      mood: vocalMoodMap[mood] || 'Dynamic/Energetic',
       duration: Math.min(Math.max(duration || 120, 30), 240),
     };
   } else {
-    // BGM / instrumental mode — uses description, genre/mood are arrays
-    const genreMap = {
-      'Hip-Hop': 'hip hop', 'EDM': 'dance/edm', 'Pop': 'pop', 'R&B': 'pop',
-      'Lo-Fi': 'chill out', 'Jazz': 'jazz', 'Rock': 'rock', 'Trap': 'hip hop',
+    // BGM / instrumental mode — genre and mood are ARRAYS matching the bgm enum
+    const bgmGenreMap = {
+      'Hip-Hop': 'hip hop', 'Trap': 'hip hop', 'Drill': 'hip hop',
+      'EDM': 'dance/edm', 'House': 'dance/edm', 'Electronic': 'electronic',
+      'Pop': 'pop', 'R&B': 'pop', 'Lo-Fi': 'chill out',
+      'Jazz': 'jazz', 'Rock': 'rock', 'Afrobeats': 'world',
+      'Ambient': 'ambient', 'Classical': 'orchestral',
     };
-    const moodMap = {
-      'Energetic': 'energetic', 'Chill': 'calm', 'Dark': 'dramatic',
-      'Happy': 'happy', 'Uplifting': 'uplifting', 'Aggressive': 'intense',
+    const bgmMoodMap = {
+      'Energetic': 'energetic', 'Chill': 'calm', 'Happy': 'happy',
+      'Uplifting': 'uplifting', 'Dark': 'dramatic', 'Aggressive': 'intense',
+      'Romantic': 'romantic', 'Sad': 'melancholy', 'Melancholic': 'melancholy',
     };
     body = {
       type: 'bgm',
       description: sound_prompt || `${mood} ${genre} instrumental music`,
-      genre: [genreMap[genre] || 'pop'],
-      mood: [moodMap[mood] || 'energetic'],
+      genre: [bgmGenreMap[genre] || 'pop'],
+      mood: [bgmMoodMap[mood] || 'energetic'],
       duration: Math.min(Math.max(duration || 60, 1), 60),
       version: nuro_version || 'v2.0',
     };
@@ -74,8 +100,9 @@ async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics, s
     body: JSON.stringify(body),
   });
   const data = await res.json();
+  console.log('Nuro create response:', JSON.stringify(data));
   if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-  const taskId = data.task_id || data.id;
+  const taskId = data.task_id;
   if (!taskId) throw new Error('No task_id from Nuro: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'nuro' };
 }

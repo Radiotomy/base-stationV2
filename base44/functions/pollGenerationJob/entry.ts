@@ -18,55 +18,54 @@ async function pollProvider(provider, providerTaskId, job) {
   let url, headers, res, data;
 
   if (provider === 'sonic') {
+    // Docs: GET /api/v1/sonic/task/{task_id}
+    // Response: { code: 200, data: [ { clip_id, state: "pending"|"running"|"succeeded"|"failed", audio_url, image_url, ... } ], message }
     url = `${AI_BASE}/sonic/task/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${SONIC_API_KEY}` };
     res = await fetch(url, { headers });
     data = await res.json();
     console.log('Sonic poll response:', JSON.stringify(data));
-    // Docs: { code: 200, data: [...clips...], message: "success" }
-    const clips = Array.isArray(data) ? data : (data?.data || []);
-    const clipsArr = Array.isArray(clips) ? clips : [clips];
-    const clip = clipsArr[0];
-    const state = clip?.state || clip?.status || '';
 
-    // Recovery: if task not found or errored, try listing recent generations
-    if (!clip || data?.code === 404 || data?.message === 'task not found') {
-      console.log('Sonic: task not found, attempting recovery via feed list...');
+    const clipsArr = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    const clip = clipsArr[0];
+    const state = clip?.state || '';
+
+    if (!clip || res.status === 404 || data?.code === 404) {
+      console.log('Sonic: task not found, attempting recovery via feed...');
       const feedRes = await fetch(`${AI_BASE}/sonic/feed?page_size=20`, { headers: { 'Authorization': `Bearer ${SONIC_API_KEY}` } });
       const feedData = await feedRes.json();
-      const feedItems = feedData?.data || feedData || [];
+      const feedItems = Array.isArray(feedData?.data) ? feedData.data : [];
       const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
-      const recovered = (Array.isArray(feedItems) ? feedItems : []).find(item => {
-        if (!item.audio_url) return false;
+      const recovered = feedItems.find(item => {
+        if (item.state !== 'succeeded' || !item.audio_url) return false;
         const t = item.created_at ? new Date(item.created_at).getTime() : 0;
         return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
       });
       if (recovered) {
-        console.log('Sonic: recovered via feed:', recovered.id);
-        return { status: 'completed', audio_url: recovered.audio_url || recovered.url, cover_image_url: recovered.image_url };
+        console.log('Sonic: recovered via feed:', recovered.clip_id);
+        return { status: 'completed', audio_url: recovered.audio_url, cover_image_url: recovered.image_url };
       }
     }
 
-    if (state === 'succeeded' || state === 'complete' || clip?.audio_url) {
-      // Return all clips so UI can show both tracks
-      const allAudioUrls = clipsArr
-        .filter(c => c?.audio_url || c?.url)
-        .map(c => c.audio_url || c.url);
+    if (state === 'succeeded') {
+      // Sonic returns 2 clips per generation — expose all audio URLs
+      const allAudioUrls = clipsArr.filter(c => c.state === 'succeeded' && c.audio_url).map(c => c.audio_url);
       return {
         status: 'completed',
         audio_url: allAudioUrls[0],
-        audio_urls: allAudioUrls,        // all tracks
+        audio_urls: allAudioUrls,
         cover_image_url: clip.image_url,
         cover_image_urls: clipsArr.map(c => c.image_url).filter(Boolean),
       };
     }
-    if (state === 'failed' || state === 'error') return { status: 'failed', error: clip.error_message || 'Sonic failed' };
+    if (state === 'failed') return { status: 'failed', error: clip.error_message || 'Sonic generation failed' };
     return { status: 'processing' };
   }
 
   if (provider === 'nuro') {
     // Docs: GET /api/v1/nuro/task/{task_id}
-    // Response: { task_id, status: "pending"|"running"|"succeeded", progress, audio_url, ... }
+    // Response: { task_id, status: "pending"|"running"|"succeeded", progress(0-100), audio_url, ... }
+    // Note: "error" is NOT a valid status value per the docs. Only pending/running/succeeded.
     url = `${AI_BASE}/nuro/task/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${NURO_API_KEY}` };
     res = await fetch(url, { headers });
@@ -74,35 +73,40 @@ async function pollProvider(provider, providerTaskId, job) {
     console.log('Nuro poll response:', JSON.stringify(data));
     const state = data?.status || '';
 
-    // Recovery: task not found — list recent Nuro history
-    if (!data?.task_id || data?.code === 404 || state === 'not_found') {
-      console.log('Nuro: task not found, attempting recovery via history...');
+    if (res.status === 404 || !data?.task_id) {
+      console.log('Nuro: task not found, attempting recovery...');
       const histRes = await fetch(`${AI_BASE}/nuro/list?page_size=20`, { headers: { 'Authorization': `Bearer ${NURO_API_KEY}` } });
       const histData = await histRes.json();
-      const histItems = histData?.data || histData || [];
+      const histItems = Array.isArray(histData?.data) ? histData.data : [];
       const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
-      const recovered = (Array.isArray(histItems) ? histItems : []).find(item => {
-        if (!item.audio_url) return false;
+      const recovered = histItems.find(item => {
+        if (item.status !== 'succeeded' || !item.audio_url) return false;
         const t = item.created_at ? new Date(item.created_at).getTime() : 0;
         return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
       });
       if (recovered) {
-        console.log('Nuro: recovered via history:', recovered.task_id);
+        console.log('Nuro: recovered via list:', recovered.task_id);
         return { status: 'completed', audio_url: recovered.audio_url };
       }
     }
 
-    if (state === 'succeeded' || data?.audio_url) {
+    // Only "succeeded" signals completion per the official docs
+    if (state === 'succeeded') {
       return { status: 'completed', audio_url: data.audio_url };
     }
-    if (state === 'failed' || state === 'error') return { status: 'failed', error: data.error || 'Nuro failed' };
+    // No explicit "failed" status in Nuro docs — timeout after 10 mins
+    const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
+    if (elapsed > 10 * 60 * 1000) {
+      return { status: 'failed', error: 'Nuro generation timed out. Please regenerate.' };
+    }
     return { status: 'processing' };
   }
 
   if (provider === 'producer') {
     // Docs: GET /api/v1/producer/task/{task_id}
-    // Response: { code: 200, status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [...] }
-    // data[0] for create_music: { audio_url, wav_url, image_url, ... }
+    // Response: { code: 200, status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [] }
+    // data[] is EMPTY while PENDING/RUNNING — only populated on SUCCESS
+    // Per-clip shape: { clip_id, audio_url (m4a), wav_url, image_url, state: "succeeded"|"failed", ... }
     url = `${AI_BASE}/producer/task/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${PRODUCER_API_KEY}` };
     res = await fetch(url, { headers });
@@ -110,31 +114,18 @@ async function pollProvider(provider, providerTaskId, job) {
     console.log('Producer poll response:', JSON.stringify(data));
     const state = data?.status || '';
 
-    // Recovery: task not found — list recent Producer history
-    if (!state || data?.code === 404 || data?.message === 'task not found') {
-      console.log('Producer: task not found, attempting recovery via history...');
-      const histRes = await fetch(`${AI_BASE}/producer/list?page_size=20`, { headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}` } });
-      const histData = await histRes.json();
-      const histItems = histData?.data || histData || [];
-      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
-      const recovered = (Array.isArray(histItems) ? histItems : []).find(item => {
-        const clip = Array.isArray(item?.data) ? item.data[0] : item;
-        if (!clip?.audio_url) return false;
-        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
-        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
-      });
-      if (recovered) {
-        const clip = Array.isArray(recovered?.data) ? recovered.data[0] : recovered;
-        console.log('Producer: recovered via history');
-        return { status: 'completed', audio_url: clip?.audio_url || clip?.wav_url, cover_image_url: clip?.image_url };
-      }
+    if (res.status === 404) {
+      console.log('Producer: task not found (404)');
+      return { status: 'failed', error: 'Producer task not found. Please regenerate.' };
     }
 
     if (state === 'SUCCESS') {
-      const clip = Array.isArray(data?.data) ? data.data[0] : data?.data;
-      return { status: 'completed', audio_url: clip?.audio_url || clip?.wav_url, cover_image_url: clip?.image_url };
+      const clip = Array.isArray(data?.data) && data.data.length > 0 ? data.data[0] : null;
+      if (!clip?.audio_url) return { status: 'processing' }; // data array not yet populated
+      return { status: 'completed', audio_url: clip.audio_url, cover_image_url: clip.image_url };
     }
-    if (state === 'FAILED') return { status: 'failed', error: data.message || 'Producer failed' };
+    if (state === 'FAILED') return { status: 'failed', error: data.message || 'Producer generation failed' };
+    // PENDING or RUNNING — keep polling
     return { status: 'processing' };
   }
 
