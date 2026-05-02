@@ -93,19 +93,16 @@ export default function AdvancedGenerateTab() {
     }).catch(() => {});
   }, []);
 
-  const autoGenerateCoverArt = async (title, moodVal, genreVal) => {
-    setGeneratingCover(true);
+  const generateCoverArtUrl = async (title, moodVal, genreVal) => {
     try {
       const coverRes = await base44.integrations.Core.GenerateImage({
         prompt: `Album cover art for a ${moodVal} ${genreVal} track titled "${title}". Vibrant, modern, professional music artwork.`,
       });
-      setResult(prev => ({ ...prev, cover_image_url: coverRes.url }));
-    } catch { /* non-fatal */ }
-    setGeneratingCover(false);
+      return coverRes.url || null;
+    } catch { return null; }
   };
 
-  const autoSaveToLibrary = useCallback(async (data) => {
-    const audioUrl = data?.audio_url || data?.output_url;
+  const saveTrackToLibrary = useCallback(async (audioUrl, coverImageUrl, titleOverride) => {
     if (!audioUrl) return;
     try {
       const user = await base44.auth.me();
@@ -113,13 +110,12 @@ export default function AdvancedGenerateTab() {
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
-        title: `${mood} ${genre} — ${provider}`,
+        title: titleOverride || `${mood} ${genre} — ${provider}`,
         file_url: audioUrl,
-        thumbnail_url: data.cover_image_url || '',
+        thumbnail_url: coverImageUrl || '',
         is_public: false,
-        metadata: { genre, mood, tempo, provider, duration, bpm: data.bpm, key: data.key, auto_saved: true },
+        metadata: { genre, mood, tempo, provider, duration, auto_saved: true },
       });
-      toast.success('✅ Auto-saved to library!');
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
@@ -127,13 +123,30 @@ export default function AdvancedGenerateTab() {
 
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
-    setResult(data); // data includes audio_urls array for Sonic multi-track
+    setResult(data);
     toast.success(data?.audio_urls?.length > 1 ? `🎵 ${data.audio_urls.length} tracks ready!` : '🎵 Track ready!');
-    await autoSaveToLibrary(data);
-    if (!data.cover_image_url) {
-      await autoGenerateCoverArt(`${mood} ${genre} Track`, mood, genre);
+
+    // Generate cover art first, then save all tracks with it
+    let coverImageUrl = data.cover_image_url || null;
+    if (!coverImageUrl) {
+      setGeneratingCover(true);
+      coverImageUrl = await generateCoverArtUrl(`${mood} ${genre} Track`, mood, genre);
+      setGeneratingCover(false);
+      if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
     }
-  }, [mood, genre, autoSaveToLibrary]);
+
+    const primaryUrl = data.audio_url || data.output_url;
+    await saveTrackToLibrary(primaryUrl, coverImageUrl);
+
+    // Save additional Sonic tracks with same cover art
+    if (data.audio_urls?.length > 1) {
+      for (let i = 1; i < data.audio_urls.length; i++) {
+        await saveTrackToLibrary(data.audio_urls[i], coverImageUrl, `${mood} ${genre} — ${provider} (Take ${i + 1})`);
+      }
+    }
+
+    toast.success('✅ Auto-saved to library!');
+  }, [mood, genre, provider, saveTrackToLibrary]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -210,11 +223,7 @@ export default function AdvancedGenerateTab() {
       if (res.data?.audio_url || res.data?.output_url) {
         setResult(res.data);
         setGenerating(false);
-        toast.success('🎵 Track ready!');
-        await autoSaveToLibrary(res.data);
-        if (!res.data.cover_image_url) {
-          await autoGenerateCoverArt(`${mood} ${genre} Track`, mood, genre);
-        }
+        await onComplete(res.data);
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
         toast.success('Generation started — polling for result…');

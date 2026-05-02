@@ -47,22 +47,18 @@ export default function QuickGenerateTab() {
     }).catch(() => {});
   }, []);
 
-  const autoGenerateCoverArt = async (trackTitle, mood, genre) => {
-    setGeneratingCover(true);
+  const generateCoverArtUrl = async (trackTitle, mood, genre) => {
     try {
-      // Use Core InvokeLLM image gen — cheap/base tier
       const coverRes = await base44.integrations.Core.GenerateImage({
         prompt: `Album cover art for a ${mood} ${genre} track titled "${trackTitle}". Vibrant, modern, music artwork style. Professional album artwork.`,
       });
-      setResult(prev => ({ ...prev, cover_image_url: coverRes.url }));
+      return coverRes.url || null;
     } catch (e) {
-      // non-fatal — cover art is optional
+      return null;
     }
-    setGeneratingCover(false);
   };
 
-  const autoSaveToLibrary = useCallback(async (data, params) => {
-    const audioUrl = data?.audio_url || data?.output_url;
+  const saveTrackToLibrary = useCallback(async (audioUrl, coverImageUrl, params) => {
     if (!audioUrl) return;
     try {
       const user = await base44.auth.me();
@@ -72,12 +68,12 @@ export default function QuickGenerateTab() {
         asset_type: 'track',
         title: params?.title || prompt.slice(0, 40) || 'Generated Track',
         file_url: audioUrl,
-        thumbnail_url: data.cover_image_url || '',
+        thumbnail_url: coverImageUrl || '',
         is_public: false,
         metadata: {
           genre: params?.genre,
           mood: params?.mood,
-          bpm: params?.bpm || data.bpm,
+          bpm: params?.bpm,
           provider,
           duration: params?.duration,
           ai_assisted: true,
@@ -85,7 +81,6 @@ export default function QuickGenerateTab() {
           auto_saved: true,
         },
       });
-      toast.success('✅ Auto-saved to library!');
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
@@ -93,19 +88,38 @@ export default function QuickGenerateTab() {
 
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
-    setResult(data); // data includes audio_urls array for Sonic multi-track
+    setResult(data);
     toast.success(data?.audio_urls?.length > 1 ? `🎵 ${data.audio_urls.length} tracks ready!` : '🎵 Track ready!');
-    // Auto-save to library
-    await autoSaveToLibrary(data, aiParams);
-    // Auto-generate cover art if not provided
-    if (!data.cover_image_url) {
-      await autoGenerateCoverArt(
+
+    // Generate cover art first if needed, then save all tracks with cover art together
+    let coverImageUrl = data.cover_image_url || null;
+    if (!coverImageUrl) {
+      setGeneratingCover(true);
+      coverImageUrl = await generateCoverArtUrl(
         aiParams?.title || prompt.slice(0, 40),
         aiParams?.mood || 'energetic',
         aiParams?.genre || 'music'
       );
+      setGeneratingCover(false);
+      if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
     }
-  }, [aiParams, prompt, autoSaveToLibrary]);
+
+    // Save primary track (with cover art)
+    const primaryUrl = data.audio_url || data.output_url;
+    await saveTrackToLibrary(primaryUrl, coverImageUrl, aiParams);
+
+    // Save additional tracks (e.g. Sonic track 2) — same cover art
+    if (data.audio_urls?.length > 1) {
+      for (let i = 1; i < data.audio_urls.length; i++) {
+        await saveTrackToLibrary(data.audio_urls[i], coverImageUrl, {
+          ...aiParams,
+          title: aiParams?.title ? `${aiParams.title} (Take ${i + 1})` : `Track ${i + 1}`,
+        });
+      }
+    }
+
+    toast.success('✅ Auto-saved to library!');
+  }, [aiParams, prompt, saveTrackToLibrary]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -223,15 +237,10 @@ export default function QuickGenerateTab() {
       });
 
       if (res.data?.audio_url || res.data?.output_url) {
-        const trackData = { ...res.data, ai_params: aiDecision };
-        setResult(trackData);
+        setResult(res.data);
         setGenerating(false);
-        toast.success('🎵 Track ready!');
-        // Auto-save to library
-        await autoSaveToLibrary(res.data, aiDecision);
-        if (!res.data.cover_image_url) {
-          await autoGenerateCoverArt(aiDecision.title, aiDecision.mood, aiDecision.genre);
-        }
+        // Reuse onComplete logic for consistent save+cover art behaviour
+        await onComplete(res.data);
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
         toast.success('Generation started — AI is composing…');
