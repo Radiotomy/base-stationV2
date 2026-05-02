@@ -102,17 +102,21 @@ export default function QuickGenerateTab() {
     const params = aiParamsRef.current;
     const currentPrompt = promptRef.current;
 
-    // Always generate cover art
+    // Always generate cover art (gracefully skip if it fails)
     let coverImageUrl = data.cover_image_url || null;
     if (!coverImageUrl) {
       setGeneratingCover(true);
-      coverImageUrl = await generateCoverArtUrl(
-        params?.title || currentPrompt.slice(0, 40) || 'Track',
-        params?.mood || 'Energetic',
-        params?.genre || 'music'
-      );
+      try {
+        coverImageUrl = await generateCoverArtUrl(
+          params?.title || currentPrompt.slice(0, 40) || 'Track',
+          params?.mood || 'Energetic',
+          params?.genre || 'music'
+        );
+        if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
+      } catch (err) {
+        console.warn('Cover art generation skipped:', err.message);
+      }
       setGeneratingCover(false);
-      if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
     }
 
     // Build list of all distinct audio URLs to save
