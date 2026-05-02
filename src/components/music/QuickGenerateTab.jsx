@@ -93,8 +93,8 @@ export default function QuickGenerateTab() {
 
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
-    setResult(data);
-    toast.success('🎵 Track ready!');
+    setResult(data); // data includes audio_urls array for Sonic multi-track
+    toast.success(data?.audio_urls?.length > 1 ? `🎵 ${data.audio_urls.length} tracks ready!` : '🎵 Track ready!');
     // Auto-save to library
     await autoSaveToLibrary(data, aiParams);
     // Auto-generate cover art if not provided
@@ -414,7 +414,17 @@ export default function QuickGenerateTab() {
               </div>
             )}
 
+            {/* Primary track */}
             <audio controls className="w-full rounded-xl" src={audioUrl} />
+
+            {/* Additional Sonic tracks (track 2, 3...) */}
+            {result?.audio_urls?.length > 1 && result.audio_urls.slice(1).map((url, i) => (
+              <div key={url} className="space-y-1">
+                <p className="text-xs text-muted-foreground font-semibold">🎵 Track {i + 2}</p>
+                <audio controls className="w-full rounded-xl" src={url} />
+              </div>
+            ))}
+
             {result?.extended_url && (
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground font-semibold">🎵 Extended Version</p>

@@ -25,7 +25,8 @@ async function pollProvider(provider, providerTaskId, job) {
     console.log('Sonic poll response:', JSON.stringify(data));
     // Docs: { code: 200, data: [...clips...], message: "success" }
     const clips = Array.isArray(data) ? data : (data?.data || []);
-    const clip = Array.isArray(clips) ? clips[0] : clips;
+    const clipsArr = Array.isArray(clips) ? clips : [clips];
+    const clip = clipsArr[0];
     const state = clip?.state || clip?.status || '';
 
     // Recovery: if task not found or errored, try listing recent generations
@@ -47,7 +48,17 @@ async function pollProvider(provider, providerTaskId, job) {
     }
 
     if (state === 'succeeded' || state === 'complete' || clip?.audio_url) {
-      return { status: 'completed', audio_url: clip.audio_url || clip.url, cover_image_url: clip.image_url };
+      // Return all clips so UI can show both tracks
+      const allAudioUrls = clipsArr
+        .filter(c => c?.audio_url || c?.url)
+        .map(c => c.audio_url || c.url);
+      return {
+        status: 'completed',
+        audio_url: allAudioUrls[0],
+        audio_urls: allAudioUrls,        // all tracks
+        cover_image_url: clip.image_url,
+        cover_image_urls: clipsArr.map(c => c.image_url).filter(Boolean),
+      };
     }
     if (state === 'failed' || state === 'error') return { status: 'failed', error: clip.error_message || 'Sonic failed' };
     return { status: 'processing' };
