@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
-import { Music, FileText, Image, Film, CheckCircle, AlertCircle, Clock, Loader2, ExternalLink, RefreshCw } from 'lucide-react';
+import { Music, FileText, Image, Film, CheckCircle, AlertCircle, Clock, Loader2, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const JOB_ICONS = { music: Music, lyrics: FileText, cover_art: Image, video: Film };
 const JOB_COLORS = {
@@ -19,7 +20,7 @@ const STATUS_CONFIG = {
   pending:    { icon: Clock,       color: 'text-yellow-400',   bg: 'bg-yellow-500/10' },
 };
 
-function JobRow({ job }) {
+function JobRow({ job, onDelete }) {
   const Icon = JOB_ICONS[job.job_type] || Music;
   const color = JOB_COLORS[job.job_type] || JOB_COLORS.music;
   const status = STATUS_CONFIG[job.status] || STATUS_CONFIG.pending;
@@ -47,13 +48,19 @@ function JobRow({ job }) {
         <StatusIcon className={`w-3.5 h-3.5 ${status.spin ? 'animate-spin' : ''}`} />
         <span className="capitalize">{job.status}</span>
       </div>
-      {job.output_url && (
-        <a href={job.output_url} target="_blank" rel="noopener noreferrer" className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-            <ExternalLink className="w-3.5 h-3.5" />
-          </Button>
-        </a>
-      )}
+      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+        {job.output_url && (
+          <a href={job.output_url} target="_blank" rel="noopener noreferrer">
+            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Button>
+          </a>
+        )}
+        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
+          onClick={() => onDelete(job.id)}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
     </motion.div>
   );
 }
@@ -68,6 +75,18 @@ export default function GenerationHistoryTab({ userId }) {
     const data = await base44.entities.GenerationJob.filter({ user_id: userId }, '-created_date', 50);
     setJobs(data);
     setLoading(false);
+  };
+
+  const deleteJob = async (id) => {
+    await base44.entities.GenerationJob.delete(id);
+    setJobs(prev => prev.filter(j => j.id !== id));
+    toast.success('Entry removed');
+  };
+
+  const clearAll = async () => {
+    await Promise.all(jobs.map(j => base44.entities.GenerationJob.delete(j.id)));
+    setJobs([]);
+    toast.success('History cleared');
   };
 
   useEffect(() => { if (userId) load(); }, [userId]);
@@ -102,9 +121,16 @@ export default function GenerationHistoryTab({ userId }) {
             </button>
           ))}
         </div>
-        <Button onClick={load} size="sm" variant="ghost" className="rounded-lg gap-1.5 text-xs">
-          <RefreshCw className="w-3 h-3" /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          {jobs.length > 0 && (
+            <Button onClick={clearAll} size="sm" variant="ghost" className="rounded-lg gap-1.5 text-xs text-destructive hover:bg-destructive/10">
+              <Trash2 className="w-3 h-3" /> Clear All
+            </Button>
+          )}
+          <Button onClick={load} size="sm" variant="ghost" className="rounded-lg gap-1.5 text-xs">
+            <RefreshCw className="w-3 h-3" /> Refresh
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -118,7 +144,7 @@ export default function GenerationHistoryTab({ userId }) {
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(job => <JobRow key={job.id} job={job} />)}
+          {filtered.map(job => <JobRow key={job.id} job={job} onDelete={deleteJob} />)}
         </div>
       )}
     </div>

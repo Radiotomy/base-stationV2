@@ -45,35 +45,41 @@ function StatCard({ icon: Icon, label, value, color }) {
 
 function AssetCard({ asset, onDelete }) {
   const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
+  const isTrack = asset.asset_type === 'track';
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all flex items-center gap-4 group">
-      <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
-        {asset.thumbnail_url
-          ? <img src={asset.thumbnail_url} alt="" className="w-full h-full object-cover" />
-          : <Icon className="w-5 h-5 text-white/70" />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-bold text-sm text-foreground truncate">{asset.title}</p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <Badge variant="outline" className="text-xs capitalize px-1.5 py-0">{asset.asset_type}</Badge>
-          {asset.metadata?.genre && <span className="text-xs text-muted-foreground capitalize">{asset.metadata.genre}</span>}
-          {asset.metadata?.bpm && <span className="text-xs text-muted-foreground">{asset.metadata.bpm} BPM</span>}
+      className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all group">
+      <div className="flex items-center gap-4">
+        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
+          {asset.thumbnail_url
+            ? <img src={asset.thumbnail_url} alt="" className="w-full h-full object-cover" />
+            : <Icon className="w-5 h-5 text-white/70" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-sm text-foreground truncate">{asset.title}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <Badge variant="outline" className="text-xs capitalize px-1.5 py-0">{asset.asset_type}</Badge>
+            {asset.metadata?.genre && <span className="text-xs text-muted-foreground capitalize">{asset.metadata.genre}</span>}
+            {asset.metadata?.bpm && <span className="text-xs text-muted-foreground">{asset.metadata.bpm} BPM</span>}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          {asset.file_url && (
+            <a href={asset.file_url} target="_blank" rel="noopener noreferrer">
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
+                <ExternalLink className="w-3.5 h-3.5" />
+              </Button>
+            </a>
+          )}
+          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
+            onClick={() => onDelete(asset.id)}>
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
         </div>
       </div>
-      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        {asset.file_url && (
-          <a href={asset.file_url} target="_blank" rel="noopener noreferrer">
-            <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-              <ExternalLink className="w-3.5 h-3.5" />
-            </Button>
-          </a>
-        )}
-        <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
-          onClick={() => onDelete(asset.id)}>
-          <Trash2 className="w-3.5 h-3.5" />
-        </Button>
-      </div>
+      {isTrack && asset.file_url && (
+        <audio controls className="w-full mt-3 rounded-xl h-9" src={asset.file_url} />
+      )}
     </motion.div>
   );
 }
