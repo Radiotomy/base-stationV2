@@ -59,7 +59,7 @@ const PROMPT_TEMPLATES = [
 
 export default function AdvancedGenerateTab() {
   const [provider, setProvider] = useState('sonic');
-  const [sonicModel, setSonicModel] = useState('sonic-v4-5');
+  const [sonicModel, setSonicModel] = useState('sonic-v4-5-plus');
   const [nuroModel, setNuroModel] = useState('v1.0');
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
