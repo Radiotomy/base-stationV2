@@ -119,7 +119,7 @@ export default function AdvancedGenerateTab() {
   const generateCoverArtUrl = async (title, moodVal, genreVal) => {
     try {
       const coverRes = await base44.integrations.Core.GenerateImage({
-        prompt: `Album cover art for a ${moodVal} ${genreVal} track titled "${title}". Vibrant, modern, professional music artwork.`,
+        prompt: `Music album cover artwork. Style: ${genreVal}. Mood: ${moodVal}. Visual theme matching "${title}". Bold typography, dramatic lighting, professional music industry aesthetic. No text overlays.`,
       });
       return coverRes.url || null;
     } catch { return null; }

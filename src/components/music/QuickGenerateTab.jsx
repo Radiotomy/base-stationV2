@@ -54,7 +54,7 @@ export default function QuickGenerateTab() {
   const generateCoverArtUrl = async (trackTitle, mood, genre) => {
     try {
       const coverRes = await base44.integrations.Core.GenerateImage({
-        prompt: `Album cover art for a ${mood} ${genre} track titled "${trackTitle}". Vibrant, modern, music artwork style. Professional album artwork.`,
+        prompt: `Music album cover artwork. Style: ${genre}. Mood: ${mood}. Visual theme matching "${trackTitle}". Bold composition, dramatic lighting, professional music industry aesthetic. No text overlays.`,
       });
       return coverRes.url || null;
     } catch (e) {
