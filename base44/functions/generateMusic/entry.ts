@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     let providerResult;
     try {
       if (provider === 'loudly' && LOUDLY_API_KEY)
-        providerResult = await generateWithLoudly({ genre, mood, tempo, duration });
+        providerResult = await generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, structure_id });
       else if (provider === 'nuro')
         providerResult = await generateWithNuro({ genre, mood, duration, nuro_version, lyrics });
       else if (provider === 'producer')

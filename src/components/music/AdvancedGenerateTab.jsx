@@ -81,6 +81,10 @@ export default function AdvancedGenerateTab() {
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  // Loudly-specific
+  const [loudlyStructures, setLoudlyStructures] = useState([]);
+  const [loudlyStructureId, setLoudlyStructureId] = useState(null);
+  const [loadingRandomPrompt, setLoadingRandomPrompt] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -93,6 +97,23 @@ export default function AdvancedGenerateTab() {
       }).catch(() => {});
     }).catch(() => {});
   }, []);
+
+  // Fetch Loudly structures when provider switches to loudly
+  useEffect(() => {
+    if (provider !== 'loudly' || loudlyStructures.length > 0) return;
+    base44.functions.invoke('generateMusicLoudly', { action: 'structures' })
+      .then(res => setLoudlyStructures(res.data?.structures || []))
+      .catch(() => {});
+  }, [provider]);
+
+  const fetchRandomLoudlyPrompt = async () => {
+    setLoadingRandomPrompt(true);
+    try {
+      const res = await base44.functions.invoke('generateMusicLoudly', { action: 'random_prompt' });
+      if (res.data?.prompt) setSoundPrompt(res.data.prompt);
+    } catch (err) { toast.error(err.message); }
+    setLoadingRandomPrompt(false);
+  };
 
   const generateCoverArtUrl = async (title, moodVal, genreVal) => {
     try {
@@ -223,6 +244,7 @@ export default function AdvancedGenerateTab() {
         ...(provider === 'sonic' && { model: sonicModel }),
         ...(provider === 'nuro' && { nuro_version: nuroModel }),
         ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
+        ...(provider === 'loudly' && loudlyStructureId !== null && { structure_id: loudlyStructureId }),
       });
 
       if (res.data?.audio_url || res.data?.output_url) {
@@ -386,6 +408,30 @@ export default function AdvancedGenerateTab() {
             </div>
           )}
 
+          {/* Loudly: Structure + Random Prompt */}
+          {provider === 'loudly' && (
+            <div className="space-y-3">
+              {loudlyStructures.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Song Structure</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button onClick={() => setLoudlyStructureId(null)}
+                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${loudlyStructureId === null ? 'border-blue-500 bg-blue-500/10' : 'border-border bg-card'}`}>
+                      <p className="text-xs font-bold text-foreground">Auto</p>
+                      <p className="text-xs text-muted-foreground">Let AI decide</p>
+                    </button>
+                    {loudlyStructures.map(s => (
+                      <button key={s.id} onClick={() => setLoudlyStructureId(s.id)}
+                        className={`px-2.5 py-2 rounded-lg border text-left transition-all ${loudlyStructureId === s.id ? 'border-blue-500 bg-blue-500/10' : 'border-border bg-card'}`}>
+                        <p className="text-xs font-bold text-foreground">{s.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Voice Persona */}
           {voicePersonas.length > 0 && (
             <div>
@@ -423,7 +469,15 @@ export default function AdvancedGenerateTab() {
 
           {/* Sound Description */}
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sound Description</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Sound Description</p>
+              {provider === 'loudly' && (
+                <button onClick={fetchRandomLoudlyPrompt} disabled={loadingRandomPrompt}
+                  className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors disabled:opacity-50">
+                  {loadingRandomPrompt ? '…' : '🎲 Random Prompt'}
+                </button>
+              )}
+            </div>
             <textarea value={soundPrompt} onChange={e => setSoundPrompt(e.target.value)}
               placeholder="Describe the sound: e.g. hard 808s, mellow Rhodes, driving guitar riff…"
               rows={3}
