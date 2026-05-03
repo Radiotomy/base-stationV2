@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo = 120, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
@@ -294,7 +294,7 @@ Deno.serve(async (req) => {
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode });
       else // default: sonic
-        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics });
+        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics });
     } catch (providerErr) {
       // Try sonic as fallback
       if (provider !== 'sonic' && SONIC_API_KEY) {
