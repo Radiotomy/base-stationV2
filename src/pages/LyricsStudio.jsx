@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
-const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Soul', 'Drill', 'Afrobeats'];
+const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
 const LENGTHS      = ['Short (8–16 bars)', 'Medium (32 bars)', 'Long (64+ bars)', 'Full Song'];
 
 const RHYME_SCHEMES = [
@@ -28,10 +28,32 @@ const RHYME_SCHEMES = [
 ];
 
 const STRUCTURE_TEMPLATES = [
-  { label: '🎵 Standard Pop', text: '[Intro]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Bridge]\n\n[Chorus]\n\n[Outro]' },
-  { label: '🔥 Hip-Hop',      text: '[Intro]\n\n[Verse 1]\n\n[Hook]\n\n[Verse 2]\n\n[Hook]\n\n[Verse 3]\n\n[Outro]' },
-  { label: '✨ Minimal',      text: '[Verse]\n\n[Chorus]\n\n[Verse]\n\n[Chorus]' },
-  { label: '🌊 R&B / Soul',   text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Bridge]\n\n[Vamp / Outro]' },
+  // Pop / General
+  { label: '🎵 Standard Pop',       genre: 'Pop',           text: '[Intro]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Bridge]\n\n[Chorus]\n\n[Outro]' },
+  { label: '✨ Minimal',            genre: 'Pop',           text: '[Verse]\n\n[Chorus]\n\n[Verse]\n\n[Chorus]' },
+  // Hip-Hop / Rap
+  { label: '🔥 Hip-Hop / Rap',      genre: 'Hip-Hop',       text: '[Intro]\n\n[Verse 1]\n\n[Hook]\n\n[Verse 2]\n\n[Hook]\n\n[Verse 3]\n\n[Outro]' },
+  { label: '💀 Drill / Trap',       genre: 'Drill',         text: '[Intro]\n\n[Verse 1]\n\n[Hook]\n\n[Verse 2]\n\n[Hook]\n\n[Bridge]\n\n[Hook]\n\n[Outro]' },
+  // R&B / Soul
+  { label: '🌊 R&B / Soul',         genre: 'R&B',           text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Bridge]\n\n[Vamp / Outro]' },
+  { label: '💜 Neo-Soul',           genre: 'Soul',          text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Ad-lib Break]\n\n[Bridge]\n\n[Chorus]\n\n[Outro]' },
+  // Rock
+  { label: '🎸 Rock / Alt Rock',    genre: 'Rock',          text: '[Intro riff]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Guitar Solo]\n\n[Bridge]\n\n[Chorus x2]\n\n[Outro]' },
+  { label: '🤘 Hard Rock / Metal',  genre: 'Rock',          text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Solo]\n\n[Breakdown]\n\n[Chorus]\n\n[Outro]' },
+  // Country
+  { label: '🤠 Traditional Country',  genre: 'Country',     text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Verse 3]\n\n[Chorus]\n\n[Tag / Outro]' },
+  { label: '🎙️ Modern Country',      genre: 'Country',     text: '[Intro]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Bridge]\n\n[Chorus]\n\n[Outro]' },
+  { label: '🌵 Red Dirt Country',    genre: 'Red Dirt',     text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Instrumental Break]\n\n[Verse 3]\n\n[Chorus]\n\n[Outro]' },
+  { label: '🤟 Texas Country',       genre: 'Texas Country', text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Guitar Break]\n\n[Verse 3]\n\n[Chorus]\n\n[Tag]' },
+  // EDM / Electronic
+  { label: '⚡ EDM / Dance',         genre: 'EDM',           text: '[Intro]\n\n[Build-Up]\n\n[Drop]\n\n[Breakdown]\n\n[Build-Up 2]\n\n[Drop 2]\n\n[Outro]' },
+  // Lo-Fi / Indie
+  { label: '☕ Lo-Fi / Chill',       genre: 'Lo-Fi',         text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Outro]' },
+  { label: '🌿 Indie / Alt',         genre: 'Indie',         text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Bridge]\n\n[Chorus]\n\n[Outro]' },
+  // Jazz / Blues
+  { label: '🎷 Jazz / Blues',        genre: 'Jazz',          text: '[Intro / Head]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Instrumental Solo]\n\n[Chorus]\n\n[Outro / Head Out]' },
+  // Afrobeats / Global
+  { label: '🌍 Afrobeats',           genre: 'Afrobeats',     text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Dance Break]\n\n[Chorus]\n\n[Outro]' },
 ];
 
 const TOPIC_SUGGESTIONS = [
@@ -246,12 +268,13 @@ export default function LyricsStudio() {
             </div>
 
             {/* Structure Templates */}
-            <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-              <h3 className="font-black text-foreground text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
+            <div className="bg-card rounded-2xl border border-border p-5 space-y-2">
+              <h3 className="font-black text-foreground text-sm flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
               {STRUCTURE_TEMPLATES.map(t => (
-                <button key={t.label} type="button" onClick={() => applyStructure(t)}
-                  className="w-full text-left px-3 py-2 rounded-xl bg-muted text-sm text-muted-foreground hover:bg-pink-500/10 hover:text-pink-300 transition-all">
-                  {t.label}
+                <button key={t.label} type="button" onClick={() => { applyStructure(t); setStyle(t.genre); }}
+                  className="w-full text-left px-3 py-2 rounded-xl bg-muted text-sm text-muted-foreground hover:bg-pink-500/10 hover:text-pink-300 transition-all flex items-center justify-between gap-2">
+                  <span>{t.label}</span>
+                  <span className="text-xs text-muted-foreground/60 shrink-0">{t.genre}</span>
                 </button>
               ))}
             </div>
