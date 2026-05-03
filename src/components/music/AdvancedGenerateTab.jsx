@@ -81,6 +81,7 @@ export default function AdvancedGenerateTab() {
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  const savedRef = useRef(false); // prevent duplicate auto-saves
   // Loudly-specific
   const [loudlyModel, setLoudlyModel] = useState('VEGA_2');
   const [loudlyStructures, setLoudlyStructures] = useState([]);
@@ -145,6 +146,8 @@ export default function AdvancedGenerateTab() {
   }, [mood, genre, provider, tempo, duration]);
 
   const onComplete = useCallback(async (data) => {
+    if (savedRef.current) return; // prevent duplicate calls
+    savedRef.current = true;
     setGenerating(false);
     setResult(data);
     toast.success(data?.audio_urls?.length > 1 ? `🎵 ${data.audio_urls.length} tracks ready!` : '🎵 Track ready!');
@@ -233,6 +236,7 @@ export default function AdvancedGenerateTab() {
     setGenerating(true);
     setResult(null);
     setJobId('');
+    savedRef.current = false; // reset guard for new generation
     try {
       const res = await base44.functions.invoke('generateMusic', {
         provider,

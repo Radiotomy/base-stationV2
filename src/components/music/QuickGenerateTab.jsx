@@ -42,6 +42,7 @@ export default function QuickGenerateTab() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [aiParams, setAiParams] = useState(null); // what AI decided
+  const savedRef = useRef(false); // prevent duplicate auto-saves
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -95,6 +96,8 @@ export default function QuickGenerateTab() {
   const promptRef = React.useRef('');
 
   const onComplete = useCallback(async (data) => {
+    if (savedRef.current) return; // prevent duplicate calls
+    savedRef.current = true;
     setGenerating(false);
     setResult(data);
     toast.success(data?.audio_urls?.length > 1 ? `🎵 ${data.audio_urls.length} tracks ready!` : '🎵 Track ready!');
@@ -183,6 +186,7 @@ export default function QuickGenerateTab() {
     setResult(null);
     setJobId('');
     setAiParams(null);
+    savedRef.current = false; // reset guard for new generation
 
     try {
       // Step 1: AI determines all parameters — check cache first

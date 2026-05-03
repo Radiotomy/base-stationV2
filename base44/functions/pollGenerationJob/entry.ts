@@ -297,6 +297,8 @@ Deno.serve(async (req) => {
       return Response.json({
         status: 'completed',
         audio_url: job.job_type === 'music' ? job.output_url : undefined,
+        audio_urls: job.output_metadata?.audio_urls || undefined,
+        cover_image_url: job.output_metadata?.cover_image_url || undefined,
         video_url: job.job_type === 'video' ? job.output_url : undefined,
         bpm: job.output_metadata?.bpm,
         key: job.output_metadata?.key,
