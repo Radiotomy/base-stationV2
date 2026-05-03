@@ -3,22 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 const LOUDLY_API_KEY = Deno.env.get('LOUDLY_API_KEY');
 const BASE_URL = 'https://soundtracks.loudly.com';
 
-const LOUDLY_GENRE_IDS = {
-  'Ambient': 1, 'Classical': 2, 'Country': 3, 'Electronic': 4, 'EDM': 4,
-  'Folk': 5, 'Hip Hop & Trap': 6, 'Hip-Hop': 6, 'Trap': 6,
-  'Jazz': 7, 'Latin': 8, 'Pop': 9, 'R&B/Soul': 10, 'R&B': 10,
-  'Rock': 11, 'World': 12, 'Lo-Fi': 4, 'House': 4, 'Drill': 6, 'Afrobeats': 12,
-};
+// Uses POST /api/ai/prompt/songs — text-prompt-based generation (VEGA_2 model)
+async function generateAISong({ genre, duration = 60, energy = 'high', bpm, mood, sound_prompt }) {
+  const bpmHint = bpm ? ` at ${bpm} BPM` : '';
+  const moodStr = mood || 'energetic';
+  const prompt = sound_prompt
+    ? `${sound_prompt}. ${moodStr} energy, ${genre} style${bpmHint}.`
+    : `A ${energy}-energy ${moodStr} ${genre} track${bpmHint}.`;
 
-async function generateAISong({ genre, duration = 60, energy = 'high', bpm }) {
-  const genreId = LOUDLY_GENRE_IDS[genre] || 9;
   const form = new FormData();
-  form.append('genre_id', String(genreId));
+  form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration, 30), 420)));
-  if (energy) form.append('energy', energy);
-  if (bpm) form.append('bpm', String(bpm));
+  form.append('model', 'VEGA_2');
 
-  const res = await fetch(`${BASE_URL}/api/ai/songs`, {
+  console.log('Loudly prompt:', prompt);
+  const res = await fetch(`${BASE_URL}/api/ai/prompt/songs`, {
     method: 'POST',
     headers: { 'API-KEY': LOUDLY_API_KEY },
     body: form,
@@ -59,6 +58,7 @@ Deno.serve(async (req) => {
       duration: duration || 60,
       energy: energy || 'high',
       bpm: tempo,
+      mood,
     });
 
     const track = normalizeTrack(song);

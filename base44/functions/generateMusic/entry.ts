@@ -204,85 +204,42 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
 
 // ── Loudly ────────────────────────────────────────────────────────────────────
 // Base: https://soundtracks.loudly.com
-// AI Generation: POST /api/ai/songs  (multipart/form-data)
-//   Fields: genre_id (int), duration (int, 30-420s), energy ('low'|'medium'|'high'), bpm (int)
+// AI Prompt Generation: POST /api/ai/prompt/songs  (multipart/form-data)
+//   Required: prompt (string) — text description of the desired song
+//   Optional: duration (30-420s), model ('VEGA_1'|'VEGA_2'), structure_id (int)
 // Response: { id, title, music_file_path, bpm, key: { name }, duration, ... }
 // Synchronous — returns the song directly (no polling needed).
-// Genre IDs (from Loudly catalog): 1=Ambient, 2=Classical, 3=Country, 4=Electronic,
-//   5=Folk, 6=Hip Hop & Trap, 7=Jazz, 8=Latin, 9=Pop, 10=R&B/Soul, 11=Rock, 12=World
 const LOUDLY_API_KEY = Deno.env.get('LOUDLY_API_KEY');
-
-// Build genre map from Loudly API at runtime, with fallback mapping
-let LOUDLY_GENRE_IDS = null;
-
-async function fetchLoudlyGenres() {
-  if (LOUDLY_GENRE_IDS) return LOUDLY_GENRE_IDS; // Cache
-  try {
-    const res = await fetch('https://soundtracks.loudly.com/api/ai/genres', {
-      headers: { 'API-KEY': LOUDLY_API_KEY, 'Accept': 'application/json' }
-    });
-    if (!res.ok) throw new Error(`Loudly genres API error ${res.status}`);
-    const genres = await res.json();
-    
-    // Build map: genre name → id
-    LOUDLY_GENRE_IDS = {};
-    genres.forEach(g => {
-      LOUDLY_GENRE_IDS[g.name] = g.id;
-      // Also map micro-genres
-      if (g.micro_genres) {
-        g.micro_genres.forEach(mg => {
-          LOUDLY_GENRE_IDS[mg.name] = g.id; // Use parent genre id for micro-genres
-        });
-      }
-    });
-    console.log('Loudly genres loaded:', Object.keys(LOUDLY_GENRE_IDS).length + ' genres');
-    return LOUDLY_GENRE_IDS;
-  } catch (e) {
-    console.warn('Failed to fetch Loudly genres, using fallback:', e.message);
-    // Fallback mapping
-    LOUDLY_GENRE_IDS = {
-      'Ambient': 1, 'Classical': 2, 'Country': 3, 'EDM': 4, 'Electronic': 4,
-      'Folk': 5, 'Hip-Hop': 6, 'Trap': 6, 'Jazz': 7, 'Latin': 8,
-      'Pop': 9, 'R&B': 10, 'Rock': 11, 'World': 12,
-      'Lo-Fi': 4, 'House': 4, 'Drill': 6, 'Afrobeats': 12,
-    };
-    return LOUDLY_GENRE_IDS;
-  }
-}
 
 const LOUDLY_ENERGY_MAP = {
   'Energetic': 'high', 'Aggressive': 'high', 'Happy': 'high', 'Uplifting': 'high',
   'Chill': 'low', 'Melancholic': 'low', 'Romantic': 'low', 'Sad': 'low',
-  'Dark': 'medium', 'default': 'medium',
+  'Dark': 'medium',
 };
 
-async function generateWithLoudly({ genre, mood, tempo, duration }) {
-  // Fetch genres dynamically (cached after first call)
-  const genreMap = await fetchLoudlyGenres();
-  
-  // Ensure genre is valid; fallback to Pop
-  const validGenre = genre && genreMap[genre] ? genre : 'Pop';
-  const genreId = genreMap[validGenre];
-  if (!genreId) throw new Error(`Invalid genre "${validGenre}" — not found in Loudly genres`);
+async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt }) {
+  // Build a descriptive text prompt from params — uses the new /api/ai/prompt/songs endpoint
   const energy = LOUDLY_ENERGY_MAP[mood] || 'medium';
+  const bpmHint = tempo ? ` at ${tempo} BPM` : '';
+  const prompt = sound_prompt
+    ? `${sound_prompt}. ${mood} energy, ${genre} style${bpmHint}.`
+    : `A ${energy}-energy ${mood.toLowerCase()} ${genre} track${bpmHint}.`;
 
-  console.log('Loudly params:', { genre, validGenre, genreId, mood, energy, tempo, duration });
-  
+  console.log('Loudly prompt:', prompt, '| duration:', duration);
+
   const form = new FormData();
-  form.append('genre_id', String(genreId));
+  form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration || 30, 30), 420)));
-  form.append('energy', energy);
-  if (tempo) form.append('bpm', String(tempo));
+  form.append('model', 'VEGA_2');
 
-  const res = await fetch('https://soundtracks.loudly.com/api/ai/songs', {
+  const res = await fetch('https://soundtracks.loudly.com/api/ai/prompt/songs', {
     method: 'POST',
     headers: { 'API-KEY': LOUDLY_API_KEY },
     body: form,
   });
   const data = await res.json();
-  console.log('Loudly generate response:', JSON.stringify(data));
+  console.log('Loudly prompt/songs response:', JSON.stringify(data));
   if (!res.ok) throw new Error(data.error || data.message || `Loudly error ${res.status}`);
-  // Response: { id, title, music_file_path, bpm, key: { name }, duration, ... }
   const audioUrl = data.music_file_path || data.audio_url;
   if (!audioUrl) throw new Error('Loudly returned no audio URL: ' + JSON.stringify(data));
   return {
