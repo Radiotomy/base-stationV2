@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import ChipSelector from '@/components/music/ChipSelector';
 
@@ -82,6 +83,10 @@ export default function AdvancedGenerateTab() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const savedRef = useRef(false); // prevent duplicate auto-saves
+
+  // Debounced values to prevent input handler violations on rapid keystrokes
+  const debouncedSoundPrompt = useDebouncedValue(soundPrompt, 200);
+  const debouncedLyrics = useDebouncedValue(lyrics, 200);
   // Loudly-specific
   const [loudlyModel, setLoudlyModel] = useState('VEGA_2');
   const [loudlyStructures, setLoudlyStructures] = useState([]);
@@ -184,14 +189,15 @@ export default function AdvancedGenerateTab() {
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
   const isProcessing = generating || (jobId && status === 'processing');
 
-  // Keyboard shortcut: ⌘+Enter to generate
+  // Keyboard shortcut: ⌘+Enter to generate — use ref to avoid re-registering on every keystroke
+  const generateRef = useRef(null);
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generateRef.current?.(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [provider, duration, genre, mood, tempo, soundPrompt, lyrics, lyricsMode, selectedPersona]);
+  }, []); // register once only
 
   const extendTrack = async () => {
     const audioUrl = result?.audio_url || result?.output_url;
@@ -237,14 +243,17 @@ export default function AdvancedGenerateTab() {
     setResult(null);
     setJobId('');
     savedRef.current = false; // reset guard for new generation
+    // Read latest values directly from state refs to avoid stale closure issues
+    const currentPrompt = soundPrompt;
+    const currentLyrics = lyrics;
     try {
       const res = await base44.functions.invoke('generateMusic', {
         provider,
         ...(duration && { duration }),
         genre, mood,
         tempo: parseInt(tempo, 10) || 120,
-        sound_prompt: soundPrompt || `${mood} ${genre} track`,
-        ...(lyrics && lyricsMode !== 'none' && { lyrics }),
+        sound_prompt: currentPrompt || `${mood} ${genre} track`,
+        ...(currentLyrics && lyricsMode !== 'none' && { lyrics: currentLyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
         ...(provider === 'sonic' && { model: sonicModel }),
         ...(provider === 'nuro' && { nuro_version: nuroModel }),
@@ -268,6 +277,9 @@ export default function AdvancedGenerateTab() {
       toast.error(err.message);
     }
   };
+
+  // Keep ref in sync so the keyboard shortcut always calls the latest generate
+  generateRef.current = generate;
 
   const saveToLibrary = async () => {
     const audioUrl = result?.audio_url || result?.output_url;

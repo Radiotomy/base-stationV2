@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight, AlertCircle } from 'lucide-react';
@@ -145,14 +146,16 @@ export default function QuickGenerateTab() {
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
   const isProcessing = generating || (jobId && status === 'processing');
 
-  // Keyboard shortcut: ⌘+Enter to generate
+  // Keyboard shortcut: ⌘+Enter — use ref to avoid re-registering on every keystroke
+  const generateRef = useRef(null);
+  generateRef.current = generate; // always up to date without re-registering listener
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generate(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generateRef.current?.(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [prompt, provider, selectedPersona]);
+  }, []); // register once only
 
   const extendTrack = async () => {
     const audioUrl = result?.audio_url || result?.output_url;

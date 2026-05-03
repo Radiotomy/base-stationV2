@@ -30,10 +30,12 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
     setProgress(5);
     setElapsedSeconds(0);
 
-    // Elapsed seconds ticker
+    // Elapsed seconds ticker — low-priority update only while processing
     const elapsed = setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
+      if (!completedRef.current) {
+        setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
+      }
+    }, 2000); // 2s is sufficient for UX and halves timer pressure
 
     const poll = async () => {
       if (attemptRef.current >= maxAttempts) {
