@@ -82,6 +82,7 @@ export default function AdvancedGenerateTab() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   // Loudly-specific
+  const [loudlyModel, setLoudlyModel] = useState('VEGA_2');
   const [loudlyStructures, setLoudlyStructures] = useState([]);
   const [loudlyStructureId, setLoudlyStructureId] = useState(null);
   const [loadingRandomPrompt, setLoadingRandomPrompt] = useState(false);
@@ -244,6 +245,7 @@ export default function AdvancedGenerateTab() {
         ...(provider === 'sonic' && { model: sonicModel }),
         ...(provider === 'nuro' && { nuro_version: nuroModel }),
         ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
+        ...(provider === 'loudly' && { model: loudlyModel }),
         ...(provider === 'loudly' && loudlyStructureId !== null && { structure_id: loudlyStructureId }),
       });
 
@@ -408,9 +410,66 @@ export default function AdvancedGenerateTab() {
             </div>
           )}
 
-          {/* Loudly: Structure + Random Prompt */}
+          {/* Loudly: Model + Structure */}
           {provider === 'loudly' && (
             <div className="space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">AI Model</p>
+                <div className="space-y-2">
+                  {[
+                    {
+                      value: 'VEGA_1',
+                      label: 'VEGA 1',
+                      tag: 'Fast Instrumentals',
+                      tagColor: 'text-cyan-400',
+                      bullets: ['Instrumental only, ready in seconds', 'Simple prompts & fast results', 'Great for demos, sketches & quick ideas'],
+                      border: 'border-cyan-500/50 bg-cyan-500/5',
+                    },
+                    {
+                      value: 'VEGA_2',
+                      label: 'VEGA 2',
+                      tag: 'Enhanced Quality',
+                      tagColor: 'text-blue-400',
+                      badge: 'NEW',
+                      bullets: ['Higher overall audio quality', 'Improved clarity, depth & stereo balance', 'Cleaner mix with better frequency separation'],
+                      border: 'border-blue-500/50 bg-blue-500/5',
+                    },
+                    {
+                      value: 'MANTA_1',
+                      label: 'MANTA 1',
+                      tag: 'High Fidelity AI (Vocals)',
+                      tagColor: 'text-purple-400',
+                      bullets: ['Natural vocals with lyrics & wide instrumentation', 'High fidelity diffusion-based AI', 'Ideal for full songs & distribution releases'],
+                      border: 'border-purple-500/50 bg-purple-500/5',
+                    },
+                  ].map(m => {
+                    const isActive = loudlyModel === m.value;
+                    return (
+                      <button key={m.value} onClick={() => setLoudlyModel(m.value)}
+                        className={`w-full p-3 rounded-xl border text-left transition-all ${isActive ? m.border : 'border-border bg-card hover:border-border/80'}`}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-black text-foreground">{m.label}</span>
+                            {m.badge && (
+                              <span className="px-1.5 py-0.5 rounded text-xs font-black bg-blue-500 text-white leading-none">{m.badge}</span>
+                            )}
+                          </div>
+                          <span className={`text-xs font-semibold ${m.tagColor}`}>{m.tag}</span>
+                        </div>
+                        <ul className="space-y-0.5">
+                          {m.bullets.map((b, i) => (
+                            <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                              <span className={`mt-0.5 flex-shrink-0 ${isActive ? m.tagColor : 'text-muted-foreground/50'}`}>•</span>
+                              {b}
+                            </li>
+                          ))}
+                        </ul>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {loudlyStructures.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Song Structure</p>

@@ -217,7 +217,7 @@ const LOUDLY_ENERGY_MAP = {
   'Dark': 'medium',
 };
 
-async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt }) {
+async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, structure_id, model }) {
   // Build a descriptive text prompt from params — uses the new /api/ai/prompt/songs endpoint
   const energy = LOUDLY_ENERGY_MAP[mood] || 'medium';
   const bpmHint = tempo ? ` at ${tempo} BPM` : '';
@@ -230,7 +230,7 @@ async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt }
   const form = new FormData();
   form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration || 30, 30), 420)));
-  form.append('model', 'VEGA_2');
+  form.append('model', model || 'VEGA_2');
 
   const res = await fetch('https://soundtracks.loudly.com/api/ai/prompt/songs', {
     method: 'POST',
@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
     let providerResult;
     try {
       if (provider === 'loudly' && LOUDLY_API_KEY)
-        providerResult = await generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, structure_id });
+        providerResult = await generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, structure_id, model });
       else if (provider === 'nuro')
         providerResult = await generateWithNuro({ genre, mood, duration, nuro_version, lyrics });
       else if (provider === 'producer')

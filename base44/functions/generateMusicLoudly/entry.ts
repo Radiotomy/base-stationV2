@@ -4,7 +4,7 @@ const LOUDLY_API_KEY = Deno.env.get('LOUDLY_API_KEY');
 const BASE_URL = 'https://soundtracks.loudly.com';
 
 // POST /api/ai/prompt/songs — generate song from text prompt
-async function generateAISong({ genre, duration = 60, bpm, mood, sound_prompt, structure_id }) {
+async function generateAISong({ genre, duration = 60, bpm, mood, sound_prompt, structure_id, model }) {
   const bpmHint = bpm ? ` at ${bpm} BPM` : '';
   const moodStr = mood || 'energetic';
   const prompt = sound_prompt
@@ -14,7 +14,7 @@ async function generateAISong({ genre, duration = 60, bpm, mood, sound_prompt, s
   const form = new FormData();
   form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration, 30), 420)));
-  form.append('model', 'VEGA_2');
+  form.append('model', model || 'VEGA_2');
   if (structure_id !== undefined) form.append('structure_id', String(structure_id));
 
   console.log('Loudly prompt:', prompt, '| structure_id:', structure_id);
@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Generate song (default) ──────────────────────────────────────────────
+    const { model: bodyModel } = body;
     const song = await generateAISong({
       genre,
       duration: duration || 60,
@@ -95,6 +96,7 @@ Deno.serve(async (req) => {
       mood,
       sound_prompt,
       structure_id,
+      model: bodyModel,
     });
 
     const track = normalizeTrack(song);
