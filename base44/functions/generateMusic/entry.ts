@@ -71,7 +71,7 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
     clearTimeout(sonicTimeout);
   }
   console.log('Sonic create response:', JSON.stringify(data));
-  if (!res.ok || data.code !== 200) throw new Error(data.message || JSON.stringify(data));
+  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
   const taskId = data.task_id;
   if (!taskId) throw new Error('No task_id from Sonic: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'sonic' };
@@ -275,14 +275,7 @@ Deno.serve(async (req) => {
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
             tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
 
-    const job = await base44.entities.GenerationJob.create({
-      user_id: user.id, user_email: user.email,
-      job_type: 'music', provider,
-      status: 'processing',
-      input_data: { duration, mood, genre, tempo, sound_prompt },
-      started_at: new Date().toISOString(),
-    });
-
+    // Call provider FIRST — before any DB writes — so gateway timeout isn't wasted on DB ops
     let providerResult;
     try {
       if (provider === 'loudly' && LOUDLY_API_KEY)
@@ -296,37 +289,37 @@ Deno.serve(async (req) => {
       else // default: sonic
         providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics });
     } catch (providerErr) {
-      // Try sonic as fallback
-      if (provider !== 'sonic' && SONIC_API_KEY) {
-        try { providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo, lyrics }); }
-        catch {}
-      }
-      if (!providerResult) {
-        await base44.entities.GenerationJob.update(job.id, { status: 'failed', error_message: providerErr.message });
-        return Response.json({ error: providerErr.message }, { status: 502 });
-      }
+      return Response.json({ error: providerErr.message }, { status: 502 });
     }
 
-    // Synchronous result (e.g., Loudly)
+    // Synchronous result (e.g., Loudly) — persist and return immediately
     if (providerResult.audio_url) {
-      await base44.entities.GenerationJob.update(job.id, {
+      base44.entities.GenerationJob.create({
+        user_id: user.id, user_email: user.email,
+        job_type: 'music', provider,
         status: 'completed',
+        input_data: { duration, mood, genre, tempo, sound_prompt },
         output_url: providerResult.audio_url,
         output_metadata: { bpm: providerResult.bpm, key: providerResult.key, duration },
         credits_used: providerResult.credits_used || 1,
+        started_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
-      });
+      }).catch(() => {});
       return Response.json({
-        job_id: job.id, status: 'completed',
+        status: 'completed',
         audio_url: providerResult.audio_url,
         bpm: providerResult.bpm, key: providerResult.key,
       });
     }
 
-    // Async: store provider task_id in job record for polling
-    await base44.entities.GenerationJob.update(job.id, {
+    // Async (Sonic, Nuro, Producer, Tempolor): create job record with provider task_id
+    const job = await base44.entities.GenerationJob.create({
+      user_id: user.id, user_email: user.email,
+      job_type: 'music', provider,
       status: 'processing',
+      input_data: { duration, mood, genre, tempo, sound_prompt },
       provider_job_id: providerResult.task_id,
+      started_at: new Date().toISOString(),
     });
 
     return Response.json({ job_id: job.id, status: 'processing' });
