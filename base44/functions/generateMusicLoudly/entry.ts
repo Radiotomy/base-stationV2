@@ -14,7 +14,7 @@ async function generateAISong({ genre, duration = 60, bpm, mood, sound_prompt, s
   const form = new FormData();
   form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration, 30), 420)));
-  form.append('model', model || 'VEGA_2');
+  form.append('model', model || 'MANTA_1');
   if (structure_id !== undefined) form.append('structure_id', String(structure_id));
 
   console.log('Loudly prompt:', prompt, '| structure_id:', structure_id);

@@ -230,7 +230,7 @@ async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, 
   const form = new FormData();
   form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration || 30, 30), 420)));
-  form.append('model', model || 'VEGA_2');
+  form.append('model', model || 'MANTA_1');
 
   const res = await fetch('https://soundtracks.loudly.com/api/ai/prompt/songs', {
     method: 'POST',

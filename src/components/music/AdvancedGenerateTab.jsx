@@ -82,7 +82,7 @@ export default function AdvancedGenerateTab() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   // Loudly-specific
-  const [loudlyModel, setLoudlyModel] = useState('VEGA_2');
+  const [loudlyModel, setLoudlyModel] = useState('MANTA_1');
   const [loudlyStructures, setLoudlyStructures] = useState([]);
   const [loudlyStructureId, setLoudlyStructureId] = useState(null);
   const [loadingRandomPrompt, setLoadingRandomPrompt] = useState(false);
