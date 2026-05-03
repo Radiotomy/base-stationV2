@@ -22,7 +22,7 @@ export default function MusicStudio() {
           <span className="text-sm font-semibold">Back</span>
         </Link>
         <div className="flex-1" />
-        <Badge variant="outline" className="text-xs">⚡ Phase 4</Badge>
+        <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-400">✓ Phase 1 Complete</Badge>
       </div>
 
       {/* Hero */}

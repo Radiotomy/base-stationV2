@@ -180,7 +180,7 @@ export default function AdvancedGenerateTab() {
   }, []);
 
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
-  const isProcessing = generating || (jobId && status === 'processing');
+  const isProcessing = generating || (jobId && (status === 'processing' || status === 'pending'));
 
   // Keyboard shortcut: ⌘+Enter to generate — use ref to avoid re-registering on every keystroke
   const generateRef = useRef(null);
