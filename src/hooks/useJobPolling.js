@@ -70,13 +70,12 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
         console.warn('Polling error (will retry):', err.message);
       }
 
-      // Exponential backoff: 2s → 4s → 8s → 8s…
+      // Poll at 15s intervals as recommended by Sonic docs (15–25s)
       attemptRef.current++;
-      const delay = Math.min(8000, 2000 * Math.pow(1.4, Math.min(attemptRef.current, 5)));
-      timerRef.current = setTimeout(poll, delay);
+      timerRef.current = setTimeout(poll, 15000);
     };
 
-    timerRef.current = setTimeout(poll, 2000);
+    timerRef.current = setTimeout(poll, 15000);
 
     return () => {
       clearTimeout(timerRef.current);

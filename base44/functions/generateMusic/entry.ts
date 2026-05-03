@@ -29,30 +29,38 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
   const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
   const safeModel = (!model || LEGACY_MODELS.includes(model)) ? 'sonic-v4-5' : model;
 
+  const tags = [genre, mood].filter(Boolean).join(', ');
+
   let body;
   if (lyrics && lyrics.trim().length > 0) {
-    // Custom mode with provided lyrics
-    const tags = [genre, mood, sound_prompt ? sound_prompt.slice(0, 100) : null].filter(Boolean).join(', ');
+    // Custom mode: user-provided lyrics with section tags
     body = {
       task_type: 'create_music',
       custom_mode: true,
       mv: safeModel,
       title: `${mood} ${genre} Track`,
       tags,
-      prompt: lyrics,
+      prompt: lyrics.slice(0, 5000),
     };
-  } else {
-    // Auto-lyrics mode: Sonic reads sound_prompt as full style descriptor and auto-generates
-    // lyrics + tags from it — preserves genre nuance like "Red Dirt Texas Country Rock Blues"
-    const fullDescription = sound_prompt || `A ${mood.toLowerCase()} ${genre} track${tempo ? ` at ${tempo} BPM` : ''}`;
+  } else if (sound_prompt) {
+    // Auto-lyrics mode: Sonic generates lyrics from the prompt
     body = {
       task_type: 'create_music',
       custom_mode: true,
       auto_lyrics: true,
       mv: safeModel,
       title: `${mood} ${genre} Track`,
-      tags: genre, // seed tag — Sonic will enrich from prompt
-      prompt: fullDescription,
+      tags,
+      prompt: sound_prompt.slice(0, 400),
+    };
+  } else {
+    // AI description mode: simplest, just describe and let Sonic decide everything
+    const desc = `A ${mood.toLowerCase()} ${genre} track${tempo ? ` at ${tempo} BPM` : ''}`.slice(0, 400);
+    body = {
+      task_type: 'create_music',
+      custom_mode: false,
+      mv: safeModel,
+      gpt_description_prompt: desc,
     };
   }
 
