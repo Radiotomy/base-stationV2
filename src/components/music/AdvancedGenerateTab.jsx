@@ -166,19 +166,12 @@ export default function AdvancedGenerateTab() {
       if (coverImageUrl) setResult(prev => ({ ...prev, cover_image_url: coverImageUrl }));
     }
 
-    // Build list of all distinct audio URLs to save
-    const allUrls = data.audio_urls?.length > 0
-      ? data.audio_urls
-      : [data.audio_url || data.output_url].filter(Boolean);
-
-    for (let i = 0; i < allUrls.length; i++) {
-      const title = i === 0
-        ? `${mood} ${genre} — ${provider}`
-        : `${mood} ${genre} — ${provider} (Take ${i + 1})`;
-      await saveTrackToLibrary(allUrls[i], coverImageUrl, title);
+    // Save only the primary track — never loop over all audio_urls to avoid mass API costs
+    const primaryUrl = data.audio_url || data.output_url || data.audio_urls?.[0];
+    if (primaryUrl) {
+      await saveTrackToLibrary(primaryUrl, coverImageUrl, `${mood} ${genre} — ${provider}`);
+      toast.success('✅ Auto-saved to library!');
     }
-
-    toast.success('✅ Auto-saved to library!');
   }, [mood, genre, provider, saveTrackToLibrary]);
 
   const onError = useCallback((msg) => {
@@ -239,6 +232,7 @@ export default function AdvancedGenerateTab() {
   };
 
   const generate = async () => {
+    if (generating || (jobId && status === 'processing')) return; // hard guard against double-fire
     setGenerating(true);
     setResult(null);
     setJobId('');

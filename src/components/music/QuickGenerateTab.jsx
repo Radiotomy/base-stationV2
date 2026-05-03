@@ -123,19 +123,15 @@ export default function QuickGenerateTab() {
       setGeneratingCover(false);
     }
 
-    // Build list of all distinct audio URLs to save
-    const allUrls = data.audio_urls?.length > 0
-      ? data.audio_urls
-      : [data.audio_url || data.output_url].filter(Boolean);
-
-    for (let i = 0; i < allUrls.length; i++) {
-      const title = i === 0
-        ? (params?.title || currentPrompt.slice(0, 40) || 'Generated Track')
-        : `${params?.title || currentPrompt.slice(0, 40) || 'Track'} (Take ${i + 1})`;
-      await saveTrackToLibrary(allUrls[i], coverImageUrl, { ...params, title });
+    // Save only the primary track — never loop over all audio_urls to avoid mass API costs
+    const primaryUrl = data.audio_url || data.output_url || data.audio_urls?.[0];
+    if (primaryUrl) {
+      await saveTrackToLibrary(primaryUrl, coverImageUrl, {
+        ...params,
+        title: params?.title || currentPrompt.slice(0, 40) || 'Generated Track',
+      });
+      toast.success('✅ Auto-saved to library!');
     }
-
-    toast.success('✅ Auto-saved to library!');
   }, [saveTrackToLibrary]);
 
   const onError = useCallback((msg) => {
@@ -185,6 +181,7 @@ export default function QuickGenerateTab() {
 
   const generate = async () => {
     if (!prompt.trim()) { toast.error('Enter a description for your track'); return; }
+    if (generating || (jobId && status === 'processing')) return; // hard guard against double-fire
     setGenerating(true);
     setResult(null);
     setJobId('');
