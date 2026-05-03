@@ -51,11 +51,22 @@ Deno.serve(async (req) => {
         completed_at: new Date().toISOString(),
       });
 
+      const enc = new TextEncoder();
+      const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(`${user.id}|ltx|${prompt}|${duration}|${aspect_ratio}|${new Date().toISOString()}`));
+      const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
       await base44.asServiceRole.entities.APIUsageLog.create({
         user_id: user.id, user_email: user.email, user_name: user.full_name,
         provider: 'ltx', task: 'generate_video',
         credits_used: duration * 2, status: 'success',
         timestamp: new Date().toISOString(), job_id: job.id,
+        metadata: {
+          model_version: 'ltx-video-v1',
+          input_parameters: { prompt: prompt.slice(0, 200), duration, aspect_ratio, mode },
+          output_details: { video_url: result.video_url, duration, aspect_ratio, format: 'mp4' },
+          generated_timestamp: new Date().toISOString(),
+          content_hash: contentHash,
+        },
       }).catch(() => {});
 
       return Response.json({ job_id: job.id, status: 'completed', video_url: result.video_url, duration, aspect_ratio });

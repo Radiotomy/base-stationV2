@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, RefreshCw, CheckCircle, AlertCircle, TrendingUp,
-  Users, Activity, Download, Bell, BellOff
+  Users, Activity, Download, Bell, ChevronDown, Shield
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,78 @@ const TASKS = ["all", "generate_music", "generate_lyrics", "generate_video", "ge
 function StatusDot({ status }) {
   const colors = { active: "bg-emerald-400", error: "bg-red-400", inactive: "bg-gray-400", pending: "bg-yellow-400" };
   return <span className={`w-2 h-2 rounded-full inline-block ${colors[status] || "bg-gray-400"}`} />;
+}
+
+function LogRow({ log, meta, modelVersion, contentHash, outputDetails }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <>
+      <tr className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setExpanded(p => !p)}>
+        <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+          {log.created_date ? new Date(log.created_date).toLocaleString() : "—"}
+        </td>
+        <td className="px-4 py-3 text-xs text-foreground max-w-[120px] truncate">{log.user_email || log.user_name || "—"}</td>
+        <td className="px-4 py-3">
+          <Badge className={`${meta.color} border text-xs`}>{meta.label}</Badge>
+        </td>
+        <td className="px-4 py-3 text-xs font-mono text-cyan-400">{modelVersion}</td>
+        <td className="px-4 py-3 text-xs text-muted-foreground">{log.task || "—"}</td>
+        <td className="px-4 py-3">
+          <span className={`flex items-center gap-1 text-xs font-semibold ${
+            log.status === "success" ? "text-emerald-400" :
+            log.status === "failed" ? "text-red-400" : "text-yellow-400"
+          }`}>
+            <StatusDot status={log.status} />
+            {log.status}
+          </span>
+        </td>
+        <td className="px-4 py-3 text-xs text-yellow-400 font-bold">{log.credits_used ?? "—"}</td>
+        <td className="px-4 py-3">
+          <button className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300">
+            <Shield className="w-3 h-3" />
+            <ChevronDown className={`w-3 h-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          </button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-muted/20">
+          <td colSpan={8} className="px-4 py-3">
+            <div className="space-y-2 text-xs font-mono">
+              {contentHash && (
+                <div className="flex items-center gap-2">
+                  <span className="text-purple-400 font-semibold">SHA-256:</span>
+                  <span className="text-muted-foreground break-all">{contentHash}</span>
+                </div>
+              )}
+              {log.metadata?.input_parameters && (
+                <div>
+                  <span className="text-blue-400 font-semibold">Input: </span>
+                  <span className="text-muted-foreground">{JSON.stringify(log.metadata.input_parameters)}</span>
+                </div>
+              )}
+              {outputDetails && (
+                <div>
+                  <span className="text-emerald-400 font-semibold">Output: </span>
+                  <span className="text-muted-foreground">{JSON.stringify(outputDetails)}</span>
+                </div>
+              )}
+              {log.metadata?.generated_timestamp && (
+                <div>
+                  <span className="text-yellow-400 font-semibold">Generated: </span>
+                  <span className="text-muted-foreground">{new Date(log.metadata.generated_timestamp).toUTCString()}</span>
+                </div>
+              )}
+              {log.metadata?.base44_job_id && (
+                <div>
+                  <span className="text-muted-foreground">Job ID: {log.metadata.base44_job_id}</span>
+                </div>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
+  );
 }
 
 function StatCard({ label, value, sub, color = "text-purple-400", icon }) {
@@ -94,8 +166,12 @@ export default function AdminAIIntegrations() {
   });
 
   const exportCSV = () => {
-    const headers = ["timestamp", "user_email", "provider", "task", "status", "credits_used", "duration_ms"];
-    const rows = filteredLogs.map(l => headers.map(h => l[h] ?? "").join(","));
+    const headers = ["timestamp", "user_email", "provider", "task", "status", "credits_used", "duration_ms", "model_version", "content_hash"];
+    const rows = filteredLogs.map(l => headers.map(h => {
+      if (h === "model_version") return l.metadata?.model_version ?? "";
+      if (h === "content_hash") return l.metadata?.content_hash ?? "";
+      return l[h] ?? "";
+    }).join(","));
     const csv = [headers.join(","), ...rows].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -335,7 +411,7 @@ export default function AdminAIIntegrations() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  {["Timestamp", "User", "Provider", "Task", "Status", "Credits", "Duration"].map(h => (
+                  {["Timestamp", "User", "Provider", "Model Version", "Task", "Status", "Credits", "Provenance"].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">{h}</th>
                   ))}
                 </tr>
@@ -343,30 +419,11 @@ export default function AdminAIIntegrations() {
               <tbody className="divide-y divide-border">
                 {filteredLogs.slice(0, 100).map(log => {
                   const meta = PROVIDER_META[log.provider] || { label: log.provider, color: "bg-muted text-muted-foreground border-border" };
+                  const modelVersion = log.metadata?.model_version || "—";
+                  const contentHash = log.metadata?.content_hash;
+                  const outputDetails = log.metadata?.output_details;
                   return (
-                    <tr key={log.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                        {log.created_date ? new Date(log.created_date).toLocaleString() : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-xs text-foreground max-w-[120px] truncate">{log.user_email || log.user_name || "—"}</td>
-                      <td className="px-4 py-3">
-                        <Badge className={`${meta.color} border text-xs`}>{meta.label}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">{log.task || "—"}</td>
-                      <td className="px-4 py-3">
-                        <span className={`flex items-center gap-1 text-xs font-semibold ${
-                          log.status === "success" ? "text-emerald-400" :
-                          log.status === "failed" ? "text-red-400" : "text-yellow-400"
-                        }`}>
-                          <StatusDot status={log.status} />
-                          {log.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-yellow-400 font-bold">{log.credits_used ?? "—"}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {log.duration_ms ? `${(log.duration_ms / 1000).toFixed(1)}s` : "—"}
-                      </td>
-                    </tr>
+                    <LogRow key={log.id} log={log} meta={meta} modelVersion={modelVersion} contentHash={contentHash} outputDetails={outputDetails} />
                   );
                 })}
               </tbody>

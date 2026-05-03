@@ -128,11 +128,23 @@ Deno.serve(async (req) => {
       completed_at: new Date().toISOString(),
     });
 
+    // Content hash for legal provenance
+    const enc = new TextEncoder();
+    const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(`${user.id}|${result.provider}|${topic}|${mood}|${style}|${result.lyrics.slice(0, 100)}`));
+    const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
     await base44.asServiceRole.entities.APIUsageLog.create({
       user_id: user.id, user_email: user.email, user_name: user.full_name,
       provider: result.provider, task: 'generate_lyrics',
       credits_used: result.credits_used || 1,
       status: 'success', timestamp: new Date().toISOString(), job_id: job.id,
+      metadata: {
+        model_version: result.provider === 'llm_fallback' ? 'claude_sonnet_4_6' : 'aimusicapi-lyrics-v1',
+        input_parameters: { topic: topic.slice(0, 100), mood, style, length, rhyme_scheme: rhyme_scheme || 'Mixed' },
+        output_details: { lyrics_length: result.lyrics.length, has_title: !!result.title },
+        generated_timestamp: new Date().toISOString(),
+        content_hash: contentHash,
+      },
     }).catch(() => {});
 
     return Response.json({

@@ -238,14 +238,28 @@ Deno.serve(async (req) => {
         return Response.json({ error: 'Unknown task' }, { status: 400 });
     }
 
-    // Log the edit operation
-    await base44.asServiceRole.entities.AnalyticsEvent.create({
-      user_id: user.id,
-      user_email: user.email,
-      event_type: 'generation_completed',
-      event_data: { task, parameters },
-      session_id: parameters.session_id || 'unknown'
-    });
+    // Secure content log for legal traceability
+    const enc = new TextEncoder();
+    const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(`${user.id}|${task}|${audioUrl}|${new Date().toISOString()}`));
+    const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    base44.asServiceRole.entities.APIUsageLog.create({
+      user_id: user.id, user_email: user.email, user_name: user.full_name,
+      provider: 'sonic', task: `process_edits`,
+      credits_used: 1, status: 'success',
+      timestamp: new Date().toISOString(),
+      metadata: {
+        model_version: 'sonic-edit-v1',
+        input_parameters: { task, audio_url: audioUrl, parameters },
+        output_details: {
+          output_url: result.outputUrl || null,
+          stems: result.stems || null,
+          task_id: result.task_id || null,
+        },
+        generated_timestamp: new Date().toISOString(),
+        content_hash: contentHash,
+      },
+    }).catch(() => {});
 
     return Response.json(result);
   } catch (error) {

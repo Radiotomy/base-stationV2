@@ -316,6 +316,8 @@ Deno.serve(async (req) => {
 
       if (providerData?.status === 'completed') {
         const outputUrl = providerData.audio_url || providerData.video_url;
+        const completedAt = new Date().toISOString();
+
         await base44.entities.GenerationJob.update(job.id, {
           status: 'completed',
           output_url: outputUrl,
@@ -327,15 +329,59 @@ Deno.serve(async (req) => {
             cover_image_urls: providerData.cover_image_urls || null,
           },
           credits_used: 10,
-          completed_at: new Date().toISOString(),
+          completed_at: completedAt,
         });
 
-        await base44.asServiceRole.entities.APIUsageLog.create({
-          user_id: job.user_id, user_email: job.user_email,
-          provider: job.provider, task: `generate_${job.job_type}`,
-          credits_used: 10, status: 'success',
-          timestamp: new Date().toISOString(), job_id: job.id,
-        }).catch(() => {});
+        // Compute content hash for legal provenance
+        const enc = new TextEncoder();
+        const hashInput = `${job.user_id}|${job.provider}|${job.provider_job_id}|${outputUrl}|${completedAt}`;
+        const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(hashInput));
+        const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+        // Determine model version from job input_data or provider defaults
+        const modelVersionMap = {
+          sonic: 'sonic-v4-5', nuro: 'v2.0', producer: 'FUZZ-2.0',
+          tempcolor: 'TemPolor v4.6', loudly: 'VEGA_2', ltx: 'ltx-video-v1',
+        };
+        const modelVersion = job.input_data?.model || modelVersionMap[job.provider] || job.provider;
+
+        // Find and update the pending log created at generation start, or create a new one
+        const existingLogs = await base44.asServiceRole.entities.APIUsageLog.filter({ job_id: job.id }).catch(() => []);
+        const pendingLog = existingLogs.find(l => l.status === 'pending');
+
+        const logPayload = {
+          status: 'success',
+          credits_used: 10,
+          timestamp: completedAt,
+          metadata: {
+            model_version: modelVersion,
+            input_parameters: job.input_data || {},
+            output_details: {
+              audio_url: job.job_type === 'music' ? outputUrl : undefined,
+              video_url: job.job_type === 'video' ? outputUrl : undefined,
+              audio_urls: providerData.audio_urls || null,
+              cover_image_url: providerData.cover_image_url || null,
+              bpm: providerData.bpm,
+              key: providerData.key,
+              duration: job.input_data?.duration,
+            },
+            provider_job_id: job.provider_job_id,
+            base44_job_id: job.id,
+            generated_timestamp: completedAt,
+            content_hash: contentHash,
+          },
+        };
+
+        if (pendingLog) {
+          await base44.asServiceRole.entities.APIUsageLog.update(pendingLog.id, logPayload).catch(() => {});
+        } else {
+          await base44.asServiceRole.entities.APIUsageLog.create({
+            user_id: job.user_id, user_email: job.user_email,
+            provider: job.provider, task: `generate_${job.job_type}`,
+            job_id: job.id,
+            ...logPayload,
+          }).catch(() => {});
+        }
 
         return Response.json({
           status: 'completed',

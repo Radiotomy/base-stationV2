@@ -300,9 +300,34 @@ Deno.serve(async (req) => {
       return Response.json({ error: providerErr.message }, { status: 502 });
     }
 
+    const generatedAt = new Date().toISOString();
+    // Determine exact model version used per provider
+    const modelVersionMap = {
+      loudly: model || 'VEGA_2',
+      sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
+      nuro: nuro_version || 'v2.0',
+      producer: 'FUZZ-2.0',
+      tempcolor: model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
+    };
+    const modelVersion = modelVersionMap[provider] || provider;
+
+    // Simple content fingerprint for immutability/provenance
+    const fingerprintData = `${user.id}|${provider}|${modelVersion}|${mood}|${genre}|${sound_prompt || ''}|${generatedAt}`;
+    const encoder = new TextEncoder();
+    const hashBuf = await crypto.subtle.digest('SHA-256', encoder.encode(fingerprintData));
+    const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    const logMetadata = {
+      model_version: modelVersion,
+      input_parameters: { duration, mood, genre, tempo, sound_prompt: (sound_prompt || '').slice(0, 200), has_lyrics: !!(lyrics && lyrics.trim()) },
+      provider_job_id: providerResult.task_id || null,
+      generated_timestamp: generatedAt,
+      content_hash: contentHash,
+    };
+
     // Synchronous result (e.g., Loudly) — persist and return immediately
     if (providerResult.audio_url) {
-      base44.entities.GenerationJob.create({
+      const jobRecord = await base44.entities.GenerationJob.create({
         user_id: user.id, user_email: user.email,
         job_type: 'music', provider,
         status: 'completed',
@@ -310,9 +335,28 @@ Deno.serve(async (req) => {
         output_url: providerResult.audio_url,
         output_metadata: { bpm: providerResult.bpm, key: providerResult.key, duration },
         credits_used: providerResult.credits_used || 1,
-        started_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
+        started_at: generatedAt,
+        completed_at: generatedAt,
+      }).catch(() => ({ id: null }));
+
+      base44.asServiceRole.entities.APIUsageLog.create({
+        user_id: user.id, user_email: user.email, user_name: user.full_name,
+        provider, task: 'generate_music',
+        credits_used: providerResult.credits_used || 1,
+        status: 'success',
+        timestamp: generatedAt,
+        job_id: jobRecord?.id || null,
+        metadata: {
+          ...logMetadata,
+          output_details: {
+            audio_url: providerResult.audio_url,
+            bpm: providerResult.bpm,
+            key: providerResult.key,
+            duration,
+          },
+        },
       }).catch(() => {});
+
       return Response.json({
         status: 'completed',
         audio_url: providerResult.audio_url,
@@ -327,8 +371,19 @@ Deno.serve(async (req) => {
       status: 'processing',
       input_data: { duration, mood, genre, tempo, sound_prompt },
       provider_job_id: providerResult.task_id,
-      started_at: new Date().toISOString(),
+      started_at: generatedAt,
     });
+
+    // Create pending log — will be finalized by pollGenerationJob on completion
+    base44.asServiceRole.entities.APIUsageLog.create({
+      user_id: user.id, user_email: user.email, user_name: user.full_name,
+      provider, task: 'generate_music',
+      credits_used: 0,
+      status: 'pending',
+      timestamp: generatedAt,
+      job_id: job.id,
+      metadata: { ...logMetadata, base44_job_id: job.id },
+    }).catch(() => {});
 
     return Response.json({ job_id: job.id, status: 'processing' });
   } catch (error) {
