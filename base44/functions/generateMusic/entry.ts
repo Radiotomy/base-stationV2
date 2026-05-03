@@ -189,12 +189,20 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
         callback_url: 'https://webhook.site/tempolor-callback',
       };
 
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Authorization': TEMPCOLOR_API_KEY, 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  let res, data;
+  try {
+    res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': TEMPCOLOR_API_KEY, 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    data = await res.json();
+  } finally {
+    clearTimeout(timeout);
+  }
   console.log('Tempolor generate response:', JSON.stringify(data));
   if (!res.ok || data.status !== 200000) throw new Error(data.message || JSON.stringify(data));
   const itemId = data.data?.item_ids?.[0];
