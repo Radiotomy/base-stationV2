@@ -60,7 +60,7 @@ async function generateAISong({ genre, duration = 60, energy = 'high', bpm, mood
   const form = new FormData();
   form.append('prompt', prompt);
   form.append('duration', String(Math.min(Math.max(duration, 30), 420)));
-  form.append('model', 'MANTA_1');
+  form.append('model', 'VEGA_2');
 
   console.log('Loudly prompt:', prompt);
   const res = await fetch(`${BASE_URL}/api/ai/prompt/songs`, {

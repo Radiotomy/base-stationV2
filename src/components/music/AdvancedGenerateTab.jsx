@@ -82,7 +82,7 @@ export default function AdvancedGenerateTab() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   // Loudly-specific
-  const [loudlyModel, setLoudlyModel] = useState('MANTA_1');
+  const [loudlyModel, setLoudlyModel] = useState('VEGA_2');
   const [loudlyStructures, setLoudlyStructures] = useState([]);
   const [loudlyStructureId, setLoudlyStructureId] = useState(null);
   const [loadingRandomPrompt, setLoadingRandomPrompt] = useState(false);
@@ -420,27 +420,19 @@ export default function AdvancedGenerateTab() {
                     {
                       value: 'VEGA_1',
                       label: 'VEGA 1',
-                      tag: 'Fast Instrumentals',
+                      tag: 'Fast',
                       tagColor: 'text-cyan-400',
-                      bullets: ['Instrumental only, ready in seconds', 'Simple prompts & fast results', 'Great for demos, sketches & quick ideas'],
+                      bullets: ['Faster generation', 'Great for demos, sketches & quick ideas', 'Supports genre, BPM, key & instrument control'],
                       border: 'border-cyan-500/50 bg-cyan-500/5',
                     },
                     {
                       value: 'VEGA_2',
                       label: 'VEGA 2',
-                      tag: 'Enhanced Quality',
+                      tag: 'Best Quality',
                       tagColor: 'text-blue-400',
-                      badge: 'NEW',
-                      bullets: ['Higher overall audio quality', 'Improved clarity, depth & stereo balance', 'Cleaner mix with better frequency separation'],
+                      badge: 'DEFAULT',
+                      bullets: ['Higher overall audio quality', 'Improved clarity, depth & stereo balance', 'Recommended for final production & releases'],
                       border: 'border-blue-500/50 bg-blue-500/5',
-                    },
-                    {
-                      value: 'MANTA_1',
-                      label: 'MANTA 1',
-                      tag: 'High Fidelity AI (Vocals)',
-                      tagColor: 'text-purple-400',
-                      bullets: ['Natural vocals with lyrics & wide instrumentation', 'High fidelity diffusion-based AI', 'Ideal for full songs & distribution releases'],
-                      border: 'border-purple-500/50 bg-purple-500/5',
                     },
                   ].map(m => {
                     const isActive = loudlyModel === m.value;
