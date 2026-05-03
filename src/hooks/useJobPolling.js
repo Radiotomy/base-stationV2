@@ -14,10 +14,17 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
   const attemptRef = useRef(0);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
+  const completedRef = useRef(false);
+  // Keep callbacks in refs so polling loop always uses latest without re-triggering effect
+  const onCompleteRef = useRef(onComplete);
+  const onErrorRef = useRef(onError);
+  onCompleteRef.current = onComplete;
+  onErrorRef.current = onError;
 
   useEffect(() => {
     if (!jobId) return;
     attemptRef.current = 0;
+    completedRef.current = false;
     startTimeRef.current = Date.now();
     setStatus('processing');
     setProgress(5);
@@ -46,14 +53,16 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
         setProgress(Math.round(approxProgress));
 
         if (jobStatus === 'completed') {
+          if (completedRef.current) return; // prevent duplicate callbacks
+          completedRef.current = true;
           setProgress(100);
           setData(result.data);
           clearInterval(elapsed);
-          onComplete?.(result.data);
+          onCompleteRef.current?.(result.data);
           return;
         } else if (jobStatus === 'failed') {
           clearInterval(elapsed);
-          onError?.(result.data?.error_message || 'Generation failed');
+          onErrorRef.current?.(result.data?.error_message || 'Generation failed');
           return;
         }
       } catch (err) {
