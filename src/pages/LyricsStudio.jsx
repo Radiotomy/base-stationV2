@@ -17,10 +17,21 @@ const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'A
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Soul', 'Drill', 'Afrobeats'];
 const LENGTHS      = ['Short (8–16 bars)', 'Medium (32 bars)', 'Long (64+ bars)', 'Full Song'];
 
+const RHYME_SCHEMES = [
+  { value: 'Mixed',  label: 'Mixed', desc: 'Smart mix — best for hit songs' },
+  { value: 'ABAB',   label: 'ABAB',  desc: 'Alternate rhyme — most popular' },
+  { value: 'AABB',   label: 'AABB',  desc: 'Couplets — punchy & direct' },
+  { value: 'XAXA',   label: 'XAXA',  desc: 'Conversational — modern feel' },
+  { value: 'ABBA',   label: 'ABBA',  desc: 'Envelope — cinematic wrap' },
+  { value: 'AAAA',   label: 'AAAA',  desc: 'Monorhyme — tension builder' },
+  { value: 'AAAX',   label: 'AAAX',  desc: 'Tension release — punchy drop' },
+];
+
 const STRUCTURE_TEMPLATES = [
-  { label: '🎵 Standard', text: '[Intro]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Bridge]\n\n[Outro]' },
-  { label: '🔥 Hip-Hop',  text: '[Intro]\n\n[Verse 1]\n\n[Hook]\n\n[Verse 2]\n\n[Hook]\n\n[Verse 3]\n\n[Outro]' },
-  { label: '✨ Minimal',  text: '[Verse]\n\n[Chorus]\n\n[Verse]\n\n[Chorus]' },
+  { label: '🎵 Standard Pop', text: '[Intro]\n\n[Verse 1]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Verse 2]\n\n[Pre-Chorus]\n\n[Chorus]\n\n[Bridge]\n\n[Chorus]\n\n[Outro]' },
+  { label: '🔥 Hip-Hop',      text: '[Intro]\n\n[Verse 1]\n\n[Hook]\n\n[Verse 2]\n\n[Hook]\n\n[Verse 3]\n\n[Outro]' },
+  { label: '✨ Minimal',      text: '[Verse]\n\n[Chorus]\n\n[Verse]\n\n[Chorus]' },
+  { label: '🌊 R&B / Soul',   text: '[Intro]\n\n[Verse 1]\n\n[Chorus]\n\n[Verse 2]\n\n[Chorus]\n\n[Bridge]\n\n[Vamp / Outro]' },
 ];
 
 const TOPIC_SUGGESTIONS = [
@@ -33,6 +44,7 @@ export default function LyricsStudio() {
   const [mood, setMood] = useState('Happy');
   const [style, setStyle] = useState('Hip-Hop');
   const [length, setLength] = useState('Medium (32 bars)');
+  const [rhymeScheme, setRhymeScheme] = useState('Mixed');
   const [lyrics, setLyrics] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,7 +67,7 @@ export default function LyricsStudio() {
     if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('generateLyrics', { topic, mood, style, length });
+      const res = await base44.functions.invoke('generateLyrics', { topic, mood, style, length, rhyme_scheme: rhymeScheme });
       const text = res.data?.lyrics || res.data?.text || res.data?.content || '';
       if (text) {
         // Save previous as version
@@ -210,6 +222,20 @@ export default function LyricsStudio() {
                   onSelect={setLength}
                   activeClass="bg-pink-600 text-white"
                 />
+              </div>
+
+              {/* Rhyme Scheme */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase">Rhyme Scheme</label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {RHYME_SCHEMES.map(r => (
+                    <button key={r.value} onClick={() => setRhymeScheme(r.value)}
+                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${rhymeScheme === r.value ? 'border-pink-500 bg-pink-500/10' : 'border-border bg-muted/30 hover:border-pink-500/30'}`}>
+                      <p className="text-xs font-black text-foreground">{r.label}</p>
+                      <p className="text-xs text-muted-foreground leading-tight">{r.desc}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <Button onClick={generate} disabled={loading || !topic}
