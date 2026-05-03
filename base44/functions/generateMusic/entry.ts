@@ -56,12 +56,20 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
     };
   }
 
-  const res = await fetch(`${AI_BASE}/sonic/create`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
+  const sonicController = new AbortController();
+  const sonicTimeout = setTimeout(() => sonicController.abort(), 25000);
+  let res, data;
+  try {
+    res = await fetch(`${AI_BASE}/sonic/create`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: sonicController.signal,
+    });
+    data = await res.json();
+  } finally {
+    clearTimeout(sonicTimeout);
+  }
   console.log('Sonic create response:', JSON.stringify(data));
   if (!res.ok || data.code !== 200) throw new Error(data.message || JSON.stringify(data));
   const taskId = data.task_id;
@@ -265,7 +273,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
+            tempo = 120, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,

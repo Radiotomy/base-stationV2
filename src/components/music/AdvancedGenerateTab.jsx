@@ -238,7 +238,7 @@ export default function AdvancedGenerateTab() {
         provider,
         ...(duration && { duration }),
         genre, mood,
-        tempo: parseInt(tempo) || 120,
+        tempo: parseInt(tempo, 10) || 120,
         sound_prompt: soundPrompt || `${mood} ${genre} track`,
         ...(lyrics && lyricsMode !== 'none' && { lyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
