@@ -3,12 +3,13 @@ import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Zap, RefreshCw, CheckCircle, AlertCircle, TrendingUp,
-  Users, Activity, Download, Bell, ChevronDown, Shield
+  Users, Activity, Download, Bell, ChevronDown, Shield, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import CostMatrixTab from "@/components/admin/CostMatrixTab";
 
 const PROVIDER_META = {
   loudly:    { label: "Loudly",     color: "bg-blue-500/20 text-blue-300 border-blue-500/30",    dot: "bg-blue-400" },
@@ -214,19 +215,37 @@ export default function AdminAIIntegrations() {
   // Low balance providers
   const lowBalanceProviders = balances.filter(b => b.balance != null && b.balance < alertThreshold);
 
+  const [activeTab, setActiveTab] = useState("usage");
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-black text-foreground">⚡ AI Integrations</h2>
-          <p className="text-muted-foreground text-sm">Provider balances, usage logs & credit tracking</p>
+          <p className="text-muted-foreground text-sm">Provider balances, usage logs, cost matrix & credit tracking</p>
         </div>
         <Button onClick={handleRefreshBalances} disabled={refreshing} variant="outline" className="rounded-xl gap-2">
           <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           Refresh Balances
         </Button>
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border">
+        {[
+          { key: "usage",  label: "📊 Usage & Logs" },
+          { key: "costs",  label: "💰 Cost Matrix" },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setActiveTab(key)}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all ${activeTab === key ? "border-purple-500 text-purple-400" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "costs" && <CostMatrixTab />}
+      {activeTab === "usage" && (<div className="space-y-8">
 
       {/* Provider Status Cards */}
       <div>
@@ -436,6 +455,8 @@ export default function AdminAIIntegrations() {
           </div>
         )}
       </div>
+    </div>
+      )}
     </div>
   );
 }
