@@ -5,12 +5,13 @@ import { motion } from "framer-motion";
 import {
   BarChart3, Music, Zap, TrendingUp, Eye, Heart,
   Trash2, Image, FileText, Film,
-  Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw
+  Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw, BarChart2
 } from "lucide-react";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
 import XPWidget from "@/components/dashboard/XPWidget";
 import ProjectsTab from "@/components/dashboard/ProjectsTab";
 import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
+import UsageAnalytics from "@/components/dashboard/UsageAnalytics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -92,17 +93,22 @@ export default function CreatorDashboard() {
   const [assets, setAssets] = useState([]);
   const [activeTab, setActiveTab] = useState("library");
   const [stats, setStats] = useState(null);
+  const [usageLogs, setUsageLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assetFilter, setAssetFilter] = useState("all");
   const navigate = useNavigate();
 
   const loadData = useCallback(async (userId) => {
-    const [userTracks, userAssets] = await Promise.all([
+    const [userTracks, userAssets, logs] = await Promise.all([
       base44.entities.TrackSubmission.filter({ artist_id: userId }, "-created_date", 50),
       base44.entities.UserAsset.filter({ user_id: userId }, "-created_date", 100),
+      base44.entities.APIUsageLog.filter({ user_id: userId }, "-created_date", 200).catch(() => []),
     ]);
     setTracks(userTracks);
     setAssets(userAssets);
+    setUsageLogs(logs);
+    const creditsSpent = logs.reduce((s, l) => s + (l.credits_used || 0), 0);
+    const totalGenerations = logs.filter(l => l.status === 'success').length;
     setStats({
       total_tracks: userTracks.length,
       published: userTracks.filter(t => t.status === "approved").length,
@@ -110,6 +116,8 @@ export default function CreatorDashboard() {
       total_plays: userTracks.reduce((s, t) => s + (t.play_count || 0), 0),
       total_likes: userTracks.reduce((s, t) => s + (t.like_count || 0), 0),
       total_assets: userAssets.length,
+      credits_spent: creditsSpent,
+      total_generations: totalGenerations,
     });
   }, []);
 
@@ -151,10 +159,11 @@ export default function CreatorDashboard() {
   };
 
   const TABS = [
-    { key: "library",  label: `📂 Library (${assets.length})` },
-    { key: "projects", label: "🗂️ Projects" },
-    { key: "tracks",   label: `📤 Submissions (${tracks.length})` },
-    { key: "history",  label: "🕐 History" },
+    { key: "library",   label: `📂 Library (${assets.length})` },
+    { key: "projects",  label: "🗂️ Projects" },
+    { key: "tracks",    label: `📤 Submissions (${tracks.length})` },
+    { key: "history",   label: "🕐 History" },
+    { key: "analytics", label: "📊 Analytics" },
   ];
 
   if (loading) return (
@@ -189,13 +198,15 @@ export default function CreatorDashboard() {
 
       {/* Stats Grid */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <StatCard icon={Music}       label="Submitted"   value={stats.total_tracks}               color="bg-purple-600" />
-          <StatCard icon={CheckCircle} label="Published"   value={stats.published}                   color="bg-emerald-600" />
-          <StatCard icon={Clock}       label="Pending"     value={stats.pending}                     color="bg-yellow-600" />
-          <StatCard icon={Eye}         label="Total Plays" value={stats.total_plays.toLocaleString()} color="bg-orange-600" />
-          <StatCard icon={Heart}       label="Likes"       value={stats.total_likes.toLocaleString()} color="bg-pink-600" />
-          <StatCard icon={Folder}      label="Assets"      value={stats.total_assets}                 color="bg-blue-600" />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+          <StatCard icon={Music}       label="Submitted"    value={stats.total_tracks}                color="bg-purple-600" />
+          <StatCard icon={CheckCircle} label="Published"    value={stats.published}                    color="bg-emerald-600" />
+          <StatCard icon={Clock}       label="Pending"      value={stats.pending}                      color="bg-yellow-600" />
+          <StatCard icon={Eye}         label="Total Plays"  value={stats.total_plays.toLocaleString()}  color="bg-orange-600" />
+          <StatCard icon={Heart}       label="Likes"        value={stats.total_likes.toLocaleString()}  color="bg-pink-600" />
+          <StatCard icon={Folder}      label="Assets"       value={stats.total_assets}                  color="bg-blue-600" />
+          <StatCard icon={Zap}         label="Generated"    value={stats.total_generations}             color="bg-cyan-600" />
+          <StatCard icon={TrendingUp}  label="Credits Used" value={stats.credits_spent}                 color="bg-amber-600" />
         </div>
       )}
 
@@ -320,6 +331,11 @@ export default function CreatorDashboard() {
       {/* Generation History Tab */}
       {activeTab === "history" && user && (
         <GenerationHistoryTab userId={user.id} />
+      )}
+
+      {/* Analytics Tab */}
+      {activeTab === "analytics" && user && (
+        <UsageAnalytics userId={user.id} />
       )}
     </div>
   );
