@@ -181,14 +181,13 @@ export default function QuickGenerateTab() {
 
   // Keyboard shortcut: ⌘+Enter — use ref to avoid re-registering on every keystroke
   const generateRef = useRef(null);
-  generateRef.current = generate; // always up to date without re-registering listener
   useEffect(() => {
     const handler = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); generateRef.current?.(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []); // register once only
+  }, []);
 
   const extendTrack = async () => {
     const audioUrl = result?.audio_url || result?.output_url;
@@ -344,6 +343,9 @@ export default function QuickGenerateTab() {
       toast.error(err.message);
     }
   };
+
+  // Keep ref in sync so keyboard shortcut always calls the latest generate
+  generateRef.current = generate;
 
   const saveToLibrary = async () => {
     const audioUrl = result?.audio_url || result?.output_url;
