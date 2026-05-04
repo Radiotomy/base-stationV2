@@ -19,26 +19,37 @@ Deno.serve(async (req) => {
 
     // Prepare ID3v2.4 frame data
     const id3Frames = {
-      TIT2: tags.title || '', // Title
-      TPE1: tags.artist || '', // Artist
-      TALB: tags.album || '', // Album
-      TYER: tags.year ? String(tags.year) : '', // Year
-      TCON: tags.genre || '', // Genre
+      TIT2: tags.title || '',           // Title
+      TPE1: tags.artist || '',          // Artist
+      TALB: tags.album || '',           // Album
+      TYER: tags.year ? String(tags.year) : String(new Date().getFullYear()), // Year
+      TCON: tags.genre || '',           // Genre
       TRCK: tags.track ? String(tags.track) : '', // Track number
-      TPE2: tags.albumArtist || '', // Album artist
-      TCOM: tags.composer || '', // Composer
-      COMM: tags.comment || '', // Comments
+      TPE2: tags.albumArtist || tags.artist || '', // Album artist
+      TCOM: tags.composer || '',        // Composer
+      COMM: tags.comment || '',         // Comments
+      TBPM: tags.bpm ? String(tags.bpm) : '', // BPM
+      TKEY: tags.key || '',             // Musical key
+      TCOP: tags.copyright || `${new Date().getFullYear()} BASE Station AI`, // Copyright
     };
 
     // Build ID3v2.4 header and frames
     let frameData = new Uint8Array();
-    
-    // Add text frames
+
+    // Add standard text frames
     for (const [frameId, frameText] of Object.entries(id3Frames)) {
       if (!frameText) continue;
       const textBuffer = new TextEncoder().encode(frameText);
       const frameSize = textBuffer.length + 1; // +1 for encoding byte
       frameData = concatArrays(frameData, buildFrame(frameId, frameSize, textBuffer));
+    }
+
+    // Add TXXX custom frames (e.g. content_hash, ai_provider, ai_model)
+    if (tags.txxx && typeof tags.txxx === 'object') {
+      for (const [key, value] of Object.entries(tags.txxx)) {
+        if (!value) continue;
+        frameData = concatArrays(frameData, buildTXXXFrame(key, String(value)));
+      }
     }
 
     // Add cover image if provided
@@ -125,6 +136,26 @@ function buildFrame(frameId, size, textBuffer) {
   // Text data
   frame.set(textBuffer, 11);
   
+  return frame;
+}
+
+// Helper: Build TXXX (user-defined text) frame
+function buildTXXXFrame(description, value) {
+  const descBytes = new TextEncoder().encode(description + '\x00');
+  const valueBytes = new TextEncoder().encode(value);
+  const frameSize = 1 + descBytes.length + valueBytes.length; // encoding byte + desc + value
+  const sizeBytes = synchsafeInt(frameSize);
+
+  const frame = new Uint8Array(10 + frameSize);
+  frame.set(new TextEncoder().encode('TXXX'), 0);
+  frame.set(sizeBytes, 4);
+  frame[8] = 0x00;
+  frame[9] = 0x00;
+
+  let offset = 10;
+  frame[offset++] = 0x03; // UTF-8
+  frame.set(descBytes, offset); offset += descBytes.length;
+  frame.set(valueBytes, offset);
   return frame;
 }
 
