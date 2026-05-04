@@ -184,7 +184,7 @@ export default function LyricsStudio() {
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-pink-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-3 tracking-tight">🎤 Lyrics Studio</h1>
-          <p className="text-white/60 text-lg">Create original lyrics powered by Nuro AI. Real-time generation, version history & library save.</p>
+          <p className="text-white/60 text-lg">Create original lyrics powered by AI. Real-time generation, version history & library save.</p>
         </div>
       </div>
 
@@ -392,7 +392,7 @@ export default function LyricsStudio() {
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     className="flex items-center gap-3 p-3 rounded-xl bg-pink-500/10 border border-pink-500/20">
                     <div className="w-4 h-4 border-2 border-pink-500/30 border-t-pink-500 rounded-full animate-spin flex-shrink-0" />
-                    <p className="text-xs text-pink-300">Nuro AI is writing your lyrics…</p>
+                    <p className="text-xs text-pink-300">AI is writing your lyrics…</p>
                   </motion.div>
                 )}
               </AnimatePresence>

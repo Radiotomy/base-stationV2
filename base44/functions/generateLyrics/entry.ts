@@ -1,36 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-const SONIC_API_KEY    = Deno.env.get('SONIC_API_KEY');
-const NURO_API_KEY     = Deno.env.get('NURO_API_KEY');
-
-const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
-
-// ── AI Music API Lyrics (/sonic/lyrics) ─────────────────────────────────────
-async function generateWithAIMusicAPI({ topic, mood, style, length }) {
-  const key = SONIC_API_KEY || NURO_API_KEY;
-  const lengthHint = { 'Short (8–16 bars)': 'short', 'Short (8-16 bars)': 'short',
-    'Medium (32 bars)': 'medium', 'Long (64+ bars)': 'long', 'Full Song': 'full' }[length] || 'medium';
-
-  const topicShort = topic.substring(0, 50);
-  const styleShort = style.substring(0, 15);
-  const moodShort = mood.substring(0, 15);
-  const desc = `${styleShort} lyrics: ${topicShort}. ${moodShort}.`;
-  if (desc.length > 119) throw new Error('Prompt too long for AI Music API');
-  const res = await fetch(`${AI_BASE}/sonic/lyrics`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ description: desc }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-
-  // Returns array of results — pick the first
-  const first = Array.isArray(data.results) ? data.results[0] : null;
-  if (!first?.lyrics) throw new Error('No lyrics in response');
-  return { lyrics: first.lyrics, title: first.title, provider: 'aimusicapi', credits_used: 1 };
-}
-
-// ── LLM Fallback ─────────────────────────────────────────────────────────────
+// ── Dedicated LLM Lyrics Generation (Claude Sonnet) ──────────────────────────
 async function generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure }) {
 
   const rhymeGuide = {
@@ -98,24 +68,14 @@ Deno.serve(async (req) => {
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
-      job_type: 'lyrics', provider: 'sonic',
+      job_type: 'lyrics', provider: 'core',
       status: 'processing',
       input_data: { topic, mood, style, length },
       started_at: new Date().toISOString(),
     });
 
-    let result;
-
-    // Try AI Music API (sonic/lyrics endpoint) first
-    if (SONIC_API_KEY || NURO_API_KEY) {
-      try { result = await generateWithAIMusicAPI({ topic, mood, style, length }); }
-      catch (e) { console.warn('AI Music API lyrics failed:', e.message); }
-    }
-
-    // LLM fallback
-    if (!result?.lyrics) {
-      result = await generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure });
-    }
+    // Dedicated Claude Sonnet lyrics generation
+    const result = await generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure });
 
     if (!result?.lyrics) {
       await base44.entities.GenerationJob.update(job.id, { status: 'failed', error_message: 'All providers failed' });
@@ -139,7 +99,7 @@ Deno.serve(async (req) => {
       credits_used: result.credits_used || 1,
       status: 'success', timestamp: new Date().toISOString(), job_id: job.id,
       metadata: {
-        model_version: result.provider === 'llm_fallback' ? 'claude_sonnet_4_6' : 'aimusicapi-lyrics-v1',
+        model_version: 'claude_sonnet_4_6',
         input_parameters: { topic: topic.slice(0, 100), mood, style, length, rhyme_scheme: rhyme_scheme || 'Mixed' },
         output_details: { lyrics_length: result.lyrics.length, has_title: !!result.title },
         generated_timestamp: new Date().toISOString(),
