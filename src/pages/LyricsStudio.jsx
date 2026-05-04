@@ -63,8 +63,8 @@ const TOPIC_SUGGESTIONS = [
 
 export default function LyricsStudio() {
   const [topic, setTopic] = useState('');
-  const [mood, setMood] = useState('Happy');
-  const [style, setStyle] = useState('Hip-Hop');
+  const [mood, setMood] = useState(['Happy']);
+  const [style, setStyle] = useState(['Hip-Hop']);
   const [length, setLength] = useState('Medium (32 bars)');
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
   const [lyrics, setLyrics] = useState('');
@@ -89,7 +89,7 @@ export default function LyricsStudio() {
     if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('generateLyrics', { topic, mood, style, length, rhyme_scheme: rhymeScheme });
+      const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme });
       const text = res.data?.lyrics || res.data?.text || res.data?.content || '';
       if (text) {
         // Save previous as version
@@ -120,7 +120,7 @@ export default function LyricsStudio() {
         title: topic || 'Untitled Lyrics',
         file_url,
         is_public: false,
-        metadata: { mood, style, length, topic },
+        metadata: { mood: mood.join(', '), style: style.join(', '), length, topic },
       });
       toast.success('Saved to library!');
     } catch (err) {
@@ -210,28 +210,50 @@ export default function LyricsStudio() {
                 </div>
               </div>
 
-              {/* Mood Chips */}
+              {/* Mood Chips — multi-select */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Mood</label>
-                <ChipSelector
-                  chipType="mood"
-                  defaults={MOOD_CHIPS}
-                  selected={mood}
-                  onSelect={setMood}
-                  activeClass="bg-pink-600 text-white"
-                />
+                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                  Mood
+                  {mood.length > 0 && <span className="text-pink-400 font-bold">({mood.length})</span>}
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {MOOD_CHIPS.map(chip => {
+                    const active = mood.includes(chip);
+                    return (
+                      <button key={chip} type="button"
+                        onClick={() => setMood(prev => active ? prev.filter(m => m !== chip) : [...prev, chip])}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${active ? 'bg-pink-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                        {chip}
+                      </button>
+                    );
+                  })}
+                </div>
+                {mood.length > 0 && (
+                  <p className="text-xs text-pink-300/70">Mixed: {mood.join(' + ')}</p>
+                )}
               </div>
 
-              {/* Style Chips */}
+              {/* Style Chips — multi-select */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Style</label>
-                <ChipSelector
-                  chipType="genre"
-                  defaults={STYLE_CHIPS}
-                  selected={style}
-                  onSelect={setStyle}
-                  activeClass="bg-purple-600 text-white"
-                />
+                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                  Style
+                  {style.length > 0 && <span className="text-purple-400 font-bold">({style.length})</span>}
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {STYLE_CHIPS.map(chip => {
+                    const active = style.includes(chip);
+                    return (
+                      <button key={chip} type="button"
+                        onClick={() => setStyle(prev => active ? prev.filter(s => s !== chip) : [...prev, chip])}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${active ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
+                        {chip}
+                      </button>
+                    );
+                  })}
+                </div>
+                {style.length > 0 && (
+                  <p className="text-xs text-purple-300/70">Mixed: {style.join(' + ')}</p>
+                )}
               </div>
 
               {/* Length Chips */}
@@ -271,7 +293,7 @@ export default function LyricsStudio() {
             <div className="bg-card rounded-2xl border border-border p-5 space-y-2">
               <h3 className="font-black text-foreground text-sm flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
               {STRUCTURE_TEMPLATES.map(t => (
-                <button key={t.label} type="button" onClick={() => { applyStructure(t); setStyle(t.genre); }}
+                <button key={t.label} type="button" onClick={() => { applyStructure(t); setStyle([t.genre]); }}
                   className="w-full text-left px-3 py-2 rounded-xl bg-muted text-sm text-muted-foreground hover:bg-pink-500/10 hover:text-pink-300 transition-all flex items-center justify-between gap-2">
                   <span>{t.label}</span>
                   <span className="text-xs text-muted-foreground/60 shrink-0">{t.genre}</span>
