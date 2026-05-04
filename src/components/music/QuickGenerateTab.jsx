@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight, AlertCircle } from 'lucide-react';
+import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight, AlertCircle, Info, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
@@ -11,8 +11,9 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import { cacheManager } from '@/utils/cacheManager';
 import ChipSelector from '@/components/music/ChipSelector';
+import { routeProvider, PROVIDER_DETAILS } from '@/utils/providerRouter';
 
-const PROVIDERS = [
+const ALL_PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
   { value: 'tempcolor', label: 'Tempolor', emoji: '🎶' },
   { value: 'producer',  label: 'Producer', emoji: '🎤' },
@@ -32,10 +33,14 @@ const GENRE_OPTIONS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi',
 
 export default function QuickGenerateTab() {
   const [prompt, setPrompt] = useState('');
-  const [provider, setProvider] = useState('sonic');
-  const [selectedGenre, setSelectedGenre] = useState(''); // user-selected genre (overrides AI)
+  const [providerOverride, setProviderOverride] = useState(null); // null = auto-routed
+  const [routingDecision, setRoutingDecision] = useState(null);   // { provider, model, reason, routing_key }
+  const [showProviderOverride, setShowProviderOverride] = useState(false);
+  const [selectedGenre, setSelectedGenre] = useState('');
   const [voicePersonas, setVoicePersonas] = useState([]);
   const [selectedPersona, setSelectedPersona] = useState('auto');
+  // Derived: effective provider is the override (if set) or the auto-routed one
+  const provider = providerOverride || routingDecision?.provider || 'sonic';
   const [generating, setGenerating] = useState(false);
   const [generatingCover, setGeneratingCover] = useState(false);
   const [extending, setExtending] = useState(false);
@@ -218,7 +223,8 @@ export default function QuickGenerateTab() {
     setResult(null);
     setJobId('');
     setAiParams(null);
-    savedRef.current = false; // reset guard for new generation
+    setRoutingDecision(null);
+    savedRef.current = false;
 
     try {
       // Step 1: AI determines all parameters — check cache first
@@ -257,7 +263,18 @@ export default function QuickGenerateTab() {
       aiParamsRef.current = aiDecision;
       promptRef.current = prompt;
 
-      // Step 2: Generate lyrics if needed (vocal providers: sonic, nuro, tempcolor song mode, producer)
+      // Step 2: Auto-route provider (unless user manually overrode)
+      const routing = providerOverride
+        ? { provider: providerOverride, model: PROVIDER_DETAILS[providerOverride]?.model, reason: 'Manually selected by user.', routing_key: 'manual_override', fallbackChain: [] }
+        : routeProvider({
+            duration: aiDecision.duration,
+            needs_lyrics: aiDecision.needs_lyrics,
+            genre: aiDecision.genre,
+            mood: aiDecision.mood,
+          });
+      setRoutingDecision(routing);
+
+      // Step 3: Generate lyrics if needed
       let lyrics = '';
       if (aiDecision.needs_lyrics) {
         try {
@@ -269,31 +286,48 @@ export default function QuickGenerateTab() {
           });
           lyrics = lyricsRes.data?.lyrics || '';
           if (lyrics) toast.success('🎤 Lyrics generated!');
-        } catch { /* lyrics optional — provider will generate instrumentally */ }
+        } catch { /* lyrics optional */ }
       }
 
-      // Step 3: Generate the music track
-      const voiceId = selectedPersona !== 'auto' ? selectedPersona : undefined;
-      // For Sonic: use the full user prompt as sound_prompt so genre nuance (e.g. "Red Dirt Texas
-      // Country Rock Blues") is preserved — auto_lyrics mode reads this directly.
-      const effectiveSoundPrompt = provider === 'sonic'
+      // Step 4: Generate track — try primary provider, then fallback chain on failure
+      const effectiveProvider = routing.provider;
+      const effectiveSoundPrompt = effectiveProvider === 'sonic'
         ? `${prompt}. ${aiDecision.sound_prompt || ''}`.trim()
         : aiDecision.sound_prompt;
 
-      const res = await base44.functions.invoke('generateMusic', {
-        provider,
+      const musicParams = {
+        provider: effectiveProvider,
         duration: aiDecision.duration,
         genre: aiDecision.genre,
         mood: aiDecision.mood,
         tempo: aiDecision.bpm,
         sound_prompt: effectiveSoundPrompt,
+        routing_reason: routing.routing_key,
         ...(lyrics && { lyrics }),
-        ...(voiceId && { voice_persona_id: voiceId }),
-        // sonic-v4-5 minimum — legacy models (v3-5, v4) have no vocal support
-        ...(provider === 'sonic' && { model: 'sonic-v4-5' }),
-        ...(provider === 'nuro' && { nuro_version: 'v1.0' }),
-        ...(provider === 'tempcolor' && { model: 'TemPolor v4.6', tempolor_mode: aiDecision.needs_lyrics ? 'song' : 'instrumental' }),
-      });
+        ...(selectedPersona !== 'auto' && { voice_persona_id: selectedPersona }),
+        ...(effectiveProvider === 'sonic' && { model: routing.model || 'sonic-v4-5-plus' }),
+        ...(effectiveProvider === 'nuro' && { nuro_version: routing.model || 'v2.0' }),
+        ...(effectiveProvider === 'tempcolor' && { model: routing.model || 'TemPolor v4.6', tempolor_mode: routing.tempolor_mode || (aiDecision.needs_lyrics ? 'song' : 'instrumental') }),
+        ...(effectiveProvider === 'loudly' && { model: routing.model || 'VEGA_2' }),
+      };
+
+      let res;
+      try {
+        res = await base44.functions.invoke('generateMusic', musicParams);
+      } catch (primaryErr) {
+        // Fallback chain
+        const fallbacks = routing.fallbackChain || [];
+        let fell = false;
+        for (const fallbackProvider of fallbacks) {
+          try {
+            toast(`⚠ ${PROVIDER_DETAILS[effectiveProvider]?.label} failed — trying ${PROVIDER_DETAILS[fallbackProvider]?.label}…`);
+            res = await base44.functions.invoke('generateMusic', { ...musicParams, provider: fallbackProvider, routing_reason: `fallback_from_${effectiveProvider}` });
+            fell = true;
+            break;
+          } catch { continue; }
+        }
+        if (!fell) throw primaryErr;
+      }
 
       if (res.data?.audio_url || res.data?.output_url) {
         setGenerating(false);
@@ -346,17 +380,56 @@ export default function QuickGenerateTab() {
 
   return (
     <div className="space-y-6">
-      {/* Provider Selection */}
+      {/* Provider — Auto-Routed with manual override */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">AI Model</p>
-        <div className="flex gap-2 flex-wrap">
-          {PROVIDERS.map(p => (
-            <button key={p.value} onClick={() => setProvider(p.value)}
-              className={`px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-1.5 ${provider === p.value ? 'border-blue-500 bg-blue-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-blue-500/40'}`}>
-              {p.emoji} {p.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase">AI Provider</p>
+          <button onClick={() => { setShowProviderOverride(p => !p); setProviderOverride(null); }}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
+            {showProviderOverride ? 'Use Auto-Route' : '⚙ Override'}
+            <ChevronDown className={`w-3 h-3 transition-transform ${showProviderOverride ? 'rotate-180' : ''}`} />
+          </button>
         </div>
+
+        {/* Auto-route badge — shown when not overriding */}
+        {!showProviderOverride && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {routingDecision ? (
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold ${PROVIDER_DETAILS[routingDecision.provider]?.color || 'border-border bg-card text-foreground'}`}>
+                <span>{PROVIDER_DETAILS[routingDecision.provider]?.emoji} {PROVIDER_DETAILS[routingDecision.provider]?.label}</span>
+                <span className="text-muted-foreground">·</span>
+                <span className="font-mono opacity-80">{routingDecision.model}</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-muted text-xs text-muted-foreground">
+                <Sparkles className="w-3 h-3" /> Auto-selected after prompt analysis
+              </div>
+            )}
+            {routingDecision?.reason && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Info className="w-3 h-3 flex-shrink-0" />
+                <span>{routingDecision.reason}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Manual override grid */}
+        <AnimatePresence>
+          {showProviderOverride && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+              <div className="flex gap-2 flex-wrap mt-2">
+                {ALL_PROVIDERS.map(p => (
+                  <button key={p.value} onClick={() => setProviderOverride(p.value)}
+                    className={`px-4 py-2 rounded-xl border text-sm font-bold transition-all flex items-center gap-1.5 ${providerOverride === p.value ? 'border-blue-500 bg-blue-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-blue-500/40'}`}>
+                    {p.emoji} {p.label}
+                  </button>
+                ))}
+              </div>
+              {providerOverride && <p className="text-xs text-amber-400 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Auto-routing disabled — using {PROVIDER_DETAILS[providerOverride]?.label} for all generations.</p>}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Genre Selection */}

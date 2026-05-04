@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id, routing_reason } = await req.json();
 
     // Call provider FIRST — before any DB writes — so gateway timeout isn't wasted on DB ops
     let providerResult;
@@ -320,6 +320,7 @@ Deno.serve(async (req) => {
     const logMetadata = {
       model_version: modelVersion,
       input_parameters: { duration, mood, genre, tempo, sound_prompt: (sound_prompt || '').slice(0, 200), has_lyrics: !!(lyrics && lyrics.trim()) },
+      routing_reason: routing_reason || 'direct',
       provider_job_id: providerResult.task_id || null,
       generated_timestamp: generatedAt,
       content_hash: contentHash,
