@@ -72,6 +72,7 @@ export default function LyricsStudio() {
   const [saving, setSaving] = useState(false);
   const [versions, setVersions] = useState([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showRedDirtInfo, setShowRedDirtInfo] = useState(false);
   const textareaRef = useRef(null);
 
   // Keyboard shortcuts
@@ -292,13 +293,68 @@ export default function LyricsStudio() {
             {/* Structure Templates */}
             <div className="bg-card rounded-2xl border border-border p-5 space-y-2">
               <h3 className="font-black text-foreground text-sm flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
-              {STRUCTURE_TEMPLATES.map(t => (
-                <button key={t.label} type="button" onClick={() => { applyStructure(t); setStyle([t.genre]); }}
-                  className="w-full text-left px-3 py-2 rounded-xl bg-muted text-sm text-muted-foreground hover:bg-pink-500/10 hover:text-pink-300 transition-all flex items-center justify-between gap-2">
-                  <span>{t.label}</span>
-                  <span className="text-xs text-muted-foreground/60 shrink-0">{t.genre}</span>
-                </button>
-              ))}
+              {STRUCTURE_TEMPLATES.map(t => {
+                const isRedDirt = t.genre === 'Red Dirt';
+                return (
+                  <div key={t.label}>
+                    <div className="flex items-center gap-1">
+                      <button type="button" onClick={() => { applyStructure(t); setStyle([t.genre]); }}
+                        className="flex-1 text-left px-3 py-2 rounded-xl bg-muted text-sm text-muted-foreground hover:bg-pink-500/10 hover:text-pink-300 transition-all flex items-center justify-between gap-2">
+                        <span>{t.label}</span>
+                        <span className="text-xs text-muted-foreground/60 shrink-0">{t.genre}</span>
+                      </button>
+                      {isRedDirt && (
+                        <button type="button"
+                          onClick={() => setShowRedDirtInfo(p => !p)}
+                          title="Red Dirt songwriting guide"
+                          className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold transition-all border ${showRedDirtInfo ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' : 'bg-muted border-border text-muted-foreground hover:border-amber-500/30 hover:text-amber-300'}`}>
+                          ?
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Red Dirt Info Panel */}
+                    <AnimatePresence>
+                      {isRedDirt && showRedDirtInfo && (
+                        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden">
+                          <div className="mt-2 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 text-xs text-muted-foreground space-y-3">
+                            <p className="font-bold text-amber-300 text-sm">🌵 Red Dirt Songwriting Guide</p>
+                            <p className="text-amber-200/70">Typical bar structure — medium (16–32 bars) per section is standard for this genre.</p>
+
+                            <div className="space-y-1.5">
+                              <p className="font-semibold text-foreground">Typical Bar Structure</p>
+                              {[
+                                ['Verse', '16 bars (2 × 8-bar phrases) — detailed storytelling'],
+                                ['Chorus', '8–16 bars — anthemic, high-energy hook'],
+                                ['Bridge', '8 bars ("middle eight") — departure from V/C'],
+                                ['Full Song', '60–90s for a verse-chorus-verse-chorus at mid-tempo'],
+                              ].map(([section, detail]) => (
+                                <div key={section} className="flex gap-2">
+                                  <span className="text-amber-400 font-bold w-14 flex-shrink-0">{section}</span>
+                                  <span>{detail}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="space-y-1.5 pt-1 border-t border-amber-500/10">
+                              <p className="font-semibold text-foreground">Key Trends</p>
+                              {[
+                                'Storytelling Focus — longer verses (16–32 bars) for narrative depth',
+                                '4/4 Time — 8- or 16-bar segments are the natural phrasing unit',
+                                'Structure — V–C–V–C–Bridge–C balances familiarity & contrast',
+                                'Style blend — rock, blues & folk; flexible but audience-focused',
+                              ].map(tip => (
+                                <p key={tip} className="flex gap-1.5"><span className="text-amber-400 flex-shrink-0">•</span>{tip}</p>
+                              ))}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Version History */}
