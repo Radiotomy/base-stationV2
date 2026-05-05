@@ -69,6 +69,13 @@ export default function LiveStudio() {
         .then(stream => { mediaStream.current = stream; })
         .catch(() => { /* mic optional — artists may use track playback only */ });
 
+      // Create Portal 3D room (non-blocking — if it fails we still go live)
+      base44.functions.invoke('createPortalRoom', {
+        sessionId,
+        title,
+        coverImageUrl: selectedTrack?.thumbnail_url || '',
+      }).catch(err => console.warn('Portal room creation failed:', err.message));
+
       // Update LiveSession status → streaming
       await base44.entities.LiveSession.update(sessionId, {
         status: 'streaming',

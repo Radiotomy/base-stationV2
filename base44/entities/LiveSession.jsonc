@@ -60,6 +60,10 @@
       "type": "string",
       "description": "Currently playing track artist"
     },
+    "portal_room_id": {
+      "type": "string",
+      "description": "The Portal 3D room ID for the fan watch stage"
+    },
     "output_url": {
       "type": "string"
     },
