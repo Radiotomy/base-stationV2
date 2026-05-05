@@ -221,12 +221,13 @@ export default function ProjectsTab({ userId, assets }) {
   }, [userId]);
 
   const handleSave = async (form) => {
+    const sanitized = { ...form, bpm: form.bpm !== '' && form.bpm != null ? Number(form.bpm) : undefined };
     if (editingProject) {
-      const updated = await base44.entities.Project.update(editingProject.id, form);
-      setProjects(p => p.map(x => x.id === editingProject.id ? { ...x, ...form } : x));
+      const updated = await base44.entities.Project.update(editingProject.id, sanitized);
+      setProjects(p => p.map(x => x.id === editingProject.id ? { ...x, ...sanitized } : x));
       toast.success('Project updated!');
     } else {
-      const created = await base44.entities.Project.create({ ...form, user_id: userId });
+      const created = await base44.entities.Project.create({ ...sanitized, user_id: userId });
       setProjects(p => [created, ...p]);
       toast.success('Project created!');
     }
