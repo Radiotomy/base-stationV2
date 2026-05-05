@@ -1,0 +1,52 @@
+{
+  "name": "StudioHistory",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "tool": {
+      "type": "string",
+      "enum": [
+        "music_studio",
+        "lyrics_studio",
+        "cover_art_studio",
+        "video_studio",
+        "stem_creator",
+        "mashup_studio",
+        "vocal_harmonizer",
+        "mastering_studio",
+        "visualizer_studio",
+        "audio_remix_studio",
+        "id3_studio"
+      ],
+      "description": "Which studio tool was used"
+    },
+    "asset_id": {
+      "type": "string",
+      "description": "Resulting UserAsset id (if any)"
+    },
+    "source_asset_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Source UserAsset ids consumed by this action"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Tool-specific metadata: provider used, options, etc."
+    },
+    "title": {
+      "type": "string",
+      "description": "Short label for this history entry"
+    }
+  },
+  "required": [
+    "user_id",
+    "tool"
+  ]
+}

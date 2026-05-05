@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Folder, Music, FileText, Image, Film, ExternalLink, Trash2, Edit2, CheckCircle, X, Loader2, Link as LinkIcon } from 'lucide-react';
+import { Plus, Folder, Music, FileText, Image, Film, ExternalLink, Trash2, Edit2, CheckCircle, X, Loader2, Link as LinkIcon, GitBranch, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import ProjectWorkflowTimeline from '@/components/studio/ProjectWorkflowTimeline';
 
 const STATUS_COLORS = {
   draft:       'bg-muted text-muted-foreground',
@@ -16,11 +17,13 @@ const STATUS_COLORS = {
 };
 
 function ProjectCard({ project, assets, onDelete, onEdit }) {
+  const [workflowOpen, setWorkflowOpen] = useState(false);
   const hasTrack    = !!project.track_url || !!project.track_asset_id;
   const hasLyrics   = !!project.lyrics_text || !!project.lyrics_asset_id;
   const hasCoverArt = !!project.cover_image_url || !!project.cover_art_asset_id;
   const hasVideo    = !!project.video_url || !!project.video_asset_id;
   const completionCount = [hasTrack, hasLyrics, hasCoverArt, hasVideo].filter(Boolean).length;
+  const workflowSteps = project.workflow?.steps || [];
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -81,6 +84,30 @@ function ProjectCard({ project, assets, onDelete, onEdit }) {
           {project.bpm && <Badge variant="outline" className="text-xs">{project.bpm} BPM</Badge>}
         </div>
       ) : null}
+
+      {/* Phase 3 — Workflow Timeline */}
+      {workflowSteps.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-border/60">
+          <button onClick={() => setWorkflowOpen(o => !o)}
+            className="w-full flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors">
+            <span className="flex items-center gap-1.5 font-semibold">
+              <GitBranch className="w-3.5 h-3.5" />
+              Workflow Timeline ({workflowSteps.length} step{workflowSteps.length !== 1 ? 's' : ''})
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${workflowOpen ? 'rotate-180' : ''}`} />
+          </button>
+          <AnimatePresence>
+            {workflowOpen && (
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                <div className="pt-3">
+                  <ProjectWorkflowTimeline workflow={project.workflow} />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </motion.div>
   );
 }

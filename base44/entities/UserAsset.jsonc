@@ -16,7 +16,13 @@
         "track",
         "lyric",
         "coverart",
-        "project"
+        "project",
+        "stem",
+        "video",
+        "master",
+        "harmony",
+        "mashup",
+        "visualizer"
       ],
       "description": "Type of asset"
     },
@@ -34,7 +40,7 @@
     },
     "metadata": {
       "type": "object",
-      "description": "Asset-specific metadata (BPM, key, duration, audius_track_id, etc.)"
+      "description": "Asset-specific metadata (BPM, key, duration, audius_track_id, provenance, etc.)"
     },
     "tags": {
       "type": "array",
@@ -65,6 +71,24 @@
       ],
       "default": "creator",
       "description": "Content origin tag for legal separation. creator=user-generated AI; loudly=Loudly catalog/AI; audius=imported from Audius"
+    },
+    "parent_asset_id": {
+      "type": "string",
+      "description": "Phase 3: Source asset this was derived from (for stems, mashups, masters, harmonies, visualizers)"
+    },
+    "stem_type": {
+      "type": "string",
+      "enum": [
+        "vocals",
+        "drums",
+        "bass",
+        "other",
+        "instruments",
+        "melody",
+        "harmony",
+        "fx"
+      ],
+      "description": "Phase 3: For asset_type=stem, which stem this represents"
     }
   },
   "required": [

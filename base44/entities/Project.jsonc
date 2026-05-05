@@ -76,6 +76,40 @@
     "submission_id": {
       "type": "string",
       "description": "Linked TrackSubmission ID if published"
+    },
+    "workflow": {
+      "type": "object",
+      "description": "Phase 3: Step-by-step creative workflow timeline",
+      "properties": {
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Tool used (lyrics, music, stems, mashup, harmony, master, cover_art, video, visualizer, audius_import)"
+              },
+              "asset_id": {
+                "type": "string",
+                "description": "UserAsset created or used at this step"
+              },
+              "tool_route": {
+                "type": "string",
+                "description": "Studio route, e.g., /mastering-studio"
+              },
+              "label": {
+                "type": "string",
+                "description": "Human-readable label for the step"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [

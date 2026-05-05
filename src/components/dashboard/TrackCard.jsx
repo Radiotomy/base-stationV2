@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
+import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
 
 const ASSET_ICONS = {
   track:    { icon: Music,    color: 'from-blue-600 to-cyan-700' },
@@ -122,11 +123,12 @@ export default function TrackCard({ asset, onDelete }) {
         </div>
       )}
 
-      {/* Download buttons — always visible for tracks */}
+      {/* Download buttons + Open in Studio — always visible for tracks */}
       {isTrack && asset.file_url && (
-        <div className="px-4 pb-4 flex gap-2">
+        <div className="px-4 pb-4 flex gap-2 flex-wrap items-center">
           <DownloadButton url={mp3Url} label="Download MP3" ext="mp3" title={asset.title} />
           {wavUrl && <DownloadButton url={wavUrl} label="Download WAV" ext="wav" title={asset.title} />}
+          <OpenInStudioMenu asset={asset} />
         </div>
       )}
 

@@ -31,6 +31,12 @@ import AudiusSearch from './pages/AudiusSearch';
 import AudiusArtist from './pages/AudiusArtist';
 import AudiusTrack from './pages/AudiusTrack';
 import CoverArtStudio from './pages/CoverArtStudio';
+import StemCreatorStudio from './pages/StemCreatorStudio';
+import MashupStudio from './pages/MashupStudio';
+import VocalHarmonizer from './pages/VocalHarmonizer';
+import MasteringStudio from './pages/MasteringStudio';
+import VisualizerStudio from './pages/VisualizerStudio';
+import StudioHistory from './pages/StudioHistory';
 import AudioRemixStudio from './pages/AudioRemixStudio';
 import VoiceCreator from './pages/VoiceCreator';
 import MyProfile from './pages/MyProfile';
@@ -106,6 +112,12 @@ const AuthenticatedApp = () => {
           <Route path="/audius-artist/:id" element={<AudiusArtist />} />
           <Route path="/audius-track/:id" element={<AudiusTrack />} />
           <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
+          <Route path="/stem-creator" element={<StemCreatorStudio />} />
+          <Route path="/mashup-studio" element={<MashupStudio />} />
+          <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
+          <Route path="/mastering-studio" element={<MasteringStudio />} />
+          <Route path="/visualizer-studio" element={<VisualizerStudio />} />
+          <Route path="/ai-studio/history" element={<StudioHistory />} />
           <Route path="/voice-creator" element={<VoiceCreator />} />
           <Route path="/my-profile" element={<MyProfile />} />
           <Route path="/submit" element={<SubmitTrack />} />

@@ -49,6 +49,34 @@
     },
     "monthly_limit": {
       "type": "number"
+    },
+    "health_status": {
+      "type": "string",
+      "enum": [
+        "healthy",
+        "degraded",
+        "offline",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Phase 3: Real-time health from latency + error rate checks"
+    },
+    "latency_ms": {
+      "type": "number",
+      "description": "Phase 3: Average latency in milliseconds from last health check"
+    },
+    "success_rate": {
+      "type": "number",
+      "description": "Phase 3: Recent success rate (0.0\u20131.0)"
+    },
+    "score": {
+      "type": "number",
+      "description": "Phase 3: Composite provider score (0\u2013100) for ranking"
+    },
+    "last_health_check": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Phase 3: Last time health was assessed"
     }
   },
   "required": [
