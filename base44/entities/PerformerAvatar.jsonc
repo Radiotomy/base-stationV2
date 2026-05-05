@@ -1,0 +1,37 @@
+{
+  "name": "PerformerAvatar",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "avatarVideoUrl": {
+      "type": "string",
+      "description": "URL to avatar video or image"
+    },
+    "trackId": {
+      "type": "string",
+      "description": "Currently assigned track"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "ready",
+        "performing",
+        "offline"
+      ],
+      "default": "idle"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Flexible avatar metadata (style, mood, etc.)"
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

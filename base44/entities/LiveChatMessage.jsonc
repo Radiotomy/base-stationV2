@@ -5,10 +5,19 @@
     "session_id": {
       "type": "string"
     },
+    "roomId": {
+      "type": "string"
+    },
     "user_id": {
       "type": "string"
     },
+    "userId": {
+      "type": "string"
+    },
     "user_name": {
+      "type": "string"
+    },
+    "userName": {
       "type": "string"
     },
     "user_email": {
@@ -16,6 +25,16 @@
     },
     "message": {
       "type": "string"
+    },
+    "messageType": {
+      "type": "string",
+      "enum": [
+        "chat",
+        "reaction",
+        "system",
+        "event"
+      ],
+      "default": "chat"
     },
     "type": {
       "type": "string",
@@ -30,6 +49,10 @@
     "emoji": {
       "type": "string",
       "description": "For reaction type messages"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
     }
   },
   "required": [

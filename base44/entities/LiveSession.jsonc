@@ -76,6 +76,75 @@
       "items": {
         "type": "string"
       }
+    },
+    "state": {
+      "type": "object",
+      "description": "Audiograph-style synchronized event state",
+      "properties": {
+        "nowPlaying": {
+          "type": "object",
+          "properties": {
+            "trackId": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "position": {
+              "type": "number"
+            },
+            "isPlaying": {
+              "type": "boolean"
+            }
+          }
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "performer",
+                  "fan",
+                  "agent"
+                ]
+              },
+              "avatarUrl": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "recentEvents": {
+          "type": "array",
+          "description": "Audiograph event bus \u2014 last 20 events",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "payload": {
+                "type": "object"
+              },
+              "timestamp": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "required": [

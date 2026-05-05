@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Users, Clock, Music2, ArrowLeft, Volume2 } from 'lucide-react';
+import { Radio, Users, Clock, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+
+import { useLiveEventBus } from '@/hooks/useLiveEventBus';
 import LiveChatPanel from '@/components/live/LiveChatPanel';
 import LiveReactionBar from '@/components/live/LiveReactionBar';
 import PortalStageViewer from '@/components/live/PortalStageViewer';
+import NowPlayingDisplay from '@/components/live/NowPlayingDisplay';
+import ParticipantList from '@/components/live/ParticipantList';
+import EventFeed from '@/components/live/EventFeed';
 
 function formatDuration(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -23,49 +28,88 @@ export default function LiveWatch() {
   const [currentUser, setCurrentUser] = useState(null);
   const [elapsed, setElapsed] = useState(0);
   const [loading, setLoading] = useState(true);
-  const audioRef = useRef(null);
+  const [recentEvents, setRecentEvents] = useState([]);
+  const [participants, setParticipants] = useState([]);
+  const [nowPlaying, setNowPlaying] = useState(null);
+  const hasJoinedRef = useRef(false);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
+
+  // Event bus — audience listens
+  const { publishEvent } = useLiveEventBus(roomId, (evt) => {
+    setRecentEvents((prev) => [...prev.slice(-19), evt]);
+  });
 
   // Load session
   useEffect(() => {
     if (!roomId) { setLoading(false); return; }
     base44.entities.LiveSession.filter({ id: roomId })
       .then(results => {
-        if (results[0]) setSession(results[0]);
+        if (results[0]) {
+          const s = results[0];
+          setSession(s);
+          setParticipants(s?.state?.participants || []);
+          setNowPlaying(s?.state?.nowPlaying || null);
+          setRecentEvents(s?.state?.recentEvents || []);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [roomId]);
 
-  // Subscribe to live session updates (track changes, viewer count, status)
+  // Subscribe to live session updates
   useEffect(() => {
     if (!roomId) return;
     const unsub = base44.entities.LiveSession.subscribe(evt => {
       if (evt.data?.id === roomId) {
-        setSession(evt.data);
+        const s = evt.data;
+        setSession(s);
+        setParticipants(s?.state?.participants || []);
+        setNowPlaying(s?.state?.nowPlaying || null);
+        setRecentEvents(s?.state?.recentEvents || []);
       }
     });
     return unsub;
   }, [roomId]);
 
-  // Increment viewer count when joining
+  // Join as fan once when session is streaming
   useEffect(() => {
-    if (!session || session.status !== 'streaming') return;
+    if (!session || !currentUser || hasJoinedRef.current) return;
+    if (session.status !== 'streaming') return;
+    hasJoinedRef.current = true;
+
     base44.entities.LiveSession.update(roomId, {
       viewer_count: (session.viewer_count || 0) + 1,
     }).catch(() => {});
+
+    publishEvent('join', {
+      userId: currentUser.id,
+      displayName: currentUser.full_name || 'Fan',
+      type: 'fan',
+    });
+
+    const alreadyIn = (session?.state?.participants || []).some(p => p.id === currentUser.id);
+    if (!alreadyIn) {
+      const updated = [
+        ...(session?.state?.participants || []),
+        { id: currentUser.id, displayName: currentUser.full_name || 'Fan', type: 'fan', avatarUrl: '' },
+      ];
+      base44.entities.LiveSession.update(roomId, {
+        state: { ...(session?.state || {}), participants: updated },
+      }).catch(() => {});
+    }
+
     return () => {
-      // Decrement on leave
       base44.entities.LiveSession.update(roomId, {
         viewer_count: Math.max(0, (session.viewer_count || 1) - 1),
       }).catch(() => {});
+      publishEvent('leave', { userId: currentUser?.id, type: 'fan' });
     };
-  }, [session?.id]);
+  }, [session?.status, currentUser?.id]);
 
-  // Elapsed timer (from start_time)
+  // Elapsed timer
   useEffect(() => {
     if (!session?.start_time || session.status !== 'streaming') return;
     const tick = () => {
@@ -89,19 +133,13 @@ export default function LiveWatch() {
         <Radio className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-30" />
         <h2 className="text-xl font-black text-foreground mb-2">Session Not Found</h2>
         <p className="text-muted-foreground text-sm mb-6">This live session doesn't exist or has ended.</p>
-        <Link to="/live-studio" className="text-purple-400 hover:text-purple-300 text-sm font-semibold">
-          ← Go to Live Studio
-        </Link>
+        <Link to="/live-studio" className="text-purple-400 hover:text-purple-300 text-sm font-semibold">← Go to Live Studio</Link>
       </div>
     </div>
   );
 
   const isLive = session.status === 'streaming';
   const isEnded = session.status === 'completed' || session.status === 'archived';
-
-  // Get current track info from session metadata
-  const trackTitle = session.current_track_title || null;
-  const trackArtist = session.current_track_artist || null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -128,67 +166,58 @@ export default function LiveWatch() {
               </div>
             </>
           )}
-          {isEnded && (
-            <Badge variant="outline" className="text-xs text-muted-foreground">Session Ended</Badge>
-          )}
+          {isEnded && <Badge variant="outline" className="text-xs text-muted-foreground">Session Ended</Badge>}
         </div>
       </div>
 
-      {/* Main stage */}
       <div className="pt-14 min-h-screen flex flex-col">
 
-        {/* Portal 3D stage (when available) OR fallback gradient stage */}
+        {/* Portal 3D stage or gradient fallback */}
         {session.portal_room_id ? (
-          <div className="h-[60vh] w-full px-4 pt-4">
+          <div className="h-[55vh] w-full px-4 pt-4">
             <PortalStageViewer roomId={session.portal_room_id} />
           </div>
         ) : (
-          <div className="relative bg-gradient-to-br from-red-950 via-black to-purple-950 flex-shrink-0">
+          <div className="relative bg-gradient-to-br from-red-950 via-black to-purple-950 py-14 px-6 flex flex-col items-center justify-center text-center">
             <div className="absolute inset-0 opacity-20">
               <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-red-600 blur-3xl" />
               <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-purple-600 blur-3xl" />
             </div>
-            <div className="relative flex flex-col items-center justify-center py-16 px-6 text-center">
-              <div className="w-28 h-28 rounded-full bg-gradient-to-br from-red-700 to-purple-800 border-4 border-red-500/30 flex items-center justify-center mb-6 shadow-2xl shadow-red-900/50">
-                {isLive ? (
-                  <Volume2 className="w-10 h-10 text-white/70 animate-pulse" />
-                ) : (
-                  <Music2 className="w-10 h-10 text-white/30" />
-                )}
-              </div>
-              {trackTitle ? (
-                <div className="mb-4">
-                  <p className="text-white font-black text-2xl mb-1">{trackTitle}</p>
-                  {trackArtist && <p className="text-white/50 text-sm">{trackArtist}</p>}
-                </div>
-              ) : (
-                <p className="text-white/40 text-sm mb-4">
-                  {isLive ? 'Performer is live' : isEnded ? 'This session has ended' : 'Waiting for performer…'}
-                </p>
-              )}
-              {session.description && (
-                <p className="text-white/40 text-xs max-w-sm leading-relaxed">{session.description}</p>
-              )}
+            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-red-700 to-purple-800 border-4 border-red-500/30 flex items-center justify-center mb-4 shadow-2xl">
+              <Radio className={`w-8 h-8 text-white/70 ${isLive ? 'animate-pulse' : ''}`} />
             </div>
+            {session.description && (
+              <p className="text-white/40 text-sm max-w-sm relative">{session.description}</p>
+            )}
           </div>
         )}
 
-        {/* Now playing strip (shown alongside Portal) */}
-        {session.portal_room_id && (trackTitle || isLive) && (
-          <div className="px-4 py-2 bg-black/60 border-b border-border/40 flex items-center gap-3">
-            {isLive && <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />}
-            {trackTitle && <p className="text-sm font-bold text-white truncate">{trackTitle}</p>}
-            {trackArtist && <p className="text-xs text-white/50">{trackArtist}</p>}
-          </div>
-        )}
+        {/* Now Playing strip */}
+        <div className="px-4 py-3 bg-card/60 border-b border-border/40">
+          <NowPlayingDisplay nowPlaying={nowPlaying} isLive={isLive} />
+        </div>
 
-        {/* Reactions + Chat */}
+        {/* Main content grid */}
         <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
+
+            {/* Left sidebar */}
+            <div className="lg:col-span-1 space-y-4">
               <LiveReactionBar sessionId={roomId} currentUser={currentUser} isLive={isLive} />
+              <ParticipantList participants={participants} />
+
+              {/* Event feed */}
+              <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse inline-block" />
+                  Event Bus
+                </p>
+                <EventFeed events={recentEvents} />
+              </div>
             </div>
-            <div className="lg:col-span-2 h-[400px]">
+
+            {/* Chat */}
+            <div className="lg:col-span-2 h-[420px]">
               <LiveChatPanel sessionId={roomId} currentUser={currentUser} isLive={isLive} />
             </div>
           </div>
