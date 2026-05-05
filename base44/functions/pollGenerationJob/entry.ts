@@ -28,7 +28,6 @@ async function pollProvider(provider, providerTaskId, job) {
 
     const clipsArr = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
     const clip = clipsArr[0];
-    const state = clip?.state || '';
 
     if (!clip || res.status === 404 || data?.code === 404) {
       console.log('Sonic: task not found, attempting recovery via feed...');
@@ -47,18 +46,28 @@ async function pollProvider(provider, providerTaskId, job) {
       }
     }
 
-    if (state === 'succeeded') {
-      // Sonic returns 2 clips per generation — expose all audio URLs
-      const allAudioUrls = clipsArr.filter(c => c.state === 'succeeded' && c.audio_url).map(c => c.audio_url);
+    // Sonic returns 2 clips — wait until ALL non-failed clips have settled (succeeded or failed)
+    // A clip is "settled" if its state is succeeded or failed (not pending/running)
+    const settledClips  = clipsArr.filter(c => c.state === 'succeeded' || c.state === 'failed');
+    const succeededClips = clipsArr.filter(c => c.state === 'succeeded' && c.audio_url);
+    const allSettled    = clipsArr.length > 0 && settledClips.length === clipsArr.length;
+    const anySucceeded  = succeededClips.length > 0;
+
+    console.log(`Sonic clips: total=${clipsArr.length} settled=${settledClips.length} succeeded=${succeededClips.length}`);
+
+    if (allSettled && anySucceeded) {
+      const allAudioUrls = succeededClips.map(c => c.audio_url);
       return {
         status: 'completed',
         audio_url: allAudioUrls[0],
         audio_urls: allAudioUrls,
-        cover_image_url: clip.image_url,
-        cover_image_urls: clipsArr.map(c => c.image_url).filter(Boolean),
+        cover_image_url: succeededClips[0]?.image_url,
+        cover_image_urls: succeededClips.map(c => c.image_url).filter(Boolean),
       };
     }
-    if (state === 'failed') return { status: 'failed', error: clip.error_message || 'Sonic generation failed' };
+    if (allSettled && !anySucceeded) {
+      return { status: 'failed', error: clip?.error_message || 'Sonic generation failed' };
+    }
     return { status: 'processing' };
   }
 
