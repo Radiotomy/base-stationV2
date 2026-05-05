@@ -4,6 +4,7 @@ import { Music, Image, FileText, Film, Trash2, ChevronDown, Download, Shield, Za
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 
 const ASSET_ICONS = {
   track:    { icon: Music,    color: 'from-blue-600 to-cyan-700' },
@@ -108,11 +109,16 @@ export default function TrackCard({ asset, onDelete }) {
         </div>
       </div>
 
-      {/* Audio player (tracks only) */}
+      {/* Studio audio player (tracks only) */}
       {isTrack && asset.file_url && !audioError && (
-        <div className="px-4 pb-2">
-          <audio controls className="w-full rounded-xl h-9" src={asset.file_url}
-            onError={() => setAudioError(true)} />
+        <div className="px-4 pb-3">
+          <StudioAudioPlayer
+            src={asset.file_url}
+            title={asset.title}
+            artist={m.artist || m.audius_artist}
+            artworkUrl={asset.thumbnail_url}
+            compact
+          />
         </div>
       )}
 
