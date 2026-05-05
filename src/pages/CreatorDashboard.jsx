@@ -12,6 +12,7 @@ import XPWidget from "@/components/dashboard/XPWidget";
 import ProjectsTab from "@/components/dashboard/ProjectsTab";
 import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
 import UsageAnalytics from "@/components/dashboard/UsageAnalytics";
+import TrackCard from "@/components/dashboard/TrackCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -265,7 +266,7 @@ export default function CreatorDashboard() {
           ) : (
             <div className="space-y-3">
               {(assetsByType[assetFilter] || []).map(asset => (
-                <AssetCard key={asset.id} asset={asset} onDelete={deleteAsset} />
+                <TrackCard key={asset.id} asset={asset} onDelete={deleteAsset} />
               ))}
             </div>
           )}

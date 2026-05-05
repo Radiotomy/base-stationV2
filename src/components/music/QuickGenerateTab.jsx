@@ -116,10 +116,15 @@ export default function QuickGenerateTab() {
           genre: params?.genre,
           mood: params?.mood,
           bpm: params?.bpm,
-          provider,
+          key: params?.key,
           duration: params?.duration,
+          provider,
+          model: params?.model || '',
           ai_assisted: true,
           prompt,
+          sound_prompt: params?.sound_prompt || '',
+          lyrics: params?.lyrics || '',
+          content_hash: contentHash || '',
           auto_saved: true,
           id3_tagged: finalUrl !== audioUrl,
         },
@@ -132,6 +137,7 @@ export default function QuickGenerateTab() {
   // Use a ref so onComplete always has access to the latest aiParams even when called from polling
   const aiParamsRef = React.useRef(null);
   const promptRef = React.useRef('');
+  const lyricsRef = React.useRef('');
 
   const onComplete = useCallback(async (data) => {
     if (savedRef.current) return; // prevent duplicate calls
@@ -166,6 +172,10 @@ export default function QuickGenerateTab() {
       await saveTrackToLibrary(primaryUrl, coverImageUrl, {
         ...params,
         title: params?.title || currentPrompt.slice(0, 40) || 'Generated Track',
+        key: data.key || params?.key,
+        lyrics: lyricsRef.current || '',
+        sound_prompt: params?.sound_prompt || '',
+        model: params?.model || '',
       }, data.content_hash || null);
       toast.success('✅ Auto-saved to library!');
     }
@@ -284,6 +294,7 @@ export default function QuickGenerateTab() {
             length: 'medium',
           });
           lyrics = lyricsRes.data?.lyrics || '';
+          lyricsRef.current = lyrics;
           if (lyrics) toast.success('🎤 Lyrics generated!');
         } catch { /* lyrics optional */ }
       }
