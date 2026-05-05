@@ -25,6 +25,7 @@ import MusicStudio from './pages/MusicStudio';
 import VideoStudio from './pages/VideoStudio';
 import LiveStudio from './pages/LiveStudio';
 import LiveWatch from './pages/LiveWatch';
+import LiveSummary from './pages/LiveSummary';
 import CoverArtStudio from './pages/CoverArtStudio';
 import AudioRemixStudio from './pages/AudioRemixStudio';
 import VoiceCreator from './pages/VoiceCreator';
@@ -95,6 +96,7 @@ const AuthenticatedApp = () => {
           <Route path="/video-studio" element={<VideoStudio />} />
           <Route path="/live-studio" element={<LiveStudio />} />
           <Route path="/live-watch" element={<LiveWatch />} />
+          <Route path="/live-summary" element={<LiveSummary />} />
           <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
           <Route path="/voice-creator" element={<VoiceCreator />} />
           <Route path="/my-profile" element={<MyProfile />} />

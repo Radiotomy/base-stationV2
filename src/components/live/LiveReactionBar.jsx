@@ -67,6 +67,14 @@ export default function LiveReactionBar({ sessionId, currentUser, isLive }) {
       type: 'reaction',
       emoji: reaction.emoji,
     });
+
+    // Award XP (server-enforces session cap)
+    base44.functions.invoke('awardLiveXP', { sessionId, kind: 'reaction' })
+      .then(r => {
+        if (r.data?.new_badges?.length) {
+          r.data.new_badges.forEach(b => toast.success(`🏆 Badge unlocked: ${b.replace(/_/g, ' ')}`));
+        }
+      }).catch(() => {});
   };
 
   const xpPct = Math.min(100, (sessionXP / SESSION_XP_CAP) * 100);

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Radio, Square, Zap, ArrowLeft, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,7 @@ import ParticipantList from '@/components/live/ParticipantList';
 import EventFeed from '@/components/live/EventFeed';
 
 export default function LiveStudio() {
+  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [sessionId, setSessionId] = useState('');
@@ -109,6 +111,11 @@ export default function LiveStudio() {
       });
 
       setIsLive(true);
+      base44.functions.invoke('trackAnalytics', {
+        event_type: 'live_session_started',
+        session_id: sessionId,
+        event_data: { title },
+      }).catch(() => {});
       await publishEvent('performer-start', { title, performerId: currentUser?.id });
       toast.success('🔴 You are now Live!');
     } catch (error) {
@@ -129,8 +136,22 @@ export default function LiveStudio() {
     });
 
     await publishEvent('leave', { performerId: currentUser?.id, role: 'performer' });
+
+    // Fire analytics + recording (non-blocking on UI redirect)
+    base44.functions.invoke('trackAnalytics', {
+      event_type: 'live_session_ended',
+      session_id: sessionId,
+      event_data: { duration_seconds: duration, peak_viewers: viewerCount },
+    }).catch(() => {});
+
     setIsLive(false);
-    toast.success('Session ended');
+    toast.success('Session ended — generating bundle…');
+
+    try {
+      await base44.functions.invoke('recordLiveSession', { sessionId });
+    } catch { /* non-blocking */ }
+
+    navigate(`/live-summary?sessionId=${sessionId}`);
   };
 
   // Helper: read + merge state patch

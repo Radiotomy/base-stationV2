@@ -60,6 +60,17 @@ export default function LiveChatPanel({ sessionId, currentUser, isLive }) {
       type,
       ...(emoji && { emoji }),
     });
+
+    // Award XP only for chat messages (not reactions — those have their own path)
+    if (type === "chat") {
+      base44.functions.invoke('awardLiveXP', { sessionId, kind: 'chat' })
+        .then(r => {
+          if (r.data?.new_badges?.length) {
+            r.data.new_badges.forEach(b => toast.success(`🏆 Badge unlocked: ${b.replace(/_/g, ' ')}`));
+          }
+        }).catch(() => {});
+    }
+
     setInput("");
     setSending(false);
   };

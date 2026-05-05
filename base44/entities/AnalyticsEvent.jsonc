@@ -19,7 +19,19 @@
         "track_submitted",
         "track_downloaded",
         "effect_applied",
-        "studio_visit"
+        "studio_visit",
+        "live_session_started",
+        "live_session_ended",
+        "live_track_play",
+        "live_track_pause",
+        "live_track_seek",
+        "live_reaction",
+        "live_chat_message",
+        "live_participant_join",
+        "live_participant_leave",
+        "live_scene_change",
+        "live_performer_ready",
+        "live_performer_start"
       ]
     },
     "event_data": {

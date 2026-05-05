@@ -65,12 +65,24 @@ export function useLiveEventBus(roomId, onEvent) {
       },
     });
 
-    // Also publish to Intelligence OS event log (non-blocking)
-    const intelligenceType = `studio.live.${type}`;
+    // Also publish to Intelligence OS event log (non-blocking, non-UI-blocking)
+    const eventTypeMap = {
+      'join': 'live_participant_join',
+      'leave': 'live_participant_leave',
+      'play': 'live_track_play',
+      'pause': 'live_track_pause',
+      'seek': 'live_track_seek',
+      'reaction': 'live_reaction',
+      'chat': 'live_chat_message',
+      'scene-change': 'live_scene_change',
+      'performer-ready': 'live_performer_ready',
+      'performer-start': 'live_performer_start',
+    };
+    const analyticsType = eventTypeMap[type] || 'studio_visit';
     base44.functions.invoke('trackAnalytics', {
-      event_type: 'studio_visit',
+      event_type: analyticsType,
       session_id: roomId,
-      event_data: { intelligence_event: intelligenceType, ...payload },
+      event_data: { live_event: type, ...payload },
     }).catch(() => {});
 
     return newEvent;

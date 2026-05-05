@@ -1,0 +1,40 @@
+{
+  "name": "LiveSessionBundle",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "FK to LiveSession"
+    },
+    "performer_id": {
+      "type": "string"
+    },
+    "performer_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "mixdown_url": {
+      "type": "string",
+      "description": "Audio mixdown if recording was enabled"
+    },
+    "event_log_url": {
+      "type": "string",
+      "description": "JSON file of session events"
+    },
+    "chat_log_url": {
+      "type": "string",
+      "description": "JSON file of session chat"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Session stats: duration, peak_viewers, total_reactions, total_messages, top_fans, tracks_used"
+    }
+  },
+  "required": [
+    "session_id",
+    "performer_id",
+    "title"
+  ]
+}

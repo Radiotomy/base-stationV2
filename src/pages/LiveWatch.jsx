@@ -12,6 +12,9 @@ import PortalStageViewer from '@/components/live/PortalStageViewer';
 import NowPlayingDisplay from '@/components/live/NowPlayingDisplay';
 import ParticipantList from '@/components/live/ParticipantList';
 import EventFeed from '@/components/live/EventFeed';
+import FanIdentityPanel from '@/components/live/FanIdentityPanel';
+import TipModal from '@/components/tipping/TipModal';
+import { toast } from 'sonner';
 
 function formatDuration(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -31,6 +34,7 @@ export default function LiveWatch() {
   const [recentEvents, setRecentEvents] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [nowPlaying, setNowPlaying] = useState(null);
+  const [showTipModal, setShowTipModal] = useState(false);
   const hasJoinedRef = useRef(false);
 
   useEffect(() => {
@@ -89,6 +93,16 @@ export default function LiveWatch() {
       displayName: currentUser.full_name || 'Fan',
       type: 'fan',
     });
+
+    // Award attendance XP (capped server-side)
+    base44.functions.invoke('awardLiveXP', { sessionId: roomId, kind: 'attend' })
+      .then(r => {
+        if (r.data?.awarded > 0) toast.success(`+${r.data.awarded} XP for joining!`, { icon: '⚡' });
+        if (r.data?.new_badges?.length) {
+          r.data.new_badges.forEach(b => toast.success(`🏆 Badge unlocked: ${b.replace(/_/g, ' ')}`));
+        }
+      })
+      .catch(() => {});
 
     const alreadyIn = (session?.state?.participants || []).some(p => p.id === currentUser.id);
     if (!alreadyIn) {
@@ -203,6 +217,13 @@ export default function LiveWatch() {
 
             {/* Left sidebar */}
             <div className="lg:col-span-1 space-y-4">
+              <FanIdentityPanel
+                currentUser={currentUser}
+                performerId={session.user_id}
+                performerName={session.current_track_artist || session.title}
+                performerEmail={session.user_email}
+                onTipClick={() => setShowTipModal(true)}
+              />
               <LiveReactionBar sessionId={roomId} currentUser={currentUser} isLive={isLive} />
               <ParticipantList participants={participants} />
 
@@ -223,6 +244,17 @@ export default function LiveWatch() {
           </div>
         </div>
       </div>
+
+      {showTipModal && (
+        <TipModal
+          artist={{
+            id: session.user_id,
+            name: session.current_track_artist || session.title || 'Performer',
+            email: session.user_email,
+          }}
+          onClose={() => setShowTipModal(false)}
+        />
+      )}
     </div>
   );
 }
