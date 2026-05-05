@@ -14,11 +14,11 @@ Deno.serve(async (req) => {
 
     if (!PORTAL_KEY) return Response.json({ error: 'PORTAL_ACCESS_KEY not set' }, { status: 500 });
 
-    // 1. Create a room
+    // 1. Create a blank room
     const createRes = await fetch(`${PORTAL_BASE}/rooms/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-access-key': PORTAL_KEY },
-      body: JSON.stringify({ templateName: 'default' }),
+      body: JSON.stringify({ templateName: 'blank', customTemplateName: title }),
     });
     if (!createRes.ok) {
       const err = await createRes.text();
