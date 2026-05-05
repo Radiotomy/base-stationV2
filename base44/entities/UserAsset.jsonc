@@ -34,7 +34,7 @@
     },
     "metadata": {
       "type": "object",
-      "description": "Asset-specific metadata (BPM, key, duration, etc.)"
+      "description": "Asset-specific metadata (BPM, key, duration, audius_track_id, etc.)"
     },
     "tags": {
       "type": "array",
@@ -55,6 +55,16 @@
     "related_track_id": {
       "type": "string",
       "description": "ID of related track submission if applicable"
+    },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "creator",
+        "loudly",
+        "audius"
+      ],
+      "default": "creator",
+      "description": "Content origin tag for legal separation. creator=user-generated AI; loudly=Loudly catalog/AI; audius=imported from Audius"
     }
   },
   "required": [

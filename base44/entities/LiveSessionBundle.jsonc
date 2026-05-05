@@ -30,6 +30,23 @@
     "metadata": {
       "type": "object",
       "description": "Session stats: duration, peak_viewers, total_reactions, total_messages, top_fans, tracks_used"
+    },
+    "audius_track_id": {
+      "type": "string",
+      "description": "Audius track ID once published"
+    },
+    "audius_publish_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "success",
+        "failed"
+      ],
+      "description": "Status of publishing this bundle to Audius"
+    },
+    "audius_publish_error": {
+      "type": "string",
+      "description": "Error message if Audius publish failed"
     }
   },
   "required": [

@@ -1,0 +1,41 @@
+{
+  "name": "AudiusPlaylist",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Playlist name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "track_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Audius native track IDs"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User ID of the creator"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name",
+    "created_by"
+  ]
+}

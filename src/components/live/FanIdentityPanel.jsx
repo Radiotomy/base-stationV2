@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Heart, Trophy, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import AudiusIdentityBadge from '@/components/audius/AudiusIdentityBadge';
 
 /**
  * Compact identity panel for the LiveWatch sidebar.
@@ -49,6 +50,10 @@ export default function FanIdentityPanel({ currentUser, performerId, performerNa
           <Badge className="bg-emerald-500/20 text-emerald-300 border-0 text-xs ml-auto">Following</Badge>
         )}
       </div>
+
+      {currentUser.metadata?.audius && (
+        <AudiusIdentityBadge audius={currentUser.metadata.audius} compact />
+      )}
 
       {performerId && performerId !== currentUser.id && (
         <Button onClick={onTipClick} className="w-full rounded-xl bg-pink-600 hover:bg-pink-500 gap-2 text-sm font-bold">

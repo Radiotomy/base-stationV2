@@ -1,0 +1,40 @@
+{
+  "name": "LoudlyPlaylist",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "asset_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "UserAsset IDs (only origin = loudly or creator)"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User ID of the creator"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name",
+    "created_by"
+  ]
+}

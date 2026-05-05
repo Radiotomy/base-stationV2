@@ -177,6 +177,7 @@ export default function Home() {
               { to: "/submit", icon: Upload, title: "📤 Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Go Live" },
               { to: "/blockchain", icon: Globe, title: "⛓️ Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "Mint NFT" },
               { to: "/templates", icon: Zap, title: "🎨 Community Templates", desc: "Discover and share AI prompts for Music, Lyrics, Cover Art & Video. One-click copy & use.", color: "from-violet-900 to-purple-900", accent: "text-violet-400", badge: "New" },
+              { to: "/audius-trending", icon: Headphones, title: "🎧 Audius Network", desc: "Discover trending tracks across the OpenAudio Protocol. Import, remix & publish your own.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Phase 2" },
             ].map(({ to, icon: Icon, title, desc, color, accent, badge }) => (
               <Link key={title} to={to} className={`group block p-5 md:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-br ${color} border border-white/5 active:border-white/20 active:scale-[0.98] transition-all`}>
                 <div className="flex items-start justify-between mb-3">

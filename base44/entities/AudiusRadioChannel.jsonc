@@ -1,0 +1,32 @@
+{
+  "name": "AudiusRadioChannel",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "audius_track_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Audius native track IDs"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name"
+  ]
+}
