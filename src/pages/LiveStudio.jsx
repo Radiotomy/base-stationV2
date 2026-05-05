@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, Play, Square, Zap, ArrowLeft, Users, Clock } from 'lucide-react';
+import { Radio, Play, Square, Zap, ArrowLeft, Users, Clock, Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,16 @@ export default function LiveStudio() {
     });
     return unsub;
   }, [sessionDbId]);
+
+  const watchUrl = sessionId
+    ? `${window.location.origin}/live-watch?roomId=${sessionId}`
+    : null;
+
+  const copyWatchLink = () => {
+    if (!watchUrl) return;
+    navigator.clipboard.writeText(watchUrl);
+    toast.success('Watch link copied!');
+  };
 
   const createSession = async () => {
     if (!title) { toast.error('Enter a session title'); return; }
@@ -197,11 +207,40 @@ export default function LiveStudio() {
               )}
             </div>
 
+            {/* Share Link */}
+            {sessionId && (
+              <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase">Fan Watch Link</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-mono text-muted-foreground truncate flex-1 bg-muted/50 px-2 py-1.5 rounded-lg">
+                    /live-watch?roomId={sessionId.slice(0, 16)}…
+                  </p>
+                  <button onClick={copyWatchLink}
+                    className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all flex-shrink-0">
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                  <a href={watchUrl} target="_blank" rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-all flex-shrink-0">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Track Selector */}
             <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
               <h3 className="font-black text-foreground text-sm">Now Playing</h3>
               <LiveTrackSelector
-                onSelect={setSelectedTrack}
+                onSelect={(track) => {
+                  setSelectedTrack(track);
+                  // Sync track info to session so watch page updates
+                  if (sessionId && track) {
+                    base44.entities.LiveSession.update(sessionId, {
+                      current_track_title: track.title,
+                      current_track_artist: currentUser?.full_name || '',
+                    }).catch(() => {});
+                  }
+                }}
                 selectedTrack={selectedTrack}
                 disabled={isLive}
               />

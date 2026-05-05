@@ -52,6 +52,14 @@
         "type": "string"
       }
     },
+    "current_track_title": {
+      "type": "string",
+      "description": "Currently playing track title (synced to fan watch page)"
+    },
+    "current_track_artist": {
+      "type": "string",
+      "description": "Currently playing track artist"
+    },
     "output_url": {
       "type": "string"
     },
