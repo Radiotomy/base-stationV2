@@ -30,6 +30,17 @@ Deno.serve(async (req) => {
     const followers = fans?.data?.followers || [];
     const following = fans?.data?.following || [];
 
+    // Phase 5: optional Audius collectibles + badges fetch (non-blocking)
+    let audiusCollectibles = [];
+    let audiusBadges = [];
+    try {
+      const collectibleRes = await base44.asServiceRole.functions.invoke('audiusClient', {
+        action: 'getUserCollectibles', payload: { userId: audiusUserId },
+      });
+      audiusCollectibles = collectibleRes?.data?.collectibles || [];
+      audiusBadges = collectibleRes?.data?.badges || [];
+    } catch { /* gracefully degrade */ }
+
     const audiusData = {
       audius_user_id: audiusUserId,
       handle: profile.handle,
@@ -40,6 +51,8 @@ Deno.serve(async (req) => {
       following_count: profile.following_count ?? following.length,
       track_count: tracks.length,
       verified: profile.is_verified || false,
+      collectibles: audiusCollectibles,
+      badges: audiusBadges,
       synced_at: new Date().toISOString(),
     };
 

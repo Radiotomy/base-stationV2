@@ -51,6 +51,22 @@ export default function FanIdentityPanel({ currentUser, performerId, performerNa
         )}
       </div>
 
+      {/* Phase 5 — XP multiplier from Fan Club */}
+      {xp?.xp_multiplier > 1 && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <span className="text-[11px] font-bold text-amber-300">{xp.xp_multiplier}× XP Multiplier</span>
+        </div>
+      )}
+
+      {/* Phase 5 — Audius collectibles count */}
+      {currentUser.metadata?.audius?.collectibles?.length > 0 && (
+        <div className="flex items-center gap-1.5 text-[11px] text-emerald-300">
+          <Sparkles className="w-3 h-3" />
+          {currentUser.metadata.audius.collectibles.length} Audius collectible{currentUser.metadata.audius.collectibles.length === 1 ? '' : 's'}
+        </div>
+      )}
+
       {currentUser.metadata?.audius && (
         <AudiusIdentityBadge audius={currentUser.metadata.audius} compact />
       )}

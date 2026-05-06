@@ -53,6 +53,18 @@
     "badge_count": {
       "type": "number",
       "default": 0
+    },
+    "xp_multiplier": {
+      "type": "number",
+      "description": "Phase 5: Active XP multiplier from highest fan club tier"
+    },
+    "fanclub_tier_id": {
+      "type": "string",
+      "description": "Phase 5: Current top fan club tier id"
+    },
+    "fanclub_creator_id": {
+      "type": "string",
+      "description": "Phase 5: Creator id of the active fan club tier"
     }
   },
   "required": [

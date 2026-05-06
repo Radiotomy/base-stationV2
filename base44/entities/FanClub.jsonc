@@ -1,0 +1,77 @@
+{
+  "name": "FanClub",
+  "type": "object",
+  "properties": {
+    "creator_id": {
+      "type": "string",
+      "description": "User id of the creator"
+    },
+    "creator_email": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Fan club display name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "cover_image_url": {
+      "type": "string"
+    },
+    "tiers": {
+      "type": "array",
+      "description": "Membership tiers",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Tier slug"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price_usd": {
+            "type": "number"
+          },
+          "perks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "xp_multiplier": {
+            "type": "number",
+            "default": 1
+          },
+          "badge_id": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "description": "Optional tier accent color"
+          }
+        }
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "member_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "creator_id",
+    "name"
+  ]
+}

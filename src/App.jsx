@@ -59,6 +59,8 @@ import Credits from './pages/Credits';
 import CommunityTemplates from './pages/CommunityTemplates';
 import SocialMediaAutomation from './pages/SocialMediaAutomation';
 import WhyBaseStation from './pages/WhyBaseStation';
+import FanClub from './pages/FanClub';
+import CreatorStore from './pages/CreatorStore';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -130,6 +132,8 @@ const AuthenticatedApp = () => {
           <Route path="/templates" element={<CommunityTemplates />} />
           <Route path="/social-automation" element={<SocialMediaAutomation />} />
           <Route path="/why-base-station" element={<WhyBaseStation />} />
+          <Route path="/fanclub/:creatorId" element={<FanClub />} />
+          <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />

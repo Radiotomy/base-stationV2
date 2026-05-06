@@ -1,0 +1,54 @@
+{
+  "name": "FanClubMembership",
+  "type": "object",
+  "properties": {
+    "fanclub_id": {
+      "type": "string"
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Member user id"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "tier_id": {
+      "type": "string"
+    },
+    "tier_name": {
+      "type": "string"
+    },
+    "xp_multiplier": {
+      "type": "number",
+      "default": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "expired",
+        "cancelled"
+      ],
+      "default": "active"
+    },
+    "joined_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "fanclub_id",
+    "user_id",
+    "tier_id"
+  ]
+}

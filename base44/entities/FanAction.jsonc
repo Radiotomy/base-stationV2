@@ -1,0 +1,45 @@
+{
+  "name": "FanAction",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Fan user id"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "action_type": {
+      "type": "string",
+      "enum": [
+        "reaction",
+        "chat",
+        "tip",
+        "quest",
+        "collectible_claim",
+        "fanclub_join",
+        "follow",
+        "watch_time"
+      ]
+    },
+    "value": {
+      "type": "number",
+      "description": "Optional numeric value (e.g., tip cents, watch seconds)"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Optional live session context"
+    },
+    "metadata": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "user_id",
+    "creator_id",
+    "action_type"
+  ]
+}

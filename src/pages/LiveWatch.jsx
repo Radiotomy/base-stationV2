@@ -15,6 +15,7 @@ import EventFeed from '@/components/live/EventFeed';
 import FanIdentityPanel from '@/components/live/FanIdentityPanel';
 import LiveVisualizer from '@/components/live/LiveVisualizer';
 import LiveQuestPanel from '@/components/live/LiveQuestPanel';
+import LiveDropOverlay from '@/components/live/LiveDropOverlay';
 import TipModal from '@/components/tipping/TipModal';
 import { toast } from 'sonner';
 
@@ -260,6 +261,9 @@ export default function LiveWatch() {
           </div>
         </div>
       </div>
+
+      {/* Phase 5 — Live Drop overlay */}
+      <LiveDropOverlay recentEvents={recentEvents} sessionId={roomId} />
 
       {showTipModal && (
         <TipModal

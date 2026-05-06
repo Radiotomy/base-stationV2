@@ -13,6 +13,8 @@ import FollowButton from "@/components/follow/FollowButton";
 import TrackReactions from "@/components/community/TrackReactions";
 import TrackComments from "@/components/community/TrackComments";
 import TopFans from "@/components/community/TopFans";
+import JoinFanClubButton from "@/components/fanclub/JoinFanClubButton";
+import CollectiblesGrid from "@/components/collectibles/CollectiblesGrid";
 
 function StatBox({ value, label }) {
   return (
@@ -225,6 +227,7 @@ export default function ArtistProfile() {
                     <Heart className="w-4 h-4 mr-1.5" /> Tip
                   </Button>
                 )}
+                <JoinFanClubButton creatorId={profile.user_id} />
               </>
             )}
             {isOwner && (
@@ -262,6 +265,14 @@ export default function ArtistProfile() {
 
         {/* Top Fans */}
         <TopFans artistId={id} />
+
+        {/* Phase 5 — Collectibles */}
+        <div className="mb-12">
+          <h2 className="text-xl font-black text-foreground mb-5 flex items-center gap-2">
+            ✨ Collectibles
+          </h2>
+          <CollectiblesGrid creatorId={id} />
+        </div>
 
         {/* Tracks */}
         <div className="mb-12">

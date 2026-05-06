@@ -1,0 +1,69 @@
+{
+  "name": "Collectible",
+  "type": "object",
+  "properties": {
+    "creator_id": {
+      "type": "string"
+    },
+    "creator_name": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "media_asset_id": {
+      "type": "string",
+      "description": "FK to UserAsset (creator-origin or audius-origin only)"
+    },
+    "media_url": {
+      "type": "string",
+      "description": "Direct media URL for display"
+    },
+    "supply": {
+      "type": "number",
+      "description": "Total supply (null = unlimited)"
+    },
+    "claimed_count": {
+      "type": "number",
+      "default": 0
+    },
+    "claim_type": {
+      "type": "string",
+      "enum": [
+        "free",
+        "quest",
+        "purchase",
+        "live_drop"
+      ],
+      "default": "free"
+    },
+    "price_usd": {
+      "type": "number",
+      "description": "If claim_type=purchase"
+    },
+    "audius_collectible_id": {
+      "type": "string",
+      "description": "Optional Audius/OpenAudio mint id"
+    },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "creator",
+        "audius"
+      ],
+      "default": "creator",
+      "description": "Legal origin gate \u2014 never 'loudly'"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "creator_id",
+    "name"
+  ]
+}

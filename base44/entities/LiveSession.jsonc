@@ -106,6 +106,15 @@
       "default": false,
       "description": "Phase 4: Audio-reactive visualizer mode"
     },
+    "live_drops_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phase 5: Whether live collectible drops are enabled"
+    },
+    "active_drop_id": {
+      "type": "string",
+      "description": "Phase 5: Currently active Collectible drop id"
+    },
     "output_url": {
       "type": "string"
     },

@@ -13,6 +13,7 @@ import ProjectsTab from "@/components/dashboard/ProjectsTab";
 import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
 import UsageAnalytics from "@/components/dashboard/UsageAnalytics";
 import TrackCard from "@/components/dashboard/TrackCard";
+import RewardFansModal from "@/components/dashboard/RewardFansModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -183,6 +184,14 @@ export default function CreatorDashboard() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <CreditBalanceWidget />
+          {user && (
+            <Link to={`/creator-store/${user.id}`}>
+              <Button variant="outline" className="rounded-xl gap-2 text-purple-400 border-purple-500/30 hover:bg-purple-500/10 text-sm">
+                🛍️ My Store
+              </Button>
+            </Link>
+          )}
+          <RewardFansModal />
           <Link to="/credits">
             <Button variant="outline" className="rounded-xl gap-2 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10 text-sm">
               <Zap className="w-4 h-4" /> Get Credits

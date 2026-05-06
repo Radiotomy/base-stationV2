@@ -1,0 +1,48 @@
+{
+  "name": "CollectibleClaim",
+  "type": "object",
+  "properties": {
+    "collectible_id": {
+      "type": "string"
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "claim_source": {
+      "type": "string",
+      "enum": [
+        "free",
+        "quest",
+        "purchase",
+        "live_drop",
+        "reward"
+      ],
+      "default": "free"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Live session id if from a live drop"
+    },
+    "serial_number": {
+      "type": "number",
+      "description": "Edition number within supply"
+    },
+    "claimed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "collectible_id",
+    "user_id"
+  ]
+}

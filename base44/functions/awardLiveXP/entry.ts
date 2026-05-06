@@ -37,7 +37,9 @@ Deno.serve(async (req) => {
     });
     const earnedThisSession = sessionXpEvents.reduce((sum, e) => sum + (e.event_data?.xp_awarded || 0), 0);
 
-    let xpToAward = XP_FOR[kind];
+    // Phase 5: apply fan club tier multiplier (cap still applies AFTER multiplier)
+    const multiplier = Math.max(1, Number(xpRecord.xp_multiplier || 1));
+    let xpToAward = Math.round(XP_FOR[kind] * multiplier);
     if (earnedThisSession + xpToAward > SESSION_CAP) {
       xpToAward = Math.max(0, SESSION_CAP - earnedThisSession);
     }
