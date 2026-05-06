@@ -3,7 +3,14 @@
  * The Portal room is created server-side via the createPortalRoom function.
  */
 export default function PortalStageViewer({ roomId }) {
-  if (!roomId) return null;
+  // Phase 5.5 — explicit fallback when Portals is not configured
+  if (!roomId) {
+    return (
+      <div className="relative w-full h-full rounded-2xl border border-dashed border-border flex items-center justify-center bg-muted/20">
+        <p className="text-xs text-muted-foreground">3D stage unavailable</p>
+      </div>
+    );
+  }
 
   const portalUrl = `https://theportal.to/?room=${roomId}`;
 

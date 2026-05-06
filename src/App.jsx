@@ -61,6 +61,8 @@ import SocialMediaAutomation from './pages/SocialMediaAutomation';
 import WhyBaseStation from './pages/WhyBaseStation';
 import FanClub from './pages/FanClub';
 import CreatorStore from './pages/CreatorStore';
+import SmokeTests from './pages/dev/SmokeTests';
+import ErrorLogViewer from './pages/dev/ErrorLogViewer';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -134,6 +136,8 @@ const AuthenticatedApp = () => {
           <Route path="/why-base-station" element={<WhyBaseStation />} />
           <Route path="/fanclub/:creatorId" element={<FanClub />} />
           <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
+          <Route path="/dev/smoke-tests" element={<SmokeTests />} />
+          <Route path="/dev/error-log" element={<ErrorLogViewer />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />

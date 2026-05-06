@@ -1,0 +1,42 @@
+{
+  "name": "ErrorLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who triggered the error (optional for anonymous)"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "component": {
+      "type": "string",
+      "description": "Subsystem or component that produced the error (studio, live, audius, fan_economy, provider_router, ui)"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "critical"
+      ],
+      "default": "error"
+    },
+    "message": {
+      "type": "string"
+    },
+    "stack": {
+      "type": "string",
+      "description": "Optional stack trace"
+    },
+    "context": {
+      "type": "object",
+      "description": "Free-form additional context (route, payload, etc.)"
+    }
+  },
+  "required": [
+    "component",
+    "message"
+  ]
+}

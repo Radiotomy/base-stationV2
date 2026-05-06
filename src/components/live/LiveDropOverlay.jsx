@@ -18,7 +18,9 @@ export default function LiveDropOverlay({ recentEvents = [], sessionId, currentU
   const [dismissed, setDismissed] = useState(new Set());
 
   useEffect(() => {
-    const drops = recentEvents.filter(e => e.type === 'live-drop');
+    // Phase 5.5 — guard against malformed events
+    const drops = (Array.isArray(recentEvents) ? recentEvents : [])
+      .filter(e => e && e.type === 'live-drop' && e.id && e.payload?.collectible_id);
     const latest = drops[drops.length - 1];
     if (latest && !dismissed.has(latest.id)) {
       setActiveDrop(latest);
@@ -28,6 +30,10 @@ export default function LiveDropOverlay({ recentEvents = [], sessionId, currentU
 
   const handleClaim = async () => {
     if (!currentUser) { base44.auth.redirectToLogin(); return; }
+    if (!activeDrop?.payload?.collectible_id) {
+      toast.error('Drop is missing collectible info');
+      return;
+    }
     setBusy(true);
     try {
       const r = await base44.functions.invoke('claimCollectible', {

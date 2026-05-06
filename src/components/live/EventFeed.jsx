@@ -22,7 +22,16 @@ function formatTime(ts) {
 }
 
 export default function EventFeed({ events = [] }) {
-  const visible = [...events].reverse().slice(0, 10);
+  // Phase 5.5 — guard against malformed/duplicate events
+  const safe = (Array.isArray(events) ? events : []).filter(e => e && e.type && e.id);
+  const seen = new Set();
+  const deduped = [];
+  for (const e of safe) {
+    if (seen.has(e.id)) continue;
+    seen.add(e.id);
+    deduped.push(e);
+  }
+  const visible = [...deduped].reverse().slice(0, 10);
   return (
     <div className="space-y-1 max-h-48 overflow-y-auto">
       {visible.length === 0 && (
