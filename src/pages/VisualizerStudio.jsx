@@ -33,7 +33,8 @@ export default function VisualizerStudio() {
     setRunning(true);
     try {
       const r = await base44.functions.invoke('generateVisualizer', { assetId: selected[0], style });
-      setResult(r.data?.asset);
+      const asset = r.data?.data?.asset || r.data?.asset;
+      setResult(asset);
       toast.success('Visualizer generated!', { icon: '🎬' });
     } catch (e) {
       toast.error(e?.response?.data?.error || 'Visualizer failed');
