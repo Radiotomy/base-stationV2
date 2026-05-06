@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import StudioPageHeader from '@/components/studio/StudioPageHeader';
 import AssetPicker from '@/components/studio/AssetPicker';
-import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
+import VisualizerPreview from '@/components/studio/VisualizerPreview';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 
@@ -94,10 +94,7 @@ export default function VisualizerStudio() {
                   <p className="text-sm font-bold truncate">{result.title}</p>
                   <AddToProjectButton asset={result} tool="visualizer_studio" toolRoute="/visualizer-studio" />
                 </div>
-                <StudioAudioPlayer src={result.file_url} title={result.title} compact />
-                <p className="text-xs text-muted-foreground">
-                  ▶ Render preview will be embedded here once provider response is wired.
-                </p>
+                <VisualizerPreview src={result.file_url} style={result.metadata?.visualizer_style || style} title={result.title} />
               </div>
               <ProvenancePanel asset={result} />
             </>
