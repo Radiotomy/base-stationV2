@@ -81,6 +81,13 @@ export default function LiveWatch() {
     return unsub;
   }, [roomId]);
 
+  // Phase 5.6 — derive audio mode + handle subscriber failure fallback
+  const sessionAudioMode = session?.audio_mode || session?.state?.audio_mode || 'sync';
+  const [effectiveAudioMode, setEffectiveAudioMode] = useState('sync');
+  useEffect(() => {
+    setEffectiveAudioMode(sessionAudioMode);
+  }, [sessionAudioMode]);
+
   // Join as fan once when session is streaming
   useEffect(() => {
     if (!session || !currentUser || hasJoinedRef.current) return;
@@ -96,6 +103,30 @@ export default function LiveWatch() {
       displayName: currentUser.full_name || 'Fan',
       type: 'fan',
     });
+
+    // Phase 5.6 — log audio mode on join
+    base44.functions.invoke('trackAnalytics', {
+      event_type: 'live_participant_join',
+      session_id: roomId,
+      event_data: { audio_mode: sessionAudioMode },
+    }).catch(() => {});
+
+    // Phase 5.6 — if streamr selected, attempt subscriber discovery; on failure, locally fall back to sync
+    if (sessionAudioMode === 'streamr' && session.user_id) {
+      base44.functions.invoke('streamrSubscriber', {
+        roomId,
+        performerId: session.user_id,
+      }).then(r => {
+        const avail = r?.data?.data?.available || r?.data?.available;
+        if (!avail) {
+          setEffectiveAudioMode('sync');
+          toast('Live audio unavailable — switching to synchronized playback.', { icon: '🎧' });
+        }
+      }).catch(() => {
+        setEffectiveAudioMode('sync');
+        toast('Live audio unavailable — switching to synchronized playback.', { icon: '🎧' });
+      });
+    }
 
     // Award attendance XP (capped server-side)
     base44.functions.invoke('awardLiveXP', { sessionId: roomId, kind: 'attend' })
@@ -174,6 +205,14 @@ export default function LiveWatch() {
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/20 border border-red-500/30">
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-xs font-bold text-red-400">LIVE</span>
+              </div>
+              {/* Phase 5.6 — audio mode badge */}
+              <div className={`hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                effectiveAudioMode === 'streamr'
+                  ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300'
+                  : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+              }`}>
+                {effectiveAudioMode === 'streamr' ? 'Live Audio Stream' : 'Synchronized Playback Mode'}
               </div>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="w-3.5 h-3.5" />{formatDuration(elapsed)}

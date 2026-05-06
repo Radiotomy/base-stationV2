@@ -59,6 +59,7 @@ Deno.serve(async (req) => {
         total_messages: messages.length,
         tracks_used: session.tracks_used || [],
         top_fans: topFans,
+        audio_mode: session.audio_mode || session.state?.audio_mode || 'sync',
       },
     });
 

@@ -22,11 +22,14 @@ const VIS_STYLES = ['spectrum', 'particles', 'liquid', 'cinematic', 'retro', 'wa
  * Phase 4 — Real-Time Performance Expansion Panel.
  * Drops into LiveStudio without touching any existing logic.
  */
-export default function Phase4Panel({ sessionId, isLive }) {
+export default function Phase4Panel({ sessionId, isLive, audioMode, onAudioModeChange }) {
   const [session, setSession] = useState(null);
   const [coPerformerId, setCoPerformerId] = useState('');
   const [inviting, setInviting] = useState(false);
   const streamr = useStreamrAudio(sessionId, 'publish');
+  const streamrUnavailable = streamr.status === 'unavailable';
+  // Phase 5.6 — derive checked from session.audio_mode (or local prop fallback)
+  const sessionAudioMode = session?.audio_mode || session?.state?.audio_mode || audioMode || 'sync';
 
   useEffect(() => {
     if (!sessionId) return;
@@ -43,7 +46,14 @@ export default function Phase4Panel({ sessionId, isLive }) {
   };
 
   const toggleStreamr = async (on) => {
-    await patch({ streamr_enabled: !!on });
+    // Phase 5.6 — mirror to audio_mode + state.audio_mode and notify parent (LiveStudio setup radio)
+    const newMode = on ? 'streamr' : 'sync';
+    await patch({
+      streamr_enabled: !!on,
+      audio_mode: newMode,
+      state: { ...(session?.state || {}), audio_mode: newMode },
+    });
+    onAudioModeChange?.(newMode);
     if (on) await streamr.startPublish(); else streamr.stopPublish();
   };
 
@@ -87,21 +97,26 @@ export default function Phase4Panel({ sessionId, isLive }) {
         Phase 4 — Real-Time Expansion
       </h3>
 
-      {/* Streamr Live Audio */}
-      <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/40">
+      {/* Phase 5.6 — Streamr Live Audio toggle (mirrors audio_mode) */}
+      <div
+        className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/40"
+        title={streamrUnavailable ? 'Streamr secrets not configured — enable on the server first' : undefined}
+      >
         <div className="flex items-center gap-2 min-w-0">
           <Mic className="w-4 h-4 text-cyan-400 flex-shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-bold text-foreground">Live Audio (Streamr)</p>
+            <p className="text-xs font-bold text-foreground">Enable Streamr Live Audio</p>
             <p className="text-[10px] text-muted-foreground truncate">
-              {streamr.status === 'unavailable' ? 'Streamr not configured' : streamr.status}
+              {streamrUnavailable
+                ? 'Streamr not configured'
+                : sessionAudioMode === 'streamr' ? 'Audio mode: streamr' : 'Audio mode: sync'}
             </p>
           </div>
         </div>
         <Switch
-          checked={!!session?.streamr_enabled}
+          checked={sessionAudioMode === 'streamr'}
           onCheckedChange={toggleStreamr}
-          disabled={streamr.status === 'unavailable'}
+          disabled={streamrUnavailable}
         />
       </div>
 

@@ -21,12 +21,14 @@ import EventFeed from '@/components/live/EventFeed';
 import Phase4Panel from '@/components/live/Phase4Panel';
 import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropTrigger from '@/components/live/LiveDropTrigger';
+import AudioModeSelector from '@/components/live/AudioModeSelector';
 
 export default function LiveStudio() {
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [sessionId, setSessionId] = useState('');
+  const [audioMode, setAudioMode] = useState('sync'); // Phase 5.6
   const [isLive, setIsLive] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -68,9 +70,18 @@ export default function LiveStudio() {
   const createSession = async () => {
     if (!title) { toast.error('Enter a session title'); return; }
     try {
-      const result = await base44.functions.invoke('createLiveSession', { title, description, tags: [] });
+      const result = await base44.functions.invoke('createLiveSession', { title, description, tags: [], audio_mode: audioMode });
       const sid = result.data.session_id;
       setSessionId(sid);
+
+      // Phase 5.6 — server may have forced sync if Streamr unavailable
+      const serverMode = result.data?.audio_mode || 'sync';
+      if (serverMode !== audioMode) {
+        setAudioMode(serverMode);
+      }
+      if (result.data?.audio_mode_fallback) {
+        toast('Streamr audio unavailable — using synchronized playback instead.', { icon: '🎧' });
+      }
 
       if (currentUser) {
         await base44.entities.LiveSession.update(sid, {
@@ -95,10 +106,13 @@ export default function LiveStudio() {
   const startStreaming = async () => {
     if (!sessionId) { toast.error('Create a session first'); return; }
     try {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        mediaStreamRef.current = stream;
-      } catch { /* mic optional */ }
+      // Phase 5.6 — only request mic when audio_mode = streamr
+      if (audioMode === 'streamr') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          mediaStreamRef.current = stream;
+        } catch { /* mic optional */ }
+      }
 
       // Optional Portal room (non-blocking)
       base44.functions.invoke('createPortalRoom', {
@@ -117,7 +131,7 @@ export default function LiveStudio() {
       base44.functions.invoke('trackAnalytics', {
         event_type: 'live_session_started',
         session_id: sessionId,
-        event_data: { title },
+        event_data: { title, audio_mode: audioMode },
       }).catch(() => {});
       await publishEvent('performer-start', { title, performerId: currentUser?.id });
       toast.success('🔴 You are now Live!');
@@ -313,6 +327,13 @@ export default function LiveStudio() {
                 <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="What's happening tonight?" rows={2} className="rounded-xl" disabled={isLive} />
               </div>
 
+              {/* Phase 5.6 — Audio Mode */}
+              <AudioModeSelector
+                value={audioMode}
+                onChange={setAudioMode}
+                disabled={!!sessionId}
+              />
+
               {!sessionId ? (
                 <Button onClick={createSession} className="w-full bg-red-600 hover:bg-red-500 rounded-xl font-bold gap-2">
                   <Zap className="w-4 h-4" /> Create Session
@@ -355,6 +376,7 @@ export default function LiveStudio() {
                   onSeek={handleSeek}
                   onMicToggle={handleMicToggle}
                   isLive={isLive}
+                  showMic={audioMode === 'streamr'}
                 />
               </div>
             )}
@@ -366,7 +388,12 @@ export default function LiveStudio() {
             <ParticipantList participants={participants} />
 
             {/* Phase 4 — Real-Time Expansion */}
-            <Phase4Panel sessionId={sessionId} isLive={isLive} />
+            <Phase4Panel
+              sessionId={sessionId}
+              isLive={isLive}
+              audioMode={audioMode}
+              onAudioModeChange={setAudioMode}
+            />
 
             {/* Phase 4 — Fan Quests */}
             <LiveQuestPanel sessionId={sessionId} isPerformer={true} currentUserId={currentUser?.id} />

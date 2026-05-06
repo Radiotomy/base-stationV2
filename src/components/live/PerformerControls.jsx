@@ -16,6 +16,7 @@ export default function PerformerControls({
   onSeek,
   onMicToggle,
   isLive,
+  showMic = true,
 }) {
   const formatTime = (s) => {
     const m = Math.floor(s / 60);
@@ -68,21 +69,23 @@ export default function PerformerControls({
           {isPlaying ? <><Pause className="w-4 h-4" /> Pause</> : <><Play className="w-4 h-4" /> Play</>}
         </button>
 
-        <button
-          onClick={onMicToggle}
-          disabled={!isLive}
-          className={`p-2 rounded-lg transition-all disabled:opacity-40 ${
-            micActive
-              ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-              : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-          }`}
-          title={micActive ? 'Mute mic' : 'Enable mic'}
-        >
-          {micActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
-        </button>
+        {showMic && (
+          <button
+            onClick={onMicToggle}
+            disabled={!isLive}
+            className={`p-2 rounded-lg transition-all disabled:opacity-40 ${
+              micActive
+                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+            title={micActive ? 'Mute mic' : 'Enable mic'}
+          >
+            {micActive ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
+          </button>
+        )}
       </div>
 
-      {micActive && (
+      {showMic && micActive && (
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/20">
           <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
           <p className="text-xs text-red-400 font-semibold">Mic active</p>
