@@ -1,0 +1,67 @@
+{
+  "name": "LiveQuest",
+  "type": "object",
+  "properties": {
+    "session_id": {
+      "type": "string",
+      "description": "FK to LiveSession"
+    },
+    "performer_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Display title for the quest"
+    },
+    "quest_type": {
+      "type": "string",
+      "enum": [
+        "reaction",
+        "chat",
+        "stay_duration",
+        "tip"
+      ],
+      "description": "What fans must do"
+    },
+    "target": {
+      "type": "number",
+      "description": "Target count or duration (seconds for stay_duration, cents for tip)"
+    },
+    "reward_xp": {
+      "type": "number",
+      "default": 50
+    },
+    "reward_badge": {
+      "type": "string",
+      "description": "Optional badge slug to award"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "archived"
+      ],
+      "default": "active"
+    },
+    "progress": {
+      "type": "object",
+      "description": "Map of fan_id \u2192 current progress count",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "completers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "User ids who have completed this quest"
+    }
+  },
+  "required": [
+    "session_id",
+    "quest_type",
+    "target"
+  ]
+}

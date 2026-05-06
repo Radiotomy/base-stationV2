@@ -13,6 +13,8 @@ import NowPlayingDisplay from '@/components/live/NowPlayingDisplay';
 import ParticipantList from '@/components/live/ParticipantList';
 import EventFeed from '@/components/live/EventFeed';
 import FanIdentityPanel from '@/components/live/FanIdentityPanel';
+import LiveVisualizer from '@/components/live/LiveVisualizer';
+import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import TipModal from '@/components/tipping/TipModal';
 import { toast } from 'sonner';
 
@@ -186,6 +188,17 @@ export default function LiveWatch() {
 
       <div className="pt-14 min-h-screen flex flex-col">
 
+        {/* Phase 4 — Live Visualizer (additive overlay above stage on small screens) */}
+        {session.active_visualizer_preset_id && !session.portal_room_id && !session.portals_room_id && (
+          <div className="px-4 pt-4">
+            <LiveVisualizer
+              style={session.active_visualizer_preset_id}
+              isPlaying={!!nowPlaying?.isPlaying}
+              recentReactions={recentEvents.filter(e => e.type === 'reaction').length}
+            />
+          </div>
+        )}
+
         {/* Portal 3D stage or gradient fallback */}
         {session.portal_room_id ? (
           <div className="h-[55vh] w-full px-4 pt-4">
@@ -226,6 +239,9 @@ export default function LiveWatch() {
               />
               <LiveReactionBar sessionId={roomId} currentUser={currentUser} isLive={isLive} />
               <ParticipantList participants={participants} />
+
+              {/* Phase 4 — Fan Quests */}
+              <LiveQuestPanel sessionId={roomId} isPerformer={false} currentUserId={currentUser?.id} />
 
               {/* Event feed */}
               <div className="bg-card rounded-2xl border border-border p-4 space-y-3">

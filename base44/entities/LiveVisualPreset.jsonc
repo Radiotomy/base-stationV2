@@ -1,0 +1,47 @@
+{
+  "name": "LiveVisualPreset",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Visualizer preset name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "shader_code": {
+      "type": "string",
+      "description": "GLSL fragment shader (optional)"
+    },
+    "style": {
+      "type": "string",
+      "enum": [
+        "spectrum",
+        "particles",
+        "waveform",
+        "liquid",
+        "cinematic",
+        "retro",
+        "shader"
+      ],
+      "default": "spectrum"
+    },
+    "audio_reactive": {
+      "type": "boolean",
+      "default": true
+    },
+    "preview_url": {
+      "type": "string"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true
+    },
+    "created_by_user_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

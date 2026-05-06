@@ -18,6 +18,8 @@ import PerformerControls from '@/components/live/PerformerControls';
 import ShareLinkButton from '@/components/live/ShareLinkButton';
 import ParticipantList from '@/components/live/ParticipantList';
 import EventFeed from '@/components/live/EventFeed';
+import Phase4Panel from '@/components/live/Phase4Panel';
+import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 
 export default function LiveStudio() {
   const navigate = useNavigate();
@@ -361,6 +363,12 @@ export default function LiveStudio() {
 
             {/* Participants */}
             <ParticipantList participants={participants} />
+
+            {/* Phase 4 — Real-Time Expansion */}
+            <Phase4Panel sessionId={sessionId} isLive={isLive} />
+
+            {/* Phase 4 — Fan Quests */}
+            <LiveQuestPanel sessionId={sessionId} isPerformer={true} currentUserId={currentUser?.id} />
           </div>
 
           {/* Right column */}

@@ -64,6 +64,48 @@
       "type": "string",
       "description": "The Portal 3D room ID for the fan watch stage"
     },
+    "portals_room_id": {
+      "type": "string",
+      "description": "Phase 4: Portals 3D venue room id (alias for newer Portals integration)"
+    },
+    "portals_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phase 4: Whether the 3D Portals venue is enabled"
+    },
+    "portals_scene": {
+      "type": "string",
+      "enum": [
+        "club",
+        "arena",
+        "studio",
+        "void"
+      ],
+      "description": "Phase 4: 3D scene preset"
+    },
+    "streamr_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phase 4: Whether live audio transport via Streamr is enabled"
+    },
+    "streamr_stream_id": {
+      "type": "string",
+      "description": "Phase 4: Streamr stream id for live audio"
+    },
+    "ai_cohost_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phase 4: Whether the AI co-host agent is active"
+    },
+    "active_visualizer_preset_id": {
+      "type": "string",
+      "description": "Phase 4: Selected LiveVisualPreset id"
+    },
+    "audio_reactive_visuals": {
+      "type": "boolean",
+      "default": false,
+      "description": "Phase 4: Audio-reactive visualizer mode"
+    },
     "output_url": {
       "type": "string"
     },
@@ -116,6 +158,24 @@
                   "fan",
                   "agent"
                 ]
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "performer",
+                  "co-performer",
+                  "fan",
+                  "agent"
+                ],
+                "description": "Phase 4: Granular role"
+              },
+              "is_live": {
+                "type": "boolean",
+                "description": "Phase 4: Whether participant is currently live"
+              },
+              "avatar_state": {
+                "type": "object",
+                "description": "Phase 4: Avatar pose / mood / props"
               },
               "avatarUrl": {
                 "type": "string"
