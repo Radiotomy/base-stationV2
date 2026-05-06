@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import MyCreatorActions from "@/components/fan/MyCreatorActions";
 
 const BASE_GENRES = [
   "hip-hop", "trap", "drill", "afrobeats", "afro-trap",
@@ -658,6 +659,13 @@ export default function MyProfile() {
             </Link>
           ))}
         </div>
+
+        {/* Phase 5 — My Creator Actions */}
+        {user && (
+          <div className="mb-8">
+            <MyCreatorActions userId={user.id} />
+          </div>
+        )}
 
         {/* Account Info */}
         <div className="bg-card rounded-2xl border border-border p-6 mb-12">

@@ -20,7 +20,7 @@ import ParticipantList from '@/components/live/ParticipantList';
 import EventFeed from '@/components/live/EventFeed';
 import Phase4Panel from '@/components/live/Phase4Panel';
 import LiveQuestPanel from '@/components/live/LiveQuestPanel';
-import LiveDropTriggerButton from '@/components/live/LiveDropTriggerButton';
+import LiveDropTrigger from '@/components/live/LiveDropTrigger';
 
 export default function LiveStudio() {
   const navigate = useNavigate();
@@ -371,13 +371,8 @@ export default function LiveStudio() {
             {/* Phase 4 — Fan Quests */}
             <LiveQuestPanel sessionId={sessionId} isPerformer={true} currentUserId={currentUser?.id} />
 
-            {/* Phase 5 — Live Drop trigger */}
-            {sessionId && currentUser && (
-              <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Live Drops</p>
-                <LiveDropTriggerButton sessionId={sessionId} creatorId={currentUser.id} />
-              </div>
-            )}
+            {/* Phase 5 — Live Drops */}
+            <LiveDropTrigger sessionId={sessionId} isLive={isLive} creatorId={currentUser?.id} />
           </div>
 
           {/* Right column */}

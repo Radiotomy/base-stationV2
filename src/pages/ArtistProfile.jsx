@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Music, Users, Play, Pause, Heart, Globe, ExternalLink, Star,
-  MessageCircle, ChevronDown, ChevronUp, MapPin, Wrench
+  MessageCircle, ChevronDown, ChevronUp, MapPin, Wrench, Crown, Award, ShoppingBag
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import FollowButton from "@/components/follow/FollowButton";
 import TrackReactions from "@/components/community/TrackReactions";
 import TrackComments from "@/components/community/TrackComments";
 import TopFans from "@/components/community/TopFans";
-import JoinFanClubButton from "@/components/fanclub/JoinFanClubButton";
 import CollectiblesGrid from "@/components/collectibles/CollectiblesGrid";
 
 function StatBox({ value, label }) {
@@ -227,7 +226,16 @@ export default function ArtistProfile() {
                     <Heart className="w-4 h-4 mr-1.5" /> Tip
                   </Button>
                 )}
-                <JoinFanClubButton creatorId={profile.user_id} />
+                <Link to={`/fanclub/${id}`}>
+                  <Button variant="outline" className="rounded-full border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 font-semibold">
+                    <Crown className="w-4 h-4 mr-1.5" /> Join Fan Club
+                  </Button>
+                </Link>
+                <Link to={`/creator-store/${id}`}>
+                  <Button variant="outline" className="rounded-full border-purple-500/40 text-purple-400 hover:bg-purple-500/10 font-semibold">
+                    <ShoppingBag className="w-4 h-4 mr-1.5" /> Store
+                  </Button>
+                </Link>
               </>
             )}
             {isOwner && (
@@ -263,16 +271,16 @@ export default function ArtistProfile() {
           )}
         </AnimatePresence>
 
-        {/* Top Fans */}
-        <TopFans artistId={id} />
-
-        {/* Phase 5 — Collectibles */}
-        <div className="mb-12">
+        {/* Collectibles */}
+        <div className="mb-8">
           <h2 className="text-xl font-black text-foreground mb-5 flex items-center gap-2">
-            ✨ Collectibles
+            <Award className="w-5 h-5 text-yellow-400" /> Collectibles
           </h2>
           <CollectiblesGrid creatorId={id} />
         </div>
+
+        {/* Top Fans */}
+        <TopFans artistId={id} />
 
         {/* Tracks */}
         <div className="mb-12">

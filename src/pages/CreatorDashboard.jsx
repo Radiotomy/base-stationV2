@@ -13,7 +13,9 @@ import ProjectsTab from "@/components/dashboard/ProjectsTab";
 import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
 import UsageAnalytics from "@/components/dashboard/UsageAnalytics";
 import TrackCard from "@/components/dashboard/TrackCard";
-import RewardFansModal from "@/components/dashboard/RewardFansModal";
+import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPanel";
+import RewardFansModal from "@/components/creator/RewardFansModal";
+import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -164,6 +166,7 @@ export default function CreatorDashboard() {
     { key: "library",   label: `📂 Library (${assets.length})` },
     { key: "projects",  label: "🗂️ Projects" },
     { key: "tracks",    label: `📤 Submissions (${tracks.length})` },
+    { key: "fans",      label: "🏆 Fan Economy" },
     { key: "history",   label: "🕐 History" },
     { key: "analytics", label: "📊 Analytics" },
   ];
@@ -184,14 +187,6 @@ export default function CreatorDashboard() {
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <CreditBalanceWidget />
-          {user && (
-            <Link to={`/creator-store/${user.id}`}>
-              <Button variant="outline" className="rounded-xl gap-2 text-purple-400 border-purple-500/30 hover:bg-purple-500/10 text-sm">
-                🛍️ My Store
-              </Button>
-            </Link>
-          )}
-          <RewardFansModal />
           <Link to="/credits">
             <Button variant="outline" className="rounded-xl gap-2 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10 text-sm">
               <Zap className="w-4 h-4" /> Get Credits
@@ -335,6 +330,31 @@ export default function CreatorDashboard() {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Phase 5 — Fan Economy Tab */}
+      {activeTab === "fans" && user && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h2 className="text-2xl font-black">Fan Economy</h2>
+              <p className="text-sm text-muted-foreground">Manage collectibles, fan club, and rewards.</p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Link to={`/fanclub/${user.id}`}>
+                <Button variant="outline" className="rounded-xl gap-2">👑 My Fan Club</Button>
+              </Link>
+              <Link to={`/creator-store/${user.id}`}>
+                <Button variant="outline" className="rounded-xl gap-2">🛍️ Storefront</Button>
+              </Link>
+              <RewardFansModal />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <CollectibleManagerPanel />
+            <TopFansAnalytics creatorId={user.id} />
+          </div>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Heart, Trophy, Sparkles } from 'lucide-react';
+import { Heart, Trophy, Sparkles, Zap, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AudiusIdentityBadge from '@/components/audius/AudiusIdentityBadge';
@@ -51,24 +51,35 @@ export default function FanIdentityPanel({ currentUser, performerId, performerNa
         )}
       </div>
 
-      {/* Phase 5 — XP multiplier from Fan Club */}
+      {/* Phase 5 — XP multiplier indicator */}
       {xp?.xp_multiplier > 1 && (
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-[11px] font-bold text-amber-300">{xp.xp_multiplier}× XP Multiplier</span>
-        </div>
-      )}
-
-      {/* Phase 5 — Audius collectibles count */}
-      {currentUser.metadata?.audius?.collectibles?.length > 0 && (
-        <div className="flex items-center gap-1.5 text-[11px] text-emerald-300">
-          <Sparkles className="w-3 h-3" />
-          {currentUser.metadata.audius.collectibles.length} Audius collectible{currentUser.metadata.audius.collectibles.length === 1 ? '' : 's'}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+          <Zap className="w-3 h-3 text-yellow-300" />
+          <span className="text-xs font-bold text-yellow-300">{xp.xp_multiplier}× XP boost</span>
+          <span className="text-[10px] text-muted-foreground ml-auto">Fan Club</span>
         </div>
       )}
 
       {currentUser.metadata?.audius && (
         <AudiusIdentityBadge audius={currentUser.metadata.audius} compact />
+      )}
+
+      {/* Phase 5 — Audius collectibles preview */}
+      {currentUser.metadata?.audius?.collectibles?.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] uppercase font-semibold text-muted-foreground flex items-center gap-1">
+            <Award className="w-3 h-3" /> Audius Collectibles
+          </p>
+          <div className="flex gap-1 overflow-x-auto">
+            {currentUser.metadata.audius.collectibles.slice(0, 6).map((c, i) => (
+              <div key={i} className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-muted" title={c.name}>
+                {c.imageUrl
+                  ? <img src={c.imageUrl} alt="" className="w-full h-full object-cover" />
+                  : <Award className="w-3 h-3 m-auto mt-2 text-muted-foreground" />}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {performerId && performerId !== currentUser.id && (

@@ -262,8 +262,8 @@ export default function LiveWatch() {
         </div>
       </div>
 
-      {/* Phase 5 — Live Drop overlay */}
-      <LiveDropOverlay recentEvents={recentEvents} sessionId={roomId} />
+      {/* Phase 5 — Live drop overlay */}
+      <LiveDropOverlay recentEvents={recentEvents} sessionId={roomId} currentUser={currentUser} />
 
       {showTipModal && (
         <TipModal
