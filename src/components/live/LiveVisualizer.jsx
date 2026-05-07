@@ -13,10 +13,12 @@ const STYLE_PALETTE = {
   retro: ['#1a001a', '#000'],
 };
 
-export default function LiveVisualizer({ style = 'spectrum', isPlaying = false, recentReactions = 0 }) {
+export default function LiveVisualizer({ style = 'spectrum', isPlaying = false, recentReactions = 0, audioData = null }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
   const tRef = useRef(0);
+  const audioRef = useRef(audioData);
+  audioRef.current = audioData;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -36,13 +38,26 @@ export default function LiveVisualizer({ style = 'spectrum', isPlaying = false, 
       c.fillStyle = grad;
       c.fillRect(0, 0, w, h);
 
-      const energy = isPlaying ? 0.7 + Math.sin(t * 2) * 0.3 : 0.2;
-      const pulse = 1 + (recentReactions * 0.05);
+      // Phase 5.7 — prefer real audio analysis when available
+      const a = audioRef.current;
+      const hasAudio = !!(a && a.spectrum && a.spectrum.length);
+      const energy = hasAudio
+        ? Math.max(0.15, a.peak * 0.9 + a.bass * 0.4)
+        : (isPlaying ? 0.7 + Math.sin(t * 2) * 0.3 : 0.2);
+      const pulse = 1 + (recentReactions * 0.05) + (hasAudio ? a.bass * 0.6 : 0);
 
       if (style === 'spectrum') {
         const bars = 48;
+        const spec = hasAudio ? a.spectrum : null;
+        const specLen = spec ? spec.length : 0;
         for (let i = 0; i < bars; i++) {
-          const v = (Math.sin(t * 3 + i * 0.4) * 0.5 + 0.5) * energy;
+          let v;
+          if (spec && specLen > 0) {
+            const idx = Math.floor((i / bars) * specLen);
+            v = (spec[idx] / 255) * (0.6 + energy * 0.6);
+          } else {
+            v = (Math.sin(t * 3 + i * 0.4) * 0.5 + 0.5) * energy;
+          }
           c.fillStyle = `hsl(${(i / bars) * 280 + 240}, 80%, ${50 + v * 20}%)`;
           c.fillRect((i / bars) * w, h - v * h * pulse, w / bars - 2, v * h * pulse);
         }
@@ -76,6 +91,7 @@ export default function LiveVisualizer({ style = 'spectrum', isPlaying = false, 
     };
     draw();
     return () => cancelAnimationFrame(rafRef.current);
+    // audioData is consumed via audioRef.current to avoid restarting the RAF loop on every frame
   }, [style, isPlaying, recentReactions]);
 
   return (

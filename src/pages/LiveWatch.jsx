@@ -17,6 +17,11 @@ import LiveVisualizer from '@/components/live/LiveVisualizer';
 import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropOverlay from '@/components/live/LiveDropOverlay';
 import TipModal from '@/components/tipping/TipModal';
+import SessionEndedOverlay from '@/components/live/SessionEndedOverlay';
+import { useSyncPlayback } from '@/hooks/useSyncPlayback';
+import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
+import { Button } from '@/components/ui/button';
+import { Play } from 'lucide-react';
 import { toast } from 'sonner';
 
 function formatDuration(seconds) {
@@ -40,14 +45,32 @@ export default function LiveWatch() {
   const [showTipModal, setShowTipModal] = useState(false);
   const hasJoinedRef = useRef(false);
 
+  // Phase 5.7 — fan-side hidden audio element + sync playback hook
+  const fanAudioRef = useRef(null);
+  const { autoplayBlocked, resume, applyEvent, hydrate } = useSyncPlayback(fanAudioRef, { enabled: true });
+  const audioData = useAudioAnalyzer(fanAudioRef, { enabled: true });
+  const hasHydratedRef = useRef(false);
+  const [showEndedOverlay, setShowEndedOverlay] = useState(false);
+
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
-  // Event bus — audience listens
+  // Event bus — audience listens. Phase 5.7: also drive sync playback.
   const { publishEvent } = useLiveEventBus(roomId, (evt) => {
     setRecentEvents((prev) => [...prev.slice(-19), evt]);
+    // Drive sync playback only when in sync mode
+    const mode = sessionAudioModeRef.current;
+    if (mode === 'sync') {
+      applyEvent(evt);
+    }
+    if (evt.type === 'session-end') {
+      setShowEndedOverlay(true);
+    }
   });
+
+  // Track current audio mode in a ref so the bus callback (created once) can read it
+  const sessionAudioModeRef = useRef('sync');
 
   // Load session
   useEffect(() => {
@@ -86,17 +109,42 @@ export default function LiveWatch() {
   const [effectiveAudioMode, setEffectiveAudioMode] = useState('sync');
   useEffect(() => {
     setEffectiveAudioMode(sessionAudioMode);
+    sessionAudioModeRef.current = sessionAudioMode;
   }, [sessionAudioMode]);
 
-  // Join as fan once when session is streaming
+  // Phase 5.7 — initial sync hydration when nowPlaying first arrives
+  useEffect(() => {
+    if (hasHydratedRef.current) return;
+    if (effectiveAudioMode !== 'sync') return;
+    if (!nowPlaying || !nowPlaying.track_url) return;
+    hasHydratedRef.current = true;
+    hydrate(nowPlaying);
+  }, [nowPlaying, effectiveAudioMode, hydrate]);
+
+  // Phase 5.7 — autoplay-blocked toast (one-time)
+  const autoplayToastShownRef = useRef(false);
+  useEffect(() => {
+    if (autoplayBlocked && !autoplayToastShownRef.current) {
+      autoplayToastShownRef.current = true;
+      toast('Tap to start playback — synchronized mode requires user interaction.', { icon: '🔊' });
+    }
+  }, [autoplayBlocked]);
+
+  // Phase 5.7 — flip session-end overlay when status transitions to completed
+  useEffect(() => {
+    if (session?.status === 'completed' || session?.status === 'archived') {
+      setShowEndedOverlay(true);
+      try { fanAudioRef.current?.pause?.(); } catch {}
+    }
+  }, [session?.status]);
+
+  // Join as fan once when session is streaming — Phase 5.7 atomic via backend
   useEffect(() => {
     if (!session || !currentUser || hasJoinedRef.current) return;
     if (session.status !== 'streaming') return;
     hasJoinedRef.current = true;
 
-    base44.entities.LiveSession.update(roomId, {
-      viewer_count: (session.viewer_count || 0) + 1,
-    }).catch(() => {});
+    base44.functions.invoke('joinLiveSession', { sessionId: roomId }).catch(() => {});
 
     publishEvent('join', {
       userId: currentUser.id,
@@ -150,9 +198,7 @@ export default function LiveWatch() {
     }
 
     return () => {
-      base44.entities.LiveSession.update(roomId, {
-        viewer_count: Math.max(0, (session.viewer_count || 1) - 1),
-      }).catch(() => {});
+      base44.functions.invoke('leaveLiveSession', { sessionId: roomId }).catch(() => {});
       publishEvent('leave', { userId: currentUser?.id, type: 'fan' });
     };
   }, [session?.status, currentUser?.id]);
@@ -228,14 +274,34 @@ export default function LiveWatch() {
 
       <div className="pt-14 min-h-screen flex flex-col">
 
-        {/* Phase 4 — Live Visualizer (additive overlay above stage on small screens) */}
+        {/* Phase 4 — Live Visualizer (Phase 5.7: now audio-reactive in sync mode) */}
         {session.active_visualizer_preset_id && !session.portal_room_id && !session.portals_room_id && (
           <div className="px-4 pt-4">
             <LiveVisualizer
               style={session.active_visualizer_preset_id}
               isPlaying={!!nowPlaying?.isPlaying}
               recentReactions={recentEvents.filter(e => e.type === 'reaction').length}
+              audioData={effectiveAudioMode === 'sync' ? audioData : null}
             />
+          </div>
+        )}
+
+        {/* Phase 5.7 — hidden fan audio element (sync mode only) */}
+        {effectiveAudioMode === 'sync' && (
+          <audio ref={fanAudioRef} crossOrigin="anonymous" playsInline preload="auto" />
+        )}
+
+        {/* Phase 5.7 — autoplay-blocked banner */}
+        {autoplayBlocked && effectiveAudioMode === 'sync' && (
+          <div className="px-4 pt-3">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30">
+              <p className="text-xs text-amber-200 flex-1">
+                Tap to start playback — synchronized mode requires user interaction.
+              </p>
+              <Button onClick={resume} size="sm" className="rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold gap-1">
+                <Play className="w-3.5 h-3.5" /> Play
+              </Button>
+            </div>
           </div>
         )}
 
@@ -303,6 +369,9 @@ export default function LiveWatch() {
 
       {/* Phase 5 — Live drop overlay */}
       <LiveDropOverlay recentEvents={recentEvents} sessionId={roomId} currentUser={currentUser} />
+
+      {/* Phase 5.7 — Session ended overlay */}
+      {showEndedOverlay && <SessionEndedOverlay sessionId={roomId} />}
 
       {showTipModal && (
         <TipModal

@@ -22,6 +22,7 @@ import Phase4Panel from '@/components/live/Phase4Panel';
 import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropTrigger from '@/components/live/LiveDropTrigger';
 import AudioModeSelector from '@/components/live/AudioModeSelector';
+import LocalVisualizerPreview from '@/components/live/LocalVisualizerPreview';
 
 export default function LiveStudio() {
   const navigate = useNavigate();
@@ -46,9 +47,83 @@ export default function LiveStudio() {
   const micStreamRef = useRef(null);
   const mediaStreamRef = useRef(null);
 
+  // Phase 5.7 — StrictMode-safe publish guard (dedupe identical events fired in same tick)
+  const lastPublishRef = useRef({ key: '', at: 0 });
+  const safePublish = async (type, payload = {}) => {
+    const key = `${type}:${payload.position_ms ?? ''}:${payload.track_url ?? ''}`;
+    const now = Date.now();
+    if (lastPublishRef.current.key === key && now - lastPublishRef.current.at < 250) return;
+    lastPublishRef.current = { key, at: now };
+    return publishEvent(type, payload);
+  };
+
+  // Phase 5.7 — build authoritative nowPlaying snapshot
+  const buildNowPlaying = (overrides = {}) => ({
+    trackId: selectedTrack?.id || '',
+    title: selectedTrack?.title || '',
+    track_url: selectedTrack?.file_url || '',
+    position_ms: Math.round((audioRef.current?.currentTime || 0) * 1000),
+    isPlaying: !!(audioRef.current && !audioRef.current.paused),
+    updated_at: new Date().toISOString(),
+    ...overrides,
+  });
+
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
+
+  // Phase 5.7 — Resume from ?roomId= if owner has an in-progress session
+  const didResumeRef = useRef(false);
+  useEffect(() => {
+    if (didResumeRef.current) return;
+    if (!currentUser) return;
+    const params = new URLSearchParams(window.location.search);
+    const resumeId = params.get('roomId');
+    if (!resumeId) return;
+    didResumeRef.current = true;
+
+    (async () => {
+      try {
+        const rows = await base44.entities.LiveSession.filter({ id: resumeId });
+        const s = rows[0];
+        if (!s || s.user_id !== currentUser.id) return;
+        if (s.status !== 'streaming' && s.status !== 'draft') return;
+
+        setSessionId(s.id);
+        setTitle(s.title || '');
+        setDescription(s.description || '');
+        setAudioMode(s.audio_mode || s.state?.audio_mode || 'sync');
+        const np = s.state?.nowPlaying;
+        if (np?.track_url) {
+          setSelectedTrack({
+            id: np.trackId || '',
+            title: np.title || '',
+            file_url: np.track_url,
+          });
+          setIsPlaying(!!np.isPlaying);
+          // Drift-correct local audioRef shortly after audio element mounts
+          setTimeout(() => {
+            const el = audioRef.current;
+            if (!el) return;
+            const updatedAt = np.updated_at ? new Date(np.updated_at).getTime() : Date.now();
+            const drift = np.isPlaying ? Date.now() - updatedAt : 0;
+            const seekSec = ((np.position_ms || 0) + drift) / 1000;
+            try { el.currentTime = Math.max(0, seekSec); } catch {}
+            if (np.isPlaying) el.play().catch(() => {});
+          }, 350);
+        }
+        if (s.status === 'streaming') {
+          setIsLive(true);
+          if (s.start_time) {
+            setDuration(Math.max(0, Math.floor((Date.now() - new Date(s.start_time).getTime()) / 1000)));
+          }
+          toast.success('Resumed live session');
+        } else {
+          toast('Draft session restored', { icon: '📝' });
+        }
+      } catch { /* silent */ }
+    })();
+  }, [currentUser]);
 
   // Event bus — performer publishes + listens
   const { publishEvent } = useLiveEventBus(sessionId, (evt) => {
@@ -86,6 +161,7 @@ export default function LiveStudio() {
       if (currentUser) {
         await base44.entities.LiveSession.update(sid, {
           state: {
+            audio_mode: serverMode,
             participants: [{
               id: currentUser.id,
               displayName: currentUser.full_name || 'Performer',
@@ -93,7 +169,14 @@ export default function LiveStudio() {
               avatarUrl: '',
             }],
             recentEvents: [],
-            nowPlaying: { trackId: '', title: '', position: 0, isPlaying: false },
+            nowPlaying: {
+              trackId: '',
+              title: '',
+              track_url: '',
+              position_ms: 0,
+              isPlaying: false,
+              updated_at: new Date().toISOString(),
+            },
           }
         });
       }
@@ -145,14 +228,21 @@ export default function LiveStudio() {
     if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(t => t.stop()); }
     if (micStreamRef.current) { micStreamRef.current.getTracks().forEach(t => t.stop()); setMicActive(false); }
 
+    // Phase 5.7 — flip nowPlaying.isPlaying false so fans pause immediately
+    const stoppedNowPlaying = buildNowPlaying({ isPlaying: false });
+    const endState = await buildStateUpdate({ nowPlaying: stoppedNowPlaying });
+
     await base44.entities.LiveSession.update(sessionId, {
       status: 'completed',
       end_time: new Date().toISOString(),
       duration_seconds: duration,
       peak_viewers: viewerCount,
+      state: endState,
     });
 
-    await publishEvent('leave', { performerId: currentUser?.id, role: 'performer' });
+    // Phase 5.7 — explicit session-end event for fan-side overlay
+    await safePublish('session-end', { performerId: currentUser?.id });
+    await safePublish('leave', { performerId: currentUser?.id, role: 'performer' });
 
     // Fire analytics + recording (non-blocking on UI redirect)
     base44.functions.invoke('trackAnalytics', {
@@ -188,25 +278,41 @@ export default function LiveStudio() {
     setCurrentTime(0);
     if (!sessionId || !track) return;
 
-    const newState = await buildStateUpdate({
-      nowPlaying: { trackId: track.id, title: track.title, position: 0, isPlaying: false },
-    });
+    const np = {
+      trackId: track.id,
+      title: track.title,
+      track_url: track.file_url || '',
+      position_ms: 0,
+      isPlaying: false,
+      updated_at: new Date().toISOString(),
+    };
+    const newState = await buildStateUpdate({ nowPlaying: np });
     await base44.entities.LiveSession.update(sessionId, {
       current_track_title: track.title,
       current_track_artist: currentUser?.full_name || '',
       state: newState,
     });
-    await publishEvent('scene-change', { trackId: track.id, title: track.title });
+    // Phase 5.7 — authoritative track-change event
+    await safePublish('track-change', {
+      track_url: track.file_url || '',
+      trackId: track.id,
+      title: track.title,
+      position_ms: 0,
+      isPlaying: false,
+    });
   };
 
   const handlePlay = async () => {
     if (!audioRef.current) return;
     audioRef.current.play();
     setIsPlaying(true);
-    await publishEvent('play', { title: selectedTrack?.title, position: currentTime });
-    const newState = await buildStateUpdate({
-      nowPlaying: { trackId: selectedTrack?.id, title: selectedTrack?.title, position: currentTime, isPlaying: true },
+    const positionMs = Math.round((audioRef.current.currentTime || 0) * 1000);
+    await safePublish('play', {
+      track_url: selectedTrack?.file_url || '',
+      title: selectedTrack?.title,
+      position_ms: positionMs,
     });
+    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ isPlaying: true }) });
     base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
   };
 
@@ -214,25 +320,42 @@ export default function LiveStudio() {
     if (!audioRef.current) return;
     audioRef.current.pause();
     setIsPlaying(false);
-    await publishEvent('pause', { title: selectedTrack?.title, position: currentTime });
-    const newState = await buildStateUpdate({
-      nowPlaying: { trackId: selectedTrack?.id, title: selectedTrack?.title, position: currentTime, isPlaying: false },
+    const positionMs = Math.round((audioRef.current.currentTime || 0) * 1000);
+    await safePublish('pause', {
+      track_url: selectedTrack?.file_url || '',
+      title: selectedTrack?.title,
+      position_ms: positionMs,
     });
+    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ isPlaying: false }) });
     base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
   };
 
-  const handleRestart = () => {
+  const handleRestart = async () => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = 0;
     setCurrentTime(0);
-    publishEvent('seek', { position: 0 }).catch(() => {});
+    audioRef.current.play().catch(() => {});
+    setIsPlaying(true);
+    await safePublish('restart', {
+      track_url: selectedTrack?.file_url || '',
+      position_ms: 0,
+    });
+    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ isPlaying: true, position_ms: 0 }) });
+    base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
   };
 
   const handleSeek = async (newTime) => {
     if (!audioRef.current) return;
     audioRef.current.currentTime = newTime;
     setCurrentTime(newTime);
-    await publishEvent('seek', { position: newTime, title: selectedTrack?.title });
+    const positionMs = Math.round(newTime * 1000);
+    await safePublish('seek', {
+      track_url: selectedTrack?.file_url || '',
+      title: selectedTrack?.title,
+      position_ms: positionMs,
+    });
+    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ position_ms: positionMs }) });
+    base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
   };
 
   const handleMicToggle = async () => {
@@ -364,6 +487,12 @@ export default function LiveStudio() {
             {selectedTrack && (
               <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
                 <h3 className="font-black text-foreground text-sm">Controls</h3>
+                {/* Phase 5.7 — local audio-reactive visualizer preview */}
+                <LocalVisualizerPreview
+                  audioRef={audioRef}
+                  style={'spectrum'}
+                  isPlaying={isPlaying}
+                />
                 <PerformerControls
                   track={selectedTrack}
                   isPlaying={isPlaying}
