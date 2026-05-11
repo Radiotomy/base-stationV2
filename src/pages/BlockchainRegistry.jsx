@@ -5,6 +5,7 @@ import { Shield, Wallet, Music, CheckCircle, Clock, AlertCircle, ChevronRight } 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DownloadCertificateButton from "@/components/blockchain/DownloadCertificateButton";
 
 export default function BlockchainRegistry() {
   const [user, setUser] = useState(null);
@@ -162,7 +163,14 @@ function RegistrationCard({ registration, blockchain, index }) {
             </div>
           )}
         </div>
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {registration.registration_status === "registered" && (
+            <DownloadCertificateButton
+              registrationId={registration.id}
+              blockchainType={blockchain}
+              trackTitle={registration.track_title}
+            />
+          )}
           {blockchain === "base" && registration.transaction_hash && (
             <a href={`https://basescan.org/tx/${registration.transaction_hash}`} target="_blank" rel="noopener noreferrer">
               <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-lg">
