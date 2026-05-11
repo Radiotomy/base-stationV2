@@ -26,8 +26,14 @@ export default function Phase4Panel({ sessionId, isLive, audioMode, onAudioModeC
   const [session, setSession] = useState(null);
   const [coPerformerId, setCoPerformerId] = useState('');
   const [inviting, setInviting] = useState(false);
-  const streamr = useStreamrAudio(sessionId, 'publish');
-  const streamrUnavailable = streamr.status === 'unavailable';
+  const streamr = useStreamrAudio({ sessionId, role: 'publisher' });
+  const [streamrConfigured, setStreamrConfigured] = useState(true);
+  useEffect(() => {
+    base44.functions.invoke('streamrAvailability', {})
+      .then(r => setStreamrConfigured(!!(r?.data?.available)))
+      .catch(() => setStreamrConfigured(false));
+  }, []);
+  const streamrUnavailable = !streamrConfigured || streamr.status === 'error';
   // Phase 5.6 — derive checked from session.audio_mode (or local prop fallback)
   const sessionAudioMode = session?.audio_mode || session?.state?.audio_mode || audioMode || 'sync';
 
@@ -54,7 +60,9 @@ export default function Phase4Panel({ sessionId, isLive, audioMode, onAudioModeC
       state: { ...(session?.state || {}), audio_mode: newMode },
     });
     onAudioModeChange?.(newMode);
-    if (on) await streamr.startPublish(); else streamr.stopPublish();
+    // Phase 5.8 — actual publish/stop is now handled by LiveStudio on Go Live.
+    // This toggle only flips audio_mode; we don't grab the mic from here.
+    if (!on) streamr.stop();
   };
 
   const togglePortals = async (on) => {

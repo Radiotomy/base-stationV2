@@ -20,6 +20,7 @@ import TipModal from '@/components/tipping/TipModal';
 import SessionEndedOverlay from '@/components/live/SessionEndedOverlay';
 import { useSyncPlayback } from '@/hooks/useSyncPlayback';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
+import { useStreamrAudio } from '@/hooks/useStreamrAudio';
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
 import { toast } from 'sonner';
@@ -51,6 +52,11 @@ export default function LiveWatch() {
   const audioData = useAudioAnalyzer(fanAudioRef, { enabled: true });
   const hasHydratedRef = useRef(false);
   const [showEndedOverlay, setShowEndedOverlay] = useState(false);
+
+  // Phase 5.8 — fan-side Streamr subscriber
+  const streamr = useStreamrAudio({ sessionId: roomId, role: 'subscriber' });
+  const streamrStartedRef = useRef(false);
+  const streamrToastShownRef = useRef(false);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -121,6 +127,19 @@ export default function LiveWatch() {
     hydrate(nowPlaying);
   }, [nowPlaying, effectiveAudioMode, hydrate]);
 
+  // Phase 5.8 — if Streamr subscribe ends in error/unavailable, fall back to sync
+  useEffect(() => {
+    if (sessionAudioMode !== 'streamr') return;
+    if (streamr.status === 'error' || streamr.status === 'unavailable') {
+      if (!streamrToastShownRef.current) {
+        streamrToastShownRef.current = true;
+        toast('Live audio unavailable — switching to synchronized playback.', { icon: '🎧' });
+      }
+      setEffectiveAudioMode('sync');
+      streamr.stop();
+    }
+  }, [streamr.status, sessionAudioMode]);
+
   // Phase 5.7 — autoplay-blocked toast (one-time)
   const autoplayToastShownRef = useRef(false);
   useEffect(() => {
@@ -159,21 +178,10 @@ export default function LiveWatch() {
       event_data: { audio_mode: sessionAudioMode },
     }).catch(() => {});
 
-    // Phase 5.6 — if streamr selected, attempt subscriber discovery; on failure, locally fall back to sync
-    if (sessionAudioMode === 'streamr' && session.user_id) {
-      base44.functions.invoke('streamrSubscriber', {
-        roomId,
-        performerId: session.user_id,
-      }).then(r => {
-        const avail = r?.data?.data?.available || r?.data?.available;
-        if (!avail) {
-          setEffectiveAudioMode('sync');
-          toast('Live audio unavailable — switching to synchronized playback.', { icon: '🎧' });
-        }
-      }).catch(() => {
-        setEffectiveAudioMode('sync');
-        toast('Live audio unavailable — switching to synchronized playback.', { icon: '🎧' });
-      });
+    // Phase 5.8 — in streamr mode, start the subscriber; on failure, fall back to sync
+    if (sessionAudioMode === 'streamr' && session.user_id && !streamrStartedRef.current) {
+      streamrStartedRef.current = true;
+      streamr.startSubscribe();
     }
 
     // Award attendance XP (capped server-side)
@@ -291,14 +299,21 @@ export default function LiveWatch() {
           <audio ref={fanAudioRef} crossOrigin="anonymous" playsInline preload="auto" />
         )}
 
-        {/* Phase 5.7 — autoplay-blocked banner */}
-        {autoplayBlocked && effectiveAudioMode === 'sync' && (
+        {/* Phase 5.7/5.8 — autoplay-blocked banner (sync OR streamr) */}
+        {((effectiveAudioMode === 'sync' && autoplayBlocked) ||
+          (effectiveAudioMode === 'streamr' && streamr.autoplayBlocked)) && (
           <div className="px-4 pt-3">
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30">
               <p className="text-xs text-amber-200 flex-1">
-                Tap to start playback — synchronized mode requires user interaction.
+                {effectiveAudioMode === 'streamr'
+                  ? 'Tap to start live audio.'
+                  : 'Tap to start playback — synchronized mode requires user interaction.'}
               </p>
-              <Button onClick={resume} size="sm" className="rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold gap-1">
+              <Button
+                onClick={effectiveAudioMode === 'streamr' ? streamr.resume : resume}
+                size="sm"
+                className="rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold gap-1"
+              >
                 <Play className="w-3.5 h-3.5" /> Play
               </Button>
             </div>

@@ -60,6 +60,9 @@ Deno.serve(async (req) => {
         tracks_used: session.tracks_used || [],
         top_fans: topFans,
         audio_mode: session.audio_mode || session.state?.audio_mode || 'sync',
+        ...((session.audio_mode || session.state?.audio_mode) === 'streamr'
+          ? { stream_id: `${session.user_id}/basestation/live/${session.id}/audio` }
+          : {}),
       },
     });
 

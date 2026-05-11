@@ -23,6 +23,7 @@ import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropTrigger from '@/components/live/LiveDropTrigger';
 import AudioModeSelector from '@/components/live/AudioModeSelector';
 import LocalVisualizerPreview from '@/components/live/LocalVisualizerPreview';
+import { useStreamrAudio } from '@/hooks/useStreamrAudio';
 
 export default function LiveStudio() {
   const navigate = useNavigate();
@@ -71,6 +72,17 @@ export default function LiveStudio() {
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
+
+  // Phase 5.8 — Streamr availability probe (controls AudioModeSelector option)
+  const [streamrConfigured, setStreamrConfigured] = useState(false);
+  useEffect(() => {
+    base44.functions.invoke('streamrAvailability', {})
+      .then(r => setStreamrConfigured(!!(r?.data?.available)))
+      .catch(() => setStreamrConfigured(false));
+  }, []);
+
+  // Phase 5.8 — Streamr publisher hook (creator side)
+  const streamr = useStreamrAudio({ sessionId, role: 'publisher' });
 
   // Phase 5.7 — Resume from ?roomId= if owner has an in-progress session
   const didResumeRef = useRef(false);
@@ -189,12 +201,33 @@ export default function LiveStudio() {
   const startStreaming = async () => {
     if (!sessionId) { toast.error('Create a session first'); return; }
     try {
-      // Phase 5.6 — only request mic when audio_mode = streamr
+      // Phase 5.8 — request mic + start Streamr publish when audio_mode = streamr
       if (audioMode === 'streamr') {
+        let stream = null;
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
           mediaStreamRef.current = stream;
-        } catch { /* mic optional */ }
+        } catch {
+          toast.error('Microphone access denied — falling back to synchronized playback.');
+          await base44.entities.LiveSession.update(sessionId, {
+            audio_mode: 'sync',
+            streamr_enabled: false,
+            state: await buildStateUpdate({ audio_mode: 'sync' }),
+          });
+          setAudioMode('sync');
+        }
+        if (stream) {
+          await streamr.startPublish(stream);
+          if (streamr.status === 'error') {
+            toast.error('Streamr audio unavailable — falling back to synchronized playback.');
+            await base44.entities.LiveSession.update(sessionId, {
+              audio_mode: 'sync',
+              streamr_enabled: false,
+              state: await buildStateUpdate({ audio_mode: 'sync' }),
+            });
+            setAudioMode('sync');
+          }
+        }
       }
 
       // Optional Portal room (non-blocking)
@@ -227,6 +260,8 @@ export default function LiveStudio() {
     if (audioRef.current) audioRef.current.pause();
     if (mediaStreamRef.current) { mediaStreamRef.current.getTracks().forEach(t => t.stop()); }
     if (micStreamRef.current) { micStreamRef.current.getTracks().forEach(t => t.stop()); setMicActive(false); }
+    // Phase 5.8 — stop Streamr publishing
+    streamr.stop();
 
     // Phase 5.7 — flip nowPlaying.isPlaying false so fans pause immediately
     const stoppedNowPlaying = buildNowPlaying({ isPlaying: false });
@@ -359,6 +394,13 @@ export default function LiveStudio() {
   };
 
   const handleMicToggle = async () => {
+    // Phase 5.8 — in streamr mode the mic is owned by the publisher; toggle = mute
+    if (audioMode === 'streamr') {
+      const nextMuted = micActive; // currently active → mute it
+      streamr.setMuted(nextMuted);
+      setMicActive(!nextMuted);
+      return;
+    }
     if (micActive) {
       micStreamRef.current?.getTracks().forEach(t => t.stop());
       micStreamRef.current = null;
@@ -455,6 +497,7 @@ export default function LiveStudio() {
                 value={audioMode}
                 onChange={setAudioMode}
                 disabled={!!sessionId}
+                streamrAvailable={streamrConfigured}
               />
 
               {!sessionId ? (

@@ -1,9 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
- * Phase 4 — Streamr audio subscriber (additive, optional).
- * Returns the public stream id and a polling URL fans can subscribe to.
- * No-op if STREAMR_PRIVATE_KEY missing.
+ * Phase 5.8 — Streamr audio subscriber relay.
+ * Returns:
+ *   { available: false, reason } when Streamr is not configured.
+ *   { available: true, streamId, chunk?, codec?, ts? } otherwise — `chunk` is the
+ *   most recent base64 audio payload (or omitted if no data yet).
  *
  * Payload: { roomId, performerId }
  */
@@ -27,11 +29,23 @@ Deno.serve(async (req) => {
       return Response.json({ available: false, streamId, reason: 'streamr_disabled' });
     }
 
-    return Response.json({
-      available: true,
-      streamId,
-      pollUrl: `${STREAMR_API}/streams/${encodeURIComponent(streamId)}/data/last`,
-    });
+    // Fetch the most recent published chunk for this room.
+    let chunk = null, codec = null, ts = null;
+    try {
+      const res = await fetch(`${STREAMR_API}/streams/${encodeURIComponent(streamId)}/data/last`, {
+        headers: { 'Authorization': `Bearer ${STREAMR_KEY}` },
+      });
+      if (res.ok) {
+        const body = await res.json().catch(() => null);
+        if (body) {
+          chunk = body.chunk || null;
+          codec = body.codec || null;
+          ts = body.ts || null;
+        }
+      }
+    } catch { /* transient — caller will retry */ }
+
+    return Response.json({ available: true, streamId, chunk, codec, ts });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
