@@ -1,0 +1,71 @@
+{
+  "name": "BlockchainAuditReport",
+  "type": "object",
+  "properties": {
+    "period_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Start of audit period"
+    },
+    "period_end": {
+      "type": "string",
+      "format": "date-time",
+      "description": "End of audit period"
+    },
+    "period_label": {
+      "type": "string",
+      "description": "Human-readable label, e.g., 'May 2026'"
+    },
+    "totals": {
+      "type": "object",
+      "description": "Aggregate counts: transactions, success, failed, pending, gas_usd"
+    },
+    "per_chain": {
+      "type": "object",
+      "description": "Per-chain breakdown (base, solana, polygon, streamr)"
+    },
+    "registrations": {
+      "type": "object",
+      "description": "Registry growth in this period: base/solana new + total"
+    },
+    "errors_summary": {
+      "type": "object",
+      "description": "Top error components and counts"
+    },
+    "anomalies": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Flagged anomalies (e.g., failure-rate spikes, unusual gas)"
+    },
+    "report_url": {
+      "type": "string",
+      "description": "Optional uploaded JSON report URL"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "period_start",
+    "period_end"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": {
+          "$eq": "admin"
+        }
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": {
+          "$eq": "admin"
+        }
+      }
+    }
+  }
+}

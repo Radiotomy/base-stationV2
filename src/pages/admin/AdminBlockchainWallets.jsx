@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import WalletStatCard from '@/components/admin/blockchain/WalletStatCard';
 import ChainBreakdownTable from '@/components/admin/blockchain/ChainBreakdownTable';
 import RecentTransactionsList from '@/components/admin/blockchain/RecentTransactionsList';
+import AuditReportsPanel from '@/components/admin/blockchain/AuditReportsPanel';
 
 export default function AdminBlockchainWallets() {
   const [data, setData] = useState(null);
@@ -108,6 +109,10 @@ export default function AdminBlockchainWallets() {
             <section>
               <h2 className="text-lg font-bold text-foreground mb-3">Recent Transactions</h2>
               <RecentTransactionsList transactions={data.recent} />
+            </section>
+
+            <section>
+              <AuditReportsPanel />
             </section>
           </motion.div>
         ) : null}

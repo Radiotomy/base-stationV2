@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DownloadCertificateButton from "@/components/blockchain/DownloadCertificateButton";
+import RegistrationStatusBadge from "@/components/blockchain/RegistrationStatusBadge";
 
 export default function BlockchainRegistry() {
   const [user, setUser] = useState(null);
@@ -152,9 +153,11 @@ function RegistrationCard({ registration, blockchain, index }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <p className="font-bold text-white">{registration.track_title}</p>
-            <Badge className={`text-xs ${registration.registration_status === "registered" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
-              {registration.registration_status}
-            </Badge>
+            <RegistrationStatusBadge
+              registrationId={registration.id}
+              blockchainType={blockchain}
+              initialStatus={registration.registration_status}
+            />
           </div>
           <p className="text-xs text-white/60 mb-3">{registration.genre && <span className="capitalize">{registration.genre} · </span>}{registration.ai_tools_used || "—"}</p>
           {registration.fingerprint_hash && (
