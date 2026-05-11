@@ -201,6 +201,23 @@ Deno.serve(async (req) => {
       });
     } catch (_) { /* swallow */ }
 
+    // Phase 2 — Log on-chain action lineage
+    try {
+      await base44.asServiceRole.entities.BlockchainTransaction.create({
+        user_id: currentUser.id,
+        user_email: currentUser.email,
+        blockchain: type,
+        network: reg.network || (type === 'base' ? 'base-mainnet' : 'solana-devnet'),
+        action: 'certificate_generated',
+        status: 'success',
+        transaction_hash: type === 'base' ? reg.transaction_hash : reg.transaction_signature,
+        wallet_address: reg.wallet_address,
+        related_entity: entity,
+        related_entity_id: reg.id,
+        metadata: { track_title: reg.track_title },
+      });
+    } catch (_) { /* swallow */ }
+
     const safeTitle = String(reg.track_title || 'certificate').replace(/[^a-z0-9-_]+/gi, '_').slice(0, 60);
     return new Response(pdfBytes, {
       status: 200,

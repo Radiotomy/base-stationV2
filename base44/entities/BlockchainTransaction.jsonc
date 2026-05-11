@@ -1,0 +1,108 @@
+{
+  "name": "BlockchainTransaction",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User who triggered the on-chain action"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "blockchain": {
+      "type": "string",
+      "enum": [
+        "base",
+        "solana",
+        "streamr",
+        "polygon"
+      ],
+      "description": "Target blockchain network"
+    },
+    "network": {
+      "type": "string",
+      "description": "Specific network identifier, e.g., base-mainnet, solana-devnet"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "register_track",
+        "mint_nft",
+        "transfer",
+        "certificate_generated",
+        "stream_publish",
+        "wallet_balance_check",
+        "other"
+      ],
+      "description": "What on-chain action occurred"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "success",
+        "failed"
+      ],
+      "default": "pending"
+    },
+    "transaction_hash": {
+      "type": "string",
+      "description": "Tx hash / signature on the chain"
+    },
+    "wallet_address": {
+      "type": "string",
+      "description": "Originating wallet (typically the centralized platform wallet)"
+    },
+    "related_entity": {
+      "type": "string",
+      "description": "Entity name this tx relates to (e.g., BaseTrackRegistry, SolanaTrackRegistry)"
+    },
+    "related_entity_id": {
+      "type": "string",
+      "description": "Record id within related_entity"
+    },
+    "gas_cost_native": {
+      "type": "number",
+      "description": "Gas cost in the chain's native currency (ETH, SOL, MATIC)"
+    },
+    "gas_cost_usd": {
+      "type": "number",
+      "description": "Estimated USD value of the gas at time of tx"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "If status=failed, the on-chain or provider error"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Free-form context: token, RPC endpoint, retries, etc."
+    }
+  },
+  "required": [
+    "blockchain",
+    "action"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": {
+              "$eq": "admin"
+            }
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    },
+    "write": {
+      "user_condition": {
+        "role": {
+          "$eq": "admin"
+        }
+      }
+    }
+  }
+}

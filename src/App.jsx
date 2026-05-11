@@ -52,6 +52,7 @@ import AdminChallenges from './pages/admin/AdminChallenges';
 import AdminFeatured from './pages/admin/AdminFeatured';
 import AdminArtists from './pages/admin/AdminArtists';
 import AdminSolana from './pages/admin/AdminSolana';
+import AdminBlockchainWallets from './pages/admin/AdminBlockchainWallets';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminAIIntegrations from './pages/admin/AdminAIIntegrations';
 import CreatorDashboard from './pages/CreatorDashboard';
@@ -148,6 +149,7 @@ const AuthenticatedApp = () => {
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="ai-integrations" element={<AdminAIIntegrations />} />
           <Route path="solana" element={<AdminSolana />} />
+          <Route path="blockchain-wallets" element={<AdminBlockchainWallets />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>

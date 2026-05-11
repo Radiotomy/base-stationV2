@@ -4,7 +4,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Music, Users, Trophy, Star, Shield,
-  TrendingUp, ChevronRight, Menu, X, LogOut, Zap
+  TrendingUp, ChevronRight, Menu, X, LogOut, Zap, Wallet
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -17,6 +17,7 @@ const NAV = [
   { to: "/admin/analytics", label: "Analytics", icon: TrendingUp },
   { to: "/admin/ai-integrations", label: "AI Integrations", icon: Zap },
   { to: "/admin/solana", label: "Solana Registry", icon: Shield },
+  { to: "/admin/blockchain-wallets", label: "Blockchain Wallets", icon: Wallet },
 ];
 
 export default function AdminDashboard() {
