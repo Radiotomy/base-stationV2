@@ -16,24 +16,20 @@ export default function CommunityMetrics() {
 
   const loadMetrics = async () => {
     try {
-      // Fetch real-time data
-      const [tracks, users, apiLogs] = await Promise.all([
+      // Fetch real-time data (User.list is admin-only, so use UserXP as a public proxy for creator counts)
+      const [tracks, creators] = await Promise.all([
         base44.entities.TrackSubmission.filter({}, '-created_date', 1),
-        base44.entities.User.list('-created_date', 1),
-        base44.entities.APIUsageLog.filter({}, '-created_date', 100),
+        base44.entities.UserXP.list('-created_date', 100).catch(() => []),
       ]);
 
       // Calculate metrics
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+
       const tracksToday = tracks.filter(t => new Date(t.created_date) >= today).length || 0;
-      const newUsersThisWeek = users.filter(u => {
-        const userDate = new Date(u.created_date);
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return userDate >= weekAgo;
-      }).length || 0;
+      const newUsersThisWeek = creators.filter(u => new Date(u.created_date) >= weekAgo).length || 0;
       
       const totalTracks = await base44.entities.TrackSubmission.list('-created_date', 1)
         .then(t => t.length)
