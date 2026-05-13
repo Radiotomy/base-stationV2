@@ -69,6 +69,10 @@ export default function LyricsStudio() {
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
   const [proMode, setProMode] = useState(false);
   const [referenceArtists, setReferenceArtists] = useState('');
+  const [proBpm, setProBpm] = useState('');
+  const [matchedGenre, setMatchedGenre] = useState(null);
+  const [genreCraft, setGenreCraft] = useState(null);
+  const [showCraftSheet, setShowCraftSheet] = useState(false);
   const [lyrics, setLyrics] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -107,9 +111,12 @@ export default function LyricsStudio() {
           mood: mood.join(', '),
           rhyme_scheme: rhymeScheme,
           reference_artists: referenceArtists || undefined,
+          bpm: proBpm ? Number(proBpm) : undefined,
           max_chars: maxCharsMap[length] || 2500,
         });
         text = res.data?.lyrics_clamped || res.data?.lyrics || '';
+        setMatchedGenre(res.data?.matched_genre || null);
+        setGenreCraft(res.data?.genre_craft || null);
         if (res.data?.clamped) {
           toast.warning(`Clamped to ${text.length} chars (was ${res.data.original_length}) for provider compatibility.`);
         }
@@ -241,16 +248,64 @@ export default function LyricsStudio() {
                 </div>
               </button>
 
-              {/* Reference Artists (Pro mode only) */}
+              {/* Pro-mode fields */}
               {proMode && (
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase">Reference Artists <span className="text-muted-foreground/60 normal-case">(optional)</span></label>
-                  <Input
-                    value={referenceArtists}
-                    onChange={e => setReferenceArtists(e.target.value)}
-                    placeholder="e.g., Turnpike Troubadours, Tyler Childers"
-                    className="rounded-xl"
-                  />
+                <div className="space-y-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">Reference Artists <span className="text-muted-foreground/60 normal-case">(optional)</span></label>
+                    <Input
+                      value={referenceArtists}
+                      onChange={e => setReferenceArtists(e.target.value)}
+                      placeholder="e.g., Turnpike Troubadours, Tyler Childers"
+                      className="rounded-xl bg-background"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase">BPM <span className="text-muted-foreground/60 normal-case">(optional)</span></label>
+                    <Input
+                      type="number"
+                      value={proBpm}
+                      onChange={e => setProBpm(e.target.value)}
+                      placeholder="e.g., 92"
+                      min="40" max="220"
+                      className="rounded-xl bg-background"
+                    />
+                  </div>
+
+                  {/* Matched genre craft sheet */}
+                  {matchedGenre && genreCraft && (
+                    <div className="pt-2 border-t border-amber-500/20">
+                      <button
+                        type="button"
+                        onClick={() => setShowCraftSheet(p => !p)}
+                        className="w-full flex items-center justify-between text-xs text-amber-300 hover:text-amber-200"
+                      >
+                        <span className="font-bold">🎯 Applied: {matchedGenre}</span>
+                        <span className="text-amber-300/60">{showCraftSheet ? 'Hide' : 'Show'} craft sheet</span>
+                      </button>
+                      <AnimatePresence>
+                        {showCraftSheet && (
+                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden">
+                            <div className="mt-2 space-y-1.5 text-[11px] text-amber-200/80 leading-relaxed">
+                              {[
+                                ['BPM', genreCraft.bpm_range],
+                                ['Rhyme', genreCraft.rhyme],
+                                ['Prosody', genreCraft.prosody],
+                                ['Line length', genreCraft.line_length],
+                                ['Vocabulary', genreCraft.vocabulary],
+                                ['Avoid', genreCraft.avoid],
+                              ].map(([label, value]) => (
+                                <div key={label}>
+                                  <span className="font-bold text-amber-300">{label}:</span> {value}
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  )}
                 </div>
               )}
 
