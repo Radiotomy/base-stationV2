@@ -192,16 +192,19 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   const endpoint = isInstrumental ? `${TEMPOLOR_BASE}/instrumental/generate` : `${TEMPOLOR_BASE}/song/generate`;
   const defaultModel = isInstrumental ? 'TemPolor i3.5' : 'TemPolor v4.6';
 
+  // Tempolor hard limit: lyrics must be <= 3000 chars
+  const safeLyrics = lyrics ? String(lyrics).slice(0, 3000) : null;
+
   const body = isInstrumental
     ? {
-        prompt: sound_prompt || `${mood} ${genre} instrumental music`,
+        prompt: (sound_prompt || `${mood} ${genre} instrumental music`).slice(0, 1000),
         model: model || defaultModel,
         callback_url: 'https://webhook.site/tempolor-callback',
       }
     : {
-        prompt: sound_prompt || `${mood} ${genre} music`,
+        prompt: (sound_prompt || `${mood} ${genre} music`).slice(0, 1000),
         model: model || defaultModel,
-        lyrics: lyrics || null,
+        lyrics: safeLyrics,
         callback_url: 'https://webhook.site/tempolor-callback',
       };
 
