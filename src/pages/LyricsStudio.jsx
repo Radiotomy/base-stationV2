@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
-  CheckCircle, Sparkles, Keyboard, Plus, X, History
+  CheckCircle, Sparkles, Keyboard, Plus, X, History, Award
 } from 'lucide-react';
 import ChipSelector from '@/components/music/ChipSelector';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,8 @@ export default function LyricsStudio() {
   const [style, setStyle] = useState(['Hip-Hop']);
   const [length, setLength] = useState('Medium (32 bars)');
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
+  const [proMode, setProMode] = useState(false);
+  const [referenceArtists, setReferenceArtists] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -90,13 +92,36 @@ export default function LyricsStudio() {
     if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
     try {
-      const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme });
-      const text = res.data?.lyrics || res.data?.text || res.data?.content || '';
+      let text = '';
+      if (proMode) {
+        // Professional Songwriting Engine — CanonicalLyricJob-compatible
+        const maxCharsMap = {
+          'Short (8–16 bars)': 1500,
+          'Medium (32 bars)': 2500,
+          'Long (64+ bars)': 4000,
+          'Full Song': 5000,
+        };
+        const res = await base44.functions.invoke('generateLyricsPro', {
+          concept: topic,
+          genre: style.join(', '),
+          mood: mood.join(', '),
+          rhyme_scheme: rhymeScheme,
+          reference_artists: referenceArtists || undefined,
+          max_chars: maxCharsMap[length] || 2500,
+        });
+        text = res.data?.lyrics_clamped || res.data?.lyrics || '';
+        if (res.data?.clamped) {
+          toast.warning(`Clamped to ${text.length} chars (was ${res.data.original_length}) for provider compatibility.`);
+        }
+      } else {
+        const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme });
+        text = res.data?.lyrics || res.data?.text || res.data?.content || '';
+      }
+
       if (text) {
-        // Save previous as version
         if (lyrics) setVersions(v => [{ text: lyrics, timestamp: Date.now() }, ...v].slice(0, 5));
         setLyrics(text);
-        toast.success('Lyrics generated!');
+        toast.success(proMode ? '🎼 Pro lyrics generated!' : 'Lyrics generated!');
       } else {
         toast.error('No lyrics returned — check backend function');
       }
@@ -195,6 +220,39 @@ export default function LyricsStudio() {
           <div className="lg:col-span-1 space-y-5">
             <div className="bg-card rounded-2xl border border-border p-5 space-y-5">
               <h3 className="font-black text-foreground">Generation Settings</h3>
+
+              {/* Pro Songwriter Toggle */}
+              <button
+                type="button"
+                onClick={() => setProMode(p => !p)}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${proMode ? 'bg-gradient-to-r from-amber-500/10 to-pink-500/10 border-amber-500/40' : 'bg-muted/30 border-border hover:border-amber-500/30'}`}
+              >
+                <Award className={`w-5 h-5 flex-shrink-0 ${proMode ? 'text-amber-400' : 'text-muted-foreground'}`} />
+                <div className="flex-1 text-left">
+                  <p className={`text-xs font-black ${proMode ? 'text-amber-300' : 'text-foreground'}`}>
+                    🎼 Pro Songwriter {proMode && '· ON'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Nashville/LA-grade rhyme, prosody & narrative engine
+                  </p>
+                </div>
+                <div className={`w-9 h-5 rounded-full transition-all flex-shrink-0 ${proMode ? 'bg-amber-500' : 'bg-muted'}`}>
+                  <div className={`w-4 h-4 mt-0.5 rounded-full bg-white transition-all ${proMode ? 'ml-[18px]' : 'ml-0.5'}`} />
+                </div>
+              </button>
+
+              {/* Reference Artists (Pro mode only) */}
+              {proMode && (
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Reference Artists <span className="text-muted-foreground/60 normal-case">(optional)</span></label>
+                  <Input
+                    value={referenceArtists}
+                    onChange={e => setReferenceArtists(e.target.value)}
+                    placeholder="e.g., Turnpike Troubadours, Tyler Childers"
+                    className="rounded-xl"
+                  />
+                </div>
+              )}
 
               {/* Topic */}
               <div className="space-y-2">
