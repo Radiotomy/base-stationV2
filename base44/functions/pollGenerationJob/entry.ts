@@ -327,6 +327,10 @@ Deno.serve(async (req) => {
         const outputUrl = providerData.audio_url || providerData.video_url;
         const completedAt = new Date().toISOString();
 
+        // Use cost stamped on input_data at generation start; fallback to defaults
+        const stampedCost = job.input_data?.credit_cost;
+        const cost = stampedCost ?? (job.job_type === 'video' ? Math.max(2, Math.round((job.input_data?.duration || 5) * 2)) : 10);
+
         await base44.entities.GenerationJob.update(job.id, {
           status: 'completed',
           output_url: outputUrl,
@@ -337,9 +341,38 @@ Deno.serve(async (req) => {
             audio_urls: providerData.audio_urls || null,
             cover_image_urls: providerData.cover_image_urls || null,
           },
-          credits_used: 10,
+          credits_used: cost,
           completed_at: completedAt,
         });
+
+        // Deduct credits once per job. Guard: only if not already deducted (credits_used was 0 before).
+        if (!job.credits_used || job.credits_used === 0) {
+          try {
+            const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: job.user_id });
+            let record = recs[0];
+            if (!record) {
+              record = await base44.asServiceRole.entities.UserCredit.create({
+                user_id: job.user_id, user_email: job.user_email,
+                balance: 0, lifetime_earned: 0, lifetime_spent: 0,
+              });
+            }
+            const newBalance = (record.balance || 0) - cost;
+            await base44.asServiceRole.entities.UserCredit.update(record.id, {
+              balance: Math.max(0, newBalance),
+              lifetime_spent: (record.lifetime_spent || 0) + cost,
+              monthly_used: (record.monthly_used || 0) + cost,
+            });
+            await base44.asServiceRole.entities.CreditLog.create({
+              user_id: job.user_id, user_email: job.user_email,
+              transaction_type: 'generation',
+              amount: -cost,
+              balance_before: record.balance,
+              balance_after: Math.max(0, newBalance),
+              related_job_id: job.id, provider: job.provider,
+              description: `${job.provider} ${job.job_type} generation`,
+            });
+          } catch (e) { console.warn('Credit deduction failed:', e.message); }
+        }
 
         // Compute content hash for legal provenance
         const enc = new TextEncoder();
@@ -360,7 +393,7 @@ Deno.serve(async (req) => {
 
         const logPayload = {
           status: 'success',
-          credits_used: 10,
+          credits_used: cost,
           timestamp: completedAt,
           metadata: {
             model_version: modelVersion,

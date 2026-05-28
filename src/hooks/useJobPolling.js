@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { invalidateCreditBalance } from '@/components/credits/CreditBalanceWidget';
 
 /**
  * Polls a GenerationJob by job_id until completed or failed.
@@ -62,6 +63,8 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
           setProgress(100);
           setData(result.data);
           clearInterval(elapsed);
+          // Credits were deducted server-side on completion — refresh the widget
+          invalidateCreditBalance();
           onCompleteRef.current?.(result.data);
           return;
         } else if (jobStatus === 'failed') {

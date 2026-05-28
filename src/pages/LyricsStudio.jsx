@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
@@ -129,11 +130,14 @@ export default function LyricsStudio() {
         if (lyrics) setVersions(v => [{ text: lyrics, timestamp: Date.now() }, ...v].slice(0, 5));
         setLyrics(text);
         toast.success(proMode ? '🎼 Pro lyrics generated!' : 'Lyrics generated!');
+        // Refresh credits widget — server returns credits_remaining on success
+        // (works for both proMode and standard responses)
+        refreshCreditsFromResponse(arguments[0]?.data || null);
       } else {
         toast.error('No lyrics returned — check backend function');
       }
     } catch (err) {
-      toast.error(err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
     }
     setLoading(false);
   };

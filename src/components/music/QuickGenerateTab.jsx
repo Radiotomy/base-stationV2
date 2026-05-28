@@ -12,6 +12,7 @@ import MidiExportButton from '@/components/music/MidiExportButton';
 import { cacheManager } from '@/utils/cacheManager';
 import ChipSelector from '@/components/music/ChipSelector';
 import { routeProvider, PROVIDER_DETAILS } from '@/utils/providerRouter';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 const ALL_PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
@@ -295,8 +296,18 @@ export default function QuickGenerateTab() {
           });
           lyrics = lyricsRes.data?.lyrics || '';
           lyricsRef.current = lyrics;
-          if (lyrics) toast.success('🎤 Lyrics generated!');
-        } catch { /* lyrics optional */ }
+          if (lyrics) {
+            toast.success('🎤 Lyrics generated!');
+            refreshCreditsFromResponse(lyricsRes.data);
+          }
+        } catch (lyricsErr) {
+          // If lyrics gen failed due to insufficient credits, surface it and stop the whole flow
+          if (handleCreditError(lyricsErr)) {
+            setGenerating(false);
+            throw lyricsErr;
+          }
+          /* otherwise lyrics are optional — continue without */
+        }
       }
 
       // Step 4: Generate track — try primary provider, then fallback chain on failure
@@ -341,6 +352,7 @@ export default function QuickGenerateTab() {
 
       if (res.data?.audio_url || res.data?.output_url) {
         setGenerating(false);
+        refreshCreditsFromResponse(res.data);
         await onComplete(res.data);
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
@@ -351,7 +363,7 @@ export default function QuickGenerateTab() {
       }
     } catch (err) {
       setGenerating(false);
-      toast.error(err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
     }
   };
 

@@ -277,6 +277,49 @@ async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, 
   };
 }
 
+// ── Credit cost table (per provider) ─────────────────────────────────────────
+const CREDIT_COSTS = {
+  loudly: 5,
+  sonic: 10,
+  nuro: 10,
+  producer: 10,
+  tempcolor: 10,
+};
+
+async function checkCreditBalance(base44, user, requiredCredits) {
+  const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+  const record = credits[0];
+  const balance = record?.balance ?? 0;
+  return { ok: balance >= requiredCredits, balance, record };
+}
+
+async function deductCreditsServerSide(base44, user, amount, { provider, job_id, description }) {
+  const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+  let record = credits[0];
+  if (!record) {
+    record = await base44.asServiceRole.entities.UserCredit.create({
+      user_id: user.id, user_email: user.email,
+      balance: 0, lifetime_earned: 0, lifetime_spent: 0,
+    });
+  }
+  const newBalance = (record.balance || 0) - amount;
+  if (newBalance < 0) return { ok: false, balance: record.balance };
+  await base44.asServiceRole.entities.UserCredit.update(record.id, {
+    balance: newBalance,
+    lifetime_spent: (record.lifetime_spent || 0) + amount,
+    monthly_used: (record.monthly_used || 0) + amount,
+  });
+  await base44.asServiceRole.entities.CreditLog.create({
+    user_id: user.id, user_email: user.email,
+    transaction_type: 'generation',
+    amount: -amount,
+    balance_before: record.balance,
+    balance_after: newBalance,
+    related_job_id: job_id, provider, description,
+  }).catch(() => {});
+  return { ok: true, balance: newBalance };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -285,6 +328,17 @@ Deno.serve(async (req) => {
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
             tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id, routing_reason } = await req.json();
+
+    // ── Pre-check credit balance (server-side gate) ──────────────────────────
+    const cost = CREDIT_COSTS[provider] || 10;
+    const { ok: hasCredits, balance } = await checkCreditBalance(base44, user, cost);
+    if (!hasCredits) {
+      return Response.json({
+        error: 'Insufficient credits',
+        required: cost, balance,
+        message: `This generation costs ${cost} credits. You have ${balance}.`,
+      }, { status: 402 });
+    }
 
     // Call provider FIRST — before any DB writes — so gateway timeout isn't wasted on DB ops
     let providerResult;
@@ -335,18 +389,23 @@ Deno.serve(async (req) => {
         user_id: user.id, user_email: user.email,
         job_type: 'music', provider,
         status: 'completed',
-        input_data: { duration, mood, genre, tempo, sound_prompt },
+        input_data: { duration, mood, genre, tempo, sound_prompt, credit_cost: cost },
         output_url: providerResult.audio_url,
         output_metadata: { bpm: providerResult.bpm, key: providerResult.key, duration },
-        credits_used: providerResult.credits_used || 1,
+        credits_used: cost,
         started_at: generatedAt,
         completed_at: generatedAt,
       }).catch(() => ({ id: null }));
 
+      // Deduct credits now (sync success)
+      const ded = await deductCreditsServerSide(base44, user, cost, {
+        provider, job_id: jobRecord?.id, description: `${provider} music generation`,
+      });
+
       base44.asServiceRole.entities.APIUsageLog.create({
         user_id: user.id, user_email: user.email, user_name: user.full_name,
         provider, task: 'generate_music',
-        credits_used: providerResult.credits_used || 1,
+        credits_used: cost,
         status: 'success',
         timestamp: generatedAt,
         job_id: jobRecord?.id || null,
@@ -365,15 +424,18 @@ Deno.serve(async (req) => {
         status: 'completed',
         audio_url: providerResult.audio_url,
         bpm: providerResult.bpm, key: providerResult.key,
+        credits_used: cost,
+        credits_remaining: ded.balance,
       });
     }
 
     // Async (Sonic, Nuro, Producer, Tempolor): create job record with provider task_id
+    // Stamp credit_cost on input_data so pollGenerationJob can deduct on completion.
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider,
       status: 'processing',
-      input_data: { duration, mood, genre, tempo, sound_prompt },
+      input_data: { duration, mood, genre, tempo, sound_prompt, credit_cost: cost },
       provider_job_id: providerResult.task_id,
       started_at: generatedAt,
     });

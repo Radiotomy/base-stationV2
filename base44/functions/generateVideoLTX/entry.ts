@@ -2,6 +2,33 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const LTX_API_KEY = Deno.env.get('LTX_API_KEY');
 
+async function deductCreditsServerSide(base44, user, amount, { provider, job_id, description }) {
+  const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+  let record = credits[0];
+  if (!record) {
+    record = await base44.asServiceRole.entities.UserCredit.create({
+      user_id: user.id, user_email: user.email,
+      balance: 0, lifetime_earned: 0, lifetime_spent: 0,
+    });
+  }
+  const newBalance = (record.balance || 0) - amount;
+  if (newBalance < 0) return { ok: false, balance: record.balance };
+  await base44.asServiceRole.entities.UserCredit.update(record.id, {
+    balance: newBalance,
+    lifetime_spent: (record.lifetime_spent || 0) + amount,
+    monthly_used: (record.monthly_used || 0) + amount,
+  });
+  await base44.asServiceRole.entities.CreditLog.create({
+    user_id: user.id, user_email: user.email,
+    transaction_type: 'generation',
+    amount: -amount,
+    balance_before: record.balance,
+    balance_after: newBalance,
+    related_job_id: job_id, provider, description,
+  }).catch(() => {});
+  return { ok: true, balance: newBalance };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -13,12 +40,26 @@ Deno.serve(async (req) => {
     const { prompt, duration = 5, aspect_ratio = '16:9', mode = 'text', reference_image_url, reference_audio_url } = await req.json();
     if (!prompt) return Response.json({ error: 'Missing prompt' }, { status: 400 });
 
+    // Cost: 2 credits per second of video
+    const cost = Math.max(2, Math.round(duration * 2));
+
+    // Pre-check credit balance
+    const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+    const balance = credits[0]?.balance ?? 0;
+    if (balance < cost) {
+      return Response.json({
+        error: 'Insufficient credits',
+        required: cost, balance,
+        message: `${duration}s of video costs ${cost} credits. You have ${balance}.`,
+      }, { status: 402 });
+    }
+
     // Create job record
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
       job_type: 'video', provider: 'ltx',
       status: 'processing',
-      input_data: { prompt, duration, aspect_ratio, mode },
+      input_data: { prompt, duration, aspect_ratio, mode, credit_cost: cost },
       started_at: new Date().toISOString(),
     });
 
@@ -48,7 +89,13 @@ Deno.serve(async (req) => {
         status: 'completed',
         output_url: result.video_url,
         output_metadata: { duration, aspect_ratio, format: 'mp4' },
+        credits_used: cost,
         completed_at: new Date().toISOString(),
+      });
+
+      // Deduct credits on sync success
+      await deductCreditsServerSide(base44, user, cost, {
+        provider: 'ltx', job_id: job.id, description: `LTX video (${duration}s)`,
       });
 
       const enc = new TextEncoder();
@@ -58,7 +105,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.APIUsageLog.create({
         user_id: user.id, user_email: user.email, user_name: user.full_name,
         provider: 'ltx', task: 'generate_video',
-        credits_used: duration * 2, status: 'success',
+        credits_used: cost, status: 'success',
         timestamp: new Date().toISOString(), job_id: job.id,
         metadata: {
           model_version: 'ltx-video-v1',
@@ -69,7 +116,7 @@ Deno.serve(async (req) => {
         },
       }).catch(() => {});
 
-      return Response.json({ job_id: job.id, status: 'completed', video_url: result.video_url, duration, aspect_ratio });
+      return Response.json({ job_id: job.id, status: 'completed', video_url: result.video_url, duration, aspect_ratio, credits_used: cost });
     }
 
     // Async task

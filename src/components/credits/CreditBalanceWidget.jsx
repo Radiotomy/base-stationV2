@@ -9,20 +9,33 @@ let _cachedPremium = false;
 let _cacheTime = 0;
 const CACHE_TTL = 60000; // 60 seconds
 
+// Listeners for live balance updates after generations
+const _listeners = new Set();
+
+/** Invalidate the cached balance — call after any successful credit deduction. */
+export function invalidateCreditBalance(newBalance) {
+  _cacheTime = 0;
+  if (typeof newBalance === 'number') {
+    _cachedBalance = newBalance;
+    _cacheTime = Date.now();
+  }
+  _listeners.forEach(fn => { try { fn(_cachedBalance); } catch {} });
+}
+
 export default function CreditBalanceWidget({ className = "" }) {
   const [balance, setBalance] = useState(_cachedBalance);
   const [isPremium, setIsPremium] = useState(_cachedPremium);
   const [loading, setLoading] = useState(_cachedBalance === null);
 
   useEffect(() => {
-    const now = Date.now();
-    if (_cachedBalance !== null && now - _cacheTime < CACHE_TTL) {
-      setBalance(_cachedBalance);
-      setIsPremium(_cachedPremium);
-      setLoading(false);
-      return;
-    }
-    const load = async () => {
+    const load = async (force = false) => {
+      const now = Date.now();
+      if (!force && _cachedBalance !== null && now - _cacheTime < CACHE_TTL) {
+        setBalance(_cachedBalance);
+        setIsPremium(_cachedPremium);
+        setLoading(false);
+        return;
+      }
       try {
         const res = await base44.functions.invoke("getUserCredits", {});
         _cachedBalance = res.data.balance ?? 0;
@@ -36,6 +49,14 @@ export default function CreditBalanceWidget({ className = "" }) {
       setLoading(false);
     };
     load();
+
+    // Listen for live invalidations (after a successful generation)
+    const onUpdate = (newBalance) => {
+      if (typeof newBalance === 'number') setBalance(newBalance);
+      else load(true);
+    };
+    _listeners.add(onUpdate);
+    return () => { _listeners.delete(onUpdate); };
   }, []);
 
   if (loading || balance === null) return null;
