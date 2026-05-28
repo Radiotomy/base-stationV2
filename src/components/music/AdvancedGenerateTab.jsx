@@ -17,14 +17,13 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import CostBadge from '@/components/credits/CostBadge';
 
 // Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
-const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10, nuro: 7, loudly: 4 };
+const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10, nuro: 7 };
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
   { value: 'tempcolor', label: 'Tempolor', desc: 'Song & instrumental modes',       color: 'border-amber-500 bg-amber-500/10' },
   { value: 'producer',  label: 'Producer', desc: 'Google Lyria 3 Pro',             color: 'border-purple-500 bg-purple-500/10' },
   { value: 'nuro',      label: 'Nuro',     desc: 'Vocals + BGM',                   color: 'border-pink-500 bg-pink-500/10' },
-  { value: 'loudly',    label: 'Loudly',   desc: 'Fast generation',                color: 'border-blue-500 bg-blue-500/10' },
 ];
 
 const SONIC_MODELS = [
@@ -92,11 +91,6 @@ export default function AdvancedGenerateTab() {
   // Debounced values to prevent input handler violations on rapid keystrokes
   const debouncedSoundPrompt = useDebouncedValue(soundPrompt, 200);
   const debouncedLyrics = useDebouncedValue(lyrics, 200);
-  // Loudly-specific
-  const [loudlyModel, setLoudlyModel] = useState('VEGA_2');
-  const [loudlyStructures, setLoudlyStructures] = useState([]);
-  const [loudlyStructureId, setLoudlyStructureId] = useState(null);
-  const [loadingRandomPrompt, setLoadingRandomPrompt] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(user => {
@@ -109,23 +103,6 @@ export default function AdvancedGenerateTab() {
       }).catch(() => {});
     }).catch(() => {});
   }, []);
-
-  // Fetch Loudly structures when provider switches to loudly
-  useEffect(() => {
-    if (provider !== 'loudly' || loudlyStructures.length > 0) return;
-    base44.functions.invoke('generateMusicLoudly', { action: 'structures' })
-      .then(res => setLoudlyStructures(res.data?.structures || []))
-      .catch(() => {});
-  }, [provider]);
-
-  const fetchRandomLoudlyPrompt = async () => {
-    setLoadingRandomPrompt(true);
-    try {
-      const res = await base44.functions.invoke('generateMusicLoudly', { action: 'random_prompt' });
-      if (res.data?.prompt) setSoundPrompt(res.data.prompt);
-    } catch (err) { toast.error(err.message); }
-    setLoadingRandomPrompt(false);
-  };
 
   const generateCoverArtUrl = async (title, moodVal, genreVal) => {
     try {
@@ -210,7 +187,7 @@ export default function AdvancedGenerateTab() {
         bpm: data.bpm,
         key: data.key,
         content_hash: data.content_hash || null,
-        model: provider === 'sonic' ? sonicModel : provider === 'nuro' ? nuroModel : provider === 'tempcolor' ? temporlorModel : provider === 'loudly' ? loudlyModel : 'FUZZ-2.0',
+        model: provider === 'sonic' ? sonicModel : provider === 'nuro' ? nuroModel : provider === 'tempcolor' ? temporlorModel : 'FUZZ-2.0',
       });
       toast.success('✅ Auto-saved to library!');
     }
@@ -295,8 +272,6 @@ export default function AdvancedGenerateTab() {
         ...(provider === 'sonic' && { model: sonicModel }),
         ...(provider === 'nuro' && { nuro_version: nuroModel }),
         ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
-        ...(provider === 'loudly' && { model: loudlyModel }),
-        ...(provider === 'loudly' && loudlyStructureId !== null && { structure_id: loudlyStructureId }),
       });
 
       if (res.data?.audio_url || res.data?.output_url) {
@@ -349,7 +324,7 @@ export default function AdvancedGenerateTab() {
       {/* Provider */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Provider</p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {PROVIDERS.map(p => (
             <button key={p.value} onClick={() => setProvider(p.value)}
               className={`p-3 rounded-xl border text-left transition-all ${provider === p.value ? p.color : 'border-border bg-card hover:border-border/80'}`}>
@@ -464,79 +439,6 @@ export default function AdvancedGenerateTab() {
             </div>
           )}
 
-          {/* Loudly: Model + Structure */}
-          {provider === 'loudly' && (
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">AI Model</p>
-                <div className="space-y-2">
-                  {[
-                    {
-                      value: 'VEGA_1',
-                      label: 'VEGA 1',
-                      tag: 'Fast',
-                      tagColor: 'text-cyan-400',
-                      bullets: ['Faster generation', 'Great for demos, sketches & quick ideas', 'Supports genre, BPM, key & instrument control'],
-                      border: 'border-cyan-500/50 bg-cyan-500/5',
-                    },
-                    {
-                      value: 'VEGA_2',
-                      label: 'VEGA 2',
-                      tag: 'Best Quality',
-                      tagColor: 'text-blue-400',
-                      badge: 'DEFAULT',
-                      bullets: ['Higher overall audio quality', 'Improved clarity, depth & stereo balance', 'Recommended for final production & releases'],
-                      border: 'border-blue-500/50 bg-blue-500/5',
-                    },
-                  ].map(m => {
-                    const isActive = loudlyModel === m.value;
-                    return (
-                      <button key={m.value} onClick={() => setLoudlyModel(m.value)}
-                        className={`w-full p-3 rounded-xl border text-left transition-all ${isActive ? m.border : 'border-border bg-card hover:border-border/80'}`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-black text-foreground">{m.label}</span>
-                            {m.badge && (
-                              <span className="px-1.5 py-0.5 rounded text-xs font-black bg-blue-500 text-white leading-none">{m.badge}</span>
-                            )}
-                          </div>
-                          <span className={`text-xs font-semibold ${m.tagColor}`}>{m.tag}</span>
-                        </div>
-                        <ul className="space-y-0.5">
-                          {m.bullets.map((b, i) => (
-                            <li key={i} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                              <span className={`mt-0.5 flex-shrink-0 ${isActive ? m.tagColor : 'text-muted-foreground/50'}`}>•</span>
-                              {b}
-                            </li>
-                          ))}
-                        </ul>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {loudlyStructures.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Song Structure</p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <button onClick={() => setLoudlyStructureId(null)}
-                      className={`px-2.5 py-2 rounded-lg border text-left transition-all ${loudlyStructureId === null ? 'border-blue-500 bg-blue-500/10' : 'border-border bg-card'}`}>
-                      <p className="text-xs font-bold text-foreground">Auto</p>
-                      <p className="text-xs text-muted-foreground">Let AI decide</p>
-                    </button>
-                    {loudlyStructures.map(s => (
-                      <button key={s.id} onClick={() => setLoudlyStructureId(s.id)}
-                        className={`px-2.5 py-2 rounded-lg border text-left transition-all ${loudlyStructureId === s.id ? 'border-blue-500 bg-blue-500/10' : 'border-border bg-card'}`}>
-                        <p className="text-xs font-bold text-foreground">{s.name}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Voice Persona */}
           {voicePersonas.length > 0 && (
             <div>
@@ -574,15 +476,7 @@ export default function AdvancedGenerateTab() {
 
           {/* Sound Description */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase">Sound Description</p>
-              {provider === 'loudly' && (
-                <button onClick={fetchRandomLoudlyPrompt} disabled={loadingRandomPrompt}
-                  className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors disabled:opacity-50">
-                  {loadingRandomPrompt ? '…' : '🎲 Random Prompt'}
-                </button>
-              )}
-            </div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sound Description</p>
             <textarea value={soundPrompt} onChange={e => setSoundPrompt(e.target.value)}
               placeholder="Describe the sound: e.g. hard 808s, mellow Rhodes, driving guitar riff…"
               rows={3}

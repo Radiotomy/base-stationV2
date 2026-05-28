@@ -7,7 +7,6 @@
  */
 
 const COST_WEIGHTS = {
-  loudly: 0.5,
   nuro: 1.0,
   sonic: 0.8,
   producer: 0.9,

@@ -23,11 +23,11 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You do not own this asset' }, { status: 403 });
     }
 
-    // === LEGAL GATE: origin must not be "loudly" ===
+    // === LEGAL GATE: legacy "loudly"-origin assets remain blocked ===
     const origin = asset.origin || 'creator';
     if (origin === 'loudly') {
       return Response.json({
-        error: 'Loudly catalog/AI assets cannot be published to Audius due to licensing restrictions.',
+        error: 'This legacy asset cannot be published to Audius due to its origin.',
         origin,
       }, { status: 403 });
     }

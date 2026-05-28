@@ -229,57 +229,8 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song' };
 }
 
-// ── Loudly ────────────────────────────────────────────────────────────────────
-// Base: https://soundtracks.loudly.com
-// AI Prompt Generation: POST /api/ai/prompt/songs  (multipart/form-data)
-//   Required: prompt (string) — text description of the desired song
-//   Optional: duration (30-420s), model ('VEGA_1'|'VEGA_2'), structure_id (int)
-// Response: { id, title, music_file_path, bpm, key: { name }, duration, ... }
-// Synchronous — returns the song directly (no polling needed).
-const LOUDLY_API_KEY = Deno.env.get('LOUDLY_API_KEY');
-
-const LOUDLY_ENERGY_MAP = {
-  'Energetic': 'high', 'Aggressive': 'high', 'Happy': 'high', 'Uplifting': 'high',
-  'Chill': 'low', 'Melancholic': 'low', 'Romantic': 'low', 'Sad': 'low',
-  'Dark': 'medium',
-};
-
-async function generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, structure_id, model }) {
-  // Build a descriptive text prompt from params — uses the new /api/ai/prompt/songs endpoint
-  const energy = LOUDLY_ENERGY_MAP[mood] || 'medium';
-  const bpmHint = tempo ? ` at ${tempo} BPM` : '';
-  const prompt = sound_prompt
-    ? `${sound_prompt}. ${mood} energy, ${genre} style${bpmHint}.`
-    : `A ${energy}-energy ${mood.toLowerCase()} ${genre} track${bpmHint}.`;
-
-  console.log('Loudly prompt:', prompt, '| duration:', duration);
-
-  const form = new FormData();
-  form.append('prompt', prompt);
-  form.append('duration', String(Math.min(Math.max(duration || 30, 30), 420)));
-  form.append('model', model || 'VEGA_2');
-
-  const res = await fetch('https://soundtracks.loudly.com/api/ai/prompt/songs', {
-    method: 'POST',
-    headers: { 'API-KEY': LOUDLY_API_KEY },
-    body: form,
-  });
-  const data = await res.json();
-  console.log('Loudly prompt/songs response:', JSON.stringify(data));
-  if (!res.ok) throw new Error(data.error || data.message || `Loudly error ${res.status}`);
-  const audioUrl = data.music_file_path || data.audio_url;
-  if (!audioUrl) throw new Error('Loudly returned no audio URL: ' + JSON.stringify(data));
-  return {
-    audio_url: audioUrl,
-    bpm: data.bpm,
-    key: data.key?.name || data.key,
-    provider: 'loudly', credits_used: 1,
-  };
-}
-
 // ── Credit cost table (per provider) ─────────────────────────────────────────
 const CREDIT_COSTS = {
-  loudly: 5,
   sonic: 10,
   nuro: 10,
   producer: 10,
@@ -327,7 +278,7 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, structure_id, routing_reason } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, routing_reason } = await req.json();
 
     // ── Pre-check credit balance (server-side gate) ──────────────────────────
     const cost = CREDIT_COSTS[provider] || 10;
@@ -343,9 +294,7 @@ Deno.serve(async (req) => {
     // Call provider FIRST — before any DB writes — so gateway timeout isn't wasted on DB ops
     let providerResult;
     try {
-      if (provider === 'loudly' && LOUDLY_API_KEY)
-        providerResult = await generateWithLoudly({ genre, mood, tempo, duration, sound_prompt, structure_id, model });
-      else if (provider === 'nuro')
+      if (provider === 'nuro')
         providerResult = await generateWithNuro({ genre, mood, duration, nuro_version, lyrics });
       else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
@@ -360,7 +309,6 @@ Deno.serve(async (req) => {
     const generatedAt = new Date().toISOString();
     // Determine exact model version used per provider
     const modelVersionMap = {
-      loudly: model || 'VEGA_2',
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
       nuro: nuro_version || 'v2.0',
       producer: 'FUZZ-2.0',

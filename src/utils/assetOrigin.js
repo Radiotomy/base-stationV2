@@ -2,7 +2,7 @@ import { base44 } from '@/api/base44Client';
 
 /**
  * Get the origin tag of an asset.
- * Returns: "creator" | "loudly" | "audius" | null
+ * Returns: "creator" | "audius" | "loudly" (legacy only) | null
  */
 export async function getAssetOrigin(assetId) {
   if (!assetId) return null;
@@ -15,7 +15,8 @@ export async function getAssetOrigin(assetId) {
 }
 
 /**
- * Check if asset can be published to Audius (origin must not be "loudly").
+ * Check if asset can be published to Audius.
+ * Legacy "loudly" origin (from removed Loudly integration) is still blocked.
  */
 export async function canPublishToAudius(assetId) {
   const origin = await getAssetOrigin(assetId);
@@ -23,7 +24,8 @@ export async function canPublishToAudius(assetId) {
 }
 
 /**
- * Sync filter — returns array of asset IDs that pass the Audius gate.
+ * Sync filter — returns array of assets that pass the Audius gate.
+ * Legacy "loudly" origin assets are excluded.
  */
 export function filterAudiusEligible(assets = []) {
   return assets.filter(a => (a.origin || 'creator') !== 'loudly');
@@ -31,6 +33,5 @@ export function filterAudiusEligible(assets = []) {
 
 export const ORIGIN_LABEL = {
   creator: { label: 'Creator', color: 'bg-purple-500/20 text-purple-300', emoji: '🎨' },
-  loudly:  { label: 'Loudly',  color: 'bg-orange-500/20 text-orange-300', emoji: '🎼' },
   audius:  { label: 'Audius',  color: 'bg-emerald-500/20 text-emerald-300', emoji: '🎧' },
 };

@@ -21,12 +21,11 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
     setBuilding(true);
     try {
       const playlistName = name || `${genre.toUpperCase()} Radio Mix`;
-      const res = await base44.functions.invoke("loudlyCatalog", {
-        action: "build_playlist",
+      const res = await base44.functions.invoke("buildRadioPlaylist", {
         genre,
         mood,
         name: playlistName,
-        description: `Auto-generated radio playlist — ${genre} / ${mood} — Loudly catalog + community tracks`,
+        description: `Auto-generated radio playlist — ${genre} / ${mood} — top community tracks`,
       });
       setResult(res.data);
       toast.success(`Playlist built! ${res.data?.track_count || 0} tracks added.`);
@@ -57,7 +56,7 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
             </div>
             <div>
               <h2 className="font-black text-foreground">Build Radio Playlist</h2>
-              <p className="text-xs text-muted-foreground">Mix Loudly catalog + community tracks</p>
+              <p className="text-xs text-muted-foreground">Curate top community tracks by genre</p>
             </div>
           </div>
           <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted active:bg-muted transition-colors">
@@ -101,8 +100,7 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
               {/* Info */}
               <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 space-y-1">
                 <p className="font-semibold">What gets mixed in:</p>
-                <p>🎵 Loudly catalog tracks matching your genre/mood</p>
-                <p>🎤 Top approved community submissions for this genre</p>
+                <p>🎤 Top approved community submissions for this genre, ranked by likes</p>
               </div>
 
               <Button onClick={build} disabled={building} className="w-full bg-purple-600 hover:bg-purple-500 rounded-xl font-bold gap-2">
@@ -120,8 +118,7 @@ export default function RadioPlaylistBuilder({ onCreated, onClose }) {
                 <p className="text-muted-foreground text-sm mt-1">{result.track_count} tracks added</p>
               </div>
               <div className="flex gap-3 justify-center text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><Music2 className="w-3 h-3 text-blue-400" /> {result.loudly_count} Loudly</span>
-                <span className="flex items-center gap-1"><Music2 className="w-3 h-3 text-emerald-400" /> {result.community_count} Community</span>
+                <span className="flex items-center gap-1"><Music2 className="w-3 h-3 text-emerald-400" /> {result.community_count} Community tracks</span>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">Close</Button>

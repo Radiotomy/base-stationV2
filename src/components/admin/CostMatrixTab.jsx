@@ -1,15 +1,13 @@
 import { useState } from "react";
-import { DollarSign, TrendingUp, Zap, Info } from "lucide-react";
+import { DollarSign, TrendingUp, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // ─── RAW API COSTS (what WE pay) ─────────────────────────────────────────────
 // AIMusicAPI: 1 credit = ~$0.01 USD (based on their plan tiers, ~$30/3000 credits)
 // Tempolor:   1 credit = $0.01 USD (explicitly stated in docs)
-// Loudly:     $0.125 per track generation (confirmed by user)
 
 const AIMUSIC_CREDIT_USD = 0.01; // per their credit
 const TEMPOLOR_CREDIT_USD = 0.01; // per their credit
-const LOUDLY_PER_TRACK_USD = 0.125;
 
 // Our markup target: ~3-5x to cover infrastructure, support, margin
 // We price in BASE Station Credits where 1 BS Credit = $0.01 USD retail to user
@@ -47,8 +45,6 @@ const OPERATIONS = [
   { provider: "tempcolor", model: "TemPolor i3", operation: "Instrumental Generation (up to 120s)", api_credits: 3, api_usd: 3 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
   { provider: "tempcolor", model: "Lyric v1", operation: "Lyrics Generation", api_credits: 1, api_usd: 1 * TEMPOLOR_CREDIT_USD, output: "Lyrics", category: "lyrics" },
   { provider: "tempcolor", model: "Stems v1", operation: "Audio Stem Separation (vocal + instrumental)", api_credits: 5, api_usd: 5 * TEMPOLOR_CREDIT_USD, output: "2 stems", category: "stems" },
-  // ── LOUDLY ──────────────────────────────────────────────────────────────────
-  { provider: "loudly", model: "VEGA_1 / VEGA_2", operation: "AI Track Generation (prompt)", api_credits: null, api_usd: LOUDLY_PER_TRACK_USD, output: "1 track", category: "music" },
 ];
 
 const PROVIDER_STYLE = {
@@ -56,7 +52,6 @@ const PROVIDER_STYLE = {
   producer:  { label: "Producer", color: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
   nuro:      { label: "Nuro",     color: "bg-pink-500/20 text-pink-300 border-pink-500/30" },
   tempcolor: { label: "Tempolor", color: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
-  loudly:    { label: "Loudly",   color: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
 };
 
 const CATEGORY_LABELS = {
@@ -151,7 +146,6 @@ export default function CostMatrixTab() {
         {[
           { label: "Cheapest Track Gen", value: cheapest ? usd(cheapest.api_usd) : "—", sub: `${PROVIDER_STYLE[cheapest?.provider]?.label} — ${cheapest?.model}`, color: "text-emerald-400" },
           { label: "Most Expensive Track", value: mostExpensive ? usd(mostExpensive.api_usd) : "—", sub: `${PROVIDER_STYLE[mostExpensive?.provider]?.label} — ${mostExpensive?.model}`, color: "text-red-400" },
-          { label: "Loudly Cost/Track", value: usd(LOUDLY_PER_TRACK_USD), sub: "Fixed — no credits system", color: "text-blue-400" },
           { label: "Our Avg Charge (4×)", value: `${bsCredits(0.05, 4)} BS Credits`, sub: "for a typical 5¢ generation", color: "text-yellow-400" },
         ].map(({ label, value, sub, color }) => (
           <div key={label} className="p-4 rounded-2xl bg-card border border-border">
@@ -241,9 +235,6 @@ export default function CostMatrixTab() {
             <div className="flex justify-between border-b border-border pb-1">
               <span>1 Tempolor Credit (our cost)</span><span className="text-foreground font-semibold">= $0.01</span>
             </div>
-            <div className="flex justify-between border-b border-border pb-1">
-              <span>1 Loudly track gen (our cost)</span><span className="text-foreground font-semibold">= $0.125</span>
-            </div>
             <div className="flex justify-between pt-1">
               <span>Recommended credit pack price</span><span className="text-yellow-400 font-bold">100 BS Credits = $1.99</span>
             </div>
@@ -259,7 +250,6 @@ export default function CostMatrixTab() {
               { op: "Song w/ Vocals (Tempolor v4.6)", bs: bsCredits(0.05, markup), note: "flagship" },
               { op: "Stems Basic (Sonic)",            bs: bsCredits(0.10, markup), note: "power user" },
               { op: "Stems Full 24-stem (Sonic)",     bs: bsCredits(0.50, markup), note: "pro tier only" },
-              { op: "Loudly VEGA_2 Track",            bs: bsCredits(0.125, markup), note: "fast gen" },
               { op: "Generate Lyrics (Tempolor)",     bs: bsCredits(0.01, markup), note: "cheap" },
             ].map(({ op, bs, note }) => (
               <div key={op} className="flex justify-between items-center border-b border-border pb-1">
@@ -271,16 +261,6 @@ export default function CostMatrixTab() {
         </div>
       </div>
 
-      {/* Loudly cost note */}
-      <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
-        <Zap className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-amber-200/80">
-          <span className="font-bold text-amber-300">⚠ Loudly Pricing Note: </span>
-          At $0.125/track, Loudly is our most expensive provider (~5–42× more than Tempolor or Sonic).
-          Recommended use: fast synchronous generation only, or wrap in a premium "Instant Generation" credit tier with higher markup ({Math.ceil(0.125 / 0.01 * markup)} BS Credits at {markup}×).
-          Consider Tempolor i3 ($0.03) or Sonic ($0.10) as primary providers for cost efficiency.
-        </div>
-      </div>
     </div>
   );
 }

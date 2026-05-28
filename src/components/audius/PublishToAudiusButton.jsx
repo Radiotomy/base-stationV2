@@ -6,14 +6,14 @@ import { toast } from 'sonner';
 
 /**
  * Reusable "Publish to Audius" button.
- * Disabled if origin === "loudly" or required metadata missing.
+ * Legacy "loudly" origin assets remain blocked for licensing safety.
  */
 export default function PublishToAudiusButton({ asset, className = '', onPublished }) {
   const [loading, setLoading] = useState(false);
   const [published, setPublished] = useState(!!asset?.metadata?.audius_track_id);
 
   const origin = asset?.origin || 'creator';
-  const isBlocked = origin === 'loudly';
+  const isBlocked = origin === 'loudly'; // legacy assets only — no new content gets this tag
   const missingMeta = !asset?.title || !asset?.file_url;
   const disabled = isBlocked || missingMeta || loading || published;
 
@@ -46,7 +46,7 @@ export default function PublishToAudiusButton({ asset, className = '', onPublish
   if (isBlocked) {
     return (
       <Button disabled variant="outline" className={`gap-2 text-muted-foreground ${className}`}>
-        <Lock className="w-4 h-4" /> Audius blocked (Loudly content)
+        <Lock className="w-4 h-4" /> Audius publish unavailable
       </Button>
     );
   }

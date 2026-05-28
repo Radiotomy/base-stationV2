@@ -9,7 +9,6 @@ const PROVIDER_COLORS = {
   tempcolor: '#f59e0b',
   producer:  '#a855f7',
   nuro:      '#ec4899',
-  loudly:    '#3b82f6',
   core:      '#10b981',
 };
 

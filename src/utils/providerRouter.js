@@ -1,5 +1,5 @@
 /**
- * Phase 3 — Provider Routing Intelligence
+ * Provider Routing Intelligence
  * Centralized routing matrix: given track parameters, picks the optimal provider
  * and returns a ranked fallback chain with a human-readable reason.
  *
@@ -7,7 +7,7 @@
  *   1. Duration > 120s          → Tempolor (only provider supporting up to 5 min)
  *   2. Vocal / needs_lyrics      → Nuro v2.0 (best vocal fidelity)
  *   3. Multiple variations       → Sonic v5-5 (returns 2 clips per call)
- *   4. Speed priority            → Loudly VEGA_2 (synchronous, no polling)
+ *   4. Speed priority            → Sonic v4-5-plus (fastest reliable provider)
  *   5. Default / general purpose → Sonic v4-5-plus (balanced quality)
  */
 
@@ -16,7 +16,6 @@ export const PROVIDER_DETAILS = {
   tempcolor: { label: 'Tempolor', model: 'TemPolor v4.6',   emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
   producer:  { label: 'Producer', model: 'FUZZ-2.0',        emoji: '🎤', color: 'border-purple-500 bg-purple-500/10 text-purple-300' },
   nuro:      { label: 'Nuro',     model: 'v2.0',            emoji: '🎼', color: 'border-pink-500 bg-pink-500/10 text-pink-300' },
-  loudly:    { label: 'Loudly',   model: 'VEGA_2',          emoji: '🔊', color: 'border-blue-500 bg-blue-500/10 text-blue-300' },
 };
 
 /**
@@ -69,18 +68,18 @@ export function routeProvider({
       model: 'sonic-v5-5',
       reason: `Sonic selected — generates 2 track variations per call for comparison.`,
       routing_key: 'multiple_variations',
-      fallbackChain: ['producer', 'nuro', 'loudly'],
+      fallbackChain: ['producer', 'nuro'],
     };
   }
 
-  // Rule 4: Speed priority — Loudly is synchronous (no polling needed)
+  // Rule 4: Speed priority — Sonic v4-5-plus is the fastest reliable option
   if (speed_priority) {
     return {
-      provider: 'loudly',
-      model: 'VEGA_2',
-      reason: `Loudly selected — synchronous generation, fastest result (no queue wait).`,
+      provider: 'sonic',
+      model: 'sonic-v4-5-plus',
+      reason: `Sonic v4-5-plus selected — fastest reliable provider.`,
       routing_key: 'speed_priority',
-      fallbackChain: ['sonic', 'producer'],
+      fallbackChain: ['producer', 'tempcolor'],
     };
   }
 
@@ -90,6 +89,6 @@ export function routeProvider({
     model: 'sonic-v4-5-plus',
     reason: `Sonic selected — best general-purpose quality for this track type.`,
     routing_key: 'general_purpose',
-    fallbackChain: ['producer', 'loudly', 'nuro', 'tempcolor'],
+    fallbackChain: ['producer', 'nuro', 'tempcolor'],
   };
 }

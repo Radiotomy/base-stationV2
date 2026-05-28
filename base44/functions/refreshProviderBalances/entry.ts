@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const PROVIDERS = [
-  { name: "loudly", envKey: "LOUDLY_API_KEY" },
   { name: "nuro", envKey: "NURO_API_KEY" },
   { name: "sonic", envKey: "SONIC_API_KEY" },
   { name: "producer", envKey: "PRODUCER_API_KEY" },
@@ -13,15 +12,6 @@ const PROVIDERS = [
 // Each provider has a different API shape — we do best-effort
 async function fetchBalance(provider, apiKey) {
   try {
-    if (provider === "loudly") {
-      const res = await fetch("https://api.loudly.com/v1/account", {
-        headers: { Authorization: `Bearer ${apiKey}` }
-      });
-      if (!res.ok) return { balance: null, status: "error", error: `HTTP ${res.status}` };
-      const data = await res.json();
-      return { balance: data.credits ?? data.balance ?? null, status: "active" };
-    }
-
     if (provider === "nuro" || provider === "sonic" || provider === "producer") {
       const res = await fetch("https://api.aimusicapi.ai/v1/get-credits", {
         method: "POST",

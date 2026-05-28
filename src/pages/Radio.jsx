@@ -12,22 +12,22 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
 
-// Genres match Loudly's exact tag values from GET /api/songs/tags
+// Channel genres map to Audius trending genres + community submission genres
 const DEFAULT_CHANNELS = [
-  { id: "discover",   name: "Discover",         slug: "discover",  genre: null,              emoji: "🌟", color_theme: "#7C3AED", description: "Fresh AI music from Loudly + the BASE Station community" },
+  { id: "discover",   name: "Discover",         slug: "discover",  genre: null,              emoji: "🌟", color_theme: "#7C3AED", description: "Fresh tracks from Audius + the BASE Station community" },
   { id: "staffpicks", name: "Staff Picks",      slug: "staffpicks", genre: null,             emoji: "⭐", color_theme: "#FBBF24", description: "Hand-curated by the BASE Station team" },
-  { id: "hiphop",     name: "Hip-Hop & Trap",   slug: "hiphop",    genre: "Hip Hop & Trap",  emoji: "🎤", color_theme: "#EF4444", description: "AI beats, bars & trap bangers" },
-  { id: "edm",        name: "EDM",               slug: "edm",       genre: "EDM",             emoji: "⚡", color_theme: "#06B6D4", description: "Synths, drops & AI energy" },
-  { id: "rb",         name: "Soul / R&B",        slug: "rb",        genre: "Soul/R&B",        emoji: "🎵", color_theme: "#EC4899", description: "Smooth AI R&B and neo-soul" },
+  { id: "hiphop",     name: "Hip-Hop & Trap",   slug: "hiphop",    genre: "Hip Hop & Trap",  emoji: "🎤", color_theme: "#EF4444", description: "Beats, bars & trap bangers" },
+  { id: "edm",        name: "EDM",               slug: "edm",       genre: "EDM",             emoji: "⚡", color_theme: "#06B6D4", description: "Synths, drops & electronic energy" },
+  { id: "rb",         name: "Soul / R&B",        slug: "rb",        genre: "Soul/R&B",        emoji: "🎵", color_theme: "#EC4899", description: "Smooth R&B and neo-soul" },
   { id: "lofi",       name: "Lo-Fi",             slug: "lofi",      genre: "Lo-Fi",           emoji: "☕", color_theme: "#84CC16", description: "Chill beats to create and relax" },
-  { id: "pop",        name: "Pop",               slug: "pop",       genre: "Pop",             emoji: "💫", color_theme: "#F59E0B", description: "Catchy AI pop from Loudly + creators" },
+  { id: "pop",        name: "Pop",               slug: "pop",       genre: "Pop",             emoji: "💫", color_theme: "#F59E0B", description: "Catchy pop from indie artists + creators" },
   { id: "house",      name: "House",             slug: "house",     genre: "House",           emoji: "🏠", color_theme: "#8B5CF6", description: "Deep & progressive house beats" },
   { id: "cinematic",  name: "Cinematic",         slug: "cinematic", genre: "Cinematic",       emoji: "🎬", color_theme: "#6366F1", description: "Cinematic scores & epic soundscapes" },
 ];
 
 const SOURCE_BADGE = {
-  loudly:    { label: "Loudly",    cls: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
-  community: { label: "Community", cls: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  audius:    { label: "Audius",    cls: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" },
+  community: { label: "Community", cls: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" },
 };
 
 export default function Radio() {
@@ -68,8 +68,7 @@ export default function Radio() {
     if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
 
     try {
-      const res = await base44.functions.invoke('loudlyCatalog', {
-        action: 'radio_queue',
+      const res = await base44.functions.invoke('radioQueue', {
         genre: ch.genre || undefined,
         limit: 15,
       });
@@ -79,7 +78,7 @@ export default function Radio() {
       if (q.length > 0) {
         playTrack(q[0]);
       } else {
-        toast.info("No tracks available for this channel yet — submit tracks to the community or upgrade Loudly plan.");
+        toast.info("No tracks available for this channel yet — try another channel or submit a track.");
       }
     } catch (e) {
       setLoadingQueue(false);
@@ -262,7 +261,7 @@ export default function Radio() {
                 <div className="p-3 border-b border-white/10 flex items-center justify-between">
                   <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">Up Next — {queue.length} tracks</p>
                   <div className="flex gap-2 text-xs text-white/40">
-                    <span>{queue.filter(t => t.source === 'loudly').length} Loudly</span>
+                    <span>{queue.filter(t => t.source === 'audius').length} Audius</span>
                     <span>·</span>
                     <span>{queue.filter(t => t.source === 'community').length} Community</span>
                   </div>
@@ -300,7 +299,7 @@ export default function Radio() {
         <div className="flex items-center justify-between mb-5 gap-3">
           <h2 className="text-lg md:text-xl font-bold text-foreground">All Channels</h2>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <p className="text-xs text-muted-foreground hidden sm:block">Powered by Loudly + Community</p>
+            <p className="text-xs text-muted-foreground hidden sm:block">Powered by Audius + Community</p>
             <Button onClick={() => setShowBuilder(true)} size="sm" className="rounded-xl gap-1.5 bg-purple-600 hover:bg-purple-500 text-xs font-bold h-9 px-3">
               <Plus className="w-3.5 h-3.5" /> Build Mix
             </Button>

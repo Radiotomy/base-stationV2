@@ -13,7 +13,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  */
 
 const PROVIDERS = [
-  { name: "loudly", endpoint: "https://api.loudly.com/v1/account", envKey: "LOUDLY_API_KEY" },
   { name: "nuro", endpoint: "https://api.aimusicapi.ai/v1/get-credits", envKey: "NURO_API_KEY", method: "POST" },
   { name: "sonic", endpoint: "https://api.aimusicapi.ai/v1/get-credits", envKey: "SONIC_API_KEY", method: "POST" },
   { name: "producer", endpoint: "https://api.aimusicapi.ai/v1/get-credits", envKey: "PRODUCER_API_KEY", method: "POST" },
@@ -22,7 +21,7 @@ const PROVIDERS = [
 ];
 
 const HEALTH_WEIGHTS = { healthy: 100, degraded: 60, offline: 0, unknown: 50 };
-const COST_WEIGHTS = { loudly: 0.5, nuro: 1.0, sonic: 0.8, producer: 0.9, tempcolor: 1.2, ltx: 1.5 };
+const COST_WEIGHTS = { nuro: 1.0, sonic: 0.8, producer: 0.9, tempcolor: 1.2, ltx: 1.5 };
 
 function computeScore({ latency_ms, success_rate, balance, health_status, status }) {
   const cost = COST_WEIGHTS[arguments[0]?.provider] ?? 1.0;
