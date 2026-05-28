@@ -32,10 +32,6 @@ async function resolveAudiusBase() {
       useAppName: false,
     };
   }
-  const override = Deno.env.get('AUDIUS_NODE_URL');
-  if (override) {
-    return { base: `${override}/v1`, headers: { 'Accept': 'application/json' }, useAppName: true };
-  }
   try {
     const r = await fetch('https://api.audius.co');
     const j = await r.json();
@@ -70,7 +66,6 @@ Deno.serve(async (req) => {
     if (!action) return Response.json({ error: 'action required' }, { status: 400 });
 
     const apiKey = Deno.env.get('AUDIUS_API_KEY');
-    const privateKey = Deno.env.get('AUDIUS_PRIVATE_KEY');
 
     switch (action) {
       // === READ-ONLY (public) ===
@@ -121,15 +116,13 @@ Deno.serve(async (req) => {
       case 'publishMetadata':
       case 'publishStems':
       case 'publishBundle': {
-        if (!apiKey || !privateKey) {
+        if (!apiKey) {
           return Response.json({
-            error: 'Audius publishing requires AUDIUS_API_KEY and AUDIUS_PRIVATE_KEY env vars',
             simulated: true,
-            // Stub result so client flows can be tested end-to-end
             data: {
               audius_track_id: `sim_${Date.now()}`,
               status: 'simulated',
-              note: 'Set AUDIUS_API_KEY + AUDIUS_PRIVATE_KEY to enable real publishing',
+              note: 'Set AUDIUS_API_KEY to enable real Audius publishing',
             }
           }, { status: 200 });
         }
