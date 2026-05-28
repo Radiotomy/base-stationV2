@@ -13,6 +13,7 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import ChipSelector from '@/components/music/ChipSelector';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
@@ -261,9 +262,10 @@ export default function AdvancedGenerateTab() {
         length: 'medium',
       });
       setLyrics(res.data?.lyrics || '');
+      refreshCreditsFromResponse(res.data);
       toast.success('Lyrics generated!');
     } catch (err) {
-      toast.error(err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
     }
     setGeneratingLyrics(false);
   };
@@ -295,6 +297,7 @@ export default function AdvancedGenerateTab() {
 
       if (res.data?.audio_url || res.data?.output_url) {
         setGenerating(false);
+        refreshCreditsFromResponse(res.data);
         await onComplete(res.data);
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
@@ -305,7 +308,7 @@ export default function AdvancedGenerateTab() {
       }
     } catch (err) {
       setGenerating(false);
-      toast.error(err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
     }
   };
 

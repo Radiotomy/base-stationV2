@@ -98,6 +98,7 @@ export default function LyricsStudio() {
     setLoading(true);
     try {
       let text = '';
+      let lastResponse = null;
       if (proMode) {
         // Professional Songwriting Engine — CanonicalLyricJob-compatible
         const maxCharsMap = {
@@ -115,6 +116,7 @@ export default function LyricsStudio() {
           bpm: proBpm ? Number(proBpm) : undefined,
           max_chars: maxCharsMap[length] || 2500,
         });
+        lastResponse = res;
         text = res.data?.lyrics_clamped || res.data?.lyrics || '';
         setMatchedGenre(res.data?.matched_genre || null);
         setGenreCraft(res.data?.genre_craft || null);
@@ -123,6 +125,7 @@ export default function LyricsStudio() {
         }
       } else {
         const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme });
+        lastResponse = res;
         text = res.data?.lyrics || res.data?.text || res.data?.content || '';
       }
 
@@ -131,8 +134,7 @@ export default function LyricsStudio() {
         setLyrics(text);
         toast.success(proMode ? '🎼 Pro lyrics generated!' : 'Lyrics generated!');
         // Refresh credits widget — server returns credits_remaining on success
-        // (works for both proMode and standard responses)
-        refreshCreditsFromResponse(arguments[0]?.data || null);
+        refreshCreditsFromResponse(lastResponse?.data);
       } else {
         toast.error('No lyrics returned — check backend function');
       }

@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import ChipSelector from '@/components/music/ChipSelector';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 const GENRES = ['Hip-Hop', 'EDM', 'Pop', 'R&B', 'Rock', 'Lo-Fi', 'Jazz', 'Classical', 'Trap', 'Other'];
 const MOODS = ['Happy', 'Sad', 'Energetic', 'Chill', 'Dark', 'Uplifting', 'Romantic', 'Angry'];
@@ -30,16 +31,18 @@ export default function CoverArtStudio() {
     setGenerating(true);
     try {
       const prompt = `Genre: ${genre}, Mood: ${mood}, Style: ${style}, professional album cover art, vibrant, high quality`;
-      const result = await base44.functions.invoke('generateCoverArt', {
+      const res = await base44.functions.invoke('generateCoverArtTiered', {
         prompt,
         quality: 'cheap'
       });
-      setGeneratedArt(result.image_url);
-      setVariations([result.image_url]);
-      setSelectedVariation(result.image_url);
+      const url = res.data?.image_url;
+      setGeneratedArt(url);
+      setVariations([url]);
+      setSelectedVariation(url);
+      refreshCreditsFromResponse(res.data);
       toast.success('Cover art generated!');
     } catch (error) {
-      toast.error(error.message);
+      if (!handleCreditError(error)) toast.error(error?.response?.data?.message || error.message);
     }
     setGenerating(false);
   };
@@ -51,16 +54,18 @@ export default function CoverArtStudio() {
     }
     setGenerating(true);
     try {
-      const result = await base44.functions.invoke('generateCoverArt', {
+      const res = await base44.functions.invoke('generateCoverArtTiered', {
         prompt: customPrompt,
         quality: 'modest'
       });
-      setGeneratedArt(result.image_url);
-      setVariations([result.image_url]);
-      setSelectedVariation(result.image_url);
+      const url = res.data?.image_url;
+      setGeneratedArt(url);
+      setVariations([url]);
+      setSelectedVariation(url);
+      refreshCreditsFromResponse(res.data);
       toast.success('Custom cover art generated!');
     } catch (error) {
-      toast.error(error.message);
+      if (!handleCreditError(error)) toast.error(error?.response?.data?.message || error.message);
     }
     setGenerating(false);
   };
@@ -71,21 +76,24 @@ export default function CoverArtStudio() {
       const prompt = activeMode === 'cheap' 
         ? `Genre: ${genre}, Mood: ${mood}, Style: ${style}, professional album cover art, vibrant`
         : customPrompt;
-      
+      const quality = activeMode === 'cheap' ? 'cheap' : 'modest';
+
       // Generate 3 variations
       const results = await Promise.all([
-        base44.functions.invoke('generateCoverArt', { prompt, quality: activeMode === 'cheap' ? 'cheap' : 'modest' }),
-        base44.functions.invoke('generateCoverArt', { prompt, quality: activeMode === 'cheap' ? 'cheap' : 'modest' }),
-        base44.functions.invoke('generateCoverArt', { prompt, quality: activeMode === 'cheap' ? 'cheap' : 'modest' })
+        base44.functions.invoke('generateCoverArtTiered', { prompt, quality }),
+        base44.functions.invoke('generateCoverArtTiered', { prompt, quality }),
+        base44.functions.invoke('generateCoverArtTiered', { prompt, quality })
       ]);
-      
-      const urls = results.map(r => r.image_url);
+
+      const urls = results.map(r => r.data?.image_url).filter(Boolean);
       setVariations(urls);
       setSelectedVariation(urls[0]);
       setGeneratedArt(urls[0]);
-      toast.success('3 variations generated!');
+      // Refresh credits from the last response (cumulative balance is correct)
+      refreshCreditsFromResponse(results[results.length - 1]?.data);
+      toast.success(`${urls.length} variations generated!`);
     } catch (error) {
-      toast.error(error.message);
+      if (!handleCreditError(error)) toast.error(error?.response?.data?.message || error.message);
     }
     setGenerating(false);
   };

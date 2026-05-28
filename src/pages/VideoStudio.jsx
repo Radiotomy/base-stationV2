@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
@@ -103,6 +104,7 @@ export default function VideoStudio() {
         setResult(res.data);
         setVersions(v => [res.data, ...v].slice(0, 5));
         setGenerating(false);
+        refreshCreditsFromResponse(res.data);
         toast.success('🎬 Video ready!');
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
@@ -113,7 +115,7 @@ export default function VideoStudio() {
       }
     } catch (err) {
       setGenerating(false);
-      toast.error(err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
     }
   };
 
