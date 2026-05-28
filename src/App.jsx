@@ -5,7 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
+import AIHelpAssistant from '@/components/assistant/AIHelpAssistant.jsx';
 import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
