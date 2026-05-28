@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import CostBadge from '@/components/credits/CostBadge';
 
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
@@ -291,6 +292,7 @@ export default function VideoStudio() {
               className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-base py-5 gap-2">
               <Zap className="w-5 h-5" />
               {isProcessing ? `Generating… ${progress || 0}%` : 'Generate Video'}
+              {!isProcessing && <CostBadge cost={15} />}
             </Button>
 
             {/* Progress */}

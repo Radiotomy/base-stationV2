@@ -14,6 +14,10 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import ChipSelector from '@/components/music/ChipSelector';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import CostBadge from '@/components/credits/CostBadge';
+
+// Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
+const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10, nuro: 7, loudly: 4 };
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
@@ -672,6 +676,7 @@ export default function AdvancedGenerateTab() {
             className="w-full bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-base py-5 gap-2">
             <Zap className="w-5 h-5" />
             {isProcessing ? (jobId ? `Processing… ${progress}%` : 'Starting…') : '🎛️ Generate Track'}
+            {!isProcessing && <CostBadge cost={PROVIDER_COSTS[provider] || 5} />}
           </Button>
 
           {/* Progress */}

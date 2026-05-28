@@ -13,6 +13,10 @@ import { cacheManager } from '@/utils/cacheManager';
 import ChipSelector from '@/components/music/ChipSelector';
 import { routeProvider, PROVIDER_DETAILS } from '@/utils/providerRouter';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import CostBadge from '@/components/credits/CostBadge';
+
+// Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
+const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10, nuro: 7, loudly: 4 };
 
 const ALL_PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
@@ -552,6 +556,7 @@ export default function QuickGenerateTab() {
         className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-base py-5 gap-2">
         <Zap className="w-5 h-5" />
         {isProcessing ? (jobId ? `AI Composing… ${progress}%` : 'AI Analyzing Prompt…') : '⚡ Quick Generate'}
+        {!isProcessing && <CostBadge cost={(PROVIDER_COSTS[provider] || 5) + 2} />}
       </Button>
 
       {/* Progress */}

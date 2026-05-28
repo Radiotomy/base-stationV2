@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import CostBadge from '@/components/credits/CostBadge';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
@@ -406,6 +407,7 @@ export default function LyricsStudio() {
                 className="w-full bg-pink-600 hover:bg-pink-500 rounded-xl font-bold gap-2">
                 <Zap className="w-4 h-4" />
                 {loading ? 'Generating…' : 'Generate  (⌘↵)'}
+                <CostBadge cost={2} size="sm" />
               </Button>
             </div>
 

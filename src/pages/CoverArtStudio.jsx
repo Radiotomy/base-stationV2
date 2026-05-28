@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import ChipSelector from '@/components/music/ChipSelector';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import CostBadge from '@/components/credits/CostBadge';
 
 const GENRES = ['Hip-Hop', 'EDM', 'Pop', 'R&B', 'Rock', 'Lo-Fi', 'Jazz', 'Classical', 'Trap', 'Other'];
 const MOODS = ['Happy', 'Sad', 'Energetic', 'Chill', 'Dark', 'Uplifting', 'Romantic', 'Angry'];
@@ -203,6 +204,7 @@ export default function CoverArtStudio() {
                   >
                     {generating ? <Loader className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                     {generating ? 'Generating…' : 'Generate'}
+                    {!generating && <CostBadge cost={1} size="sm" />}
                   </Button>
                 </>
               ) : (
@@ -225,6 +227,7 @@ export default function CoverArtStudio() {
                   >
                     {generating ? <Loader className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
                     {generating ? 'Generating…' : 'Generate Custom'}
+                    {!generating && <CostBadge cost={3} size="sm" />}
                   </Button>
                 </>
               )}

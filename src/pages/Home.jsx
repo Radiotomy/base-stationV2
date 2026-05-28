@@ -72,12 +72,14 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 sm:px-0">
               {user ? (
                 <>
-                  <Link to={user?.is_creator ? "/creator-dashboard" : "/radio"} className="w-full sm:w-auto">
+                  {/* Treat every signed-in user as a creator unless explicitly flagged otherwise.
+                      `is_creator` is optional — undefined defaults to true so new users see the Studio CTA. */}
+                  <Link to={user?.is_creator === false ? "/radio" : "/creator-dashboard"} className="w-full sm:w-auto">
                     <Button className="w-full sm:w-auto bg-white text-blue-900 hover:bg-blue-50 active:bg-blue-100 font-bold px-8 py-3 rounded-full text-base shadow-xl shadow-blue-900/30">
-                      {user.is_creator ? "Go to Studio 🎵" : "Tune In 📻"}
+                      {user?.is_creator === false ? "Tune In 📻" : "Go to Studio 🎵"}
                     </Button>
                   </Link>
-                  {user.is_creator && (
+                  {user?.is_creator !== false && (
                     <Link to="/music-studio" className="w-full sm:w-auto">
                       <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
                         <Music className="w-5 h-5 mr-2" /> Create Music
