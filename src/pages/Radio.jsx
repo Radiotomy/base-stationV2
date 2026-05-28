@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Pause, Volume2, VolumeX, Radio as RadioIcon, Wifi,
-  SkipForward, SkipBack, Music, Loader2, ListMusic, RefreshCw, Plus
+  SkipForward, SkipBack, Music, Loader2, ListMusic, RefreshCw, Plus, Upload
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -291,6 +291,24 @@ export default function Radio() {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Get on the Radio CTA */}
+      <div className="max-w-5xl mx-auto px-4 md:px-6 pt-6">
+        <div className="p-4 md:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-purple-500/10 border border-emerald-500/20 flex items-center gap-3 md:gap-4 flex-wrap">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+            <RadioIcon className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground font-bold text-sm md:text-base">Get your track on BASE Station Radio</p>
+            <p className="text-muted-foreground text-xs md:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
+          </div>
+          <Link to="/submit" className="flex-shrink-0">
+            <Button size="sm" className="rounded-xl gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold h-9 px-4">
+              <Upload className="w-3.5 h-3.5" /> Upload Track
+            </Button>
+          </Link>
         </div>
       </div>
 
