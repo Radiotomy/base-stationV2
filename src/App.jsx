@@ -8,6 +8,8 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
 import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
+import OnboardingModal from '@/components/onboarding/OnboardingModal';
+import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 
 // Pages
 import Home from './pages/Home';
@@ -154,6 +156,8 @@ const AuthenticatedApp = () => {
         <Route path="*" element={<PageNotFound />} />
       </Routes>
       <AIHelpAssistant />
+      {user && <OnboardingModal />}
+      {user && <PWAInstallPrompt />}
     </>
   );
 };

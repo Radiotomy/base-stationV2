@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
+import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 
 const ASSET_ICONS = {
   track:    { icon: Music,    color: 'from-blue-600 to-cyan-700' },
@@ -88,7 +89,13 @@ export default function TrackCard({ asset, onDelete }) {
         {/* Title + quick badges */}
         <div className="flex-1 min-w-0">
           <p className="font-black text-sm text-foreground truncate">{asset.title}</p>
-          <div className="flex flex-wrap gap-1 mt-0.5">
+          <div className="flex flex-wrap gap-1 mt-0.5 items-center">
+            <ProvenanceBadge
+              origin={asset.origin || (m.provider ? 'ai' : 'creator')}
+              provider={m.provider}
+              model={m.model}
+              size="xs"
+            />
             {m.genre   && <Badge variant="outline" className="text-xs px-1.5 py-0">{m.genre}</Badge>}
             {m.mood    && <Badge variant="outline" className="text-xs px-1.5 py-0">{m.mood}</Badge>}
             {m.bpm     && <Badge variant="outline" className="text-xs px-1.5 py-0">{m.bpm} BPM</Badge>}

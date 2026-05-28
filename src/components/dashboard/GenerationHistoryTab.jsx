@@ -29,6 +29,21 @@ const STUDIO_PATHS = {
   video:     '/video-studio',
 };
 
+// Build a regenerate link with prompt/genre/mood pre-filled via URL params
+function buildRegenLink(path, job) {
+  const params = new URLSearchParams();
+  const d = job.input_data || {};
+  if (d.prompt)        params.set('prompt', d.prompt);
+  if (d.lyrics)        params.set('lyrics', d.lyrics);
+  if (d.genre)         params.set('genre', d.genre);
+  if (d.mood)          params.set('mood', d.mood);
+  if (d.duration)      params.set('duration', d.duration);
+  if (d.style)         params.set('style', d.style);
+  if (job.provider)    params.set('provider', job.provider);
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
 function JobRow({ job, onDelete }) {
   const Icon = JOB_ICONS[job.job_type] || Music;
   const color = JOB_COLORS[job.job_type] || JOB_COLORS.music;
@@ -79,9 +94,9 @@ function JobRow({ job, onDelete }) {
             </a>
           )}
           {studioPath && (
-            <Link to={studioPath}>
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-cyan-400 hover:bg-cyan-500/10" title="Re-generate in studio">
-                <RotateCcw className="w-3.5 h-3.5" />
+            <Link to={buildRegenLink(studioPath, job)} title="Re-generate with same prompt">
+              <Button size="sm" variant="ghost" className="h-8 rounded-lg text-cyan-400 hover:bg-cyan-500/10 gap-1 px-2 text-xs font-bold">
+                <RotateCcw className="w-3 h-3" /> Re-generate
               </Button>
             </Link>
           )}

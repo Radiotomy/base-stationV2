@@ -19,23 +19,23 @@ export default function StudioPageHeader({ icon: Icon, title, subtitle, accent =
   };
   return (
     <>
-      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-6 h-14 flex items-center gap-3">
-        <Link to={backTo} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-5 h-5" />
+      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-4 md:px-6 h-14 flex items-center gap-3">
+        <Link to={backTo} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors min-w-0">
+          <ArrowLeft className="w-5 h-5 flex-shrink-0" />
           <span className="text-sm font-semibold">Back</span>
         </Link>
-        {badge && <Badge variant="outline" className="ml-auto">{badge}</Badge>}
+        {badge && <Badge variant="outline" className="ml-auto text-xs truncate max-w-[40%]">{badge}</Badge>}
       </div>
-      <div className={`relative pt-20 pb-10 px-6 bg-gradient-to-br ${accentMap[accent]}`}>
-        <div className="max-w-5xl mx-auto flex items-center gap-4">
+      <div className={`relative pt-16 md:pt-20 pb-6 md:pb-10 px-4 md:px-6 bg-gradient-to-br ${accentMap[accent]}`}>
+        <div className="max-w-5xl mx-auto flex items-center gap-3 md:gap-4">
           {Icon && (
-            <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <Icon className={`w-7 h-7 ${iconColorMap[accent]}`} />
+            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+              <Icon className={`w-5 h-5 md:w-7 md:h-7 ${iconColorMap[accent]}`} />
             </div>
           )}
-          <div>
-            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">{title}</h1>
-            {subtitle && <p className="text-white/60 text-sm md:text-base mt-1">{subtitle}</p>}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight truncate">{title}</h1>
+            {subtitle && <p className="text-white/60 text-xs md:text-base mt-0.5 md:mt-1 line-clamp-2">{subtitle}</p>}
           </div>
         </div>
       </div>

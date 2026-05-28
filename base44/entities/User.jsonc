@@ -2,21 +2,10 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "role": {
-      "type": "string",
-      "enum": [
-        "admin",
-        "user"
-      ],
-      "description": "The role of the user in the app"
-    },
-    "is_creator": {
+    "onboarding_complete": {
       "type": "boolean",
       "default": false,
-      "description": "Whether user has creator/artist privileges"
+      "description": "Whether the user has finished the 3-step onboarding tour"
     }
-  },
-  "required": [
-    "role"
-  ]
+  }
 }

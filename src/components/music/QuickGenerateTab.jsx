@@ -35,12 +35,12 @@ const QUICK_EXAMPLES = [
 
 const GENRE_OPTIONS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Country', 'Red Dirt Country', 'Afrobeats', 'Drill', 'Ambient', 'Indie'];
 
-export default function QuickGenerateTab() {
-  const [prompt, setPrompt] = useState('');
-  const [providerOverride, setProviderOverride] = useState(null); // null = auto-routed
+export default function QuickGenerateTab({ initialPrompt = '', initialGenre = '', initialProvider = '' }) {
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [providerOverride, setProviderOverride] = useState(initialProvider || null); // null = auto-routed
   const [routingDecision, setRoutingDecision] = useState(null);   // { provider, model, reason, routing_key }
-  const [showProviderOverride, setShowProviderOverride] = useState(false);
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [showProviderOverride, setShowProviderOverride] = useState(!!initialProvider);
+  const [selectedGenre, setSelectedGenre] = useState(initialGenre);
   const [voicePersonas, setVoicePersonas] = useState([]);
   const [selectedPersona, setSelectedPersona] = useState('auto');
   // Derived: effective provider is the override (if set) or the auto-routed one

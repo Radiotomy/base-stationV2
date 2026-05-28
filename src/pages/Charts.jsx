@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TrendingUp, TrendingDown, Minus, Play, Music, Flame, Calendar, Globe, Search, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import ProvenanceBadge from "@/components/common/ProvenanceBadge";
 
 const PERIODS = [
   { key: "weekly", label: "This Week", icon: Flame },
@@ -180,7 +181,8 @@ export default function Charts() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-sm truncate text-foreground">{track.track_title}</h3>
                     <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <ProvenanceBadge origin={track.source || track.origin || 'community'} size="xs" />
                       {track.genre && <Badge variant="outline" className="text-xs px-1.5 py-0 capitalize border-border">{track.genre}</Badge>}
                     </div>
                   </div>
