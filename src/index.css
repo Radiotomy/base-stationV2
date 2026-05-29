@@ -100,62 +100,188 @@
 /* ===========================================
    GLOBAL LIQUID MERCURY OVERRIDES
    Re-skins existing hardcoded page gradients
-   to obsidian + chrome without touching pages
+   to obsidian + chrome without touching pages.
+   Uses html prefix for high specificity to beat
+   Tailwind utility classes.
    =========================================== */
-@layer base {
-  /* Neutralize all hardcoded hero gradients to obsidian */
-  [class*="from-purple-9"][class*="bg-gradient"],
-  [class*="from-orange-9"][class*="bg-gradient"],
-  [class*="from-pink-9"][class*="bg-gradient"],
-  [class*="from-indigo-9"][class*="bg-gradient"],
-  [class*="from-blue-9"][class*="bg-gradient"],
-  [class*="from-slate-9"][class*="bg-gradient"],
-  [class*="from-zinc-9"][class*="bg-gradient"],
-  [class*="from-emerald-9"][class*="bg-gradient"],
-  [class*="from-violet-9"][class*="bg-gradient"],
-  [class*="from-cyan-9"][class*="bg-gradient"],
-  [class*="from-red-9"][class*="bg-gradient"],
-  [class*="from-fuchsia-9"][class*="bg-gradient"] {
-    background-image:
-      radial-gradient(ellipse 60% 80% at 20% 20%, rgba(199, 184, 234, 0.18), transparent 60%),
-      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(0, 200, 255, 0.10), transparent 60%),
-      linear-gradient(145deg, #15151F 0%, #0A0A12 100%) !important;
-  }
 
-  /* Re-skin common solid color hero backgrounds */
-  .bg-purple-950, .bg-indigo-950, .bg-slate-950, .bg-zinc-950,
-  .bg-orange-950, .bg-pink-950, .bg-blue-950, .bg-emerald-950,
-  .bg-violet-950, .bg-cyan-950, .bg-fuchsia-950 {
-    background-color: #0A0A12 !important;
-  }
+/* Override Tailwind gradient color stops at the CSS variable level.
+   This catches every from-*-9XX / via-*-9XX / to-*-9XX combination. */
+html .from-purple-950, html .from-purple-900, html .from-purple-800,
+html .from-indigo-950, html .from-indigo-900, html .from-indigo-800,
+html .from-violet-950, html .from-violet-900, html .from-violet-800,
+html .from-blue-950, html .from-blue-900, html .from-blue-800,
+html .from-pink-950, html .from-pink-900, html .from-pink-800,
+html .from-orange-950, html .from-orange-900, html .from-orange-800,
+html .from-red-950, html .from-red-900, html .from-red-800,
+html .from-emerald-950, html .from-emerald-900, html .from-emerald-800,
+html .from-cyan-950, html .from-cyan-900, html .from-cyan-800,
+html .from-slate-950, html .from-slate-900, html .from-slate-800,
+html .from-zinc-950, html .from-zinc-900, html .from-zinc-800,
+html .from-fuchsia-950, html .from-fuchsia-900, html .from-fuchsia-800,
+html .from-rose-950, html .from-rose-900, html .from-rose-800,
+html .from-teal-950, html .from-teal-900, html .from-teal-800,
+html .from-amber-950, html .from-amber-900, html .from-amber-800,
+html .from-yellow-950, html .from-yellow-900, html .from-yellow-800 {
+  --tw-gradient-from: #15151F var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(21 21 31 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
 
-  /* Convert opaque colored chip backgrounds to chrome glass */
-  .bg-purple-600, .bg-purple-500, .bg-purple-700,
-  .bg-indigo-600, .bg-indigo-500,
-  .bg-blue-600, .bg-blue-500,
-  .bg-orange-600, .bg-orange-500,
-  .bg-pink-600, .bg-pink-500,
-  .bg-emerald-600, .bg-emerald-500,
-  .bg-violet-600, .bg-violet-500,
-  .bg-fuchsia-600, .bg-fuchsia-500 {
-    background: linear-gradient(135deg, #E8E8F0 0%, #C8CDD2 50%, #FFE5F5 100%) !important;
-    color: #0A0A12 !important;
-  }
-  .bg-purple-600:hover, .bg-purple-500:hover, .bg-purple-700:hover,
-  .bg-indigo-600:hover, .bg-indigo-500:hover,
-  .bg-blue-600:hover, .bg-blue-500:hover,
-  .bg-orange-600:hover, .bg-orange-500:hover,
-  .bg-pink-600:hover, .bg-pink-500:hover,
-  .bg-emerald-600:hover, .bg-emerald-500:hover {
-    background: linear-gradient(135deg, #FFFFFF 0%, #E0E5EC 50%, #FFDDF0 100%) !important;
-  }
+html .via-purple-950, html .via-purple-900, html .via-purple-800,
+html .via-indigo-950, html .via-indigo-900, html .via-indigo-800,
+html .via-violet-950, html .via-violet-900, html .via-violet-800,
+html .via-blue-950, html .via-blue-900, html .via-blue-800,
+html .via-pink-950, html .via-pink-900, html .via-pink-800,
+html .via-orange-950, html .via-orange-900, html .via-orange-800,
+html .via-red-950, html .via-red-900, html .via-red-800,
+html .via-emerald-950, html .via-emerald-900, html .via-emerald-800,
+html .via-cyan-950, html .via-cyan-900, html .via-cyan-800,
+html .via-slate-950, html .via-slate-900, html .via-slate-800,
+html .via-zinc-950, html .via-zinc-900, html .via-zinc-800,
+html .via-fuchsia-950, html .via-fuchsia-900, html .via-fuchsia-800,
+html .via-rose-950, html .via-rose-900, html .via-rose-800,
+html .via-teal-950, html .via-teal-900, html .via-teal-800,
+html .via-amber-950, html .via-amber-900, html .via-amber-800 {
+  --tw-gradient-via: #10101A var(--tw-gradient-via-position) !important;
+  --tw-gradient-via-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
+  --tw-gradient-stops: var(--tw-gradient-via-stops) !important;
+}
 
-  /* Make body min-height pages adopt the obsidian base */
-  .min-h-screen.bg-background,
-  .min-h-screen.bg-card,
-  .min-h-screen.bg-muted {
-    background-color: transparent !important;
-  }
+html .to-purple-950, html .to-purple-900, html .to-purple-800,
+html .to-indigo-950, html .to-indigo-900, html .to-indigo-800,
+html .to-violet-950, html .to-violet-900, html .to-violet-800,
+html .to-blue-950, html .to-blue-900, html .to-blue-800,
+html .to-pink-950, html .to-pink-900, html .to-pink-800,
+html .to-orange-950, html .to-orange-900, html .to-orange-800,
+html .to-red-950, html .to-red-900, html .to-red-800,
+html .to-emerald-950, html .to-emerald-900, html .to-emerald-800,
+html .to-cyan-950, html .to-cyan-900, html .to-cyan-800,
+html .to-slate-950, html .to-slate-900, html .to-slate-800,
+html .to-zinc-950, html .to-zinc-900, html .to-zinc-800,
+html .to-fuchsia-950, html .to-fuchsia-900, html .to-fuchsia-800,
+html .to-rose-950, html .to-rose-900, html .to-rose-800,
+html .to-teal-950, html .to-teal-900, html .to-teal-800,
+html .to-amber-950, html .to-amber-900, html .to-amber-800 {
+  --tw-gradient-to: #0A0A12 var(--tw-gradient-to-position) !important;
+}
+
+/* Solid 950-shade backgrounds → obsidian */
+html .bg-purple-950, html .bg-indigo-950, html .bg-slate-950, html .bg-zinc-950,
+html .bg-orange-950, html .bg-pink-950, html .bg-blue-950, html .bg-emerald-950,
+html .bg-violet-950, html .bg-cyan-950, html .bg-fuchsia-950, html .bg-red-950,
+html .bg-rose-950, html .bg-teal-950, html .bg-amber-950, html .bg-yellow-950,
+html .bg-purple-900, html .bg-indigo-900, html .bg-slate-900, html .bg-zinc-900,
+html .bg-violet-900, html .bg-blue-900 {
+  background-color: #0A0A12 !important;
+}
+
+/* Vivid 500/600/700 chip & button backgrounds → chrome */
+html .bg-purple-600, html .bg-purple-500, html .bg-purple-700,
+html .bg-indigo-600, html .bg-indigo-500, html .bg-indigo-700,
+html .bg-blue-600, html .bg-blue-500, html .bg-blue-700,
+html .bg-orange-600, html .bg-orange-500,
+html .bg-pink-600, html .bg-pink-500,
+html .bg-emerald-600, html .bg-emerald-500, html .bg-emerald-700,
+html .bg-violet-600, html .bg-violet-500,
+html .bg-fuchsia-600, html .bg-fuchsia-500,
+html .bg-rose-600, html .bg-rose-500,
+html .bg-teal-600, html .bg-teal-500 {
+  background-color: transparent !important;
+  background-image: linear-gradient(135deg, #E8E8F0 0%, #C8CDD2 50%, #FFE5F5 100%) !important;
+  color: #0A0A12 !important;
+}
+html .bg-purple-600:hover, html .bg-purple-500:hover, html .bg-purple-700:hover,
+html .bg-indigo-600:hover, html .bg-indigo-500:hover,
+html .bg-blue-600:hover, html .bg-blue-500:hover,
+html .bg-orange-600:hover, html .bg-orange-500:hover,
+html .bg-pink-600:hover, html .bg-pink-500:hover,
+html .bg-emerald-600:hover, html .bg-emerald-500:hover,
+html .bg-violet-600:hover, html .bg-violet-500:hover {
+  background-image: linear-gradient(135deg, #FFFFFF 0%, #E0E5EC 50%, #FFDDF0 100%) !important;
+}
+
+/* hover: variants */
+html .hover\:bg-purple-500:hover, html .hover\:bg-purple-600:hover,
+html .hover\:bg-indigo-500:hover, html .hover\:bg-indigo-600:hover,
+html .hover\:bg-orange-500:hover, html .hover\:bg-emerald-500:hover,
+html .hover\:bg-blue-500:hover, html .hover\:bg-pink-500:hover {
+  background-image: linear-gradient(135deg, #FFFFFF 0%, #E0E5EC 50%, #FFDDF0 100%) !important;
+}
+
+/* Subtle tinted backgrounds (10% / 20% opacity) → soft chrome glass */
+html [class*="bg-purple-500/20"], html [class*="bg-purple-500/10"],
+html [class*="bg-indigo-500/20"], html [class*="bg-indigo-500/10"],
+html [class*="bg-blue-500/20"], html [class*="bg-blue-500/10"],
+html [class*="bg-pink-500/20"], html [class*="bg-pink-500/10"],
+html [class*="bg-emerald-500/20"], html [class*="bg-emerald-500/10"],
+html [class*="bg-orange-500/20"], html [class*="bg-orange-500/10"],
+html [class*="bg-violet-500/20"], html [class*="bg-violet-500/10"],
+html [class*="bg-cyan-500/20"], html [class*="bg-cyan-500/10"] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Gradient text accents → iridescent */
+html .from-purple-400, html .from-pink-400, html .from-orange-400,
+html .from-blue-400, html .from-cyan-400, html .from-indigo-400,
+html .from-violet-400, html .from-emerald-400 {
+  --tw-gradient-from: #E8DFF5 var(--tw-gradient-from-position) !important;
+}
+html .to-purple-400, html .to-pink-400, html .to-orange-400,
+html .to-blue-400, html .to-cyan-400, html .to-indigo-400,
+html .to-violet-400, html .to-emerald-400 {
+  --tw-gradient-to: #FFE5F5 var(--tw-gradient-to-position) !important;
+}
+
+/* Body min-height pages → transparent so mercury aurora shows through */
+html .min-h-screen.bg-background,
+html .min-h-screen.bg-card,
+html .min-h-screen.bg-muted,
+html .min-h-screen.bg-slate-900,
+html .min-h-screen.bg-slate-950,
+html .min-h-screen.bg-zinc-900,
+html .min-h-screen.bg-zinc-950 {
+  background-color: transparent !important;
+}
+
+/* Card surfaces → glass merc-card look */
+html .bg-card {
+  background: linear-gradient(145deg, rgba(28, 28, 38, 0.85) 0%, rgba(18, 18, 26, 0.95) 100%) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Border accent re-skin */
+html [class*="border-purple-500"], html [class*="border-indigo-500"],
+html [class*="border-blue-500"], html [class*="border-pink-500"],
+html [class*="border-orange-500"], html [class*="border-emerald-500"],
+html [class*="border-violet-500"], html [class*="border-cyan-500"] {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Vivid 400-shade text accents → iridescent silver */
+html .text-purple-400, html .text-purple-300, html .text-purple-500,
+html .text-indigo-400, html .text-indigo-300,
+html .text-pink-400, html .text-pink-300,
+html .text-violet-400, html .text-violet-300,
+html .text-fuchsia-400, html .text-fuchsia-300 {
+  color: #E8DFF5 !important;
+}
+html .text-blue-400, html .text-blue-300, html .text-cyan-400, html .text-cyan-300 {
+  color: #C7E0F5 !important;
+}
+html .text-orange-400, html .text-orange-300, html .text-yellow-400, html .text-yellow-300, html .text-amber-400 {
+  color: #F5E5C7 !important;
+}
+html .text-emerald-400, html .text-emerald-300, html .text-green-400, html .text-teal-400 {
+  color: #C7F5E0 !important;
+}
+
+/* Hover text variants */
+html .hover\:text-purple-400:hover, html .hover\:text-purple-300:hover,
+html .hover\:text-pink-400:hover, html .hover\:text-pink-300:hover,
+html .hover\:text-indigo-400:hover {
+  color: #FFFFFF !important;
 }
 
 @layer utilities {
