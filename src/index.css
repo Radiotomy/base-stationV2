@@ -97,6 +97,67 @@
   }
 }
 
+/* ===========================================
+   GLOBAL LIQUID MERCURY OVERRIDES
+   Re-skins existing hardcoded page gradients
+   to obsidian + chrome without touching pages
+   =========================================== */
+@layer base {
+  /* Neutralize all hardcoded hero gradients to obsidian */
+  [class*="from-purple-9"][class*="bg-gradient"],
+  [class*="from-orange-9"][class*="bg-gradient"],
+  [class*="from-pink-9"][class*="bg-gradient"],
+  [class*="from-indigo-9"][class*="bg-gradient"],
+  [class*="from-blue-9"][class*="bg-gradient"],
+  [class*="from-slate-9"][class*="bg-gradient"],
+  [class*="from-zinc-9"][class*="bg-gradient"],
+  [class*="from-emerald-9"][class*="bg-gradient"],
+  [class*="from-violet-9"][class*="bg-gradient"],
+  [class*="from-cyan-9"][class*="bg-gradient"],
+  [class*="from-red-9"][class*="bg-gradient"],
+  [class*="from-fuchsia-9"][class*="bg-gradient"] {
+    background-image:
+      radial-gradient(ellipse 60% 80% at 20% 20%, rgba(199, 184, 234, 0.18), transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 80%, rgba(0, 200, 255, 0.10), transparent 60%),
+      linear-gradient(145deg, #15151F 0%, #0A0A12 100%) !important;
+  }
+
+  /* Re-skin common solid color hero backgrounds */
+  .bg-purple-950, .bg-indigo-950, .bg-slate-950, .bg-zinc-950,
+  .bg-orange-950, .bg-pink-950, .bg-blue-950, .bg-emerald-950,
+  .bg-violet-950, .bg-cyan-950, .bg-fuchsia-950 {
+    background-color: #0A0A12 !important;
+  }
+
+  /* Convert opaque colored chip backgrounds to chrome glass */
+  .bg-purple-600, .bg-purple-500, .bg-purple-700,
+  .bg-indigo-600, .bg-indigo-500,
+  .bg-blue-600, .bg-blue-500,
+  .bg-orange-600, .bg-orange-500,
+  .bg-pink-600, .bg-pink-500,
+  .bg-emerald-600, .bg-emerald-500,
+  .bg-violet-600, .bg-violet-500,
+  .bg-fuchsia-600, .bg-fuchsia-500 {
+    background: linear-gradient(135deg, #E8E8F0 0%, #C8CDD2 50%, #FFE5F5 100%) !important;
+    color: #0A0A12 !important;
+  }
+  .bg-purple-600:hover, .bg-purple-500:hover, .bg-purple-700:hover,
+  .bg-indigo-600:hover, .bg-indigo-500:hover,
+  .bg-blue-600:hover, .bg-blue-500:hover,
+  .bg-orange-600:hover, .bg-orange-500:hover,
+  .bg-pink-600:hover, .bg-pink-500:hover,
+  .bg-emerald-600:hover, .bg-emerald-500:hover {
+    background: linear-gradient(135deg, #FFFFFF 0%, #E0E5EC 50%, #FFDDF0 100%) !important;
+  }
+
+  /* Make body min-height pages adopt the obsidian base */
+  .min-h-screen.bg-background,
+  .min-h-screen.bg-card,
+  .min-h-screen.bg-muted {
+    background-color: transparent !important;
+  }
+}
+
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
