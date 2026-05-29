@@ -285,15 +285,24 @@ async function pollProvider(provider, providerTaskId, job) {
       return { status: 'failed', error: item.err_msg || 'Tempolor generation failed' };
     }
     // succeeded or main_succeeded both mean audio is ready
-    // Tempolor item fields: audio_url, audio_hi_url, lyrics, title, duration, image_url
+    // Tempolor item fields: audio_url, audio_hi_url, lyrics, lyrics_sections, title, duration, image_url, style, model
     if (st === 'succeeded' || st === 'main_succeeded' || item.audio_url) {
+      // Normalize Tempolor's lyrics_sections (line-level) into our generic aligned_lyrics format
+      // ({ word, start_s, end_s }) so editID3Tags can embed SYLT karaoke timing.
+      const aligned = Array.isArray(item.lyrics_sections)
+        ? item.lyrics_sections.map(s => ({ word: s.text || '', start_s: Number(s.start), end_s: Number(s.end) })).filter(s => Number.isFinite(s.start_s))
+        : null;
       return {
         status: 'completed',
-        audio_url: item.audio_hi_url || item.audio_url,
+        audio_url: item.audio_url || item.audio_hi_url,
+        wav_url: item.audio_hi_url || null,
         cover_image_url: item.image_url || item.cover_url || null,
         lyrics: item.lyrics || item.lyric || '',
         title: item.title || item.song_name || '',
+        tags: item.style || '',
         duration: item.duration,
+        model_version: item.model || null,
+        aligned_lyrics: aligned,
       };
     }
     return { status: 'processing' };
@@ -341,6 +350,7 @@ Deno.serve(async (req) => {
         model_version: m.model_version || undefined,
         clip_id: m.clip_id || undefined,
         clip_ids: m.clip_ids || undefined,
+        aligned_lyrics: m.aligned_lyrics || undefined,
       });
     }
     if (job.status === 'failed') {
@@ -388,6 +398,7 @@ Deno.serve(async (req) => {
             model_version: providerData.model_version || job.input_data?.model || null,
             clip_id: providerData.clip_id || null,
             clip_ids: providerData.clip_ids || null,
+            aligned_lyrics: providerData.aligned_lyrics || null,
           },
           credits_used: cost,
           completed_at: completedAt,
@@ -494,6 +505,7 @@ Deno.serve(async (req) => {
           model_version: providerData.model_version || job.input_data?.model || undefined,
           clip_id: providerData.clip_id || undefined,
           clip_ids: providerData.clip_ids || undefined,
+          aligned_lyrics: providerData.aligned_lyrics || undefined,
           content_hash: contentHash,
         });
       }

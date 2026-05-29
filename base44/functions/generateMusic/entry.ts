@@ -208,25 +208,33 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
 // Instrumental: POST /open-apis/v1/instrumental/generate  { prompt, model, callback_url }
 // callback_url is required but we pass a no-op placeholder
 const TEMPOLOR_BASE = 'https://api.tempolor.com/open-apis/v1';
-async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode }) {
-  const isInstrumental = tempolor_mode === 'instrumental' || !lyrics;
+async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url }) {
+  const isInstrumental = tempolor_mode === 'instrumental' || (!lyrics && !voice_id && !cover_audio_url);
   const endpoint = isInstrumental ? `${TEMPOLOR_BASE}/instrumental/generate` : `${TEMPOLOR_BASE}/song/generate`;
   const defaultModel = isInstrumental ? 'TemPolor i3.5' : 'TemPolor v4.6';
 
   // Tempolor hard limit: lyrics must be <= 3000 chars
   const safeLyrics = lyrics ? String(lyrics).slice(0, 3000) : null;
 
+  // Real callback URL — Tempolor pushes 3 events (audio_complete, wav_complete, lrcsections_complete)
+  // to /functions/tempolorWebhook. Falls back to webhook.site placeholder if not configured (dev mode).
+  const callbackUrl = Deno.env.get('TEMPOLOR_WEBHOOK_URL') || 'https://webhook.site/tempolor-callback';
+
   const body = isInstrumental
     ? {
         prompt: (sound_prompt || `${mood} ${genre} instrumental music`).slice(0, 1000),
         model: model || defaultModel,
-        callback_url: 'https://webhook.site/tempolor-callback',
+        callback_url: callbackUrl,
       }
     : {
         prompt: (sound_prompt || `${mood} ${genre} music`).slice(0, 1000),
         model: model || defaultModel,
         lyrics: safeLyrics,
-        callback_url: 'https://webhook.site/tempolor-callback',
+        callback_url: callbackUrl,
+        // Optional: official singer voice (see Tempolor "Voice ID option table" in docs)
+        ...(voice_id && { voice_id }),
+        // Optional: cover mode — generates a stylistic cover of a reference track
+        ...(cover_audio_url && { action: 'upload_cover', upload_audio_url: cover_audio_url }),
       };
 
   const controller = new AbortController();
@@ -299,7 +307,8 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, routing_reason } = await req.json();
+            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, routing_reason,
+            voice_id, cover_audio_url } = await req.json();
 
     // ── Pre-check credit balance (server-side gate) ──────────────────────────
     const cost = CREDIT_COSTS[provider] || 10;
@@ -320,7 +329,7 @@ Deno.serve(async (req) => {
       else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
       else if (provider === 'tempcolor')
-        providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode });
+        providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
       else // default: sonic
         providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics });
     } catch (providerErr) {

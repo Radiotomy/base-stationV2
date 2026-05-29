@@ -23,12 +23,17 @@ async function fetchBalance(provider, apiKey) {
     }
 
     if (provider === "tempcolor") {
-      const res = await fetch("https://platform.tempolor.com/api/v1/balance", {
-        headers: { "Authorization": `Bearer ${apiKey}` }
+      // Tempolor account billing: POST /open-apis/v1/account/billing — raw key auth (NOT Bearer)
+      // Returns { status: 200000, data: { balance: number } }
+      const res = await fetch("https://api.tempolor.com/open-apis/v1/account/billing", {
+        method: "POST",
+        headers: { "Authorization": apiKey, "Content-Type": "application/json; charset=utf-8" },
+        body: "{}",
       });
       if (!res.ok) return { balance: null, status: "error", error: `HTTP ${res.status}` };
       const data = await res.json();
-      return { balance: data.balance ?? data.credits ?? null, status: "active" };
+      if (data?.status !== 200000) return { balance: null, status: "error", error: data?.message || "Bad response" };
+      return { balance: data?.data?.balance ?? null, status: "active" };
     }
 
     if (provider === "ltx") {
