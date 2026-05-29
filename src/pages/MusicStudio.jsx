@@ -18,12 +18,16 @@ export default function MusicStudio() {
       prompt: sp.get('prompt') || '',
       genre:  sp.get('genre')  || '',
       provider: sp.get('provider') || '',
+      tab: sp.get('tab') || '',
+      lyricsAssetId: sp.get('lyrics') || '',
+      topic: sp.get('topic') || '',
     };
   })();
   const hasPrefill = !!(prefill.prompt || prefill.genre);
 
   useEffect(() => {
-    if (prefill.provider || hasPrefill) setActiveTab('quick');
+    if (prefill.tab === 'advanced' || prefill.lyricsAssetId) setActiveTab('advanced');
+    else if (prefill.provider || hasPrefill) setActiveTab('quick');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -64,7 +68,7 @@ export default function MusicStudio() {
       <div className="max-w-5xl mx-auto px-6 py-10">
         {activeTab === 'quick'
           ? <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />
-          : <AdvancedGenerateTab />}
+          : <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
       </div>
     </div>
   );

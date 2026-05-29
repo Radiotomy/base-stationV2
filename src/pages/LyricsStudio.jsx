@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
-  CheckCircle, Sparkles, Keyboard, Plus, X, History, Award
+  CheckCircle, Sparkles, Keyboard, Plus, X, History, Award, Music
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import ChipSelector from '@/components/music/ChipSelector';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -81,7 +82,9 @@ export default function LyricsStudio() {
   const [versions, setVersions] = useState([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showRedDirtInfo, setShowRedDirtInfo] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const textareaRef = useRef(null);
+  const navigate = useNavigate();
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -173,6 +176,38 @@ export default function LyricsStudio() {
     const blob = new Blob([lyrics], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `${topic || 'lyrics'}.txt`; a.click();
+  };
+
+  const exportToMusicStudio = async () => {
+    if (!lyrics) { toast.error('No lyrics to export'); return; }
+    setExporting(true);
+    try {
+      const user = await base44.auth.me();
+      // Upload .txt + create UserAsset (same shape as saveLyrics — auto-save on export)
+      const blob = new Blob([lyrics], { type: 'text/plain' });
+      const file = new File([blob], `${topic || 'lyrics'}.txt`, { type: 'text/plain' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const asset = await base44.entities.UserAsset.create({
+        user_id: user.id,
+        user_email: user.email,
+        asset_type: 'lyric',
+        title: topic || 'Untitled Lyrics',
+        file_url,
+        is_public: false,
+        metadata: { mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics },
+      });
+      toast.success('🎵 Saved & exporting to Music Studio…');
+      const params = new URLSearchParams({
+        tab: 'advanced',
+        lyrics: asset.id,
+        ...(style[0] && { genre: style[0] }),
+        ...(topic && { topic }),
+      });
+      navigate(`/music-studio?${params.toString()}`);
+    } catch (err) {
+      toast.error(err.message);
+      setExporting(false);
+    }
   };
 
   const applyStructure = (tpl) => {
@@ -529,6 +564,10 @@ export default function LyricsStudio() {
                 <Button onClick={saveLyrics} disabled={saving || !lyrics}
                   className="bg-pink-600 hover:bg-pink-500 rounded-xl gap-1.5 text-sm font-bold">
                   <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save (⌘S)'}
+                </Button>
+                <Button onClick={exportToMusicStudio} disabled={exporting || !lyrics}
+                  className="bg-blue-600 hover:bg-blue-500 rounded-xl gap-1.5 text-sm font-bold">
+                  <Music className="w-4 h-4" /> {exporting ? 'Exporting…' : 'Send to Music Studio →'}
                 </Button>
               </div>
             </div>

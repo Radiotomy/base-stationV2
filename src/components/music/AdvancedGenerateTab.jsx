@@ -63,17 +63,18 @@ const PROMPT_TEMPLATES = [
   { label: '🎸 Indie Rock', prompt: 'Distorted guitar riffs, driving drums, anthemic chorus, raw energy' },
 ];
 
-export default function AdvancedGenerateTab() {
+export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initialGenre = '', initialTopic = '' }) {
   const [provider, setProvider] = useState('sonic');
+  const [importedFromStudio, setImportedFromStudio] = useState(false);
   const [sonicModel, setSonicModel] = useState('sonic-v4-5-plus');
   const [nuroModel, setNuroModel] = useState('v1.0');
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
   const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)
-  const [genre, setGenre] = useState('Hip-Hop');
+  const [genre, setGenre] = useState(initialGenre || 'Hip-Hop');
   const [mood, setMood] = useState('Energetic');
   const [tempo, setTempo] = useState('120');
-  const [soundPrompt, setSoundPrompt] = useState('');
+  const [soundPrompt, setSoundPrompt] = useState(initialTopic || '');
   const [lyrics, setLyrics] = useState('');
   const [lyricsMode, setLyricsMode] = useState('none'); // 'none' | 'custom' | 'generate' | 'saved'
   const [savedLyrics, setSavedLyrics] = useState([]);
@@ -103,6 +104,30 @@ export default function AdvancedGenerateTab() {
       }).catch(() => {});
     }).catch(() => {});
   }, []);
+
+  // Import lyrics from Lyrics Studio via ?lyrics=<assetId>
+  useEffect(() => {
+    if (!initialLyricsAssetId) return;
+    (async () => {
+      try {
+        const asset = await base44.entities.UserAsset.get(initialLyricsAssetId);
+        // Prefer inline metadata.content (set by Lyrics Studio export); fall back to fetching the .txt
+        let text = asset?.metadata?.content;
+        if (!text && asset?.file_url) {
+          const res = await fetch(asset.file_url);
+          if (res.ok) text = await res.text();
+        }
+        if (text) {
+          setLyrics(text);
+          setLyricsMode('custom');
+          setImportedFromStudio(true);
+          toast.success('🎤 Lyrics imported from Lyrics Studio');
+        }
+      } catch {
+        toast.error('Could not load lyrics from your library');
+      }
+    })();
+  }, [initialLyricsAssetId]);
 
   const generateCoverArtUrl = async (title, moodVal, genreVal) => {
     try {
@@ -486,6 +511,14 @@ export default function AdvancedGenerateTab() {
           {/* Lyrics Section */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5"><Music2 className="w-3 h-3" /> Lyrics</p>
+
+            {importedFromStudio && (
+              <div className="mb-3 flex items-center gap-2 p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/30">
+                <CheckCircle className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                <p className="text-xs text-pink-300 flex-1">Lyrics imported from Lyrics Studio — ready to generate.</p>
+              </div>
+            )}
+
             <div className="flex gap-2 mb-3 flex-wrap">
               {[
                 { value: 'none', label: 'No Lyrics' },
