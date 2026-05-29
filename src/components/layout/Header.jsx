@@ -65,7 +65,7 @@ export default function Header({ user }) {
           {isCreator && (
             <>
               <div className="w-px h-6 bg-white/10 mx-1" />
-              {CREATOR_NAV.slice(0, 2).map(({ to, label, icon: Icon }) => {
+              {CREATOR_NAV.slice(0, 1).map(({ to, label, icon: Icon }) => {
                 const isActive = location.pathname === to;
                 return (
                   <Link

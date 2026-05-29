@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { ArrowLeft, Zap, SlidersHorizontal, RotateCcw } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useLocation } from 'react-router-dom';
+import { Zap, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 
@@ -30,18 +29,8 @@ export default function MusicStudio() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Nav */}
-      <div className="fixed top-0 inset-x-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50 px-6 h-14 flex items-center gap-3">
-        <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
-          <ArrowLeft className="w-5 h-5" />
-          <span className="text-sm font-semibold">Back</span>
-        </Link>
-        <div className="flex-1" />
-        <Badge variant="outline" className="text-xs border-emerald-500/40 text-emerald-400">✓ Phase 1 Complete</Badge>
-      </div>
-
       {/* Hero */}
-      <div className="relative overflow-hidden pt-20 pb-10 px-6 bg-gradient-to-br from-blue-900/30 to-black">
+      <div className="relative overflow-hidden pt-10 pb-10 px-6 bg-gradient-to-br from-blue-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-2 tracking-tight">🎵 Music Studio</h1>
           <p className="text-white/60 text-lg">AI tracks via Nuro, Sonic, Tempolor or Producer.</p>
@@ -54,7 +43,7 @@ export default function MusicStudio() {
       </div>
 
       {/* Tab Switcher */}
-      <div className="sticky top-14 z-30 bg-background/90 backdrop-blur border-b border-border/50">
+      <div className="sticky top-16 z-30 bg-background/90 backdrop-blur border-b border-border/50">
         <div className="max-w-5xl mx-auto px-6">
           <div className="flex gap-1 py-2">
             {TABS.map(tab => (
