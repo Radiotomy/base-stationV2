@@ -25,6 +25,7 @@ import AIStudio from './pages/AIStudio';
 import LyricsStudio from './pages/LyricsStudio';
 import MusicStudio from './pages/MusicStudio';
 import VideoStudio from './pages/VideoStudio';
+import AssetGallery from './pages/AssetGallery';
 import LiveStudio from './pages/LiveStudio';
 import LiveWatch from './pages/LiveWatch';
 import LiveSummary from './pages/LiveSummary';
@@ -113,6 +114,7 @@ const AuthenticatedApp = () => {
           <Route path="/music-studio" element={<MusicStudio />} />
           <Route path="/cover-art-studio" element={<CoverArtStudio />} />
           <Route path="/video-studio" element={<VideoStudio />} />
+          <Route path="/asset-gallery" element={<AssetGallery />} />
           <Route path="/live-studio" element={<LiveStudio />} />
           <Route path="/live-watch" element={<LiveWatch />} />
           <Route path="/live-summary" element={<LiveSummary />} />
