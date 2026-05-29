@@ -83,8 +83,32 @@ export default function LyricsStudio() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showRedDirtInfo, setShowRedDirtInfo] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [lookingUpWriter, setLookingUpWriter] = useState(false);
+  const [writerProfile, setWriterProfile] = useState(null);
   const textareaRef = useRef(null);
   const navigate = useNavigate();
+
+  const lookupWriter = async () => {
+    const name = referenceArtists.trim();
+    if (!name) return;
+    setLookingUpWriter(true);
+    try {
+      const res = await base44.functions.invoke('lookupWriterStyle', { writer: name });
+      const data = res.data || {};
+      if (data.error) { toast.error(data.error); return; }
+      // Apply to form
+      if (data.moods?.length)  setMood(data.moods);
+      if (data.styles?.length) setStyle(data.styles);
+      if (data.length)         setLength(data.length);
+      if (data.rhyme_scheme)   setRhymeScheme(data.rhyme_scheme);
+      if (data.bpm)            setProBpm(String(data.bpm));
+      setWriterProfile(data);
+      toast.success(`🎯 Profile loaded: ${data.matched_name}`);
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err.message);
+    }
+    setLookingUpWriter(false);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -294,13 +318,37 @@ export default function LyricsStudio() {
               {proMode && (
                 <div className="space-y-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Reference Artists <span className="text-muted-foreground/60 normal-case">(optional)</span></label>
-                    <Input
-                      value={referenceArtists}
-                      onChange={e => setReferenceArtists(e.target.value)}
-                      placeholder="e.g., Turnpike Troubadours, Tyler Childers"
-                      className="rounded-xl bg-background"
-                    />
+                    <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center justify-between">
+                      <span>Writer / Reference Artist</span>
+                      {writerProfile && (
+                        <span className="normal-case text-[10px] font-bold text-amber-300">
+                          ✓ {writerProfile.matched_name} ({writerProfile.confidence})
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex gap-1.5">
+                      <Input
+                        value={referenceArtists}
+                        onChange={e => { setReferenceArtists(e.target.value); setWriterProfile(null); }}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); lookupWriter(); } }}
+                        onBlur={lookupWriter}
+                        placeholder="e.g., Turnpike Troubadours, Tyler Childers"
+                        className="rounded-xl bg-background flex-1"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={lookupWriter}
+                        disabled={lookingUpWriter || !referenceArtists.trim()}
+                        className="rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold px-3"
+                        title="Auto-fill mood, style, rhyme & BPM from this writer"
+                      >
+                        {lookingUpWriter ? '…' : 'Auto'}
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-amber-200/60 leading-tight">
+                      Enter a writer's name — mood, style, rhyme & BPM auto-fill from their signature sound. Just add your topic.
+                    </p>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-muted-foreground uppercase">BPM <span className="text-muted-foreground/60 normal-case">(optional)</span></label>
