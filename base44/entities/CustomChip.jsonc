@@ -19,6 +19,11 @@
     "added_by": {
       "type": "string",
       "description": "User email who added it"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

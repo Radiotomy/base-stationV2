@@ -51,6 +51,11 @@
     "source_id": {
       "type": "string",
       "description": "Reference to original session/submission ID"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

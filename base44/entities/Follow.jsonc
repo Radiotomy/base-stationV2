@@ -31,6 +31,11 @@
     "following_slug": {
       "type": "string",
       "description": "Artist slug for linking"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

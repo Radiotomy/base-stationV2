@@ -47,6 +47,11 @@
     "audius_publish_error": {
       "type": "string",
       "description": "Error message if Audius publish failed"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

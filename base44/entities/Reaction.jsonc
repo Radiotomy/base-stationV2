@@ -15,6 +15,11 @@
     "emoji": {
       "type": "string",
       "description": "Reaction emoji: fire, heart, goat, mind_blown, clap"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

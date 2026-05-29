@@ -29,6 +29,11 @@
     "metadata": {
       "type": "object",
       "description": "Flexible avatar metadata (style, mood, etc.)"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

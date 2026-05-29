@@ -76,6 +76,11 @@
     "metadata": {
       "type": "object",
       "description": "Free-form context: token, RPC endpoint, retries, etc."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

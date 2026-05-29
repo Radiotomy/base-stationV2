@@ -65,6 +65,11 @@
     "fanclub_creator_id": {
       "type": "string",
       "description": "Phase 5: Creator id of the active fan club tier"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

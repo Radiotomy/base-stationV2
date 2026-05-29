@@ -77,6 +77,11 @@
       "type": "string",
       "format": "date-time",
       "description": "Phase 3: Last time health was assessed"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

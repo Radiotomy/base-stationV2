@@ -57,6 +57,11 @@
         "type": "string"
       },
       "description": "User ids who have completed this quest"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [
