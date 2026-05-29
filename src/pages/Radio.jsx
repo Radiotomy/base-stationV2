@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
+import EQPanel from "@/components/radio/EQPanel";
+import VUMeter from "@/components/radio/VUMeter";
+import useAudioProcessor from "@/hooks/useAudioProcessor";
 
 // Channel genres map to Audius trending genres + community submission genres
 const DEFAULT_CHANNELS = [
@@ -42,6 +45,7 @@ export default function Radio() {
   const [muted, setMuted] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const audioRef = useRef(null);
+  const { setBandGain, analyserL, analyserR } = useAudioProcessor(audioRef);
 
   const nowPlaying = queue[queueIndex] || null;
 
@@ -241,6 +245,15 @@ export default function Radio() {
             </div>
           </div>
 
+          {/* VU Meters + EQ */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 mt-3">
+            <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
+            <div className="md:w-72">
+              <EQPanel setBandGain={setBandGain} />
+            </div>
+            <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying} />
+          </div>
+
           {/* Queue Panel */}
           <AnimatePresence>
             {showQueue && queue.length > 0 && (
@@ -335,7 +348,7 @@ export default function Radio() {
         </div>
       </div>
 
-      <audio ref={audioRef} onEnded={handleTrackEnd} onError={skipNext} />
+      <audio ref={audioRef} onEnded={handleTrackEnd} onError={skipNext} crossOrigin="anonymous" />
 
       <AnimatePresence>
         {showBuilder && (
