@@ -16,6 +16,7 @@ import TrackCard from "@/components/dashboard/TrackCard";
 import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPanel";
 import RewardFansModal from "@/components/creator/RewardFansModal";
 import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
+import MasteringTab from "@/components/mastering/MasteringTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -165,6 +166,7 @@ export default function CreatorDashboard() {
   const TABS = [
     { key: "library",   label: `📂 Library (${assets.length})` },
     { key: "projects",  label: "🗂️ Projects" },
+    { key: "mastering", label: "🎚️ Mastering" },
     { key: "tracks",    label: `📤 Submissions (${tracks.length})` },
     { key: "fans",      label: "🏆 Fan Economy" },
     { key: "history",   label: "🕐 History" },
@@ -280,6 +282,11 @@ export default function CreatorDashboard() {
       {/* Projects Tab */}
       {activeTab === "projects" && user && (
         <ProjectsTab userId={user.id} assets={assets} />
+      )}
+
+      {/* Mastering Tab — AI Mastering + Editor + Multitrack + Remix */}
+      {activeTab === "mastering" && (
+        <MasteringTab />
       )}
 
       {/* Submissions Tab */}
