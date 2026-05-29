@@ -133,23 +133,12 @@ export default function Radio() {
     setActiveChannel(ch);
   };
 
-  const channelStyle = (ch) => ({
-    background: `linear-gradient(135deg, ${ch.color_theme}22, ${ch.color_theme}11)`,
-    borderColor: `${ch.color_theme}40`,
-  });
-
-  const activeStyle = (ch) => ({
-    background: `linear-gradient(135deg, ${ch.color_theme}40, ${ch.color_theme}20)`,
-    borderColor: ch.color_theme,
-    boxShadow: `0 0 20px ${ch.color_theme}30`,
-  });
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       {/* Hero / Player */}
-      <div className="relative overflow-hidden pt-16 pb-8 px-4 md:px-6" style={{ background: `linear-gradient(135deg, ${activeChannel.color_theme}40 0%, #0a0a0a 60%)` }}>
+      <div className="relative overflow-hidden pt-16 pb-8 px-4 md:px-6">
         <motion.div key={activeChannel.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-10 right-10 w-72 h-72 rounded-full blur-3xl opacity-20" style={{ background: activeChannel.color_theme }} />
+          <div className="absolute top-10 right-10 w-72 h-72 rounded-full blur-3xl opacity-15 bg-white" />
         </motion.div>
 
         <div className="relative max-w-5xl mx-auto">
@@ -162,7 +151,7 @@ export default function Radio() {
           </div>
 
           <motion.h1 key={activeChannel.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="text-4xl md:text-6xl lg:text-7xl font-black text-white mb-2 tracking-tight">
+            className="font-display text-4xl md:text-6xl lg:text-7xl text-white mb-2 tracking-tight">
             {activeChannel.emoji} {activeChannel.name}
           </motion.h1>
           <p className="text-white/50 text-sm md:text-base mb-5">{activeChannel.description}</p>
@@ -193,7 +182,7 @@ export default function Radio() {
           </AnimatePresence>
 
           {/* Player Controls — mobile-first layout */}
-          <div className="p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10">
+          <div className="merc-card p-4 rounded-2xl">
             {/* Top row: prev / play / next + status */}
             <div className="flex items-center gap-4 mb-3">
               {/* Prev */}
@@ -204,9 +193,8 @@ export default function Radio() {
 
               {/* Play/Pause */}
               <button onClick={togglePlay} disabled={loadingQueue || queue.length === 0}
-                className="w-14 h-14 rounded-full flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-50 flex-shrink-0"
-                style={{ background: activeChannel.color_theme }}>
-                {loadingQueue ? <Loader2 className="w-6 h-6 animate-spin" /> : isPlaying ? <Pause className="w-6 h-6" fill="white" /> : <Play className="w-6 h-6 ml-0.5" fill="white" />}
+                className="merc-button w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 flex-shrink-0">
+                {loadingQueue ? <Loader2 className="w-6 h-6 animate-spin" /> : isPlaying ? <Pause className="w-6 h-6" fill="#0A0A12" /> : <Play className="w-6 h-6 ml-0.5" fill="#0A0A12" />}
               </button>
 
               {/* Next */}
@@ -257,7 +245,7 @@ export default function Radio() {
           <AnimatePresence>
             {showQueue && queue.length > 0 && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                className="mt-3 bg-black/50 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+                className="merc-card mt-3 rounded-2xl overflow-hidden">
                 <div className="p-3 border-b border-white/10 flex items-center justify-between">
                   <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">Up Next — {queue.length} tracks</p>
                   <div className="flex gap-2 text-xs text-white/40">
@@ -296,18 +284,18 @@ export default function Radio() {
 
       {/* Get on the Radio CTA */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 pt-6">
-        <div className="p-4 md:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-cyan-500/10 to-purple-500/10 border border-emerald-500/20 flex items-center gap-3 md:gap-4 flex-wrap">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-            <RadioIcon className="w-5 h-5 md:w-6 md:h-6 text-emerald-400" />
+        <div className="merc-card p-4 md:p-5 rounded-2xl flex items-center gap-3 md:gap-4 flex-wrap">
+          <div className="merc-bubble w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+            <RadioIcon className="w-5 h-5 md:w-6 md:h-6 text-[#1a1530]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-foreground font-bold text-sm md:text-base">Get your track on BASE Station Radio</p>
-            <p className="text-muted-foreground text-xs md:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
+            <p className="text-white font-bold text-sm md:text-base">Get your track on BASE Station Radio</p>
+            <p className="text-white/60 text-xs md:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
           </div>
           <Link to="/submit" className="flex-shrink-0">
-            <Button size="sm" className="rounded-xl gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-bold h-9 px-4">
+            <button className="merc-button rounded-full px-4 h-9 text-xs font-bold inline-flex items-center gap-1.5">
               <Upload className="w-3.5 h-3.5" /> Upload Track
-            </Button>
+            </button>
           </Link>
         </div>
       </div>
@@ -315,12 +303,12 @@ export default function Radio() {
       {/* Channel Grid — horizontal scroll on mobile */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
         <div className="flex items-center justify-between mb-5 gap-3">
-          <h2 className="text-lg md:text-xl font-bold text-foreground">All Channels</h2>
+          <h2 className="font-display text-lg md:text-2xl text-white">All Channels</h2>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <p className="text-xs text-muted-foreground hidden sm:block">Powered by Audius + Community</p>
-            <Button onClick={() => setShowBuilder(true)} size="sm" className="rounded-xl gap-1.5 bg-purple-600 hover:bg-purple-500 text-xs font-bold h-9 px-3">
+            <p className="text-xs text-white/50 hidden sm:block">Powered by Audius + Community</p>
+            <button onClick={() => setShowBuilder(true)} className="merc-button-dark rounded-full px-3 h-9 text-xs font-bold inline-flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5" /> Build Mix
-            </Button>
+            </button>
           </div>
         </div>
         {/* Horizontal scroll on mobile, grid on desktop */}
@@ -330,18 +318,17 @@ export default function Radio() {
             return (
               <motion.button key={ch.id || ch.slug} onClick={() => switchChannel(ch)}
                 whileTap={{ scale: 0.97 }}
-                className="snap-start flex-shrink-0 w-44 md:w-auto p-4 md:p-5 rounded-2xl border text-left transition-all"
-                style={isActive ? activeStyle(ch) : channelStyle(ch)}>
+                className={`merc-card merc-card-hover snap-start flex-shrink-0 w-44 md:w-auto p-4 md:p-5 rounded-2xl text-left transition-all ${isActive ? "ring-1 ring-white/30" : ""}`}>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-2xl md:text-3xl">{ch.emoji || "🎵"}</span>
                   {isActive && (
-                    <Badge className="text-xs border-0" style={{ background: ch.color_theme, color: "white" }}>
+                    <Badge className="text-xs border-0 bg-white/15 text-white">
                       {isPlaying ? "▶" : "•"}
                     </Badge>
                   )}
                 </div>
-                <h3 className="font-bold text-foreground text-sm mb-1 leading-tight">{ch.name}</h3>
-                <p className="text-xs text-muted-foreground line-clamp-2 hidden md:block">{ch.description}</p>
+                <h3 className="font-bold text-white text-sm mb-1 leading-tight">{ch.name}</h3>
+                <p className="text-xs text-white/50 line-clamp-2 hidden md:block">{ch.description}</p>
               </motion.button>
             );
           })}
