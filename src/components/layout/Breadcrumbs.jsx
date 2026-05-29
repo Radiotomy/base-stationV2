@@ -38,17 +38,17 @@ export default function Breadcrumbs() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 border-b border-border/50">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 border-b border-white/5">
       <div className="flex items-center gap-2 text-sm">
         {breadcrumbs.map((crumb, i) => (
           <div key={crumb.path} className="flex items-center gap-2">
-            {i > 0 && <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+            {i > 0 && <ChevronRight className="w-4 h-4 text-white/40" />}
             {i === breadcrumbs.length - 1 ? (
-              <span className="text-foreground font-medium">{crumb.label}</span>
+              <span className="text-white font-medium capitalize">{crumb.label}</span>
             ) : (
               <Link
                 to={crumb.path}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-white/50 hover:text-white transition-colors capitalize"
               >
                 {crumb.label}
               </Link>

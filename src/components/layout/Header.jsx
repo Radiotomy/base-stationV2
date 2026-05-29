@@ -35,11 +35,11 @@ export default function Header({ user }) {
   const isCreator = user?.is_creator || false;
 
   return (
-    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+    <header className="sticky top-0 z-40 bg-[#0A0A12]/70 backdrop-blur-2xl border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="font-black text-xl tracking-tight flex-shrink-0">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
+        <Link to="/" className="font-display text-xl tracking-tight flex-shrink-0">
+          <span className="text-iridescent">Base</span>
           <span className="text-foreground">Station</span>
         </Link>
 
@@ -51,10 +51,10 @@ export default function Header({ user }) {
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-purple-500/20 text-purple-300"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    ? "bg-white/10 text-white border border-white/15"
+                    : "text-white/60 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -64,17 +64,17 @@ export default function Header({ user }) {
           })}
           {isCreator && (
             <>
-              <div className="w-px h-6 bg-border mx-1" />
+              <div className="w-px h-6 bg-white/10 mx-1" />
               {CREATOR_NAV.slice(0, 2).map(({ to, label, icon: Icon }) => {
                 const isActive = location.pathname === to;
                 return (
                   <Link
                     key={to}
                     to={to}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${
                       isActive
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                        ? "bg-white/10 text-white border border-white/15"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
                     }`}
                   >
                     <Icon className="w-4 h-4" />
@@ -93,7 +93,7 @@ export default function Header({ user }) {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-9 h-9 rounded-full bg-purple-500/20 flex items-center justify-center text-sm font-bold text-purple-400 hover:bg-purple-500/30 transition-all"
+                className="merc-bubble w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-[#1a1530] hover:scale-105 transition-all"
               >
                 {(user.full_name || "U")[0].toUpperCase()}
               </button>
@@ -104,24 +104,24 @@ export default function Header({ user }) {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
-                    className="absolute right-0 mt-2 w-48 bg-card rounded-2xl border border-border shadow-xl overflow-hidden"
+                    className="merc-card absolute right-0 mt-2 w-48 rounded-2xl overflow-hidden"
                   >
-                    <div className="p-3 border-b border-border">
-                      <p className="text-sm font-bold text-foreground truncate">{user.full_name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <div className="p-3 border-b border-white/10">
+                      <p className="text-sm font-bold text-white truncate">{user.full_name}</p>
+                      <p className="text-xs text-white/50 truncate">{user.email}</p>
                     </div>
                     <div className="space-y-1 p-2">
                       <Link
                         to="/my-profile"
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                       >
                         <User className="w-4 h-4" /> My Profile
                       </Link>
                       <Link
                         to="/credits"
                         onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-yellow-400 hover:bg-yellow-500/10 transition-all"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                       >
                         <Zap className="w-4 h-4" /> Credits & Plans
                       </Link>
@@ -129,7 +129,7 @@ export default function Header({ user }) {
                         <Link
                           to="/creator-dashboard"
                           onClick={() => setDropdownOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                         >
                           <BarChart3 className="w-4 h-4" /> Studio Dashboard
                         </Link>
@@ -139,7 +139,7 @@ export default function Header({ user }) {
                           setDropdownOpen(false);
                           base44.auth.logout("/");
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-destructive hover:bg-destructive/10 transition-all"
                       >
                         <LogOut className="w-4 h-4" /> Logout
                       </button>
@@ -153,7 +153,7 @@ export default function Header({ user }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+            className="lg:hidden w-9 h-9 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -167,7 +167,7 @@ export default function Header({ user }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-border bg-card/50"
+            className="lg:hidden border-t border-white/10 bg-[#0A0A12]/90 backdrop-blur-xl"
           >
             <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
               {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
@@ -175,7 +175,7 @@ export default function Header({ user }) {
                   key={to}
                   to={to}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                 >
                   <Icon className="w-4 h-4" />
                   {label}
@@ -183,13 +183,13 @@ export default function Header({ user }) {
               ))}
               {isCreator && (
                 <>
-                  <div className="my-2 border-t border-border" />
+                  <div className="my-2 border-t border-white/10" />
                   {CREATOR_NAV.map(({ to, label, icon: Icon }) => (
                     <Link
                       key={to}
                       to={to}
                       onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-emerald-400 hover:bg-emerald-500/10 transition-all"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                     >
                       <Icon className="w-4 h-4" />
                       {label}
