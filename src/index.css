@@ -221,16 +221,64 @@ html [class*="bg-cyan-500/20"], html [class*="bg-cyan-500/10"] {
   background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Gradient text accents → iridescent */
+/* Gradient text accents (400 shade) → iridescent silver-pink */
 html .from-purple-400, html .from-pink-400, html .from-orange-400,
 html .from-blue-400, html .from-cyan-400, html .from-indigo-400,
-html .from-violet-400, html .from-emerald-400 {
+html .from-violet-400, html .from-emerald-400, html .from-yellow-400,
+html .from-amber-400, html .from-rose-400, html .from-fuchsia-400,
+html .from-teal-400, html .from-green-400, html .from-red-400 {
   --tw-gradient-from: #E8DFF5 var(--tw-gradient-from-position) !important;
 }
 html .to-purple-400, html .to-pink-400, html .to-orange-400,
 html .to-blue-400, html .to-cyan-400, html .to-indigo-400,
-html .to-violet-400, html .to-emerald-400 {
+html .to-violet-400, html .to-emerald-400, html .to-yellow-400,
+html .to-amber-400, html .to-rose-400, html .to-fuchsia-400,
+html .to-teal-400, html .to-green-400, html .to-red-400 {
   --tw-gradient-to: #FFE5F5 var(--tw-gradient-to-position) !important;
+}
+
+/* Gradient stops at 500/600/700 shades (used in avatars, chips, hero bgs) → chrome */
+html .from-purple-500, html .from-purple-600, html .from-purple-700, html .from-purple-800,
+html .from-indigo-500, html .from-indigo-600, html .from-indigo-700, html .from-indigo-800,
+html .from-violet-500, html .from-violet-600, html .from-violet-700,
+html .from-blue-500, html .from-blue-600, html .from-blue-700,
+html .from-pink-500, html .from-pink-600, html .from-pink-700, html .from-pink-800,
+html .from-orange-500, html .from-orange-600, html .from-orange-700,
+html .from-emerald-500, html .from-emerald-600, html .from-emerald-700,
+html .from-cyan-500, html .from-cyan-600, html .from-cyan-700,
+html .from-fuchsia-500, html .from-fuchsia-600, html .from-fuchsia-700,
+html .from-rose-500, html .from-rose-600, html .from-rose-700,
+html .from-teal-500, html .from-teal-600, html .from-teal-700,
+html .from-yellow-500, html .from-yellow-600, html .from-amber-500, html .from-amber-600,
+html .from-red-500, html .from-red-600, html .from-green-500, html .from-green-600 {
+  --tw-gradient-from: #C8CDD2 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(200 205 210 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html .to-purple-500, html .to-purple-600, html .to-purple-700, html .to-purple-800,
+html .to-indigo-500, html .to-indigo-600, html .to-indigo-700, html .to-indigo-800,
+html .to-violet-500, html .to-violet-600, html .to-violet-700,
+html .to-blue-500, html .to-blue-600, html .to-blue-700,
+html .to-pink-500, html .to-pink-600, html .to-pink-700, html .to-pink-800,
+html .to-orange-500, html .to-orange-600, html .to-orange-700,
+html .to-emerald-500, html .to-emerald-600, html .to-emerald-700,
+html .to-cyan-500, html .to-cyan-600, html .to-cyan-700,
+html .to-fuchsia-500, html .to-fuchsia-600, html .to-fuchsia-700,
+html .to-rose-500, html .to-rose-600, html .to-rose-700,
+html .to-teal-500, html .to-teal-600, html .to-teal-700,
+html .to-yellow-500, html .to-yellow-600, html .to-amber-500, html .to-amber-600,
+html .to-red-500, html .to-red-600, html .to-green-500, html .to-green-600 {
+  --tw-gradient-to: #FFE5F5 var(--tw-gradient-to-position) !important;
+}
+html .via-purple-500, html .via-purple-600, html .via-purple-700,
+html .via-indigo-500, html .via-indigo-600, html .via-indigo-700,
+html .via-pink-500, html .via-pink-600, html .via-blue-500, html .via-blue-600,
+html .via-orange-500, html .via-orange-600, html .via-emerald-500, html .via-emerald-600,
+html .via-violet-500, html .via-violet-600, html .via-cyan-500, html .via-cyan-600,
+html .via-yellow-500, html .via-amber-500, html .via-rose-500, html .via-fuchsia-500 {
+  --tw-gradient-via: #E8DFF5 var(--tw-gradient-via-position) !important;
+  --tw-gradient-via-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
+  --tw-gradient-stops: var(--tw-gradient-via-stops) !important;
 }
 
 /* Body min-height pages → transparent so mercury aurora shows through */
