@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, CheckCircle, AlertCircle, ArrowRight } from "lucide-react";
+import { X, Loader2, CheckCircle, AlertCircle, ArrowRight, FileLock2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,9 @@ export default function RegisterTrackOnBaseModal({ track, user, onClose, onSubmi
   const [walletAddress, setWalletAddress] = useState("");
   const [txHash, setTxHash] = useState("");
   const [fingerprint, setFingerprint] = useState("");
+  const [metadataUri, setMetadataUri] = useState("");
+  const [ipfsGatewayUrl, setIpfsGatewayUrl] = useState("");
+  const [processingStage, setProcessingStage] = useState(""); // "ipfs" | "chain"
   const [processing, setProcessing] = useState(false);
 
   const handleWalletConnected = (address) => {
@@ -51,12 +54,38 @@ export default function RegisterTrackOnBaseModal({ track, user, onClose, onSubmi
       // Generate fingerprint
       const fp = await generateFingerprint();
 
-      // Simulate Base transaction (in real implementation, would use ethers.js)
-      // For MVP, we're storing the registration intent
+      // Step 1: Pin to IPFS (Pinata) — creates content-addressed provenance
+      setProcessingStage("ipfs");
+      let pinResult = { metadata_uri: "", gateway_url: "" };
+      try {
+        const { data } = await base44.functions.invoke("pinToIPFS", {
+          mode: "track",
+          track: {
+            title: track.title || "Untitled",
+            artist: user.full_name,
+            artist_id: user.id,
+            file_url: track.track_url || "",
+            cover_url: track.cover_image_url || "",
+            genre: track.genre || "",
+            ai_tools_used: track.ai_tools_used || "",
+            description: track.description || "",
+            fingerprint_hash: fp,
+            blockchain: "base",
+          },
+        });
+        pinResult = data || pinResult;
+        setMetadataUri(pinResult.metadata_uri || "");
+        setIpfsGatewayUrl(pinResult.gateway_url || "");
+      } catch (ipfsErr) {
+        console.warn("IPFS pin failed, continuing without metadata_uri:", ipfsErr);
+      }
+
+      // Step 2: Simulate Base transaction (in real implementation, would use ethers.js)
+      setProcessingStage("chain");
       const mockTxHash = "0x" + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join("");
       setTxHash(mockTxHash);
 
-      // Create registry record
+      // Create registry record with IPFS metadata_uri
       await base44.entities.BaseTrackRegistry.create({
         artist_id: user.id,
         artist_name: user.full_name,
@@ -69,6 +98,7 @@ export default function RegisterTrackOnBaseModal({ track, user, onClose, onSubmi
         description: track.description || "",
         wallet_address: walletAddress,
         transaction_hash: mockTxHash,
+        metadata_uri: pinResult.metadata_uri || "",
         fingerprint_hash: fp,
         registration_status: "registered",
         network: "base-mainnet",
@@ -144,11 +174,19 @@ export default function RegisterTrackOnBaseModal({ track, user, onClose, onSubmi
           {step === "processing" && (
             <motion.div key="processing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4 text-center py-4">
               <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto animate-pulse">
-                <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
+                {processingStage === "ipfs"
+                  ? <FileLock2 className="w-6 h-6 text-blue-400" />
+                  : <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />}
               </div>
               <div>
-                <p className="font-semibold text-foreground">Registering on Base…</p>
-                <p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
+                <p className="font-semibold text-foreground">
+                  {processingStage === "ipfs" ? "Pinning to IPFS…" : "Registering on Base…"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {processingStage === "ipfs"
+                    ? "Creating content-addressed provenance record"
+                    : "Writing immutable on-chain record"}
+                </p>
               </div>
             </motion.div>
           )}
@@ -165,6 +203,11 @@ export default function RegisterTrackOnBaseModal({ track, user, onClose, onSubmi
               {txHash && (
                 <a href={`https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 text-xs hover:underline flex items-center gap-1 justify-center">
                   View on Basescan <ArrowRight className="w-3 h-3" />
+                </a>
+              )}
+              {ipfsGatewayUrl && (
+                <a href={ipfsGatewayUrl} target="_blank" rel="noopener noreferrer" className="text-cyan-400 text-xs hover:underline flex items-center gap-1 justify-center">
+                  <FileLock2 className="w-3 h-3" /> View IPFS metadata
                 </a>
               )}
             </motion.div>

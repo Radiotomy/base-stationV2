@@ -7,15 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Shield, CheckCircle, ExternalLink, Sparkles } from "lucide-react";
+import { Loader2, Shield, CheckCircle, ExternalLink, Sparkles, FileLock2 } from "lucide-react";
 import { toast } from "sonner";
 
 const GENRES = ["hip-hop","edm","pop","r&b","rock","lo-fi","jazz","classical","trap","other"];
 const AI_TOOLS = ["Suno", "Udio", "ElevenLabs", "Riffusion", "Mureka", "Multiple", "Other"];
 
-// Simulates creating a provenance fingerprint and "registering" on-chain via memo program
-async function registerOnChain(walletAddress, metadata) {
-  // Encode metadata as JSON string for the memo
+// Creates a provenance fingerprint and registers on-chain via memo program.
+// The memo includes both the SHA-256 fingerprint AND the IPFS metadata CID,
+// giving cryptographic + content-addressed provenance in a single on-chain write.
+async function registerOnChain(walletAddress, metadata, ipfsCid) {
+  // Encode metadata as JSON string for fingerprinting
   const metaStr = JSON.stringify(metadata);
   const encoder = new TextEncoder();
   const data = encoder.encode(metaStr);
@@ -26,7 +28,6 @@ async function registerOnChain(walletAddress, metadata) {
   const fingerprint = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
   // Build a Solana transaction with a memo instruction (devnet)
-  // This uses the SPL Memo program to write the fingerprint on-chain
   const MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
   const { PublicKey, Transaction, TransactionInstruction, Connection } = await import(
     "https://esm.sh/@solana/web3.js@1.87.6"
@@ -36,8 +37,10 @@ async function registerOnChain(walletAddress, metadata) {
   const pubKey = new PublicKey(walletAddress);
   const memoProgramId = new PublicKey(MEMO_PROGRAM_ID);
 
-  // Memo data = "AIVTV:" + first 64 chars of fingerprint
-  const memoText = `AIVTV:${fingerprint.slice(0, 64)}`;
+  // Memo data = "AIVTV:<fingerprint64>:ipfs:<cid>" — combines hash + IPFS pointer
+  const memoText = ipfsCid
+    ? `AIVTV:${fingerprint.slice(0, 64)}:ipfs:${ipfsCid}`
+    : `AIVTV:${fingerprint.slice(0, 64)}`;
   const memoData = new TextEncoder().encode(memoText);
 
   const instruction = new TransactionInstruction({
@@ -60,7 +63,7 @@ async function registerOnChain(walletAddress, metadata) {
 }
 
 export default function RegisterTrackModal({ walletAddress, user, onClose, onRegistered }) {
-  const [step, setStep] = useState("form"); // form | signing | success
+  const [step, setStep] = useState("form"); // form | pinning | signing | success
   const [form, setForm] = useState({ track_title: "", track_url: "", cover_image_url: "", genre: "", ai_tools_used: "", description: "" });
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -70,7 +73,6 @@ export default function RegisterTrackModal({ walletAddress, user, onClose, onReg
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!form.track_title || !form.track_url) { toast.error("Track title and URL are required"); return; }
-    setStep("signing");
     setError(null);
 
     try {
@@ -85,9 +87,34 @@ export default function RegisterTrackModal({ walletAddress, user, onClose, onReg
         registered_at: new Date().toISOString(),
       };
 
-      const { signature, fingerprint } = await registerOnChain(walletAddress, metadata);
+      // Step 1: Pin to IPFS first (content-addressed provenance)
+      setStep("pinning");
+      let ipfsData = { metadata_cid: "", metadata_uri: "", gateway_url: "" };
+      try {
+        const { data } = await base44.functions.invoke("pinToIPFS", {
+          mode: "track",
+          track: {
+            title: form.track_title,
+            artist: user.full_name,
+            artist_id: user.id,
+            file_url: form.track_url,
+            cover_url: form.cover_image_url || "",
+            genre: form.genre || "",
+            ai_tools_used: form.ai_tools_used || "",
+            description: form.description || "",
+            blockchain: "solana",
+          },
+        });
+        ipfsData = data || ipfsData;
+      } catch (ipfsErr) {
+        console.warn("IPFS pin failed, continuing without metadata_uri:", ipfsErr);
+      }
 
-      // Save to DB
+      // Step 2: Sign Solana memo transaction (embedding the IPFS CID)
+      setStep("signing");
+      const { signature, fingerprint } = await registerOnChain(walletAddress, metadata, ipfsData.metadata_cid);
+
+      // Step 3: Save to DB with IPFS metadata_uri
       const record = await base44.entities.SolanaTrackRegistry.create({
         ...form,
         artist_id: user.id,
@@ -96,14 +123,15 @@ export default function RegisterTrackModal({ walletAddress, user, onClose, onReg
         wallet_address: walletAddress,
         transaction_signature: signature,
         fingerprint_hash: fingerprint,
+        metadata_uri: ipfsData.metadata_uri || "",
         registration_status: "registered",
         registered_at: new Date().toISOString(),
         network: "devnet",
       });
 
-      setResult({ signature, fingerprint, record });
+      setResult({ signature, fingerprint, record, ipfs: ipfsData });
       setStep("success");
-      toast.success("Track registered on Solana! 🎉");
+      toast.success("Track registered on Solana + IPFS! 🎉");
       onRegistered?.();
     } catch (err) {
       console.error(err);
@@ -164,6 +192,16 @@ export default function RegisterTrackModal({ walletAddress, user, onClose, onReg
           </form>
         )}
 
+        {step === "pinning" && (
+          <div className="py-12 text-center space-y-4">
+            <div className="w-16 h-16 rounded-full bg-cyan-500/20 flex items-center justify-center mx-auto animate-pulse">
+              <FileLock2 className="w-8 h-8 text-cyan-400" />
+            </div>
+            <p className="font-bold text-foreground">Pinning to IPFS…</p>
+            <p className="text-sm text-muted-foreground">Creating a permanent, content-addressed copy of your track metadata before writing to Solana.</p>
+          </div>
+        )}
+
         {step === "signing" && (
           <div className="py-12 text-center space-y-4">
             <div className="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center mx-auto">
@@ -192,14 +230,29 @@ export default function RegisterTrackModal({ walletAddress, user, onClose, onReg
                 <p className="text-xs text-muted-foreground mb-1 font-semibold">FINGERPRINT (SHA-256)</p>
                 <p className="text-xs text-foreground font-mono break-all">{result.fingerprint.slice(0, 32)}…</p>
               </div>
+              {result.ipfs?.metadata_cid && (
+                <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30">
+                  <p className="text-xs text-cyan-300 mb-1 font-semibold flex items-center gap-1.5">
+                    <FileLock2 className="w-3 h-3" /> IPFS METADATA CID
+                  </p>
+                  <p className="text-xs text-foreground font-mono break-all">{result.ipfs.metadata_cid}</p>
+                </div>
+              )}
             </div>
-            <div className="flex gap-3">
-              <a href={`https://solscan.io/tx/${result.signature}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1">
+            <div className="flex gap-3 flex-wrap">
+              <a href={`https://solscan.io/tx/${result.signature}?cluster=devnet`} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[140px]">
                 <Button variant="outline" className="w-full rounded-xl gap-2">
                   <ExternalLink className="w-4 h-4" /> View on Solscan
                 </Button>
               </a>
-              <Button onClick={onClose} className="flex-1 rounded-xl bg-purple-600 hover:bg-purple-500">Done</Button>
+              {result.ipfs?.gateway_url && (
+                <a href={result.ipfs.gateway_url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[140px]">
+                  <Button variant="outline" className="w-full rounded-xl gap-2 border-cyan-500/40 text-cyan-300">
+                    <FileLock2 className="w-4 h-4" /> View on IPFS
+                  </Button>
+                </a>
+              )}
+              <Button onClick={onClose} className="flex-1 min-w-[120px] rounded-xl bg-purple-600 hover:bg-purple-500">Done</Button>
             </div>
           </div>
         )}

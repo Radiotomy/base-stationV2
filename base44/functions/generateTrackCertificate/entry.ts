@@ -158,7 +158,14 @@ Deno.serve(async (req) => {
     drawRow('Wallet Address', reg.wallet_address);
     drawRow(type === 'base' ? 'Transaction Hash' : 'Transaction Signature', txValue);
     drawRow(type === 'base' ? 'Contract Address' : 'NFT Mint Address', contractValue);
-    if (reg.metadata_uri) drawRow('Metadata URI', reg.metadata_uri);
+    if (reg.metadata_uri) {
+      drawRow('IPFS Metadata URI', reg.metadata_uri);
+      // Add a clickable IPFS gateway link if the URI is ipfs://
+      const ipfsCid = String(reg.metadata_uri).replace(/^ipfs:\/\//, '');
+      if (ipfsCid && ipfsCid !== reg.metadata_uri) {
+        drawRow('IPFS Gateway', `https://gateway.pinata.cloud/ipfs/${ipfsCid}`);
+      }
+    }
     if (reg.fingerprint_hash) drawRow('Fingerprint (SHA-256)', reg.fingerprint_hash);
     drawRow('Status', reg.registration_status || 'pending');
     drawRow('Registered At', reg.registered_at ? new Date(reg.registered_at).toUTCString() : (reg.created_date ? new Date(reg.created_date).toUTCString() : '—'));
