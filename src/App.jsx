@@ -12,7 +12,7 @@ import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 
 // Pages
-import Home from './pages/Home';
+import Home from './pages/Home.jsx';
 import Playlists from './pages/Playlists';
 import PlaylistDetail from './pages/PlaylistDetail';
 import Charts from './pages/Charts';
