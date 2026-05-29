@@ -45,13 +45,28 @@ export default function BaseWalletConnectButton({ onConnected }) {
       const accounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
+      if (!accounts || accounts.length === 0) {
+        toast.error("No accounts found. Please unlock MetaMask and try again.");
+        return;
+      }
       const userAddress = accounts[0];
       setAddress(userAddress);
       setConnected(true);
       onConnected?.(userAddress);
       toast.success("Wallet connected!");
     } catch (err) {
-      toast.error(err.message || "Failed to connect wallet");
+      // MetaMask error codes: 4001 = user rejected, -32002 = request already pending
+      if (err?.code === 4001) {
+        toast.error("Connection cancelled");
+      } else if (err?.code === -32002) {
+        toast.error("MetaMask is already requesting — check the extension popup");
+      } else {
+        // Avoid showing minified MetaMask stack traces ("i: Failed to connect...")
+        const msg = typeof err?.message === "string" && !err.message.startsWith("i:")
+          ? err.message
+          : "Could not connect to MetaMask. Make sure it's unlocked and try again.";
+        toast.error(msg);
+      }
     } finally {
       setLoading(false);
     }
