@@ -12,15 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import ActivityFeed from "@/components/feed/ActivityFeed";
 import CommunityMetrics from "@/components/home/CommunityMetrics";
 
-const NAV_LINKS = [
-  { to: "/radio", label: "Radio", icon: Radio },
-  { to: "/charts", label: "Charts", icon: TrendingUp },
-  { to: "/playlists", label: "Playlists", icon: Music },
-  { to: "/challenges", label: "Challenges", icon: Zap },
-  { to: "/leaderboard", label: "Leaderboard", icon: Star },
-  { to: "/ai-studio", label: "AI Studio", icon: Headphones },
-  { to: "/blockchain", label: "Multi-Chain", icon: Globe },
-];
+const HOLO_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/6aabc89fb_generated_image.png";
+const CHROME_BLOB = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/a34586198_generated_image.png";
 
 const STATS = [
   { label: "AI Tracks Created", value: "10K+", icon: Music },
@@ -43,304 +36,312 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Hero */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden px-6 pt-16">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-950 via-black to-indigo-950" />
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-purple-600/20 blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-pink-600/15 blur-3xl" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-indigo-600/10 blur-3xl" />
-        </div>
-        {/* Grid overlay */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)", backgroundSize: "40px 40px" }} />
+    <div className="min-h-screen relative" style={{ backgroundImage: `url(${HOLO_BG})`, backgroundSize: "cover", backgroundAttachment: "fixed" }}>
+      <div className="absolute inset-0 bg-white/20 backdrop-blur-[2px]" />
 
-        <div className="relative text-center max-w-5xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <Badge className="mb-6 bg-blue-500/20 text-blue-300 border-blue-500/30 px-4 py-1.5 text-xs tracking-widest uppercase font-semibold">
-              🎵 Multi-Chain AI Music on Base
-            </Badge>
-            <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black text-white mb-5 tracking-tight leading-none">
-              Where <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400">All Creators</span>
-              <br />
-              Own Their Music
-            </h1>
-            <p className="text-white/60 text-base md:text-xl max-w-2xl mx-auto mb-8 leading-relaxed px-2">
-              Base Station celebrates human, AI, and hybrid creators equally. Secure blockchain ownership, powerful creation tools, and a community that values your unique voice—however you create.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center px-4 sm:px-0">
-              {user ? (
-                <>
-                  {/* Treat every signed-in user as a creator unless explicitly flagged otherwise.
-                      `is_creator` is optional — undefined defaults to true so new users see the Studio CTA. */}
-                  <Link to={user?.is_creator === false ? "/radio" : "/creator-dashboard"} className="w-full sm:w-auto">
-                    <Button className="w-full sm:w-auto bg-white text-blue-900 hover:bg-blue-50 active:bg-blue-100 font-bold px-8 py-3 rounded-full text-base shadow-xl shadow-blue-900/30">
-                      {user?.is_creator === false ? "Tune In 📻" : "Go to Studio 🎵"}
-                    </Button>
-                  </Link>
-                  {user?.is_creator !== false && (
-                    <Link to="/music-studio" className="w-full sm:w-auto">
-                      <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
-                        <Music className="w-5 h-5 mr-2" /> Create Music
-                      </Button>
-                    </Link>
+      <div className="relative">
+        {/* Hero */}
+        <section className="relative pt-20 pb-16 px-6">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-8">
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+                <div className="inline-block holo-chrome rounded-full px-5 py-2 mb-8">
+                  <span className="text-xs font-bold tracking-[0.2em] text-foreground">MULTI-CHAIN AI MUSIC ON BASE</span>
+                </div>
+                <h1 className="font-display text-6xl sm:text-7xl md:text-8xl lg:text-9xl text-foreground mb-8 leading-[0.95]">
+                  Where All Creators<br />Own Their Music
+                </h1>
+              </motion.div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 items-center">
+              <div>
+                <div className="holo-card rounded-2xl p-5 mb-6 border border-white/60">
+                  <p className="text-foreground/80 text-sm leading-relaxed">
+                    Base Station believes human, AI, and hybrid creators equally. Secure blockchain ownership, powerful creation tools, and a community that values your unique voice—however you create.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3 mb-6">
+                  {user ? (
+                    <>
+                      <Link to={user?.is_creator === false ? "/radio" : "/creator-dashboard"}>
+                        <button className="holo-button rounded-full px-6 py-2.5 font-bold text-sm text-foreground border border-white/70">
+                          {user?.is_creator === false ? "Tune In 📻" : "Go to Studio 🎵"}
+                        </button>
+                      </Link>
+                      {user?.is_creator !== false && (
+                        <Link to="/music-studio">
+                          <button className="holo-button rounded-full px-6 py-2.5 font-bold text-sm text-foreground border border-white/70">
+                            🎵 Create Music
+                          </button>
+                        </Link>
+                      )}
+                      <Link to="/why-base-station">
+                        <button className="holo-button rounded-full px-6 py-2.5 font-bold text-sm text-foreground border border-white/70">
+                          Learn Why ↗
+                        </button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <button onClick={() => base44.auth.redirectToLogin()} className="holo-button rounded-full px-6 py-2.5 font-bold text-sm text-foreground border border-white/70">
+                        Join Free
+                      </button>
+                      <Link to="/radio">
+                        <button className="holo-button rounded-full px-6 py-2.5 font-bold text-sm text-foreground border border-white/70">
+                          🎧 Explore
+                        </button>
+                      </Link>
+                      <Link to="/why-base-station">
+                        <button className="holo-button rounded-full px-6 py-2.5 font-bold text-sm text-foreground border border-white/70">
+                          Why Join ↗
+                        </button>
+                      </Link>
+                    </>
                   )}
-                  <Link to="/why-base-station" className="w-full sm:w-auto">
-                    <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
-                      Learn Why 🔗
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Button onClick={() => base44.auth.redirectToLogin()}
-                    className="w-full sm:w-auto bg-white text-blue-900 hover:bg-blue-50 active:bg-blue-100 font-bold px-8 py-3 rounded-full text-base shadow-xl shadow-blue-900/30">
-                    Join Free
-                  </Button>
-                  <Link to="/radio" className="w-full sm:w-auto">
-                   <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
-                     <Headphones className="w-5 h-5 mr-2" /> Explore
-                   </Button>
-                  </Link>
-                  <Link to="/why-base-station" className="w-full sm:w-auto">
-                   <Button variant="outline" className="w-full sm:w-auto border-white/20 text-white hover:bg-white/10 active:bg-white/20 font-bold px-8 py-3 rounded-full text-base backdrop-blur">
-                     Why Join 🔗
-                   </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </motion.div>
-
-          {/* Floating cards */}
-          <motion.div className="mt-16 relative h-32" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
-            {[
-              { label: "🔴 Live Session", sub: "Hip-Hop Showcase", pos: "left-0" },
-              { label: "🔥 #1 Chart", sub: "This Week's Top Track", pos: "left-1/2 -translate-x-1/2" },
-              { label: "⭐ Featured", sub: "New Artist Spotlight", pos: "right-0" },
-            ].map(({ label, sub, pos }) => (
-              <div key={label} className={`absolute top-0 ${pos} bg-white/10 backdrop-blur border border-white/10 rounded-2xl px-5 py-3 hidden sm:block`}>
-                <p className="text-white font-bold text-sm">{label}</p>
-                <p className="text-white/50 text-xs mt-0.5">{sub}</p>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Live Community Metrics */}
-      <section className="py-16 px-6 border-y border-border/50 bg-muted/20">
-        <div className="max-w-5xl mx-auto">
-          <CommunityMetrics />
-        </div>
-      </section>
-
-      {/* Static Stats */}
-      <section className="py-16 px-6 bg-background border-b border-border/50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <h3 className="text-2xl font-black text-foreground mb-2">Base Station by the Numbers</h3>
-            <p className="text-muted-foreground text-sm">Powered by creators of all kinds</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {STATS.map(({ label, value, icon: Icon }) => (
-              <div key={label} className="text-center">
-                <Icon className="w-6 h-6 mx-auto mb-3 text-purple-400" />
-                <p className="text-3xl font-black text-foreground">{value}</p>
-                <p className="text-sm text-muted-foreground mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Feature Hubs */}
-      <section className="py-20 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black text-foreground mb-4">Everything Every Creator Needs</h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">Whether you compose, collaborate with AI, or blend both—Base Station provides the tools, community, and on-chain ownership to support your unique creative vision.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {[
-              { to: "/lyrics-studio", icon: Mic2, title: "🎤 Lyrics Studio", desc: "Generate original lyrics with Nuro AI. Real-time refinement. Unlimited versions.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "✨ New" },
-              { to: "/music-studio", icon: Music, title: "🎵 Music Studio", desc: "Create AI tracks with Loudly, Nuro, Sonic, or Producer. Full BPM & key metadata.", color: "from-blue-900 to-cyan-900", accent: "text-cyan-400", badge: "✨ New" },
-              { to: "/cover-art-studio", icon: Palette, title: "🎨 Cover Art Studio", desc: "Generate professional album artwork. Cheap auto-generated or custom high-quality designs.", color: "from-purple-900 to-violet-900", accent: "text-purple-400", badge: "✨ New" },
-              { to: "/video-studio", icon: Film, title: "🎬 Video Studio", desc: "Generate cinematic videos with LTX AI. Perfect for music visualizers and promos.", color: "from-indigo-900 to-purple-900", accent: "text-indigo-400", badge: "✨ New" },
-              { to: "/live-studio", icon: Radio, title: "🔴 Live Studio", desc: "Stream live sessions with multi-track mixing. Record for later. Interactive viewer chat.", color: "from-red-900 to-orange-900", accent: "text-red-400", badge: "✨ New" },
-              { to: "/radio", icon: Radio, title: "📻 Multi-Channel Radio", desc: "6+ genre channels streaming 24/7. Tune into Discover, Hip-Hop, EDM, Lo-Fi and more.", color: "from-purple-900 to-violet-900", accent: "text-purple-400", badge: "Live" },
-              { to: "/charts", icon: TrendingUp, title: "📊 Trending Charts", desc: "Real-time weekly, monthly, and all-time rankings powered by community votes — zero algorithms.", color: "from-orange-900 to-amber-900", accent: "text-orange-400", badge: "🔥 Hot" },
-              { to: "/playlists", icon: Music, title: "📝 Community Playlists", desc: "Curate and discover playlists from the world's most creative AI music artists.", color: "from-teal-900 to-blue-900", accent: "text-teal-400", badge: "Browse" },
-              { to: "/featured-artists", icon: Star, title: "⭐ Featured Artists", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Apply" },
-              { to: "/voice-creator", icon: Mic2, title: "🎤 Voice Creator", desc: "Create and manage AI voice personas. Build your voice library and use them across tracks.", color: "from-pink-600 to-rose-600", accent: "text-pink-300", badge: "✨ New" },
-              { to: "/ai-studio", icon: Zap, title: "⚡ AI Tools", desc: "Advanced prompts, voice synthesis, cover generation and more creative tools.", color: "from-pink-600 to-rose-600", accent: "text-pink-300", badge: "Pro" },
-              { to: "/submit", icon: Upload, title: "📤 Submit Your Track", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Go Live" },
-              { to: "/blockchain", icon: Globe, title: "⛓️ Multi-Chain Registry", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and verification.", color: "from-blue-900 to-slate-900", accent: "text-blue-400", badge: "Mint NFT" },
-              { to: "/templates", icon: Zap, title: "🎨 Community Templates", desc: "Discover and share AI prompts for Music, Lyrics, Cover Art & Video. One-click copy & use.", color: "from-violet-900 to-purple-900", accent: "text-violet-400", badge: "New" },
-              { to: "/audius-trending", icon: Headphones, title: "🎧 Audius Network", desc: "Discover trending tracks across the OpenAudio Protocol. Import, remix & publish your own.", color: "from-emerald-900 to-teal-900", accent: "text-emerald-400", badge: "Phase 2" },
-              { to: "/stem-creator", icon: Music, title: "🎛️ Stem Creator", desc: "Split any track into vocals, drums, bass, and instruments. Provider-agnostic AI.", color: "from-emerald-900 to-green-900", accent: "text-emerald-400", badge: "Phase 3" },
-              { to: "/mashup-studio", icon: Music, title: "🔀 Mashup Studio", desc: "Blend 2–4 tracks into one. Auto-detects BPM, key, and aligns them perfectly.", color: "from-amber-900 to-orange-900", accent: "text-amber-400", badge: "Phase 3" },
-              { to: "/vocal-harmonizer", icon: Mic2, title: "🎤 Vocal Harmonizer", desc: "Add lush AI-generated harmonies — 3rds, 5ths, octaves — to any vocal track.", color: "from-pink-900 to-rose-900", accent: "text-pink-400", badge: "Phase 3" },
-              { to: "/mastering-studio", icon: Star, title: "✨ AI Mastering", desc: "Pro-grade mastering profiles: streaming, club, vinyl, warm. LUFS-targeted output.", color: "from-yellow-900 to-amber-900", accent: "text-yellow-400", badge: "Phase 3" },
-              { to: "/visualizer-studio", icon: Film, title: "🎬 Visualizer Studio", desc: "Generate animated music videos and visualizers from any track.", color: "from-fuchsia-900 to-purple-900", accent: "text-fuchsia-400", badge: "Phase 3" },
-              { to: "/ai-studio/history", icon: Zap, title: "🕒 Studio History", desc: "Complete log of every studio action you've taken — reopen any tool with one click.", color: "from-blue-900 to-indigo-900", accent: "text-blue-400", badge: "Phase 3" },
-            ].map(({ to, icon: Icon, title, desc, color, accent, badge }) => (
-              <Link key={title} to={to} className={`group block p-5 md:p-6 rounded-2xl md:rounded-3xl bg-gradient-to-br ${color} border border-white/5 active:border-white/20 active:scale-[0.98] transition-all`}>
-                <div className="flex items-start justify-between mb-3">
-                  <Icon className={`w-7 h-7 md:w-8 md:h-8 ${accent}`} />
-                  <Badge className="bg-white/10 text-white/70 border-0 text-xs">{badge}</Badge>
                 </div>
-                <h3 className="text-white font-bold text-base md:text-lg mb-1.5">{title}</h3>
-                <p className="text-white/50 text-xs md:text-sm leading-relaxed">{desc}</p>
-                <div className={`flex items-center gap-1 mt-3 ${accent} text-xs md:text-sm font-semibold`}>
-                  Explore <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
+
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { label: "🔴 Live Session", sub: "Hip-Hop Showcase" },
+                    { label: "🔥 #1 Chart", sub: "This Week's Top Track" },
+                    { label: "⭐ Featured", sub: "New Artist Spotlight" },
+                  ].map(({ label, sub }) => (
+                    <div key={label} className="holo-card rounded-2xl px-4 py-2 border border-white/60">
+                      <p className="font-bold text-xs text-foreground">{label}</p>
+                      <p className="text-[10px] text-muted-foreground">{sub}</p>
+                    </div>
+                  ))}
                 </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Top Tracks + Activity Feed */}
-      <section className="py-16 px-6 bg-muted/20 border-y border-border/50">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Top Tracks */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-foreground">🔥 Top Tracks This Week</h2>
-              <Link to="/charts" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 font-semibold">
-                Full Charts <ChevronRight className="w-4 h-4" />
-              </Link>
-            </div>
-            {topTracks.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-2xl">
-                <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                <p>Charts will populate as the community votes!</p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {topTracks.map((track, i) => (
-                  <Link to="/charts" key={track.id} className="flex items-center gap-4 p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 hover:bg-purple-500/5 transition-all group">
-                    <span className={`w-8 text-center text-xl font-black ${i === 0 ? "text-yellow-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-amber-600" : "text-muted-foreground"}`}>{i + 1}</span>
-                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-gradient-to-br from-purple-800 to-indigo-900 flex-shrink-0">
-                      {track.cover_image_url ? <img src={track.cover_image_url} alt={track.track_title} className="w-full h-full object-cover" /> : <Music className="w-5 h-5 m-3.5 text-white/30" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate text-foreground">{track.track_title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
-                    </div>
-                    <span className="text-sm font-bold text-orange-400 flex-shrink-0">{track.total_votes?.toLocaleString() || 0} votes</span>
-                  </Link>
-                ))}
+
+              <div className="hidden md:flex justify-center items-center relative">
+                <div className="absolute inset-0 holo-foil rounded-full blur-3xl opacity-50" />
+                <img src={CHROME_BLOB} alt="" className="relative w-full max-w-md drop-shadow-2xl" style={{ mixBlendMode: "multiply" }} />
               </div>
-            )}
-          </div>
-
-          {/* Activity Feed */}
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-black text-foreground">⚡ Community Buzz</h2>
-            </div>
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <ActivityFeed limit={8} />
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Featured Collections */}
-      {featuredPlaylists.length > 0 && (
+        {/* Stats with chrome bubbles */}
+        <section className="py-16 px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-10">
+              <h3 className="font-display text-3xl md:text-4xl text-foreground mb-2">Base Station by the Numbers</h3>
+              <p className="text-muted-foreground text-sm">Powered by creators of all kinds</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {STATS.map(({ label, value, icon: Icon }) => (
+                <div key={label} className="holo-chrome rounded-full aspect-square flex flex-col items-center justify-center border border-white/70 p-4 text-center">
+                  <Icon className="w-5 h-5 mb-1.5 text-foreground/60" />
+                  <p className="font-display text-2xl md:text-3xl text-foreground leading-none">{value}</p>
+                  <p className="text-[10px] md:text-xs text-muted-foreground mt-1 font-semibold">{label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Community Metrics */}
+        <section className="py-12 px-6">
+          <div className="max-w-5xl mx-auto">
+            <div className="holo-card rounded-3xl p-6 border border-white/60">
+              <CommunityMetrics />
+            </div>
+          </div>
+        </section>
+
+        {/* Feature Grid */}
         <section className="py-16 px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-black text-foreground">⭐ Featured Collections</h2>
-              <Link to="/playlists" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 font-semibold">
-                All Playlists <ChevronRight className="w-4 h-4" />
-              </Link>
+            <div className="text-center mb-10">
+              <h2 className="font-display text-4xl md:text-5xl text-foreground mb-3">Everything Every Creator Needs</h2>
+              <p className="text-muted-foreground text-base max-w-2xl mx-auto">Whether you compose, collaborate with AI, or blend both—Base Station provides the tools, community, and on-chain ownership to support your unique creative vision.</p>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {featuredPlaylists.map((pl, i) => (
-                <Link key={pl.id} to={`/playlists/${pl.id}`} className="group">
-                  <div className="aspect-square rounded-2xl bg-gradient-to-br from-purple-800 to-indigo-900 overflow-hidden mb-3 relative">
-                    {pl.cover_image_url && <img src={pl.cover_image_url} alt={pl.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Play className="w-8 h-8 text-white" fill="white" />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { to: "/lyrics-studio", icon: Mic2, title: "Lyrics Studio", emoji: "🎤", desc: "Generate original lyrics with Nuro AI. Real-time refinement. Unlimited versions.", badge: "✨ New" },
+                { to: "/music-studio", icon: Music, title: "Music Studio", emoji: "🎵", desc: "Create AI tracks with Loudly, Nuro, Sonic, or Producer. Full BPM & key metadata.", badge: "✨ New" },
+                { to: "/cover-art-studio", icon: Palette, title: "Cover Art", emoji: "🎨", desc: "Generate professional album artwork. Cheap auto-generated or custom high-quality designs.", badge: "✨ New" },
+                { to: "/video-studio", icon: Film, title: "Video Studio", emoji: "🎬", desc: "Generate cinematic videos with LTX AI. Perfect for music visualizers and promos.", badge: "✨ New" },
+                { to: "/live-studio", icon: Radio, title: "Live Studio", emoji: "🔴", desc: "Stream live sessions with multi-track mixing. Record for later. Interactive viewer chat.", badge: "✨ New" },
+                { to: "/radio", icon: Radio, title: "Multi-Channel Radio", emoji: "📻", desc: "6+ genre channels streaming 24/7. Tune into Discover, Hip-Hop, EDM, Lo-Fi and more.", badge: "Live" },
+                { to: "/charts", icon: TrendingUp, title: "Trending Charts", emoji: "📊", desc: "Real-time weekly, monthly, and all-time rankings powered by community votes — zero algorithms.", badge: "🔥 Hot" },
+                { to: "/playlists", icon: Music, title: "Community Playlists", emoji: "📝", desc: "Curate and discover playlists from the world's most creative AI music artists.", badge: "Browse" },
+                { to: "/featured-artists", icon: Star, title: "Featured Artists", emoji: "⭐", desc: "Apply to the spotlight program and get your music in front of thousands of new listeners.", badge: "Apply" },
+                { to: "/voice-creator", icon: Mic2, title: "Voice Creator", emoji: "🎤", desc: "Create and manage AI voice personas. Build your voice library and use them across tracks.", badge: "✨ New" },
+                { to: "/ai-studio", icon: Zap, title: "AI Tools", emoji: "⚡", desc: "Advanced prompts, voice synthesis, cover generation and more creative tools.", badge: "Pro" },
+                { to: "/submit", icon: Upload, title: "Submit Your Track", emoji: "📤", desc: "Share your AI music with the community. Get on charts, enter challenges, build your fanbase.", badge: "Go Live" },
+                { to: "/blockchain", icon: Globe, title: "Multi-Chain Registry", emoji: "⛓️", desc: "Register your tracks on Base (primary) or Solana with immutable authorship proof and verification.", badge: "Mint NFT" },
+                { to: "/templates", icon: Zap, title: "Community Templates", emoji: "🎨", desc: "Discover and share AI prompts for Music, Lyrics, Cover Art & Video. One-click copy & use.", badge: "New" },
+                { to: "/audius-trending", icon: Headphones, title: "Audius Network", emoji: "🎧", desc: "Discover trending tracks across the OpenAudio Protocol. Import, remix & publish your own.", badge: "Phase 2" },
+                { to: "/stem-creator", icon: Music, title: "Stem Creator", emoji: "🎛️", desc: "Split any track into vocals, drums, bass, and instruments. Provider-agnostic AI.", badge: "Phase 3" },
+                { to: "/mashup-studio", icon: Music, title: "Mashup Studio", emoji: "🔀", desc: "Blend 2–4 tracks into one. Auto-detects BPM, key, and aligns them perfectly.", badge: "Phase 3" },
+                { to: "/vocal-harmonizer", icon: Mic2, title: "Vocal Harmonizer", emoji: "🎤", desc: "Add lush AI-generated harmonies — 3rds, 5ths, octaves — to any vocal track.", badge: "Phase 3" },
+                { to: "/mastering-studio", icon: Star, title: "AI Mastering", emoji: "✨", desc: "Pro-grade mastering profiles: streaming, club, vinyl, warm. LUFS-targeted output.", badge: "Phase 3" },
+                { to: "/visualizer-studio", icon: Film, title: "Visualizer Studio", emoji: "🎬", desc: "Generate animated music videos and visualizers from any track.", badge: "Phase 3" },
+                { to: "/ai-studio/history", icon: Zap, title: "Studio History", emoji: "🕒", desc: "Complete log of every studio action you've taken — reopen any tool with one click.", badge: "Phase 3" },
+              ].map(({ to, icon: Icon, title, emoji, desc, badge }) => (
+                <Link key={title} to={to} className="group block holo-card rounded-2xl p-5 border border-white/60 hover:border-white/90 hover:-translate-y-0.5 transition-all">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{emoji}</span>
+                      <Icon className="w-5 h-5 text-foreground/70" />
                     </div>
+                    <Badge className="bg-white/70 text-foreground/70 border border-white/80 text-[10px] font-semibold">{badge}</Badge>
                   </div>
-                  <p className="font-bold text-xs truncate text-foreground group-hover:text-purple-400 transition-colors">{pl.title}</p>
-                  <p className="text-xs text-muted-foreground">{pl.track_count || 0} tracks</p>
+                  <h3 className="font-display text-base text-foreground mb-1.5">{title}</h3>
+                  <p className="text-foreground/60 text-xs leading-relaxed mb-3">{desc}</p>
+                  <div className="flex items-center gap-1 text-foreground text-xs font-bold">
+                    Explore <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
                 </Link>
               ))}
             </div>
           </div>
         </section>
-      )}
 
-      {/* Featured Artists */}
-      {featuredArtists.length > 0 && (
-        <section className="py-16 px-6 bg-muted/20 border-t border-border/50">
+        {/* Top Tracks + Activity */}
+        <section className="py-16 px-6">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-2xl font-black text-foreground">🎤 Featured Artists</h2>
-              <Link to="/featured-artists" className="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 font-semibold">
-                View All <ChevronRight className="w-4 h-4" />
-              </Link>
+            <div className="text-center mb-10">
+              <h2 className="font-display text-4xl md:text-5xl text-foreground">Pulse of the Platform</h2>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {featuredArtists.map((a) => (
-                <div key={a.id} className="group relative aspect-square rounded-2xl overflow-hidden bg-gradient-to-br from-yellow-900 to-orange-900 cursor-pointer">
-                  {a.profile_image_url && <img src={a.profile_image_url} alt={a.artist_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-3">
-                    <p className="text-white font-bold text-xs">{a.artist_name}</p>
-                    <p className="text-white/50 text-xs capitalize">{a.genre}</p>
-                  </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-2xl text-foreground">🔥 Top Tracks</h3>
+                  <Link to="/charts" className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1 font-bold">
+                    Full Charts <ChevronRight className="w-4 h-4" />
+                  </Link>
                 </div>
-              ))}
+                {topTracks.length === 0 ? (
+                  <div className="holo-card text-center py-12 text-muted-foreground rounded-2xl border border-white/60">
+                    <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">Charts will populate as the community votes!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {topTracks.map((track, i) => (
+                      <Link to="/charts" key={track.id} className="flex items-center gap-3 p-3 holo-card rounded-2xl border border-white/60 hover:border-white/90 transition-all">
+                        <div className="holo-chrome w-9 h-9 rounded-full flex items-center justify-center border border-white/70 flex-shrink-0">
+                          <span className="font-display text-sm text-foreground">{i + 1}</span>
+                        </div>
+                        <div className="w-11 h-11 rounded-xl overflow-hidden holo-chrome border border-white/70 flex-shrink-0">
+                          {track.cover_image_url ? <img src={track.cover_image_url} alt={track.track_title} className="w-full h-full object-cover" /> : <Music className="w-4 h-4 m-3.5 text-foreground/40" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate text-foreground">{track.track_title}</p>
+                          <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
+                        </div>
+                        <span className="text-xs font-bold text-foreground/70 flex-shrink-0">{track.total_votes?.toLocaleString() || 0}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-2xl text-foreground">⚡ Community Buzz</h3>
+                </div>
+                <div className="holo-card rounded-2xl p-4 border border-white/60">
+                  <ActivityFeed limit={8} />
+                </div>
+              </div>
             </div>
           </div>
         </section>
-      )}
 
-      {/* CTA */}
-      <section className="py-24 px-6 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div>
-            <h2 className="text-4xl md:text-6xl font-black text-foreground mb-6">
-              Human + AI<br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">on Chain</span>
+        {/* Featured Collections */}
+        {featuredPlaylists.length > 0 && (
+          <section className="py-16 px-6">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="font-display text-3xl md:text-4xl text-foreground">⭐ Featured Collections</h2>
+                <Link to="/playlists" className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1 font-bold">
+                  All Playlists <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {featuredPlaylists.map((pl) => (
+                  <Link key={pl.id} to={`/playlists/${pl.id}`} className="flex items-center gap-4 holo-card rounded-full p-2 pr-6 border border-white/60 hover:border-white/90 transition-all group">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 overflow-hidden flex-shrink-0 border border-white/70">
+                      {pl.cover_image_url && <img src={pl.cover_image_url} alt={pl.title} className="w-full h-full object-cover" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-display text-base truncate text-foreground">{pl.title}</p>
+                      <p className="text-xs text-muted-foreground">{pl.track_count || 0} tracks</p>
+                    </div>
+                    <Play className="w-5 h-5 text-foreground/60 group-hover:text-foreground" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* Featured Artists */}
+        {featuredArtists.length > 0 && (
+          <section className="py-16 px-6">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-between mb-8">
+                <h2 className="font-display text-3xl md:text-4xl text-foreground">🎤 Featured Artists</h2>
+                <Link to="/featured-artists" className="text-sm text-foreground/70 hover:text-foreground flex items-center gap-1 font-bold">
+                  View All <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {featuredArtists.map((a) => (
+                  <div key={a.id} className="group relative aspect-square rounded-3xl overflow-hidden holo-chrome border border-white/70 cursor-pointer">
+                    {a.profile_image_url && <img src={a.profile_image_url} alt={a.artist_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <p className="text-white font-bold text-xs">{a.artist_name}</p>
+                      <p className="text-white/70 text-[10px] capitalize">{a.genre}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* CTA */}
+        <section className="py-24 px-6 text-center">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="font-display text-5xl md:text-7xl text-foreground mb-6">
+              Human + AI<br /><span className="text-holo">on Chain</span>
             </h2>
-            <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
-              Base Station believes AI is a co-creator, not a replacement. Your creativity drives the music — AI amplifies it. Every track you make, every vote you cast, every transaction is on-chain and forever.
+            <p className="text-foreground/70 text-base md:text-lg mb-10 leading-relaxed max-w-xl mx-auto">
+              Base Station believes AI is a co-creator. Your creativity drives the music — AI amplifies it. Every track, every vote, every transaction is on-chain and forever.
             </p>
             {user ? (
               <Link to="/radio">
-                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:from-blue-700 active:to-cyan-700 text-white font-bold px-10 py-3 rounded-full text-base shadow-xl shadow-blue-900/40">
+                <button className="holo-button rounded-full px-10 py-3.5 font-display text-base text-foreground border border-white/70">
                   Go to Radio →
-                </Button>
+                </button>
               </Link>
             ) : (
-              <Button onClick={() => base44.auth.redirectToLogin()}
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:from-blue-700 active:to-cyan-700 text-white font-bold px-10 py-3 rounded-full text-base shadow-xl shadow-blue-900/40">
-                Join Base Station
-              </Button>
+              <button onClick={() => base44.auth.redirectToLogin()} className="holo-button rounded-full px-10 py-3.5 font-display text-base text-foreground border border-white/70">
+                Join Base Station →
+              </button>
             )}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-12 px-6">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="font-black text-lg mb-4">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Base</span>
-            <span className="text-foreground">Station</span>
-            <span className="text-muted-foreground font-normal text-sm ml-2">— Multi-Chain AI Music</span>
+        {/* Footer */}
+        <footer className="border-t border-white/40 py-10 px-6 holo-card">
+          <div className="max-w-7xl mx-auto text-center">
+            <div className="font-display text-lg mb-2 text-foreground">
+              BaseStation <span className="text-muted-foreground font-normal text-sm font-body">— Multi-Chain AI Music</span>
+            </div>
+            <p className="text-xs text-muted-foreground">© 2026 BaseStation. Multi-Chain, Always.</p>
           </div>
-          <p className="text-xs text-muted-foreground">© 2026 Base Station. Multi-Chain, Always.</p>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </div>
   );
 }
