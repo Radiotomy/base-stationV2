@@ -7,8 +7,18 @@ const SONIC_API_KEY    = AIMUSICAPI_KEY;
 const NURO_API_KEY     = AIMUSICAPI_KEY;
 const PRODUCER_API_KEY = AIMUSICAPI_KEY;
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
+const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
+
+// Public URL of our webhook receiver — derived from the app's deployed function path.
+// The aimusicapi platform POSTs here when Sonic/Nuro/Producer tasks settle.
+// Falls back gracefully (no webhook attached) if not configured.
+function getWebhookConfig() {
+  const url = Deno.env.get('AIMUSICAPI_WEBHOOK_URL'); // set this to https://<app>/functions/aimusicapiWebhook
+  if (!url || !WEBHOOK_SECRET) return null;
+  return { webhook_url: url, webhook_secret: WEBHOOK_SECRET };
+}
 
 // ── Sonic ─────────────────────────────────────────────────────────────────────
 // Docs: POST /api/v1/sonic/create
@@ -64,6 +74,11 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
       gpt_description_prompt: desc,
     };
   }
+
+  // Attach webhook callback (if configured) — provider will POST results to our handler
+  // when the task settles, eliminating the need for polling.
+  const wh = getWebhookConfig();
+  if (wh) Object.assign(body, wh);
 
   const sonicController = new AbortController();
   const sonicTimeout = setTimeout(() => sonicController.abort(), 25000);
@@ -143,6 +158,9 @@ async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics, s
     };
   }
 
+  const wh = getWebhookConfig();
+  if (wh) Object.assign(body, wh);
+
   const res = await fetch(`${AI_BASE}/nuro/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${NURO_API_KEY}`, 'Content-Type': 'application/json' },
@@ -169,6 +187,8 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
     ...(lyrics && { lyrics, make_instrumental: false }),
     ...(!lyrics && { make_instrumental: true }),
   };
+  const wh = getWebhookConfig();
+  if (wh) Object.assign(body, wh);
   const res = await fetch(`${AI_BASE}/producer/create`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}`, 'Content-Type': 'application/json' },

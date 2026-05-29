@@ -66,6 +66,14 @@ Deno.serve(async (req) => {
       frameData = concatArrays(frameData, buildUSLTFrame(tags.lyrics, tags.lyricsLanguage || 'eng'));
     }
 
+    // Add SYLT (synchronised lyrics) frame if word-level alignment data is provided.
+    // Layout: [encoding:1][language:3][timestamp_format:1][content_type:1][description+\0]
+    //         then repeated: [text+\0][timestamp:4 bytes BE in ms]
+    // Powers karaoke views, lyric scrubbing, and lock-screen highlight on supporting players.
+    if (Array.isArray(tags.aligned_lyrics) && tags.aligned_lyrics.length > 0) {
+      frameData = concatArrays(frameData, buildSYLTFrame(tags.aligned_lyrics, tags.lyricsLanguage || 'eng'));
+    }
+
     // Add cover image if provided
     if (cover_image_url) {
       try {
@@ -113,6 +121,7 @@ Deno.serve(async (req) => {
       download_url: uploadRes.file_url,
       tags_applied: Object.keys(id3Frames).filter(k => id3Frames[k]).length,
       lyrics_embedded: !!(tags.lyrics && tags.lyrics.trim().length > 0),
+      sylt_embedded: Array.isArray(tags.aligned_lyrics) && tags.aligned_lyrics.length > 0,
       cover_embedded: !!cover_image_url,
       txxx_count: tags.txxx ? Object.values(tags.txxx).filter(Boolean).length : 0,
     });
@@ -228,6 +237,51 @@ function buildUSLTFrame(lyrics, language = 'eng') {
   frame.set(langBytes, offset); offset += langBytes.length;
   frame.set(descBytes, offset); offset += descBytes.length;
   frame.set(lyricsBytes, offset);
+  return frame;
+}
+
+// Helper: Build SYLT (synchronised lyrics) frame
+// Input: alignment = [{ word: string, start_s: number, end_s: number }, ...]
+// Format per ID3v2.4: encoding(1) + language(3) + timestamp_format(1) + content_type(1) + descriptor+\0
+// followed by repeating { text+\0, timestamp_ms(4 BE) } pairs.
+function buildSYLTFrame(alignment, language = 'eng') {
+  const lang = (language + '   ').slice(0, 3);
+  const langBytes = new TextEncoder().encode(lang);
+  const descBytes = new TextEncoder().encode('Lyrics\x00');
+
+  // Build the repeating body
+  const enc = new TextEncoder();
+  const chunks = [];
+  let bodyLen = 0;
+  for (const item of alignment) {
+    const text = (typeof item.word === 'string') ? item.word : String(item.word || '');
+    const tStart = Number(item.start_s);
+    if (!Number.isFinite(tStart)) continue;
+    const textBytes = enc.encode(text + '\x00');
+    const ts = Math.max(0, Math.round(tStart * 1000));
+    const tsBytes = new Uint8Array([
+      (ts >> 24) & 0xFF, (ts >> 16) & 0xFF, (ts >> 8) & 0xFF, ts & 0xFF,
+    ]);
+    chunks.push(textBytes, tsBytes);
+    bodyLen += textBytes.length + tsBytes.length;
+  }
+
+  const headerLen = 1 + langBytes.length + 1 + 1 + descBytes.length;
+  const frameSize = headerLen + bodyLen;
+  const sizeBytes = synchsafeInt(frameSize);
+
+  const frame = new Uint8Array(10 + frameSize);
+  frame.set(new TextEncoder().encode('SYLT'), 0);
+  frame.set(sizeBytes, 4);
+  frame[8] = 0x00; frame[9] = 0x00;
+
+  let offset = 10;
+  frame[offset++] = 0x03;                       // UTF-8
+  frame.set(langBytes, offset); offset += langBytes.length;
+  frame[offset++] = 0x02;                       // timestamp format: absolute milliseconds
+  frame[offset++] = 0x01;                       // content type: lyrics
+  frame.set(descBytes, offset); offset += descBytes.length;
+  for (const c of chunks) { frame.set(c, offset); offset += c.length; }
   return frame;
 }
 

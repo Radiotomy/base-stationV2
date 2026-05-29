@@ -59,7 +59,7 @@ async function pollProvider(provider, providerTaskId, job) {
     if (allSettled && anySucceeded) {
       const primary = succeededClips[0];
       const allAudioUrls = succeededClips.map(c => c.audio_url);
-      // Sonic returns: title, tags, lyrics, image_url, audio_url, video_url, mv, duration
+      // Sonic returns: title, tags, lyrics, image_url, audio_url, video_url, mv, duration, clip_id
       return {
         status: 'completed',
         audio_url: allAudioUrls[0],
@@ -70,8 +70,10 @@ async function pollProvider(provider, providerTaskId, job) {
         lyrics: primary?.lyrics || '',
         title: primary?.title || '',
         tags: primary?.tags || '',
-        duration: primary?.duration,
+        duration: primary?.duration ? Number(primary.duration) : undefined,
         model_version: primary?.mv,
+        clip_id: primary?.clip_id,
+        clip_ids: succeededClips.map(c => c.clip_id).filter(Boolean),
       };
     }
     if (allSettled && !anySucceeded) {
@@ -337,6 +339,8 @@ Deno.serve(async (req) => {
         vocal_gender: m.vocal_gender || undefined,
         vocal_timbre: m.vocal_timbre || undefined,
         model_version: m.model_version || undefined,
+        clip_id: m.clip_id || undefined,
+        clip_ids: m.clip_ids || undefined,
       });
     }
     if (job.status === 'failed') {
@@ -382,6 +386,8 @@ Deno.serve(async (req) => {
             vocal_gender: providerData.vocal_gender || null,
             vocal_timbre: providerData.vocal_timbre || null,
             model_version: providerData.model_version || job.input_data?.model || null,
+            clip_id: providerData.clip_id || null,
+            clip_ids: providerData.clip_ids || null,
           },
           credits_used: cost,
           completed_at: completedAt,
@@ -486,6 +492,8 @@ Deno.serve(async (req) => {
           vocal_gender: providerData.vocal_gender || undefined,
           vocal_timbre: providerData.vocal_timbre || undefined,
           model_version: providerData.model_version || job.input_data?.model || undefined,
+          clip_id: providerData.clip_id || undefined,
+          clip_ids: providerData.clip_ids || undefined,
           content_hash: contentHash,
         });
       }
