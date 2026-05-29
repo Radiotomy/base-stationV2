@@ -15,9 +15,34 @@ export default function VisualizerPreview({ src, style = 'spectrum', title }) {
   const rafRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(null);
+  const [corsBlocked, setCorsBlocked] = useState(false);
+
+  // Detect CORS failure on the audio element. If the file's host (e.g. CloudFront)
+  // doesn't return Access-Control-Allow-Origin, our `crossOrigin="anonymous"` request
+  // is rejected, causing both the audio load AND the AnalyserNode connection to fail.
+  // In that case, drop crossOrigin so plain playback works — the visualizer falls back
+  // to a synthetic time-based animation since we can't tap the audio stream.
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const onError = () => {
+      // If we were trying CORS-anonymous and it failed, retry without it
+      if (a.crossOrigin) {
+        a.removeAttribute('crossorigin');
+        setCorsBlocked(true);
+        setError(null);
+        a.load();
+      } else {
+        setError('Audio source unreachable');
+      }
+    };
+    a.addEventListener('error', onError);
+    return () => a.removeEventListener('error', onError);
+  }, [src]);
 
   const setupAudio = () => {
     if (ctxRef.current) return;
+    if (corsBlocked) return; // can't connect analyser without CORS
     try {
       const AC = window.AudioContext || window.webkitAudioContext;
       const ctx = new AC();
@@ -30,20 +55,34 @@ export default function VisualizerPreview({ src, style = 'spectrum', title }) {
       analyserRef.current = analyser;
       sourceRef.current = source;
     } catch (e) {
-      setError('Audio source blocked by CORS — preview limited');
+      setCorsBlocked(true);
     }
   };
 
   const draw = () => {
     const canvas = canvasRef.current;
-    const analyser = analyserRef.current;
-    if (!canvas || !analyser) return;
+    if (!canvas) return;
     const c = canvas.getContext('2d');
     const w = canvas.width;
     const h = canvas.height;
-    const bufferLength = analyser.frequencyBinCount;
+    const analyser = analyserRef.current;
+    const bufferLength = analyser ? analyser.frequencyBinCount : 256;
     const data = new Uint8Array(bufferLength);
-    analyser.getByteFrequencyData(data);
+    if (analyser) {
+      analyser.getByteFrequencyData(data);
+    } else {
+      // CORS-blocked fallback: synthesize a pseudo-spectrum from playback time
+      // so the visualizer still animates in sync with the music conceptually.
+      const t = (audioRef.current?.currentTime || 0);
+      for (let i = 0; i < bufferLength; i++) {
+        const f = i / bufferLength;
+        data[i] = Math.max(0, Math.min(255,
+          120 + Math.sin(t * 2 + i * 0.15) * 60 +
+          Math.sin(t * 5 + i * 0.4) * 40 * (1 - f) +
+          Math.sin(t * 0.7) * 30
+        ));
+      }
+    }
 
     // bg gradient based on style
     const bgGrad = c.createLinearGradient(0, 0, 0, h);
@@ -70,7 +109,8 @@ export default function VisualizerPreview({ src, style = 'spectrum', title }) {
         c.fillRect(i * barWidth, h - barHeight, barWidth - 1, barHeight);
       }
     } else if (style === 'waveform') {
-      analyser.getByteTimeDomainData(data);
+      if (analyser) analyser.getByteTimeDomainData(data);
+      // (fallback already populated `data` above)
       c.lineWidth = 3;
       c.strokeStyle = '#a78bfa';
       c.beginPath();
@@ -155,7 +195,16 @@ export default function VisualizerPreview({ src, style = 'spectrum', title }) {
         setPlaying(true);
         draw();
       } catch (e) {
-        setError('Playback blocked');
+        // If play failed because of CORS on the analyser, drop crossOrigin and retry
+        if (a.crossOrigin && !corsBlocked) {
+          a.removeAttribute('crossorigin');
+          setCorsBlocked(true);
+          a.load();
+          try { await a.play(); setPlaying(true); draw(); }
+          catch { setError('Playback blocked'); }
+        } else {
+          setError('Playback blocked');
+        }
       }
     }
   };
@@ -183,8 +232,11 @@ export default function VisualizerPreview({ src, style = 'spectrum', title }) {
           </button>
         )}
       </div>
-      <audio ref={audioRef} src={src} crossOrigin="anonymous" onEnded={() => setPlaying(false)} />
+      <audio ref={audioRef} src={src} crossOrigin={corsBlocked ? undefined : 'anonymous'} onEnded={() => setPlaying(false)} />
       {error && <p className="text-xs text-amber-400">⚠ {error}</p>}
+      {corsBlocked && !error && (
+        <p className="text-[10px] text-muted-foreground">ⓘ Audio source isn't CORS-enabled — visualizer running in synthetic mode.</p>
+      )}
       <p className="text-xs text-muted-foreground">{title} · <span className="capitalize">{style}</span> style</p>
     </div>
   );
