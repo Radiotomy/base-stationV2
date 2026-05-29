@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ChipSelector from '@/components/music/ChipSelector';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
+import InfoTip from '@/components/common/InfoTip';
 
 const GENRES = ['Hip-Hop', 'EDM', 'Pop', 'R&B', 'Rock', 'Lo-Fi', 'Jazz', 'Classical', 'Trap', 'Other'];
 const MOODS = ['Happy', 'Sad', 'Energetic', 'Chill', 'Dark', 'Uplifting', 'Romantic', 'Angry'];
@@ -143,13 +144,17 @@ export default function CoverArtStudio() {
           {/* Controls Panel */}
           <div className="lg:col-span-1 space-y-4">
             <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
-              <h3 className="font-black text-foreground">Generation Mode</h3>
-              
+              <h3 className="font-black text-foreground flex items-center gap-2">
+                Generation Mode
+                <InfoTip text="Cheap = quick chip-based covers (1 credit). Modest = custom prompt for higher-quality, intentional designs (3 credits)." />
+              </h3>
+
               <div className="flex gap-2">
                 <Button
                   variant={activeMode === 'cheap' ? 'default' : 'outline'}
                   className="flex-1 rounded-xl text-xs h-8"
                   onClick={() => setActiveMode('cheap')}
+                  title="1 credit — auto-generated from chips"
                 >
                   💰 Cheap
                 </Button>
@@ -157,6 +162,7 @@ export default function CoverArtStudio() {
                   variant={activeMode === 'modest' ? 'default' : 'outline'}
                   className="flex-1 rounded-xl text-xs h-8"
                   onClick={() => setActiveMode('modest')}
+                  title="3 credits — custom prompt, higher quality"
                 >
                   ✨ Modest
                 </Button>
@@ -210,7 +216,10 @@ export default function CoverArtStudio() {
               ) : (
                 <>
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase">Custom Prompt</label>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                      Custom Prompt
+                      <InfoTip text="Reference a real visual style for best results — e.g. 'in the style of a 1972 Blue Note jazz cover, deep blacks, warm typography'. Be specific about colors, era, and focal point." />
+                    </label>
                     <Textarea
                       value={customPrompt}
                       onChange={(e) => setCustomPrompt(e.target.value)}

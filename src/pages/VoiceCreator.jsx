@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import VoicePersonaForm from '@/components/voice/VoicePersonaForm';
 import VoicePersonaCard from '@/components/voice/VoicePersonaCard';
 import VoiceSynthesisPanel from '@/components/voice/VoiceSynthesisPanel';
+import InfoTip from '@/components/common/InfoTip';
 
 export default function VoiceCreator() {
   const [user, setUser] = useState(null);
@@ -97,7 +98,10 @@ export default function VoiceCreator() {
       <div className="max-w-6xl mx-auto px-6 py-12">
         {/* Create Button */}
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-2xl font-black text-foreground">Your Voice Personas</h2>
+          <h2 className="text-2xl font-black text-foreground flex items-center gap-2">
+            Your Voice Personas
+            <InfoTip size="sm" text="Build a persona once (voice type, age, characteristics) and reuse it across every Music Studio generation for a consistent artist identity." />
+          </h2>
           <Button
             onClick={() => {
               setEditingPersona(null);

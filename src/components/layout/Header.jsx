@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
-  LogOut, User, BarChart3, Mic2, Film, Upload, Settings
+  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,14 @@ export default function Header({ user }) {
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
+          <Link
+            to="/help"
+            title="Help & How-To"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-white/60 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden md:inline">Help</span>
+          </Link>
           {user && <CreditBalanceWidget />}
           {user && (
             <div className="relative">

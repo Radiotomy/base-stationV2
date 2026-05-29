@@ -14,6 +14,7 @@ import ChipSelector from '@/components/music/ChipSelector';
 import { routeProvider, PROVIDER_DETAILS } from '@/utils/providerRouter';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
+import InfoTip from '@/components/common/InfoTip';
 
 // Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
 const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10 };
@@ -439,7 +440,10 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       {/* Provider — Auto-Routed with manual override */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase">AI Provider</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+            AI Provider
+            <InfoTip text="Auto-routing picks the best provider based on your prompt: Sonic for vocals, Tempolor for genre fidelity, Producer for instrumentals. Override only if you have a strong preference." />
+          </p>
           <button onClick={() => { setShowProviderOverride(p => !p); setProviderOverride(null); }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
             {showProviderOverride ? 'Use Auto-Route' : '⚙ Override'}
@@ -490,7 +494,10 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
 
       {/* Genre Selection */}
       <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Genre (Optional)</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+          Genre (Optional)
+          <InfoTip text="Picking a genre locks the AI to that style. Leave blank to let the AI choose based on your prompt." />
+        </p>
         <ChipSelector
           chipType="genre"
           defaults={GENRE_OPTIONS}
@@ -506,7 +513,10 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       {/* Voice Persona Selection */}
       {voicePersonas.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Voice</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+            Voice
+            <InfoTip text="Pick a saved Voice Persona for consistent artist identity across tracks. Or let the AI choose the best fit for your prompt." />
+          </p>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setSelectedPersona('auto')}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${selectedPersona === 'auto' ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground'}`}>
@@ -526,6 +536,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
           <Sparkles className="w-3 h-3 text-yellow-400" /> Describe Your Track
+          <InfoTip text="Describe instruments + atmosphere, not just genre. '808 sub, brushed snare, distant choir, late-night intimate' beats 'trap beat'. Stay under ~400 chars — longer prompts confuse the model." />
         </p>
         <textarea
           value={prompt}

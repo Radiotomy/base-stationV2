@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
+import InfoTip from '@/components/common/InfoTip';
 
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
@@ -224,7 +225,10 @@ export default function VideoStudio() {
 
             {/* Aspect Ratio */}
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Aspect Ratio</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                Aspect Ratio
+                <InfoTip text="9:16 for TikTok / Reels. 16:9 for YouTube. 1:1 for IG feed. 4:3 for vintage/classic looks." />
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {ASPECT_RATIOS.map(ar => (
                   <button key={ar.value} type="button" onClick={() => setAspectRatio(ar.value)}
@@ -238,7 +242,10 @@ export default function VideoStudio() {
 
             {/* Duration */}
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Duration: <span className="text-foreground">{duration}s</span></p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                Duration: <span className="text-foreground">{duration}s</span>
+                <InfoTip text="5s for quick previews. 10–15s for proper visualizers. Render time ≈ 12s per second of video." />
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {DURATIONS.map(d => (
                   <button key={d} type="button" onClick={() => setDuration(d)}
@@ -251,7 +258,10 @@ export default function VideoStudio() {
 
             {/* Style Chips */}
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Visual Style</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                Visual Style
+                <InfoTip text="Optional style modifier appended to your prompt. Cinematic & Dreamlike are the safest defaults; Abstract for music visualizers." />
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {STYLE_CHIPS.map(s => (
                   <button key={s} type="button" onClick={() => setStyle(style === s ? '' : s)}
@@ -281,7 +291,10 @@ export default function VideoStudio() {
 
             {/* Prompt */}
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Video Prompt</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                Video Prompt
+                <InfoTip text="Describe motion + lighting + atmosphere, not just objects. 'Slow zoom through neon city rain at 3 AM' beats 'city at night'." />
+              </p>
               <Textarea value={prompt} onChange={e => setPrompt(e.target.value)}
                 placeholder="Describe your video in detail — setting, mood, movement, colors, atmosphere…"
                 rows={4} className="rounded-xl" />

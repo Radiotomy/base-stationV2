@@ -63,6 +63,7 @@ import Credits from './pages/Credits';
 import CommunityTemplates from './pages/CommunityTemplates';
 import SocialMediaAutomation from './pages/SocialMediaAutomation';
 import WhyBaseStation from './pages/WhyBaseStation';
+import Help from './pages/Help';
 import FanClub from './pages/FanClub';
 import CreatorStore from './pages/CreatorStore';
 import SmokeTests from './pages/dev/SmokeTests';
@@ -138,6 +139,7 @@ const AuthenticatedApp = () => {
           <Route path="/templates" element={<CommunityTemplates />} />
           <Route path="/social-automation" element={<SocialMediaAutomation />} />
           <Route path="/why-base-station" element={<WhyBaseStation />} />
+          <Route path="/help" element={<Help />} />
           <Route path="/fanclub/:creatorId" element={<FanClub />} />
           <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
           <Route path="/dev/smoke-tests" element={<SmokeTests />} />

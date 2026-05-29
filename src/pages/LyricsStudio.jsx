@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
+import InfoTip from '@/components/common/InfoTip';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
@@ -292,7 +293,10 @@ export default function LyricsStudio() {
           {/* Left Panel */}
           <div className="lg:col-span-1 space-y-5">
             <div className="bg-card rounded-2xl border border-border p-5 space-y-5">
-              <h3 className="font-black text-foreground">Generation Settings</h3>
+              <h3 className="font-black text-foreground flex items-center gap-2">
+                Generation Settings
+                <InfoTip size="sm" text="These settings control the AI lyrics engine. Pro Songwriter unlocks chart-grade rhyme craft + a writer-style auto-fill." />
+              </h3>
 
               {/* Pro Songwriter Toggle */}
               <button
@@ -401,7 +405,10 @@ export default function LyricsStudio() {
 
               {/* Topic */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Topic / Theme</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                  Topic / Theme
+                  <InfoTip text="One concrete concept beats five vague ones. 'Long-distance love at 3 AM' produces sharper lyrics than 'love'." />
+                </label>
                 <Input value={topic} onChange={e => setTopic(e.target.value)} onKeyDown={e => e.key === 'Enter' && generate()}
                   placeholder="e.g., lost love, overcoming fears…" className="rounded-xl" />
                 <div className="flex flex-wrap gap-1.5 mt-1">
@@ -419,6 +426,7 @@ export default function LyricsStudio() {
                 <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
                   Mood
                   {mood.length > 0 && <span className="text-pink-400 font-bold">({mood.length})</span>}
+                  <InfoTip text="Pick 1–3 moods. Stacking opposites (e.g. Melancholic + Triumphant) creates emotional contrast that hooks listeners." />
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {MOOD_CHIPS.map(chip => {
@@ -442,6 +450,7 @@ export default function LyricsStudio() {
                 <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
                   Style
                   {style.length > 0 && <span className="text-purple-400 font-bold">({style.length})</span>}
+                  <InfoTip text="Genre shapes vocabulary, rhyme density and structure. Mixing styles (e.g. Hip-Hop + Pop) gives you a crossover feel." />
                 </label>
                 <div className="flex flex-wrap gap-1.5">
                   {STYLE_CHIPS.map(chip => {
@@ -474,7 +483,10 @@ export default function LyricsStudio() {
 
               {/* Rhyme Scheme */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-muted-foreground uppercase">Rhyme Scheme</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                  Rhyme Scheme
+                  <InfoTip text="Mixed = safest hit-song default. ABAB = pop alternating. AABB = punchy couplets. XAXA = modern/conversational. AAAA = tension builder." />
+                </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {RHYME_SCHEMES.map(r => (
                     <button key={r.value} onClick={() => setRhymeScheme(r.value)}

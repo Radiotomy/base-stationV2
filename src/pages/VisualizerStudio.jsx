@@ -9,6 +9,7 @@ import AssetPicker from '@/components/studio/AssetPicker';
 import VisualizerPreview from '@/components/studio/VisualizerPreview';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
+import InfoTip from '@/components/common/InfoTip';
 
 const STYLES = [
   { id: 'spectrum',  label: 'Spectrum',  emoji: '📊', desc: 'Animated frequency bars' },
@@ -87,7 +88,10 @@ export default function VisualizerStudio() {
       <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-black">1. Track</h3>
+            <h3 className="text-sm font-black flex items-center gap-2">
+              1. Track
+              <InfoTip text="Direct PC uploads give the most reactive visualizers. Library tracks served via CloudFront may fall back to synthetic mode due to CORS." />
+            </h3>
 
             {/* Source toggle */}
             <div className="grid grid-cols-2 gap-2">
@@ -127,7 +131,10 @@ export default function VisualizerStudio() {
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-black">2. Visualizer Style</h3>
+            <h3 className="text-sm font-black flex items-center gap-2">
+              2. Visualizer Style
+              <InfoTip text="Spectrum & Waveform react directly to audio frequencies. Particles & Liquid are mood-driven. Cinematic uses LTX to generate an AI film loop." />
+            </h3>
             <div className="grid grid-cols-2 gap-2">
               {STYLES.map(s => (
                 <button key={s.id} onClick={() => setStyle(s.id)}

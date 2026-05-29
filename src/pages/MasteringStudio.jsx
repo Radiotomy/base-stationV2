@@ -10,6 +10,7 @@ import AssetPicker from '@/components/studio/AssetPicker';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
+import InfoTip from '@/components/common/InfoTip';
 
 const STYLES = [
   { id: 'streaming', label: 'Streaming', desc: '-14 LUFS · Spotify/Apple Music ready' },
@@ -53,12 +54,18 @@ export default function MasteringStudio() {
       <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-black">1. Track</h3>
+            <h3 className="text-sm font-black flex items-center gap-2">
+              1. Track
+              <InfoTip text="Pick any track from your library. The AI master applies EQ, compression and limiting to hit the target loudness." />
+            </h3>
             <AssetPicker assetType="track" selected={selected} onChange={setSelected} />
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-black">2. Mastering Style</h3>
+            <h3 className="text-sm font-black flex items-center gap-2">
+              2. Mastering Style
+              <InfoTip text="Streaming (-14 LUFS) is the safe default for Spotify/Apple Music/YouTube. Use Club for DJ sets, Vinyl for analog warmth and dynamic range." />
+            </h3>
             <div className="space-y-2">
               {STYLES.map(s => (
                 <button key={s.id} onClick={() => setStyle(s.id)}
