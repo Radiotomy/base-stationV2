@@ -85,16 +85,67 @@
     @apply border-border outline-ring/50;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-body);
-    background-color: #0A0A12;
-    background-image:
-      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(199, 184, 234, 0.10), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 80% 20%, rgba(0, 200, 255, 0.06), transparent 60%),
-      radial-gradient(ellipse 90% 70% at 50% 100%, rgba(255, 100, 200, 0.05), transparent 60%);
-    background-attachment: fixed;
+  html, body {
+    background-color: #0A0A12 !important;
   }
+
+  body {
+    @apply text-foreground;
+    font-family: var(--font-body);
+    background-image:
+      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(199, 184, 234, 0.12), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 80% 20%, rgba(0, 200, 255, 0.08), transparent 60%),
+      radial-gradient(ellipse 90% 70% at 50% 100%, rgba(255, 100, 200, 0.06), transparent 60%) !important;
+    background-attachment: fixed !important;
+    min-height: 100vh;
+  }
+}
+
+/* =====================================================
+   MERCURY HERO OVERRIDE — targeted neutralization
+   Only kills LARGE hero gradients (identified by
+   pt-20/pt-16/pt-12 + overflow-hidden + bg-gradient).
+   Leaves small decorative gradients (avatars, icon
+   chips, gradient text) alone.
+   ===================================================== */
+
+/* Hero containers with bg-gradient-to-* + overflow-hidden
+   are page heroes — flatten to obsidian glass */
+html .overflow-hidden[class*="bg-gradient-to-"] {
+  background-image: linear-gradient(145deg, rgba(21, 21, 31, 0.85) 0%, rgba(10, 10, 18, 0.95) 100%) !important;
+}
+
+/* Same treatment for page-wide gradient backgrounds at
+   top-level (pt-20 hero pattern) */
+html .pt-20[class*="bg-gradient-to-"],
+html .pt-16[class*="bg-gradient-to-"],
+html .pt-24[class*="bg-gradient-to-"] {
+  background-image: linear-gradient(145deg, rgba(21, 21, 31, 0.85) 0%, rgba(10, 10, 18, 0.95) 100%) !important;
+}
+
+/* Arbitrary radial-gradient overlays inside heroes → off */
+html [class*="bg-[radial-gradient"] {
+  background-image: none !important;
+}
+
+/* Root page wrappers using bg-background → transparent
+   so the body aurora flows through */
+html .min-h-screen.bg-background,
+html .min-h-screen.bg-card,
+html .min-h-screen.bg-muted,
+html .min-h-screen.bg-slate-900,
+html .min-h-screen.bg-slate-950,
+html .min-h-screen.bg-zinc-900,
+html .min-h-screen.bg-zinc-950,
+html .min-h-screen.bg-black {
+  background-color: transparent !important;
+}
+
+/* Fixed top-nav backdrops on studio pages → glass dark */
+html .bg-background\/80, html .bg-background\/90, html .bg-background\/95 {
+  background-color: rgba(10, 10, 18, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
 }
 
 /* ===========================================
