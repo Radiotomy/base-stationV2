@@ -13,13 +13,15 @@ const PROVIDERS = [
 async function fetchBalance(provider, apiKey) {
   try {
     if (provider === "nuro" || provider === "sonic" || provider === "producer") {
-      const res = await fetch("https://api.aimusicapi.ai/v1/get-credits", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` }
+      // Official endpoint: GET /api/v1/get-credits → { credits, extra_credits }
+      const res = await fetch("https://api.aimusicapi.ai/api/v1/get-credits", {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${apiKey}` }
       });
       if (!res.ok) return { balance: null, status: "error", error: `HTTP ${res.status}` };
       const data = await res.json();
-      return { balance: data.credits ?? data.remaining ?? null, status: "active" };
+      const total = (data.credits ?? 0) + (data.extra_credits ?? 0);
+      return { balance: total, status: "active" };
     }
 
     if (provider === "tempcolor") {
