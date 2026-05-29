@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Film, Loader2, Wand2 } from 'lucide-react';
+import { Film, Loader2, Wand2, Upload, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -23,16 +23,50 @@ export default function VisualizerStudio() {
   const params = new URLSearchParams(window.location.search);
   const preselected = params.get('assetId');
 
+  const [source, setSource] = useState('library'); // 'library' | 'upload'
   const [selected, setSelected] = useState(preselected ? [preselected] : []);
+  const [uploadedAssetId, setUploadedAssetId] = useState(null);
+  const [uploadedName, setUploadedName] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [style, setStyle] = useState('spectrum');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
 
+  const handleDirectUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      // Upload to Base44 storage (CORS-enabled), then register as a UserAsset
+      // so the visualizer backend can find it by assetId.
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const user = await base44.auth.me();
+      const asset = await base44.entities.UserAsset.create({
+        user_id: user.id,
+        user_email: user.email,
+        asset_type: 'track',
+        title: file.name.replace(/\.[^/.]+$/, ''),
+        file_url,
+        origin: 'creator',
+        tags: ['uploaded', 'visualizer-input'],
+        metadata: { source: 'direct_upload' },
+      });
+      setUploadedAssetId(asset.id);
+      setUploadedName(file.name);
+      setSelected([asset.id]);
+      toast.success('Track ready!');
+    } catch (err) {
+      toast.error(err.message || 'Upload failed');
+    }
+    setUploading(false);
+  };
+
   const generate = async () => {
-    if (selected.length === 0) { toast.error('Pick a track first'); return; }
+    const assetId = source === 'upload' ? uploadedAssetId : selected[0];
+    if (!assetId) { toast.error(source === 'upload' ? 'Upload a track first' : 'Pick a track first'); return; }
     setRunning(true);
     try {
-      const r = await base44.functions.invoke('generateVisualizer', { assetId: selected[0], style });
+      const r = await base44.functions.invoke('generateVisualizer', { assetId, style });
       const asset = r.data?.data?.asset || r.data?.asset;
       setResult(asset);
       toast.success('Visualizer generated!', { icon: '🎬' });
@@ -54,7 +88,42 @@ export default function VisualizerStudio() {
         <div className="lg:col-span-1 space-y-4">
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <h3 className="text-sm font-black">1. Track</h3>
-            <AssetPicker assetType="track" selected={selected} onChange={setSelected} />
+
+            {/* Source toggle */}
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setSource('library')}
+                className={`flex items-center justify-center gap-1.5 p-2 rounded-xl border text-xs font-bold transition-all ${source === 'library'
+                  ? 'border-purple-500 bg-purple-500/10 text-purple-300'
+                  : 'border-border bg-muted/30 text-muted-foreground hover:border-purple-500/40'}`}>
+                <Library className="w-3.5 h-3.5" /> From Library
+              </button>
+              <button onClick={() => setSource('upload')}
+                className={`flex items-center justify-center gap-1.5 p-2 rounded-xl border text-xs font-bold transition-all ${source === 'upload'
+                  ? 'border-purple-500 bg-purple-500/10 text-purple-300'
+                  : 'border-border bg-muted/30 text-muted-foreground hover:border-purple-500/40'}`}>
+                <Upload className="w-3.5 h-3.5" /> Upload from PC
+              </button>
+            </div>
+
+            {source === 'library' && (
+              <AssetPicker assetType="track" selected={selected} onChange={setSelected} />
+            )}
+
+            {source === 'upload' && (
+              <label className={`block cursor-pointer ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
+                <input type="file" accept="audio/*" onChange={handleDirectUpload} className="hidden" />
+                <div className="border-2 border-dashed border-border rounded-xl p-5 text-center hover:border-purple-500 transition-colors">
+                  {uploading ? <Loader2 className="w-6 h-6 mx-auto text-purple-400 animate-spin" />
+                             : <Upload className="w-6 h-6 mx-auto text-muted-foreground mb-1" />}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {uploadedName || 'Click to upload (MP3, WAV, FLAC)'}
+                  </p>
+                  {uploadedAssetId && !uploading && (
+                    <p className="text-[10px] text-emerald-400 mt-1">✓ Ready for visualizer</p>
+                  )}
+                </div>
+              </label>
+            )}
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
@@ -73,7 +142,7 @@ export default function VisualizerStudio() {
             </div>
           </div>
 
-          <Button onClick={generate} disabled={running || selected.length === 0}
+          <Button onClick={generate} disabled={running || (source === 'library' ? selected.length === 0 : !uploadedAssetId)}
             className="w-full rounded-xl bg-purple-600 hover:bg-purple-500 gap-2 font-bold">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
             {running ? 'Rendering…' : 'Generate Visualizer'}
