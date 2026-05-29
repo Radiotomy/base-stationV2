@@ -15,23 +15,19 @@ export default function BaseWalletConnectButton({ onConnected }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkWalletConnection();
-  }, []);
-
-  const checkWalletConnection = async () => {
-    if (typeof window.ethereum !== "undefined") {
-      try {
-        const accounts = await window.ethereum.request({ method: "eth_accounts" });
-        if (accounts.length > 0) {
+    // Silent session check — never let MetaMask errors bubble up as uncaught
+    if (typeof window.ethereum === "undefined") return;
+    Promise.resolve(window.ethereum.request({ method: "eth_accounts" }))
+      .then((accounts) => {
+        if (accounts?.length > 0) {
           setAddress(accounts[0]);
           setConnected(true);
           onConnected?.(accounts[0]);
         }
-      } catch (err) {
-        console.log("Wallet not connected");
-      }
-    }
-  };
+      })
+      .catch(() => { /* extension locked or unavailable — ignore silently */ });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const connectWallet = async () => {
     if (typeof window.ethereum === "undefined") {
