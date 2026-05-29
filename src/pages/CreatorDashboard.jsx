@@ -220,15 +220,15 @@ export default function CreatorDashboard() {
         <h2 className="text-lg font-black text-foreground mb-4">Quick Create</h2>
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           {[
-            { to: "/lyrics-studio",       label: "🎤 Lyrics",    color: "from-pink-600 to-rose-600" },
-            { to: "/music-studio",        label: "🎵 Music",     color: "from-blue-600 to-cyan-600" },
-            { to: "/cover-art-studio",    label: "🎨 Cover Art", color: "from-purple-600 to-violet-600" },
-            { to: "/video-studio",        label: "🎬 Video",     color: "from-indigo-600 to-purple-600" },
-            { to: "/audio-remix-studio",  label: "🎛️ Remix",     color: "from-teal-600 to-cyan-600" },
-            { to: "/social-automation",   label: "📱 Social",    color: "from-pink-600 to-orange-600" },
-          ].map(({ to, label, color }) => (
+            { to: "/lyrics-studio",       label: "🎤 Lyrics" },
+            { to: "/music-studio",        label: "🎵 Music" },
+            { to: "/cover-art-studio",    label: "🎨 Cover Art" },
+            { to: "/video-studio",        label: "🎬 Video" },
+            { to: "/audio-remix-studio",  label: "🎛️ Remix" },
+            { to: "/social-automation",   label: "📱 Social" },
+          ].map(({ to, label }) => (
             <Link key={to} to={to}
-              className={`bg-gradient-to-r ${color} text-white font-bold rounded-xl py-3 text-center text-sm hover:opacity-90 transition-opacity`}>
+              className="merc-card merc-card-hover rounded-xl py-3 text-center text-sm font-bold text-white transition-all">
               {label}
             </Link>
           ))}
