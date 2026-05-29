@@ -17,20 +17,28 @@ Deno.serve(async (req) => {
     if (!audioRes.ok) throw new Error('Failed to fetch audio file');
     const audioBuffer = await audioRes.arrayBuffer();
 
-    // Prepare ID3v2.4 frame data
+    // Prepare ID3v2.4 frame data — comprehensive professional tagging
     const id3Frames = {
       TIT2: tags.title || '',           // Title
-      TPE1: tags.artist || '',          // Artist
+      TPE1: tags.artist || '',          // Lead artist
       TALB: tags.album || '',           // Album
-      TYER: tags.year ? String(tags.year) : String(new Date().getFullYear()), // Year
+      TYER: tags.year ? String(tags.year) : String(new Date().getFullYear()), // Year (ID3v2.3 fallback)
+      TDRC: tags.year ? String(tags.year) : String(new Date().getFullYear()), // Recording date (ID3v2.4)
       TCON: tags.genre || '',           // Genre
       TRCK: tags.track ? String(tags.track) : '', // Track number
       TPE2: tags.albumArtist || tags.artist || '', // Album artist
-      TCOM: tags.composer || '',        // Composer
+      TCOM: tags.composer || tags.artist || '',    // Composer
+      TPUB: tags.publisher || 'BASE Station',      // Publisher
+      TENC: tags.encodedBy || 'BASE Station AI',   // Encoded by
+      TSSE: tags.softwareUsed || `BASE Station (${tags.txxx?.BASE_PROVIDER || 'AI'})`, // Software/tool
       COMM: tags.comment || '',         // Comments
-      TBPM: tags.bpm ? String(tags.bpm) : '', // BPM
+      TBPM: tags.bpm ? String(Math.round(tags.bpm)) : '', // BPM (integer)
       TKEY: tags.key || '',             // Musical key
+      TLEN: tags.duration ? String(Math.round(tags.duration * 1000)) : '', // Length in ms
       TCOP: tags.copyright || `${new Date().getFullYear()} BASE Station AI`, // Copyright
+      TMOO: tags.mood || '',            // Mood (ID3v2.4)
+      TSRC: tags.isrc || '',            // ISRC if provided
+      WOAR: tags.artistUrl || '',       // Official artist webpage
     };
 
     // Build ID3v2.4 header and frames
@@ -50,6 +58,12 @@ Deno.serve(async (req) => {
         if (!value) continue;
         frameData = concatArrays(frameData, buildTXXXFrame(key, String(value)));
       }
+    }
+
+    // Add USLT (unsynchronised lyrics) frame — embeds full lyrics in the MP3 so any
+    // player (iTunes, Windows Media Player, mobile lock screens) can display them.
+    if (tags.lyrics && typeof tags.lyrics === 'string' && tags.lyrics.trim().length > 0) {
+      frameData = concatArrays(frameData, buildUSLTFrame(tags.lyrics, tags.lyricsLanguage || 'eng'));
     }
 
     // Add cover image if provided
@@ -98,6 +112,9 @@ Deno.serve(async (req) => {
     return Response.json({
       download_url: uploadRes.file_url,
       tags_applied: Object.keys(id3Frames).filter(k => id3Frames[k]).length,
+      lyrics_embedded: !!(tags.lyrics && tags.lyrics.trim().length > 0),
+      cover_embedded: !!cover_image_url,
+      txxx_count: tags.txxx ? Object.values(tags.txxx).filter(Boolean).length : 0,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -186,6 +203,31 @@ function buildAPICFrame(imageBuffer) {
   offset += descBytes.length;
   frame.set(imageBuffer, offset);
   
+  return frame;
+}
+
+// Helper: Build USLT (unsynchronised lyrics) frame
+// Layout: [encoding:1][language:3][description+\0][lyrics text]
+function buildUSLTFrame(lyrics, language = 'eng') {
+  const lang = (language + '   ').slice(0, 3); // pad to 3 chars
+  const langBytes = new TextEncoder().encode(lang);
+  const descBytes = new TextEncoder().encode('Lyrics\x00');
+  const lyricsBytes = new TextEncoder().encode(lyrics);
+
+  const frameSize = 1 + langBytes.length + descBytes.length + lyricsBytes.length;
+  const sizeBytes = synchsafeInt(frameSize);
+
+  const frame = new Uint8Array(10 + frameSize);
+  frame.set(new TextEncoder().encode('USLT'), 0);
+  frame.set(sizeBytes, 4);
+  frame[8] = 0x00;
+  frame[9] = 0x00;
+
+  let offset = 10;
+  frame[offset++] = 0x03; // UTF-8 encoding
+  frame.set(langBytes, offset); offset += langBytes.length;
+  frame.set(descBytes, offset); offset += descBytes.length;
+  frame.set(lyricsBytes, offset);
   return frame;
 }
 

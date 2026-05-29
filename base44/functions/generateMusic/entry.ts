@@ -1,10 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// All aimusicapi.ai providers share one API key
-const API_KEY          = Deno.env.get('SONIC_API_KEY') || Deno.env.get('NURO_API_KEY') || Deno.env.get('PRODUCER_API_KEY');
-const SONIC_API_KEY    = API_KEY;
-const NURO_API_KEY     = API_KEY;
-const PRODUCER_API_KEY = API_KEY;
+// All aimusicapi.ai providers (Sonic, Nuro, Producer) share one API key.
+// We only require SONIC_API_KEY to be set — it's used as the bearer token for all 3.
+const AIMUSICAPI_KEY   = Deno.env.get('SONIC_API_KEY');
+const SONIC_API_KEY    = AIMUSICAPI_KEY;
+const NURO_API_KEY     = AIMUSICAPI_KEY;
+const PRODUCER_API_KEY = AIMUSICAPI_KEY;
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
@@ -379,11 +380,19 @@ Deno.serve(async (req) => {
 
     // Async (Sonic, Nuro, Producer, Tempolor): create job record with provider task_id
     // Stamp credit_cost on input_data so pollGenerationJob can deduct on completion.
+    // CRITICAL: persist lyrics, title, model + sound_prompt so they survive async recovery
+    // and can be re-attached to ID3 tags + UserAsset metadata on completion.
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider,
       status: 'processing',
-      input_data: { duration, mood, genre, tempo, sound_prompt, credit_cost: cost },
+      input_data: {
+        duration, mood, genre, tempo, sound_prompt,
+        lyrics: lyrics || '',
+        model: modelVersion,
+        credit_cost: cost,
+        tempolor_mode: tempolor_mode || null,
+      },
       provider_job_id: providerResult.task_id,
       started_at: generatedAt,
     });

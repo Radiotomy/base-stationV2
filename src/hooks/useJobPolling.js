@@ -61,6 +61,8 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
           if (completedRef.current) return; // prevent duplicate callbacks
           completedRef.current = true;
           setProgress(100);
+          // result.data now includes: audio_url, audio_urls, cover_image_url, lyrics, title,
+          // tags, duration, bpm, key, genre, mood, vocal_gender, vocal_timbre, model_version, content_hash
           setData(result.data);
           clearInterval(elapsed);
           // Credits were deducted server-side on completion — refresh the widget

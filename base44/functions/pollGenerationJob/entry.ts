@@ -1,10 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// All aimusicapi.ai providers share one API key
-const API_KEY           = Deno.env.get('SONIC_API_KEY') || Deno.env.get('NURO_API_KEY') || Deno.env.get('PRODUCER_API_KEY');
-const SONIC_API_KEY     = API_KEY;
-const NURO_API_KEY      = API_KEY;
-const PRODUCER_API_KEY  = API_KEY;
+// All aimusicapi.ai providers (Sonic, Nuro, Producer) share one API key.
+// We only require SONIC_API_KEY to be set — it's used as the bearer token for all 3 endpoints.
+const AIMUSICAPI_KEY    = Deno.env.get('SONIC_API_KEY');
+const SONIC_API_KEY     = AIMUSICAPI_KEY;
+const NURO_API_KEY      = AIMUSICAPI_KEY;
+const PRODUCER_API_KEY  = AIMUSICAPI_KEY;
 const LTX_API_KEY       = Deno.env.get('LTX_API_KEY');
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
@@ -56,13 +57,21 @@ async function pollProvider(provider, providerTaskId, job) {
     console.log(`Sonic clips: total=${clipsArr.length} settled=${settledClips.length} succeeded=${succeededClips.length}`);
 
     if (allSettled && anySucceeded) {
+      const primary = succeededClips[0];
       const allAudioUrls = succeededClips.map(c => c.audio_url);
+      // Sonic returns: title, tags, lyrics, image_url, audio_url, video_url, mv, duration
       return {
         status: 'completed',
         audio_url: allAudioUrls[0],
         audio_urls: allAudioUrls,
-        cover_image_url: succeededClips[0]?.image_url,
+        cover_image_url: primary?.image_url,
         cover_image_urls: succeededClips.map(c => c.image_url).filter(Boolean),
+        video_urls: succeededClips.map(c => c.video_url).filter(Boolean),
+        lyrics: primary?.lyrics || '',
+        title: primary?.title || '',
+        tags: primary?.tags || '',
+        duration: primary?.duration,
+        model_version: primary?.mv,
       };
     }
     if (allSettled && !anySucceeded) {
@@ -100,8 +109,18 @@ async function pollProvider(provider, providerTaskId, job) {
     }
 
     // Only "succeeded" signals completion per the official docs
+    // Nuro returns: audio_url, lyrics, duration, genre, mood, gender, timbre
     if (state === 'succeeded') {
-      return { status: 'completed', audio_url: data.audio_url };
+      return {
+        status: 'completed',
+        audio_url: data.audio_url,
+        lyrics: data.lyrics || '',
+        duration: data.duration,
+        genre: data.genre,
+        mood: data.mood,
+        vocal_gender: data.gender,
+        vocal_timbre: data.timbre,
+      };
     }
     // No explicit "failed" status in Nuro docs — timeout after 10 mins
     const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
@@ -131,40 +150,26 @@ async function pollProvider(provider, providerTaskId, job) {
     if (state === 'SUCCESS') {
       const clip = Array.isArray(data?.data) && data.data.length > 0 ? data.data[0] : null;
       if (!clip?.audio_url) return { status: 'processing' }; // data array not yet populated
-      return { status: 'completed', audio_url: clip.audio_url, cover_image_url: clip.image_url };
+      // Producer returns: audio_url, wav_url, image_url, title, lyrics, tags, duration
+      return {
+        status: 'completed',
+        audio_url: clip.audio_url,
+        cover_image_url: clip.image_url,
+        wav_url: clip.wav_url,
+        lyrics: clip.lyrics || clip.lyric || '',
+        title: clip.title || '',
+        tags: clip.tags || '',
+        duration: clip.duration,
+      };
     }
     if (state === 'FAILED') return { status: 'failed', error: data.message || 'Producer generation failed' };
     // PENDING or RUNNING — keep polling
     return { status: 'processing' };
   }
 
+  // Loudly provider has been discontinued — any legacy jobs flagged with it will fail gracefully
   if (provider === 'loudly') {
-    // Loudly AI songs are synchronous — the result (music_file_path) is returned immediately.
-    // If a job somehow landed here, the output_url should already be set on the job.
-    // As a fallback, try to fetch the song by ID from soundtracks.loudly.com/api/ai/songs/{id}
-    const LOUDLY_KEY = Deno.env.get('LOUDLY_API_KEY');
-    try {
-      const songRes = await fetch(`https://soundtracks.loudly.com/api/ai/songs/${providerTaskId}`, {
-        headers: { 'API-KEY': LOUDLY_KEY, 'Accept': 'application/json' },
-      });
-      const songData = await songRes.json();
-      console.log('Loudly poll response:', JSON.stringify(songData));
-      const audioUrl = songData?.music_file_path || songData?.audio_url;
-      if (audioUrl) {
-        return { status: 'completed', audio_url: audioUrl, bpm: songData.bpm, key: songData.key?.name || songData.key };
-      }
-      if (songData?.error || songRes.status === 404) {
-        return { status: 'failed', error: songData?.error || 'Loudly song not found' };
-      }
-    } catch (e) {
-      console.warn('Loudly poll error:', e.message);
-    }
-    // Loudly is synchronous — if it still has no result after 5 mins, fail it
-    const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
-    if (elapsed > 5 * 60 * 1000) {
-      return { status: 'failed', error: 'Loudly generation timed out. Please regenerate.' };
-    }
-    return { status: 'processing' };
+    return { status: 'failed', error: 'Loudly has been discontinued. Please regenerate using Sonic, Nuro, Tempolor, or Producer.' };
   }
 
   if (provider === 'ltx') {
@@ -278,8 +283,16 @@ async function pollProvider(provider, providerTaskId, job) {
       return { status: 'failed', error: item.err_msg || 'Tempolor generation failed' };
     }
     // succeeded or main_succeeded both mean audio is ready
+    // Tempolor item fields: audio_url, audio_hi_url, lyrics, title, duration, image_url
     if (st === 'succeeded' || st === 'main_succeeded' || item.audio_url) {
-      return { status: 'completed', audio_url: item.audio_hi_url || item.audio_url };
+      return {
+        status: 'completed',
+        audio_url: item.audio_hi_url || item.audio_url,
+        cover_image_url: item.image_url || item.cover_url || null,
+        lyrics: item.lyrics || item.lyric || '',
+        title: item.title || item.song_name || '',
+        duration: item.duration,
+      };
     }
     return { status: 'processing' };
   }
@@ -303,15 +316,27 @@ Deno.serve(async (req) => {
 
     // Already settled
     if (job.status === 'completed') {
+      const m = job.output_metadata || {};
       return Response.json({
         status: 'completed',
         audio_url: job.job_type === 'music' ? job.output_url : undefined,
-        audio_urls: job.output_metadata?.audio_urls || undefined,
-        cover_image_url: job.output_metadata?.cover_image_url || undefined,
+        audio_urls: m.audio_urls || undefined,
+        cover_image_url: m.cover_image_url || undefined,
+        cover_image_urls: m.cover_image_urls || undefined,
         video_url: job.job_type === 'video' ? job.output_url : undefined,
-        bpm: job.output_metadata?.bpm,
-        key: job.output_metadata?.key,
-        duration: job.output_metadata?.duration,
+        video_urls: m.video_urls || undefined,
+        wav_url: m.wav_url || undefined,
+        bpm: m.bpm,
+        key: m.key,
+        duration: m.duration,
+        lyrics: m.lyrics || '',
+        title: m.title || '',
+        tags: m.tags || '',
+        genre: m.genre,
+        mood: m.mood,
+        vocal_gender: m.vocal_gender || undefined,
+        vocal_timbre: m.vocal_timbre || undefined,
+        model_version: m.model_version || undefined,
       });
     }
     if (job.status === 'failed') {
@@ -331,15 +356,32 @@ Deno.serve(async (req) => {
         const stampedCost = job.input_data?.credit_cost;
         const cost = stampedCost ?? (job.job_type === 'video' ? Math.max(2, Math.round((job.input_data?.duration || 5) * 2)) : 10);
 
+        // Merge provider-returned lyrics with user-provided lyrics (prefer user's if both exist).
+        // This is critical: Sonic/Nuro/Tempolor can auto-generate lyrics when none were supplied
+        // — we want those preserved for ID3 tagging and library metadata.
+        const finalLyrics = (job.input_data?.lyrics && job.input_data.lyrics.trim().length > 0)
+          ? job.input_data.lyrics
+          : (providerData.lyrics || '');
+
         await base44.entities.GenerationJob.update(job.id, {
           status: 'completed',
           output_url: outputUrl,
           output_metadata: {
             bpm: providerData.bpm, key: providerData.key,
-            duration: job.input_data?.duration,
+            duration: providerData.duration || job.input_data?.duration,
             cover_image_url: providerData.cover_image_url,
             audio_urls: providerData.audio_urls || null,
             cover_image_urls: providerData.cover_image_urls || null,
+            video_urls: providerData.video_urls || null,
+            wav_url: providerData.wav_url || null,
+            lyrics: finalLyrics,
+            title: providerData.title || '',
+            tags: providerData.tags || '',
+            genre: providerData.genre || job.input_data?.genre,
+            mood: providerData.mood || job.input_data?.mood,
+            vocal_gender: providerData.vocal_gender || null,
+            vocal_timbre: providerData.vocal_timbre || null,
+            model_version: providerData.model_version || job.input_data?.model || null,
           },
           credits_used: cost,
           completed_at: completedAt,
@@ -432,7 +474,19 @@ Deno.serve(async (req) => {
           cover_image_url: providerData.cover_image_url || undefined,
           cover_image_urls: providerData.cover_image_urls || undefined,
           video_url: job.job_type === 'video' ? outputUrl : undefined,
+          video_urls: providerData.video_urls || undefined,
+          wav_url: providerData.wav_url || undefined,
           bpm: providerData.bpm, key: providerData.key,
+          duration: providerData.duration || job.input_data?.duration,
+          lyrics: finalLyrics,
+          title: providerData.title || '',
+          tags: providerData.tags || '',
+          genre: providerData.genre || job.input_data?.genre,
+          mood: providerData.mood || job.input_data?.mood,
+          vocal_gender: providerData.vocal_gender || undefined,
+          vocal_timbre: providerData.vocal_timbre || undefined,
+          model_version: providerData.model_version || job.input_data?.model || undefined,
+          content_hash: contentHash,
         });
       }
 
