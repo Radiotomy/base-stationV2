@@ -14,6 +14,7 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
+import MusicVideoComposer from '@/components/video/MusicVideoComposer';
 
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
@@ -40,6 +41,7 @@ const MODES = [
   { id: 'text', label: '✍️ Text to Video', desc: 'Generate from a text prompt' },
   { id: 'image', label: '🖼️ Image to Video', desc: 'Animate a reference image' },
   { id: 'audio', label: '🎵 Audio to Video', desc: 'Visual synced to your track' },
+  { id: 'musicvideo', label: '🎬 Music Video', desc: 'Stitch scenes + audio (NEW)' },
 ];
 
 export default function VideoStudio() {
@@ -177,6 +179,9 @@ export default function VideoStudio() {
           ))}
         </div>
 
+        {/* Music Video Mode (NextCut multi-scene composer) */}
+        {mode === 'musicvideo' && <MusicVideoComposer />}
+
         {/* Reference Upload for Image/Audio modes */}
         {mode === 'image' && (
           <div className="p-4 rounded-xl bg-card border border-border space-y-2">
@@ -205,6 +210,9 @@ export default function VideoStudio() {
             </label>
           </div>
         )}
+
+        {/* LTX Mode UI (text / image / audio) */}
+        {mode !== 'musicvideo' && <>
 
         {/* Prompt Templates */}
         <div>
@@ -357,6 +365,9 @@ export default function VideoStudio() {
             </AnimatePresence>
           </div>
         </div>
+
+        </>}
+        {/* end LTX mode UI */}
       </div>
     </div>
   );
