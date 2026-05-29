@@ -50,6 +50,7 @@ import ID3TagStudio from './pages/ID3TagStudio';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOverview from './pages/admin/AdminOverview';
 import AdminTracks from './pages/admin/AdminTracks';
+import AdminUsers from './pages/admin/AdminUsers';
 import AdminChallenges from './pages/admin/AdminChallenges';
 import AdminFeatured from './pages/admin/AdminFeatured';
 import AdminArtists from './pages/admin/AdminArtists';
@@ -144,6 +145,7 @@ const AuthenticatedApp = () => {
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />
+          <Route path="users" element={<AdminUsers />} />
           <Route path="tracks" element={<AdminTracks />} />
           <Route path="challenges" element={<AdminChallenges />} />
           <Route path="featured" element={<AdminFeatured />} />

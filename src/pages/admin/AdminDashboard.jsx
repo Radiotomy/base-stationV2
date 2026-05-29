@@ -4,12 +4,13 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Music, Users, Trophy, Star, Shield,
-  TrendingUp, ChevronRight, Menu, X, LogOut, Zap, Wallet
+  TrendingUp, ChevronRight, Menu, X, LogOut, Zap, Wallet, UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { to: "/admin/users", label: "Users", icon: UserCog },
   { to: "/admin/tracks", label: "Tracks", icon: Music },
   { to: "/admin/artists", label: "Artists", icon: Users },
   { to: "/admin/challenges", label: "Challenges", icon: Trophy },
