@@ -12,7 +12,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import CostMatrixTab from "@/components/admin/CostMatrixTab";
 
 const PROVIDER_META = {
-  nuro:      { label: "Nuro AI",    color: "bg-pink-500/20 text-pink-300 border-pink-500/30",    dot: "bg-pink-400" },
   sonic:     { label: "Sonic",      color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",    dot: "bg-cyan-400" },
   producer:  { label: "Producer",   color: "bg-purple-500/20 text-purple-300 border-purple-500/30", dot: "bg-purple-400" },
   tempcolor: { label: "Tempolor",   color: "bg-orange-500/20 text-orange-300 border-orange-500/30", dot: "bg-orange-400" },

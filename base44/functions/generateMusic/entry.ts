@@ -1,10 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// All aimusicapi.ai providers (Sonic, Nuro, Producer) share one API key.
-// We only require SONIC_API_KEY to be set — it's used as the bearer token for all 3.
+// Both aimusicapi.ai providers (Sonic, Producer) share one API key.
+// We only require SONIC_API_KEY to be set — it's used as the bearer token for both.
+// Note: Nuro has been deprecated by aimusicapi.ai (returns HTTP 410 Gone).
 const AIMUSICAPI_KEY   = Deno.env.get('SONIC_API_KEY');
 const SONIC_API_KEY    = AIMUSICAPI_KEY;
-const NURO_API_KEY     = AIMUSICAPI_KEY;
 const PRODUCER_API_KEY = AIMUSICAPI_KEY;
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
@@ -101,79 +101,6 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
   return { task_id: taskId, provider: 'sonic' };
 }
 
-// ── Nuro ─────────────────────────────────────────────────────────────────────
-// Vocal: POST /api/v1/nuro/create { type:"vocal", lyrics(required), genre(string enum), mood(string enum), duration(30-240) }
-//   genre enum: Folk|Pop|Rock|"Hip Hop/Rap"|"R&B/Soul"|Electronic|Jazz|...
-//   mood enum:  Happy|"Dynamic/Energetic"|Chill|Romantic|...
-// BGM:   POST /api/v1/nuro/create { type:"bgm", description, genre(array of enum), mood(array of enum), duration(1-60), version }
-//   genre array enum: pop|"hip hop"|"dance/edm"|jazz|rock|"chill out"|...
-//   mood array enum:  energetic|happy|calm|intense|dramatic|uplifting|relaxed|...
-// Poll:  GET  /api/v1/nuro/task/{task_id} → { task_id, status: "pending"|"running"|"succeeded", progress, audio_url }
-async function generateWithNuro({ genre, mood, duration, nuro_version, lyrics, sound_prompt }) {
-  const hasLyrics = lyrics && lyrics.trim().length > 0;
-
-  let body;
-  if (hasLyrics) {
-    // Vocal mode — genre and mood are STRINGS matching the vocal enum
-    const vocalGenreMap = {
-      'Hip-Hop': 'Hip Hop/Rap', 'Trap': 'Hip Hop/Rap', 'Drill': 'Hip Hop/Rap',
-      'R&B': 'R&B/Soul', 'Pop': 'Pop', 'Rock': 'Rock', 'Jazz': 'Jazz',
-      'EDM': 'Electronic', 'House': 'Electronic', 'Lo-Fi': 'Folk',
-      'Afrobeats': 'Pop', 'Ambient': 'Folk', 'Classical': 'Folk',
-    };
-    const vocalMoodMap = {
-      'Energetic': 'Dynamic/Energetic', 'Chill': 'Chill', 'Happy': 'Happy',
-      'Sad': 'Sorrow/Sad', 'Uplifting': 'Inspirational/Hopeful',
-      'Romantic': 'Romantic', 'Dark': 'Sentimental/Melancholic/Lonely',
-      'Melancholic': 'Sentimental/Melancholic/Lonely', 'Aggressive': 'Dynamic/Energetic',
-    };
-    body = {
-      type: 'vocal',
-      lyrics,
-      genre: vocalGenreMap[genre] || 'Pop',
-      mood: vocalMoodMap[mood] || 'Dynamic/Energetic',
-      duration: Math.min(Math.max(duration || 120, 30), 240),
-    };
-  } else {
-    // BGM / instrumental mode — genre and mood are ARRAYS matching the bgm enum
-    const bgmGenreMap = {
-      'Hip-Hop': 'hip hop', 'Trap': 'hip hop', 'Drill': 'hip hop',
-      'EDM': 'dance/edm', 'House': 'dance/edm', 'Electronic': 'electronic',
-      'Pop': 'pop', 'R&B': 'pop', 'Lo-Fi': 'chill out',
-      'Jazz': 'jazz', 'Rock': 'rock', 'Afrobeats': 'world',
-      'Ambient': 'ambient', 'Classical': 'orchestral',
-    };
-    const bgmMoodMap = {
-      'Energetic': 'energetic', 'Chill': 'calm', 'Happy': 'happy',
-      'Uplifting': 'uplifting', 'Dark': 'dramatic', 'Aggressive': 'intense',
-      'Romantic': 'romantic', 'Sad': 'melancholy', 'Melancholic': 'melancholy',
-    };
-    body = {
-      type: 'bgm',
-      description: sound_prompt || `${mood} ${genre} instrumental music`,
-      genre: [bgmGenreMap[genre] || 'pop'],
-      mood: [bgmMoodMap[mood] || 'energetic'],
-      duration: Math.min(Math.max(duration || 60, 1), 60),
-      version: nuro_version || 'v2.0',
-    };
-  }
-
-  const wh = getWebhookConfig();
-  if (wh) Object.assign(body, wh);
-
-  const res = await fetch(`${AI_BASE}/nuro/create`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${NURO_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
-  console.log('Nuro create response:', JSON.stringify(data));
-  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
-  const taskId = data.task_id;
-  if (!taskId) throw new Error('No task_id from Nuro: ' + JSON.stringify(data));
-  return { task_id: taskId, provider: 'nuro' };
-}
-
 // ── Producer ─────────────────────────────────────────────────────────────────
 // Docs: POST /api/v1/producer/create
 // Required: task_type: "create_music", plus sound and/or lyrics
@@ -261,7 +188,6 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
 // ── Credit cost table (per provider) ─────────────────────────────────────────
 const CREDIT_COSTS = {
   sonic: 10,
-  nuro: 10,
   producer: 10,
   tempcolor: 10,
 };
@@ -306,9 +232,15 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
-            tempo, sound_prompt, lyrics, model, nuro_version, tempolor_mode, routing_reason,
-            voice_id, cover_audio_url } = await req.json();
+    let { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
+          tempo, sound_prompt, lyrics, model, tempolor_mode, routing_reason,
+          voice_id, cover_audio_url } = await req.json();
+
+    // Nuro deprecated — auto-redirect to Sonic (vocal) or Producer (instrumental)
+    if (provider === 'nuro') {
+      provider = (lyrics && lyrics.trim().length > 0) ? 'sonic' : 'producer';
+      routing_reason = `${routing_reason || 'auto'}_nuro_deprecated`;
+    }
 
     // ── Pre-check credit balance (server-side gate) ──────────────────────────
     const cost = CREDIT_COSTS[provider] || 10;
@@ -324,9 +256,7 @@ Deno.serve(async (req) => {
     // Call provider FIRST — before any DB writes — so gateway timeout isn't wasted on DB ops
     let providerResult;
     try {
-      if (provider === 'nuro')
-        providerResult = await generateWithNuro({ genre, mood, duration, nuro_version, lyrics });
-      else if (provider === 'producer')
+      if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
@@ -340,7 +270,6 @@ Deno.serve(async (req) => {
     // Determine exact model version used per provider
     const modelVersionMap = {
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
-      nuro: nuro_version || 'v2.0',
       producer: 'FUZZ-2.0',
       tempcolor: model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
     };

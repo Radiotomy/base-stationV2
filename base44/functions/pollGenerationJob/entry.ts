@@ -1,10 +1,10 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// All aimusicapi.ai providers (Sonic, Nuro, Producer) share one API key.
-// We only require SONIC_API_KEY to be set — it's used as the bearer token for all 3 endpoints.
+// Both aimusicapi.ai providers (Sonic, Producer) share one API key.
+// We only require SONIC_API_KEY to be set — it's used as the bearer token for both endpoints.
+// Note: Nuro has been deprecated by aimusicapi.ai. Any legacy in-flight Nuro jobs fail gracefully.
 const AIMUSICAPI_KEY    = Deno.env.get('SONIC_API_KEY');
 const SONIC_API_KEY     = AIMUSICAPI_KEY;
-const NURO_API_KEY      = AIMUSICAPI_KEY;
 const PRODUCER_API_KEY  = AIMUSICAPI_KEY;
 const LTX_API_KEY       = Deno.env.get('LTX_API_KEY');
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
@@ -83,53 +83,9 @@ async function pollProvider(provider, providerTaskId, job) {
   }
 
   if (provider === 'nuro') {
-    // Docs: GET /api/v1/nuro/task/{task_id}
-    // Response: { task_id, status: "pending"|"running"|"succeeded", progress(0-100), audio_url, ... }
-    // Note: "error" is NOT a valid status value per the docs. Only pending/running/succeeded.
-    url = `${AI_BASE}/nuro/task/${providerTaskId}`;
-    headers = { 'Authorization': `Bearer ${NURO_API_KEY}` };
-    res = await fetch(url, { headers });
-    data = await res.json();
-    console.log('Nuro poll response:', JSON.stringify(data));
-    const state = data?.status || '';
-
-    if (res.status === 404 || !data?.task_id) {
-      console.log('Nuro: task not found, attempting recovery...');
-      const histRes = await fetch(`${AI_BASE}/nuro/list?page_size=20`, { headers: { 'Authorization': `Bearer ${NURO_API_KEY}` } });
-      const histData = await histRes.json();
-      const histItems = Array.isArray(histData?.data) ? histData.data : [];
-      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
-      const recovered = histItems.find(item => {
-        if (item.status !== 'succeeded' || !item.audio_url) return false;
-        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
-        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
-      });
-      if (recovered) {
-        console.log('Nuro: recovered via list:', recovered.task_id);
-        return { status: 'completed', audio_url: recovered.audio_url };
-      }
-    }
-
-    // Only "succeeded" signals completion per the official docs
-    // Nuro returns: audio_url, lyrics, duration, genre, mood, gender, timbre
-    if (state === 'succeeded') {
-      return {
-        status: 'completed',
-        audio_url: data.audio_url,
-        lyrics: data.lyrics || '',
-        duration: data.duration,
-        genre: data.genre,
-        mood: data.mood,
-        vocal_gender: data.gender,
-        vocal_timbre: data.timbre,
-      };
-    }
-    // No explicit "failed" status in Nuro docs — timeout after 10 mins
-    const elapsed = Date.now() - (job.started_at ? new Date(job.started_at).getTime() : Date.now());
-    if (elapsed > 10 * 60 * 1000) {
-      return { status: 'failed', error: 'Nuro generation timed out. Please regenerate.' };
-    }
-    return { status: 'processing' };
+    // Nuro deprecated by aimusicapi.ai — endpoint returns HTTP 410 Gone.
+    // Any legacy in-flight jobs fail with a helpful message.
+    return { status: 'failed', error: 'Nuro has been deprecated. Please regenerate using Sonic or Producer.' };
   }
 
   if (provider === 'producer') {
@@ -441,7 +397,7 @@ Deno.serve(async (req) => {
 
         // Determine model version from job input_data or provider defaults
         const modelVersionMap = {
-          sonic: 'sonic-v4-5', nuro: 'v2.0', producer: 'FUZZ-2.0',
+          sonic: 'sonic-v4-5', producer: 'FUZZ-2.0',
           tempcolor: 'TemPolor v4.6', loudly: 'VEGA_2', ltx: 'ltx-video-v1',
         };
         const modelVersion = job.input_data?.model || modelVersionMap[job.provider] || job.provider;

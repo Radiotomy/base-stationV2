@@ -5,7 +5,7 @@
  *
  * Priority axes (in order):
  *   1. Duration > 120s          → Tempolor (only provider supporting up to 5 min)
- *   2. Vocal / needs_lyrics      → Nuro v2.0 (best vocal fidelity)
+ *   2. Vocal / needs_lyrics      → Sonic (best vocal fidelity after Nuro deprecation)
  *   3. Multiple variations       → Sonic v5-5 (returns 2 clips per call)
  *   4. Speed priority            → Sonic v4-5-plus (fastest reliable provider)
  *   5. Default / general purpose → Sonic v4-5-plus (balanced quality)
@@ -15,7 +15,6 @@ export const PROVIDER_DETAILS = {
   sonic:     { label: 'Sonic',    model: 'sonic-v4-5-plus', emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
   tempcolor: { label: 'Tempolor', model: 'TemPolor v4.6',   emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
   producer:  { label: 'Producer', model: 'FUZZ-2.0',        emoji: '🎤', color: 'border-purple-500 bg-purple-500/10 text-purple-300' },
-  nuro:      { label: 'Nuro',     model: 'v2.0',            emoji: '🎼', color: 'border-pink-500 bg-pink-500/10 text-pink-300' },
 };
 
 /**
@@ -49,15 +48,14 @@ export function routeProvider({
     };
   }
 
-  // Rule 2: Vocal / lyrics-heavy — Nuro has best vocal fidelity
+  // Rule 2: Vocal / lyrics-heavy — Sonic v4-5-plus has strong vocal quality
   if (needs_lyrics) {
     return {
-      provider: 'nuro',
-      model: 'v2.0',
-      nuro_version: 'v2.0',
-      reason: `Nuro selected — best vocal generation quality for lyric-driven tracks.`,
+      provider: 'sonic',
+      model: 'sonic-v4-5-plus',
+      reason: `Sonic v4-5-plus selected — best vocal generation quality for lyric-driven tracks.`,
       routing_key: 'vocal_track',
-      fallbackChain: ['sonic', 'producer', 'tempcolor'],
+      fallbackChain: ['tempcolor', 'producer'],
     };
   }
 
@@ -68,7 +66,7 @@ export function routeProvider({
       model: 'sonic-v5-5',
       reason: `Sonic selected — generates 2 track variations per call for comparison.`,
       routing_key: 'multiple_variations',
-      fallbackChain: ['producer', 'nuro'],
+      fallbackChain: ['producer', 'tempcolor'],
     };
   }
 
@@ -89,6 +87,6 @@ export function routeProvider({
     model: 'sonic-v4-5-plus',
     reason: `Sonic selected — best general-purpose quality for this track type.`,
     routing_key: 'general_purpose',
-    fallbackChain: ['producer', 'nuro', 'tempcolor'],
+    fallbackChain: ['producer', 'tempcolor'],
   };
 }

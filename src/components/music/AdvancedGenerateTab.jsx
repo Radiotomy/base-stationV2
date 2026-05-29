@@ -17,13 +17,12 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import CostBadge from '@/components/credits/CostBadge';
 
 // Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
-const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10, nuro: 7 };
+const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
   { value: 'tempcolor', label: 'Tempolor', desc: 'Song & instrumental modes',       color: 'border-amber-500 bg-amber-500/10' },
   { value: 'producer',  label: 'Producer', desc: 'Google Lyria 3 Pro',             color: 'border-purple-500 bg-purple-500/10' },
-  { value: 'nuro',      label: 'Nuro',     desc: 'Vocals + BGM',                   color: 'border-pink-500 bg-pink-500/10' },
 ];
 
 const SONIC_MODELS = [
@@ -34,11 +33,6 @@ const SONIC_MODELS = [
   { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality' },
   { value: 'sonic-v5', label: 'v5', desc: 'Latest' },
   { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
-];
-
-const NURO_MODELS = [
-  { value: 'v1.0', label: 'v1.0', desc: 'Classic' },
-  { value: 'v2.0', label: 'v2.0', desc: 'Structure control' },
 ];
 
 const TEMPOLOR_SONG_MODELS = [
@@ -67,7 +61,6 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [provider, setProvider] = useState('sonic');
   const [importedFromStudio, setImportedFromStudio] = useState(false);
   const [sonicModel, setSonicModel] = useState('sonic-v4-5-plus');
-  const [nuroModel, setNuroModel] = useState('v1.0');
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
   const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)
@@ -249,7 +242,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         vocal_timbre: data.vocal_timbre || '',
         sound_prompt: soundPrompt || '',
         content_hash: data.content_hash || null,
-        model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'nuro' ? nuroModel : provider === 'tempcolor' ? temporlorModel : 'FUZZ-2.0'),
+        model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : 'FUZZ-2.0'),
       });
       // Reflect provider-returned lyrics into UI so user can see them
       if (mergedLyrics && !lyrics?.trim()) {
@@ -259,7 +252,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       }
       toast.success('✅ Auto-saved to library with full metadata!');
     }
-  }, [mood, genre, provider, saveTrackToLibrary, lyrics, soundPrompt, duration, sonicModel, nuroModel, temporlorModel]);
+  }, [mood, genre, provider, saveTrackToLibrary, lyrics, soundPrompt, duration, sonicModel, temporlorModel]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -338,7 +331,6 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         ...(currentLyrics && lyricsMode !== 'none' && { lyrics: currentLyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
         ...(provider === 'sonic' && { model: sonicModel }),
-        ...(provider === 'nuro' && { nuro_version: nuroModel }),
         ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
       });
 
@@ -461,21 +453,6 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                 {SONIC_MODELS.map(m => (
                   <button key={m.value} onClick={() => setSonicModel(m.value)}
                     className={`px-2.5 py-2 rounded-lg border text-left transition-all ${sonicModel === m.value ? 'border-cyan-500 bg-cyan-500/10' : 'border-border bg-card'}`}>
-                    <p className="text-xs font-bold text-foreground">{m.label}</p>
-                    <p className="text-xs text-muted-foreground">{m.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {provider === 'nuro' && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Nuro Model</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {NURO_MODELS.map(m => (
-                  <button key={m.value} onClick={() => setNuroModel(m.value)}
-                    className={`px-2.5 py-2 rounded-lg border text-left transition-all ${nuroModel === m.value ? 'border-pink-500 bg-pink-500/10' : 'border-border bg-card'}`}>
                     <p className="text-xs font-bold text-foreground">{m.label}</p>
                     <p className="text-xs text-muted-foreground">{m.desc}</p>
                   </button>
@@ -609,7 +586,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
 
           {/* Lyrics nudge for vocal providers */}
           {(() => {
-            const isVocalProvider = provider === 'sonic' || provider === 'nuro' || provider === 'producer' ||
+            const isVocalProvider = provider === 'sonic' || provider === 'producer' ||
               (provider === 'tempcolor' && temporlorMode === 'song');
             const hasLyrics = lyricsMode !== 'none' && lyrics.trim().length > 0;
             if (isVocalProvider && !hasLyrics) {

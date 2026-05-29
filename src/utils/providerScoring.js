@@ -7,7 +7,6 @@
  */
 
 const COST_WEIGHTS = {
-  nuro: 1.0,
   sonic: 0.8,
   producer: 0.9,
   tempcolor: 1.2,

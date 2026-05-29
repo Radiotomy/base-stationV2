@@ -16,13 +16,12 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import CostBadge from '@/components/credits/CostBadge';
 
 // Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
-const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10, nuro: 7 };
+const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10 };
 
 const ALL_PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
   { value: 'tempcolor', label: 'Tempolor', emoji: '🎶' },
   { value: 'producer',  label: 'Producer', emoji: '🎤' },
-  { value: 'nuro',      label: 'Nuro',     emoji: '🎼' },
 ];
 
 const QUICK_EXAMPLES = [
@@ -361,7 +360,6 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         ...(lyrics && { lyrics }),
         ...(selectedPersona !== 'auto' && { voice_persona_id: selectedPersona }),
         ...(effectiveProvider === 'sonic' && { model: routing.model || 'sonic-v4-5-plus' }),
-        ...(effectiveProvider === 'nuro' && { nuro_version: routing.model || 'v2.0' }),
         ...(effectiveProvider === 'tempcolor' && { model: routing.model || 'TemPolor v4.6', tempolor_mode: routing.tempolor_mode || (aiDecision.needs_lyrics ? 'song' : 'instrumental') }),
       };
 
