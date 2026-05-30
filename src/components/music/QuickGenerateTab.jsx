@@ -12,12 +12,14 @@ import MidiExportButton from '@/components/music/MidiExportButton';
 import { cacheManager } from '@/utils/cacheManager';
 import ChipSelector from '@/components/music/ChipSelector';
 import { routeProvider, PROVIDER_DETAILS } from '@/utils/providerRouter';
-import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 
-// Approximate per-provider costs (mirrors backend CREDIT_COSTS in generateMusic)
-const PROVIDER_COSTS = { sonic: 8, tempcolor: 6, producer: 10 };
+// Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
+// aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
+// Tempolor: 10 credits per song.
+const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, producer: 10 };
 
 const ALL_PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
@@ -401,7 +403,9 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       const status = err?.response?.status;
       const data = err?.response?.data;
       const isCredits = status === 402 || data?.error === 'Insufficient credits';
-      const msg = data?.message || err.message || 'Generation failed';
+      // Prefer the friendly aimusicapi.ai spec-mapped message when available
+      const friendly = getProviderErrorMessage(err);
+      const msg = friendly || data?.message || err.message || 'Generation failed';
       setLastError({
         type: isCredits ? 'credits' : 'error',
         message: msg,

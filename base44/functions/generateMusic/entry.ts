@@ -17,30 +17,50 @@ const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 function getWebhookConfig() {
   const url = Deno.env.get('AIMUSICAPI_WEBHOOK_URL'); // set this to https://<app>/functions/aimusicapiWebhook
   if (!url || !WEBHOOK_SECRET) return null;
+  // Spec: webhook_url must be HTTPS, ≤ 1024 chars
+  if (!url.startsWith('https://') || url.length > 1024) {
+    console.warn('AIMUSICAPI_WEBHOOK_URL invalid (must be HTTPS, ≤1024 chars) — webhook disabled');
+    return null;
+  }
   return { webhook_url: url, webhook_secret: WEBHOOK_SECRET };
 }
 
 // ── Sonic ─────────────────────────────────────────────────────────────────────
-// Docs: POST /api/v1/sonic/create
+// Docs: POST /api/v1/sonic/create — https://docs.aimusicapi.ai/sonic-api-instructions
 // Response: { code: 200, task_id: "uuid", message: "success" }
 // Poll: GET /api/v1/sonic/task/{task_id}
-//   → { code: 200, data: [ { clip_id, state: "pending"|"running"|"succeeded"|"failed", audio_url, image_url, ... } ] }
 //
-// Mode selection:
-//   - With lyrics: custom_mode:true, prompt=lyrics, tags=genre+mood style descriptor
-//   - No lyrics (Quick Gen): auto_lyrics:true + custom_mode:true — Sonic reads the full
-//     sound_prompt directly as the style descriptor and auto-generates lyrics/tags from it.
-//     This gives much better genre fidelity than custom_mode:false + gpt_description_prompt
-//     which only uses the AI-parsed genre/mood tags and ignores the user's actual description.
+// Mode selection (per spec):
+//   - With lyrics  → custom_mode:true, prompt=lyrics (max 3000/5000 chars by model)
+//   - Auto lyrics  → custom_mode:true + auto_lyrics:true, prompt=seed (same char budget)
+//   - Description  → custom_mode:false, gpt_description_prompt (max 400 chars)
 //
-// Model suitability: sonic-v3-5 and sonic-v4 have no vocal support and should not be used
-// for vocal or auto-lyrics generation. Force a minimum of sonic-v4-5 for those cases.
+// Char limits (spec):
+//   prompt:                v3-5/v4 = 3000   |  v4-5+/v5/v5-5 = 5000
+//   tags:                  v3-5/v4 = 200    |  v4-5+/v5/v5-5 = 1000
+//   gpt_description_prompt: 400 (all models)
+//   title:                 80 (all models)
+//
+// Model suitability: sonic-v3-5 and sonic-v4 have no vocal support. Force v4-5 minimum
+// for vocal/auto-lyrics generation.
+const SONIC_LIMITS = {
+  'sonic-v3-5':     { prompt: 3000, tags: 200 },
+  'sonic-v4':       { prompt: 3000, tags: 200 },
+  'sonic-v4-5':     { prompt: 5000, tags: 1000 },
+  'sonic-v4-5-plus':{ prompt: 5000, tags: 1000 },
+  'sonic-v5':       { prompt: 5000, tags: 1000 },
+  'sonic-v5-5':     { prompt: 5000, tags: 1000 },
+};
+
 async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics }) {
   // Ensure a vocal-capable model is used
   const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
   const safeModel = (!model || LEGACY_MODELS.includes(model)) ? 'sonic-v4-5' : model;
+  const limits = SONIC_LIMITS[safeModel] || SONIC_LIMITS['sonic-v4-5'];
 
-  const tags = [genre, mood].filter(Boolean).join(', ');
+  // Per-spec field truncation
+  const tags = [genre, mood].filter(Boolean).join(', ').slice(0, limits.tags);
+  const title = `${mood} ${genre} Track`.slice(0, 80);
 
   let body;
   if (lyrics && lyrics.trim().length > 0) {
@@ -49,23 +69,24 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
       task_type: 'create_music',
       custom_mode: true,
       mv: safeModel,
-      title: `${mood} ${genre} Track`,
+      title,
       tags,
-      prompt: lyrics.slice(0, 5000),
+      prompt: lyrics.slice(0, limits.prompt),
     };
   } else if (sound_prompt) {
     // Auto-lyrics mode: Sonic generates lyrics from the prompt
+    // prompt uses the same char budget as custom mode (NOT the 400-char description limit)
     body = {
       task_type: 'create_music',
       custom_mode: true,
       auto_lyrics: true,
       mv: safeModel,
-      title: `${mood} ${genre} Track`,
+      title,
       tags,
-      prompt: sound_prompt.slice(0, 400),
+      prompt: sound_prompt.slice(0, limits.prompt),
     };
   } else {
-    // AI description mode: simplest, just describe and let Sonic decide everything
+    // AI description mode: gpt_description_prompt is capped at 400 by spec
     const desc = `A ${mood.toLowerCase()} ${genre} track${tempo ? ` at ${tempo} BPM` : ''}`.slice(0, 400);
     body = {
       task_type: 'create_music',
@@ -95,23 +116,34 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
     clearTimeout(sonicTimeout);
   }
   console.log('Sonic create response:', JSON.stringify(data));
-  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
+  if (!res.ok) {
+    // Surface aimusicapi error structure { type, error } per spec
+    const err = new Error(data.error || data.message || `Sonic HTTP ${res.status}`);
+    err.providerStatus = res.status;
+    err.providerType = data.type || null;
+    throw err;
+  }
   const taskId = data.task_id;
   if (!taskId) throw new Error('No task_id from Sonic: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'sonic' };
 }
 
 // ── Producer ─────────────────────────────────────────────────────────────────
-// Docs: POST /api/v1/producer/create
+// Docs: POST /api/v1/producer/create — https://docs.aimusicapi.ai/producer-instructions
 // Required: task_type: "create_music", plus sound and/or lyrics
+// Models (mv): FUZZ-3-Demo | FUZZ-2.0 (default) | FUZZ-2.0 Pro | FUZZ-2.0 Raw | FUZZ-1.1 Pro | FUZZ-1.1 | FUZZ-1.0 Pro | FUZZ-1.0 | FUZZ-0.8
 // Poll: GET /api/v1/producer/task/{task_id} → { status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [{audio_url,...}] }
-async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
+// Retired task_types (HTTP 410): cover_music, extend_music, replace_music, swap_*, music_variation
+const PRODUCER_VALID_MV = ['FUZZ-3-Demo','FUZZ-2.0','FUZZ-2.0 Pro','FUZZ-2.0 Raw','FUZZ-1.1 Pro','FUZZ-1.1','FUZZ-1.0 Pro','FUZZ-1.0','FUZZ-0.8'];
+
+async function generateWithProducer({ genre, mood, sound_prompt, lyrics, model }) {
+  const mv = (model && PRODUCER_VALID_MV.includes(model)) ? model : 'FUZZ-2.0';
   const body = {
     task_type: 'create_music',
-    sound: sound_prompt || `${mood} ${genre} music`,
-    mv: 'FUZZ-2.0',
-    title: `${mood} ${genre}`,
-    ...(lyrics && { lyrics, make_instrumental: false }),
+    sound: (sound_prompt || `${mood} ${genre} music`).slice(0, 2000),
+    mv,
+    title: `${mood} ${genre}`.slice(0, 80),
+    ...(lyrics && { lyrics: String(lyrics).slice(0, 5000), make_instrumental: false }),
     ...(!lyrics && { make_instrumental: true }),
   };
   const wh = getWebhookConfig();
@@ -122,7 +154,14 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics }) {
     body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.message || JSON.stringify(data));
+  if (!res.ok) {
+    // Surface aimusicapi error structure { type, error } per spec
+    // Special: HTTP 410 = endpoint_retired, 402 = insufficient_credits, 502 = upstream_error
+    const err = new Error(data.error || data.message || `Producer HTTP ${res.status}`);
+    err.providerStatus = res.status;
+    err.providerType = data.type || null;
+    throw err;
+  }
   // Docs: response is { message: "success", task_id: "uuid" }
   const taskId = data.task_id;
   if (!taskId) throw new Error('No task_id from Producer: ' + JSON.stringify(data));
@@ -257,13 +296,31 @@ Deno.serve(async (req) => {
     let providerResult;
     try {
       if (provider === 'producer')
-        providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics });
+        providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics, model });
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
       else // default: sonic
         providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics });
     } catch (providerErr) {
-      return Response.json({ error: providerErr.message }, { status: 502 });
+      // Map aimusicapi HTTP codes to actionable client responses per spec:
+      // 400 validation_error · 401 unauthorized · 402/403 insufficient_credits/forbidden ·
+      // 410 endpoint_retired · 429 rate_limited · 502 upstream_error · 500 internal_error · 504 timeout
+      const pStatus = providerErr.providerStatus;
+      const pType = providerErr.providerType;
+      const clientStatus =
+        pStatus === 400 ? 400 :
+        pStatus === 401 ? 401 :
+        pStatus === 402 ? 402 :
+        pStatus === 403 ? 403 :
+        pStatus === 410 ? 410 :
+        pStatus === 429 ? 429 :
+        pStatus === 504 ? 504 :
+        502;
+      return Response.json({
+        error: providerErr.message,
+        provider_type: pType,
+        provider_status: pStatus,
+      }, { status: clientStatus });
     }
 
     const generatedAt = new Date().toISOString();
