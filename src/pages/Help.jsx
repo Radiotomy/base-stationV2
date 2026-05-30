@@ -33,13 +33,23 @@ const SECTIONS = [
     id: 'lyrics',
     title: 'Lyrics Studio — writing lyrics',
     icon: Mic2,
-    keywords: 'lyrics writing pro songwriter rhyme scheme structure',
+    keywords: 'lyrics writing pro songwriter rhyme scheme structure character limit length restriction',
     body: (
       <>
         <p>Pick a <strong className="text-foreground">topic</strong> (one concrete concept), 1–2 moods, and a style. Hit Generate.</p>
         <p><strong className="text-foreground">Pro Songwriter ON</strong> activates Nashville/LA-grade rhyme craft. Add a reference artist — the writer lookup auto-fills mood, style, rhyme scheme & BPM.</p>
         <p><strong className="text-foreground">Rhyme schemes:</strong> Mixed is the safest hit-song default. ABAB = pop alternating, AABB = couplets, XAXA = conversational/modern, AAAA = monorhyme tension.</p>
         <p><strong className="text-foreground">Structure templates</strong> give you proven section maps per genre (Standard Pop, Hip-Hop, Red Dirt Country, EDM Drop, Neo-Soul, etc.).</p>
+        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+          <p className="text-amber-300 font-bold text-sm mb-1">⚠️ Character limits per music model</p>
+          <p>Each downstream AI music generator enforces its own lyrics character cap. <strong className="text-foreground">If your lyrics exceed the limit, music generation will fail.</strong> Approximate caps:</p>
+          <ul className="list-disc pl-5 space-y-0.5 mt-1.5">
+            <li><strong>Sonic v4-5+</strong> — ~3,000 chars</li>
+            <li><strong>Tempolor v4.6 / i3.5</strong> — ~2,500 chars</li>
+            <li><strong>Producer (FUZZ-2.0)</strong> — instrumental only (no lyrics)</li>
+          </ul>
+          <p className="mt-1.5">Pro Songwriter auto-clamps to the safest limit (defaults: Short 1.5k · Medium 2.5k · Long 4k · Full 5k). Keep verses concise; trim ad-libs if you hit the cap.</p>
+        </div>
         <p>When done, hit <strong className="text-foreground">"Send to Music Studio →"</strong> — lyrics, genre and topic auto-fill the next step.</p>
         <p className="text-xs">Shortcuts: ⌘+Enter generate · ⌘+S save · ⌘+K shortcut panel.</p>
       </>
