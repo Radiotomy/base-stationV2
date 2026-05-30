@@ -266,7 +266,7 @@ export default function Radio() {
             </div>
           </div>
 
-          {/* VU Meters + EQ — mobile: L+R side-by-side, EQ collapsible | desktop: 3-col layout unchanged */}
+          {/* VU Meters + EQ — mobile: L+R side-by-side, EQ collapsible | desktop: 3-col layout */}
           <div className="mt-3 md:hidden space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
@@ -286,12 +286,16 @@ export default function Radio() {
               )}
             </AnimatePresence>
           </div>
-          <div className="hidden md:grid grid-cols-[1fr_auto_1fr] gap-3 mt-3">
-            <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
-            <div className="md:w-72">
+          <div className="hidden md:flex items-start justify-center gap-3 mt-3">
+            <div className="w-56 flex-shrink-0">
+              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
+            </div>
+            <div className="w-72 flex-shrink-0">
               <EQPanel setBandGain={setBandGain} />
             </div>
-            <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying} />
+            <div className="w-56 flex-shrink-0">
+              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying} />
+            </div>
           </div>
 
           {/* Queue Panel */}

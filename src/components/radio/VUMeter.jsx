@@ -77,32 +77,31 @@ export default function VUMeter({ analyserRef, label = "L", isActive = true }) {
   const needleY2 = 80 - Math.cos((angle * Math.PI) / 180) * 62;
 
   return (
-    <div className="merc-card rounded-2xl p-3 flex flex-col items-center">
+    <div className="merc-card rounded-2xl p-3 flex flex-col items-center justify-center">
       <p className="text-[9px] font-bold tracking-[0.25em] text-white/60 uppercase mb-1">{label}</p>
 
-      <div className="relative w-full">
-        <svg viewBox="0 0 100 92" className="w-full h-auto" aria-label={`${label} VU meter`}>
-          {/* Cream meter face background */}
+      <div className="relative w-full max-w-[240px] mx-auto">
+        <svg viewBox="0 0 100 92" preserveAspectRatio="xMidYMid meet" className="w-full h-auto block" aria-label={`${label} VU meter`}>
+          {/* Gradients */}
           <defs>
-            <radialGradient id={`vu-face-${label}`} cx="50%" cy="100%" r="100%">
-              <stop offset="0%" stopColor="#F2E8C8" />
-              <stop offset="60%" stopColor="#E8DCB0" />
-              <stop offset="100%" stopColor="#C5B585" />
-            </radialGradient>
-            <linearGradient id={`vu-bezel-${label}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient id={`vu-face-${label}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#F4EAC8" />
+              <stop offset="100%" stopColor="#D4C490" />
+            </linearGradient>
+            <linearGradient id={`vu-bezel-${label}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.9" />
               <stop offset="50%" stopColor="#C8CDD2" />
               <stop offset="100%" stopColor="#1a1a24" />
             </linearGradient>
           </defs>
 
-          {/* Outer chrome bezel */}
-          <path d="M 5 82 A 50 50 0 0 1 95 82 L 95 86 A 50 50 0 0 0 5 86 Z"
-            fill={`url(#vu-bezel-${label})`} />
+          {/* Outer chrome bezel — full half-dome */}
+          <path d="M 3 82 A 47 47 0 0 1 97 82 L 97 86 L 3 86 Z"
+            fill="#C8CDD2" />
 
-          {/* Inner cream face */}
-          <path d="M 8 82 A 47 47 0 0 1 92 82 L 92 88 L 8 88 Z"
-            fill={`url(#vu-face-${label})`} stroke="rgba(60,40,20,0.3)" strokeWidth="0.3" />
+          {/* Inner cream meter face — full half-dome */}
+          <path d="M 7 82 A 43 43 0 0 1 93 82 L 93 84 L 7 84 Z"
+            fill="#F0E4B8" stroke="rgba(60,40,20,0.4)" strokeWidth="0.3" />
 
           {/* Arc scale line */}
           <path d="M 14 80 A 42 42 0 0 1 86 80"
@@ -150,7 +149,7 @@ export default function VUMeter({ analyserRef, label = "L", isActive = true }) {
             stroke="#1a1a24" strokeWidth="0.8" strokeLinecap="round" />
 
           {/* Pivot screw */}
-          <circle cx="50" cy="80" r="2.5" fill="url(#vu-bezel-${label})"
+          <circle cx="50" cy="80" r="2.5" fill={`url(#vu-bezel-${label})`}
             stroke="rgba(0,0,0,0.5)" strokeWidth="0.3" />
           <circle cx="50" cy="80" r="0.8" fill="rgba(0,0,0,0.7)" />
         </svg>
