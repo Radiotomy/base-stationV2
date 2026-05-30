@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Music, Search, ExternalLink, Link2, Eye, Heart, BarChart3 } from 'lucide-react';
+import { Plus, Music, Search, Link2, Eye, Heart, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import InlineMediaPlayer from '@/components/dashboard/InlineMediaPlayer';
 
 const STATUS_COLOR = {
   approved: 'bg-emerald-500/20 text-emerald-400',
@@ -191,52 +192,52 @@ export default function SubmissionsTab({ tracks }) {
               key={track.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all flex items-center gap-4 group"
+              className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all space-y-3 group"
             >
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-800 to-indigo-900 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                {track.cover_image_url ? (
-                  <img src={track.cover_image_url} alt={track.title} className="w-full h-full object-cover" />
-                ) : (
-                  <Music className="w-5 h-5 text-white/30" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm text-foreground truncate">{track.title}</p>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  <Badge className={`text-xs border-0 ${STATUS_COLOR[track.status] || 'bg-muted text-muted-foreground'}`}>
-                    {track.status}
-                  </Badge>
-                  {track.genre && <span className="text-xs text-muted-foreground capitalize">{track.genre}</span>}
-                  <span className="text-xs text-muted-foreground">
-                    {track.play_count || 0} plays · {track.like_count || 0} likes
-                  </span>
-                  {track.created_date && (
-                    <span className="text-xs text-muted-foreground/70">
-                      · {format(new Date(track.created_date), 'MMM d, yyyy')}
-                    </span>
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-800 to-indigo-900 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  {track.cover_image_url ? (
+                    <img src={track.cover_image_url} alt={track.title} className="w-full h-full object-cover" />
+                  ) : (
+                    <Music className="w-5 h-5 text-white/30" />
                   )}
                 </div>
-              </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm text-foreground truncate">{track.title}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <Badge className={`text-xs border-0 ${STATUS_COLOR[track.status] || 'bg-muted text-muted-foreground'}`}>
+                      {track.status}
+                    </Badge>
+                    {track.genre && <span className="text-xs text-muted-foreground capitalize">{track.genre}</span>}
+                    <span className="text-xs text-muted-foreground">
+                      {track.play_count || 0} plays · {track.like_count || 0} likes
+                    </span>
+                    {track.created_date && (
+                      <span className="text-xs text-muted-foreground/70">
+                        · {format(new Date(track.created_date), 'MMM d, yyyy')}
+                      </span>
+                    )}
+                  </div>
+                </div>
                 {track.track_url && (
-                  <>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => copyLink(track.track_url)}
-                      className="h-8 w-8 rounded-lg"
-                      title="Copy link"
-                    >
-                      <Link2 className="w-3.5 h-3.5" />
-                    </Button>
-                    <a href={track.track_url} target="_blank" rel="noopener noreferrer">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title="Open track">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Button>
-                    </a>
-                  </>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => copyLink(track.track_url)}
+                    className="h-8 w-8 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                    title="Copy link"
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                  </Button>
                 )}
               </div>
+              {track.track_url && (
+                <InlineMediaPlayer
+                  url={track.track_url}
+                  title={track.title}
+                  poster={track.cover_image_url}
+                />
+              )}
             </motion.div>
           ))}
         </div>
