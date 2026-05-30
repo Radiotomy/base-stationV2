@@ -44,6 +44,7 @@ export default function Radio() {
   const [volume, setVolume] = useState([75]);
   const [muted, setMuted] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
+  const [showEQ, setShowEQ] = useState(false); // mobile-only collapse; desktop always shows
   const audioRef = useRef(null);
   const { setBandGain, analyserL, analyserR } = useAudioProcessor(audioRef);
 
@@ -177,7 +178,7 @@ export default function Radio() {
                   <p className="text-white/50 text-xs truncate">{nowPlaying.artist_name}</p>
                 </div>
                 {nowPlaying.source && (
-                  <Badge className={`text-xs border flex-shrink-0 ${SOURCE_BADGE[nowPlaying.source]?.cls || ""}`}>
+                  <Badge className={`hidden sm:inline-flex text-xs border flex-shrink-0 ${SOURCE_BADGE[nowPlaying.source]?.cls || ""}`}>
                     {SOURCE_BADGE[nowPlaying.source]?.label || nowPlaying.source}
                   </Badge>
                 )}
@@ -226,9 +227,9 @@ export default function Radio() {
                 <ListMusic className="w-5 h-5" />
               </button>
 
-              {/* Reload */}
+              {/* Reload — hidden on mobile (also available in queue panel header) */}
               <button onClick={() => loadQueue(activeChannel)}
-                className="w-10 h-10 flex items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors">
+                className="hidden sm:flex w-10 h-10 items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors">
                 <RefreshCw className="w-4 h-4" />
               </button>
             </div>
@@ -245,8 +246,27 @@ export default function Radio() {
             </div>
           </div>
 
-          {/* VU Meters + EQ */}
-          <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 mt-3">
+          {/* VU Meters + EQ — mobile: L+R side-by-side, EQ collapsible | desktop: 3-col layout unchanged */}
+          <div className="mt-3 md:hidden space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
+              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying} />
+            </div>
+            <button onClick={() => setShowEQ(p => !p)}
+              className="w-full merc-card rounded-2xl px-4 py-2.5 text-xs font-bold tracking-widest uppercase text-white/70 flex items-center justify-between active:bg-white/5">
+              <span>5-Band EQ</span>
+              <span className="text-white/40 text-[10px]">{showEQ ? 'Hide ▲' : 'Show ▼'}</span>
+            </button>
+            <AnimatePresence>
+              {showEQ && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden">
+                  <EQPanel setBandGain={setBandGain} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="hidden md:grid grid-cols-[1fr_auto_1fr] gap-3 mt-3">
             <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
             <div className="md:w-72">
               <EQPanel setBandGain={setBandGain} />
@@ -259,15 +279,23 @@ export default function Radio() {
             {showQueue && queue.length > 0 && (
               <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                 className="merc-card mt-3 rounded-2xl overflow-hidden">
-                <div className="p-3 border-b border-white/10 flex items-center justify-between">
-                  <p className="text-white/70 text-xs font-semibold uppercase tracking-wider">Up Next — {queue.length} tracks</p>
-                  <div className="flex gap-2 text-xs text-white/40">
-                    <span>{queue.filter(t => t.source === 'audius').length} Audius</span>
-                    <span>·</span>
-                    <span>{queue.filter(t => t.source === 'community').length} Community</span>
+                <div className="p-3 border-b border-white/10 flex items-center justify-between gap-2">
+                  <p className="text-white/70 text-xs font-semibold uppercase tracking-wider truncate">Up Next — {queue.length} tracks</p>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="hidden sm:flex gap-2 text-xs text-white/40">
+                      <span>{queue.filter(t => t.source === 'audius').length} Audius</span>
+                      <span>·</span>
+                      <span>{queue.filter(t => t.source === 'community').length} Community</span>
+                    </div>
+                    {/* Mobile-only refresh control (hidden on desktop where the top-row reload is visible) */}
+                    <button onClick={() => loadQueue(activeChannel)}
+                      className="sm:hidden w-8 h-8 flex items-center justify-center rounded-full text-white/50 hover:text-white active:bg-white/10 transition-colors"
+                      aria-label="Reload queue">
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
-                <div className="max-h-56 overflow-y-auto overscroll-contain">
+                <div className="max-h-72 sm:max-h-56 overflow-y-auto overscroll-contain">
                   {queue.map((t, i) => (
                     <button key={i} onClick={() => { setQueueIndex(i); playTrack(t); }}
                       className={`w-full flex items-center gap-3 px-3 py-3 text-left active:bg-white/10 transition-colors ${i === queueIndex ? "bg-white/10" : "hover:bg-white/5"}`}>
@@ -297,16 +325,18 @@ export default function Radio() {
 
       {/* Get on the Radio CTA */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 pt-6">
-        <div className="merc-card p-4 md:p-5 rounded-2xl flex items-center gap-3 md:gap-4 flex-wrap">
-          <div className="merc-bubble w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0">
-            <RadioIcon className="w-5 h-5 md:w-6 md:h-6 text-[#1a1530]" />
+        <div className="merc-card p-4 md:p-5 rounded-2xl flex flex-col sm:flex-row sm:items-center gap-3 md:gap-4">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="merc-bubble w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center flex-shrink-0">
+              <RadioIcon className="w-5 h-5 md:w-6 md:h-6 text-[#1a1530]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-sm md:text-base">Get your track on BASE Station Radio</p>
+              <p className="text-white/60 text-xs md:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-sm md:text-base">Get your track on BASE Station Radio</p>
-            <p className="text-white/60 text-xs md:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
-          </div>
-          <Link to="/submit" className="flex-shrink-0">
-            <button className="merc-button rounded-full px-4 h-9 text-xs font-bold inline-flex items-center gap-1.5">
+          <Link to="/submit" className="w-full sm:w-auto flex-shrink-0">
+            <button className="merc-button rounded-full w-full sm:w-auto px-4 h-9 text-xs font-bold inline-flex items-center justify-center gap-1.5">
               <Upload className="w-3.5 h-3.5" /> Upload Track
             </button>
           </Link>
