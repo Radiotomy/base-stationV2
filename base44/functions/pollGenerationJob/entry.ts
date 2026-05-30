@@ -90,9 +90,11 @@ async function pollProvider(provider, providerTaskId, job) {
 
   if (provider === 'producer') {
     // Docs: GET /api/v1/producer/task/{task_id}
-    // Response: { code: 200, status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [] }
+    // Response: { code, status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", message, type?: "failed"|"timeout", data: [...] }
     // data[] is EMPTY while PENDING/RUNNING — only populated on SUCCESS
-    // Per-clip shape: { clip_id, audio_url (m4a), wav_url, image_url, state: "succeeded"|"failed", ... }
+    // Per-clip shape: { clip_id, title, sound, lyrics, audio_url (m4a), wav_url, image_url,
+    //                   video_url, duration, mv, seed, state: "pending"|"running"|"succeeded"|"failed", created_at }
+    // On FAILED: credits are auto-refunded by the provider — message indicates refund status.
     url = `${AI_BASE}/producer/task/${providerTaskId}`;
     headers = { 'Authorization': `Bearer ${PRODUCER_API_KEY}` };
     res = await fetch(url, { headers });
@@ -108,19 +110,27 @@ async function pollProvider(provider, providerTaskId, job) {
     if (state === 'SUCCESS') {
       const clip = Array.isArray(data?.data) && data.data.length > 0 ? data.data[0] : null;
       if (!clip?.audio_url) return { status: 'processing' }; // data array not yet populated
-      // Producer returns: audio_url, wav_url, image_url, title, lyrics, tags, duration
+      // Producer returns: clip_id, audio_url, wav_url, image_url, video_url, title, lyrics, sound, duration, mv, seed, state, created_at
       return {
         status: 'completed',
         audio_url: clip.audio_url,
         cover_image_url: clip.image_url,
         wav_url: clip.wav_url,
+        video_url: clip.video_url || null,
         lyrics: clip.lyrics || clip.lyric || '',
         title: clip.title || '',
-        tags: clip.tags || '',
+        tags: clip.tags || clip.sound || '',
         duration: clip.duration,
+        model_version: clip.mv || null,
+        clip_id: clip.clip_id || null,
+        seed: clip.seed || null,
       };
     }
-    if (state === 'FAILED') return { status: 'failed', error: data.message || 'Producer generation failed' };
+    if (state === 'FAILED') {
+      // Spec: data.type === "timeout" or "failed"; credits auto-refunded by provider
+      const reason = data?.type === 'timeout' ? 'timed out on the provider' : 'failed';
+      return { status: 'failed', error: data.message || `Producer generation ${reason}` };
+    }
     // PENDING or RUNNING — keep polling
     return { status: 'processing' };
   }
