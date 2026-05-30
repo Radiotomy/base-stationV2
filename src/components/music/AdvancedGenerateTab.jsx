@@ -377,15 +377,33 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     setSaving(true);
     try {
       const user = await base44.auth.me();
+      // Use the SAME complete metadata payload as auto-save so lyrics, model,
+      // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
+      const mergedLyrics = lyrics?.trim() ? lyrics : (result?.lyrics || '');
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
-        title: `${mood} ${genre} — ${provider}`,
+        title: result?.title || `${mood} ${genre} — ${provider}`,
         file_url: audioUrl,
         thumbnail_url: result.cover_image_url || '',
         is_public: false,
-        metadata: { genre, mood, tempo, provider, duration, bpm: result.bpm, key: result.key },
+        metadata: {
+          genre, mood, tempo, provider,
+          duration: result?.duration || duration,
+          bpm: result?.bpm,
+          key: result?.key,
+          model: result?.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : ''),
+          ai_assisted: true,
+          sound_prompt: soundPrompt || '',
+          lyrics: mergedLyrics,
+          tags: result?.tags || '',
+          vocal_gender: result?.vocal_gender || '',
+          vocal_timbre: result?.vocal_timbre || '',
+          content_hash: result?.content_hash || '',
+          clip_id: result?.clip_id || '',
+          wav_url: result?.wav_url || '',
+        },
       });
       toast.success('Saved to library!');
     } catch (err) {

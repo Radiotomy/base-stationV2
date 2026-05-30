@@ -425,22 +425,35 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     setSaving(true);
     try {
       const user = await base44.auth.me();
+      // Use the SAME complete metadata payload as auto-save so lyrics, model,
+      // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
+      const mergedLyrics = lyricsRef.current?.trim() ? lyricsRef.current : (result?.lyrics || '');
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
-        title: aiParams?.title || prompt.slice(0, 40),
+        title: result?.title || aiParams?.title || prompt.slice(0, 40),
         file_url: audioUrl,
         thumbnail_url: result.cover_image_url || '',
         is_public: false,
         metadata: {
-          genre: aiParams?.genre,
-          mood: aiParams?.mood,
-          bpm: aiParams?.bpm || result.bpm,
+          genre: result?.genre || aiParams?.genre,
+          mood: result?.mood || aiParams?.mood,
+          bpm: result?.bpm || aiParams?.bpm,
+          key: result?.key,
+          duration: result?.duration || aiParams?.duration,
           provider,
-          duration: aiParams?.duration,
+          model: result?.model_version || aiParams?.model || '',
           ai_assisted: true,
           prompt,
+          sound_prompt: aiParams?.sound_prompt || '',
+          lyrics: mergedLyrics,
+          tags: result?.tags || '',
+          vocal_gender: result?.vocal_gender || '',
+          vocal_timbre: result?.vocal_timbre || '',
+          content_hash: result?.content_hash || '',
+          clip_id: result?.clip_id || '',
+          wav_url: result?.wav_url || '',
         },
       });
       toast.success('Saved to library!');
