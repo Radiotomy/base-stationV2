@@ -13,7 +13,12 @@ import { invalidateCreditBalance } from '@/components/credits/CreditBalanceWidge
 export function handleCreditError(err) {
   const status = err?.response?.status;
   const data = err?.response?.data;
-  if (status === 402 || data?.error === 'Insufficient credits') {
+  // ONLY treat as a user credit issue when our own backend says so.
+  // Upstream provider 402s (aimusicapi.ai account out of credits) have
+  // provider_status set and should fall through to the generic error path.
+  const isOurInternalCreditError =
+    data?.error === 'Insufficient credits' && !data?.provider_status;
+  if (isOurInternalCreditError) {
     const msg = data?.message || 'You don\'t have enough credits for this generation.';
     toast.error(msg, {
       description: `Required: ${data?.required ?? '?'} · Balance: ${data?.balance ?? '?'} · Buy a credit pack or upgrade to a monthly plan for the best value.`,
@@ -63,6 +68,10 @@ export function getProviderErrorMessage(err) {
   }
   if (status === 502 || providerType === 'upstream_error') {
     return 'The music provider is temporarily unavailable. Please retry in a moment.';
+  }
+  // Upstream provider out of credits — distinct from the user's own credit balance.
+  if (status === 402 && data?.provider_status === 402) {
+    return 'The music provider account is temporarily out of credits. We\'ve been notified — please try a different provider or retry shortly.';
   }
   return null;
 }

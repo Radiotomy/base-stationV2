@@ -402,7 +402,8 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       setGenerating(false);
       const status = err?.response?.status;
       const data = err?.response?.data;
-      const isCredits = status === 402 || data?.error === 'Insufficient credits';
+      // Only flag as user credit issue when our own backend says so (not upstream provider 402)
+      const isCredits = data?.error === 'Insufficient credits' && !data?.provider_status;
       // Prefer the friendly aimusicapi.ai spec-mapped message when available
       const friendly = getProviderErrorMessage(err);
       const msg = friendly || data?.message || err.message || 'Generation failed';
