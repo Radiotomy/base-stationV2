@@ -8,6 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
@@ -45,10 +46,45 @@ export default function Radio() {
   const [muted, setMuted] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [showEQ, setShowEQ] = useState(false); // mobile-only collapse; desktop always shows
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);
   const { setBandGain, analyserL, analyserR } = useAudioProcessor(audioRef);
 
   const nowPlaying = queue[queueIndex] || null;
+
+  // Time tracking for progress bar
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onTime = () => setCurrentTime(audio.currentTime || 0);
+    const onMeta = () => setDuration(audio.duration || 0);
+    const onLoadStart = () => { setCurrentTime(0); setDuration(0); };
+    audio.addEventListener('timeupdate', onTime);
+    audio.addEventListener('loadedmetadata', onMeta);
+    audio.addEventListener('durationchange', onMeta);
+    audio.addEventListener('loadstart', onLoadStart);
+    return () => {
+      audio.removeEventListener('timeupdate', onTime);
+      audio.removeEventListener('loadedmetadata', onMeta);
+      audio.removeEventListener('durationchange', onMeta);
+      audio.removeEventListener('loadstart', onLoadStart);
+    };
+  }, []);
+
+  const handleSeek = (val) => {
+    if (!audioRef.current || !duration) return;
+    const t = (val[0] / 100) * duration;
+    audioRef.current.currentTime = t;
+    setCurrentTime(t);
+  };
+
+  const fmtTime = (s) => {
+    if (!s || !isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
 
   // Load DB channels
   useEffect(() => {
@@ -207,26 +243,45 @@ export default function Radio() {
           </AnimatePresence>
 
           {/* Player Controls — mobile-first layout */}
+          <TooltipProvider delayDuration={300}>
           <div className="merc-card p-4 rounded-2xl">
             {/* Top row: prev / play / next + status */}
             <div className="flex items-center gap-4 mb-3">
               {/* Prev */}
-              <button onClick={skipPrev} disabled={queue.length < 2}
-                className="w-11 h-11 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors disabled:opacity-30">
-                <SkipBack className="w-5 h-5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={skipPrev} disabled={queue.length < 2}
+                    aria-label="Previous track"
+                    className="w-11 h-11 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors disabled:opacity-30">
+                    <SkipBack className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Previous track</TooltipContent>
+              </Tooltip>
 
               {/* Play/Pause */}
-              <button onClick={togglePlay} disabled={loadingQueue || queue.length === 0}
-                className="merc-button w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 flex-shrink-0">
-                {loadingQueue ? <Loader2 className="w-6 h-6 animate-spin" /> : isPlaying ? <Pause className="w-6 h-6" fill="#0A0A12" /> : <Play className="w-6 h-6 ml-0.5" fill="#0A0A12" />}
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={togglePlay} disabled={loadingQueue || queue.length === 0}
+                    aria-label={isPlaying ? "Pause" : "Play"}
+                    className="merc-button w-14 h-14 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-50 flex-shrink-0">
+                    {loadingQueue ? <Loader2 className="w-6 h-6 animate-spin" /> : isPlaying ? <Pause className="w-6 h-6" fill="#0A0A12" /> : <Play className="w-6 h-6 ml-0.5" fill="#0A0A12" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{loadingQueue ? "Loading channel…" : isPlaying ? "Pause" : "Play"}</TooltipContent>
+              </Tooltip>
 
               {/* Next */}
-              <button onClick={skipNext} disabled={queue.length < 2}
-                className="w-11 h-11 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors disabled:opacity-30">
-                <SkipForward className="w-5 h-5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={skipNext} disabled={queue.length < 2}
+                    aria-label="Next track"
+                    className="w-11 h-11 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors disabled:opacity-30">
+                    <SkipForward className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Next track</TooltipContent>
+              </Tooltip>
 
               {/* Status */}
               <div className="min-w-0 flex-1">
@@ -242,29 +297,75 @@ export default function Radio() {
               </div>
 
               {/* Queue toggle */}
-              <button onClick={() => setShowQueue(p => !p)}
-                className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showQueue ? "bg-white/20 text-white" : "text-white/60 hover:text-white active:bg-white/10"}`}>
-                <ListMusic className="w-5 h-5" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => setShowQueue(p => !p)}
+                    aria-label="Toggle queue"
+                    className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${showQueue ? "bg-white/20 text-white" : "text-white/60 hover:text-white active:bg-white/10"}`}>
+                    <ListMusic className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{showQueue ? "Hide queue" : "Show up next"}</TooltipContent>
+              </Tooltip>
 
               {/* Reload — hidden on mobile (also available in queue panel header) */}
-              <button onClick={() => loadQueue(activeChannel)}
-                className="hidden sm:flex w-10 h-10 items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors">
-                <RefreshCw className="w-4 h-4" />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => loadQueue(activeChannel)}
+                    aria-label="Reload channel"
+                    className="hidden sm:flex w-10 h-10 items-center justify-center rounded-full text-white/40 hover:text-white active:bg-white/10 transition-colors">
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Reload channel — get fresh tracks</TooltipContent>
+              </Tooltip>
             </div>
 
-            {/* Bottom row: Volume (hidden on mobile tap-to-mute only) */}
+            {/* Progress / Scrubber */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[10px] font-mono text-white/50 w-9 text-right tabular-nums">{fmtTime(currentTime)}</span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-1">
+                    <Slider
+                      value={[duration ? (currentTime / duration) * 100 : 0]}
+                      onValueChange={handleSeek}
+                      max={100}
+                      step={0.1}
+                      disabled={!duration}
+                      className="cursor-pointer"
+                      aria-label="Track progress"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Drag to scrub through the track</TooltipContent>
+              </Tooltip>
+              <span className="text-[10px] font-mono text-white/50 w-9 tabular-nums">{fmtTime(duration)}</span>
+            </div>
+
+            {/* Bottom row: Volume */}
             <div className="flex items-center gap-3">
-              <button onClick={() => setMuted(!muted)}
-                className="w-10 h-10 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors flex-shrink-0">
-                {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-              </button>
-              <div className="flex-1">
-                <Slider value={volume} onValueChange={setVolume} max={100} step={1} className="cursor-pointer" />
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => setMuted(!muted)}
+                    aria-label={muted ? "Unmute" : "Mute"}
+                    className="w-10 h-10 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors flex-shrink-0">
+                    {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{muted ? "Unmute" : "Mute"}</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex-1">
+                    <Slider value={volume} onValueChange={setVolume} max={100} step={1} className="cursor-pointer" aria-label="Volume" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Volume — {muted ? "muted" : `${volume[0]}%`}</TooltipContent>
+              </Tooltip>
             </div>
           </div>
+          </TooltipProvider>
 
           {/* VU Meters + EQ — mobile: L+R side-by-side, EQ collapsible | desktop: 3-col layout */}
           <div className="mt-3 md:hidden space-y-3">
