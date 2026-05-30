@@ -17,6 +17,7 @@ import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPane
 import RewardFansModal from "@/components/creator/RewardFansModal";
 import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
 import MasteringTab from "@/components/mastering/MasteringTab";
+import SubmissionsTab from "@/components/dashboard/SubmissionsTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -291,53 +292,7 @@ export default function CreatorDashboard() {
 
       {/* Submissions Tab */}
       {activeTab === "tracks" && (
-        <div>
-          <div className="flex items-center justify-between mb-5">
-            <p className="text-sm text-muted-foreground">{tracks.length} track{tracks.length !== 1 ? "s" : ""} submitted</p>
-            <Link to="/submit">
-              <Button className="rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-500 text-sm font-bold">
-                <Plus className="w-4 h-4" /> Submit New Track
-              </Button>
-            </Link>
-          </div>
-          {tracks.length === 0 ? (
-            <div className="text-center py-12 border border-dashed border-border rounded-2xl">
-              <Music className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
-              <p className="text-muted-foreground text-sm">No tracks submitted yet.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {tracks.map(track => (
-                <motion.div key={track.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                  className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all flex items-center gap-4 group">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-800 to-indigo-900 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                    {track.cover_image_url
-                      ? <img src={track.cover_image_url} alt={track.title} className="w-full h-full object-cover" />
-                      : <Music className="w-5 h-5 text-white/30" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-foreground truncate">{track.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Badge className={`text-xs border-0 ${STATUS_COLOR[track.status] || "bg-muted text-muted-foreground"}`}>
-                        {track.status}
-                      </Badge>
-                      {track.genre && <span className="text-xs text-muted-foreground capitalize">{track.genre}</span>}
-                      <span className="text-xs text-muted-foreground">{track.play_count || 0} plays · {track.like_count || 0} likes</span>
-                    </div>
-                  </div>
-                  {track.track_url && (
-                    <a href={track.track_url} target="_blank" rel="noopener noreferrer"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </Button>
-                    </a>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
+        <SubmissionsTab tracks={tracks} />
       )}
 
       {/* Phase 5 — Fan Economy Tab */}
