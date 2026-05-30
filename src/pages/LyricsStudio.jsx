@@ -122,6 +122,16 @@ export default function LyricsStudio() {
     return () => window.removeEventListener('keydown', handler);
   }, [topic, mood, style, length, lyrics]);
 
+  // One-time info toast: AI music-gen character limits
+  useEffect(() => {
+    if (sessionStorage.getItem('lyricsCharLimitNoticeSeen')) return;
+    toast.info(
+      '⚠️ Heads up: each AI music model has its own lyrics character limit. Going over the limit will cause music generation to fail downstream — keep verses concise.',
+      { duration: 9000 }
+    );
+    sessionStorage.setItem('lyricsCharLimitNoticeSeen', '1');
+  }, []);
+
   const generate = async () => {
     if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
