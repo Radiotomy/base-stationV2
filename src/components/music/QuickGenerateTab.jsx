@@ -52,6 +52,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [aiParams, setAiParams] = useState(null); // what AI decided
+  const [lastError, setLastError] = useState(null); // persistent failure banner
   const savedRef = useRef(false); // prevent duplicate auto-saves
 
   useEffect(() => {
@@ -218,6 +219,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
 
   const onError = useCallback((msg) => {
     setGenerating(false);
+    setLastError({ type: 'error', message: msg || 'Generation failed' });
     toast.error(msg || 'Generation failed');
   }, []);
 
@@ -268,6 +270,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     setJobId('');
     setAiParams(null);
     setRoutingDecision(null);
+    setLastError(null);
     savedRef.current = false;
 
     try {
@@ -395,7 +398,17 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       }
     } catch (err) {
       setGenerating(false);
-      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      const isCredits = status === 402 || data?.error === 'Insufficient credits';
+      const msg = data?.message || err.message || 'Generation failed';
+      setLastError({
+        type: isCredits ? 'credits' : 'error',
+        message: msg,
+        required: data?.required,
+        balance: data?.balance,
+      });
+      if (!handleCreditError(err)) toast.error(msg);
     }
   };
 
@@ -585,6 +598,35 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
                 {' '}then paste into Advanced tab.
               </p>
             )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Persistent error banner — survives toast dismissal so users always see why generation stopped */}
+      <AnimatePresence>
+        {lastError && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className={`p-4 rounded-xl border flex items-start gap-3 ${lastError.type === 'credits' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+            <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${lastError.type === 'credits' ? 'text-amber-400' : 'text-red-400'}`} />
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-bold mb-0.5 ${lastError.type === 'credits' ? 'text-amber-300' : 'text-red-300'}`}>
+                {lastError.type === 'credits' ? 'Insufficient Credits' : 'Generation Failed'}
+              </p>
+              <p className="text-xs text-muted-foreground">{lastError.message}</p>
+              {lastError.type === 'credits' && (lastError.required != null || lastError.balance != null) && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Required: <span className="font-semibold text-foreground">{lastError.required ?? '?'}</span> · Balance: <span className="font-semibold text-foreground">{lastError.balance ?? '?'}</span>
+                </p>
+              )}
+              <div className="flex gap-2 mt-2">
+                {lastError.type === 'credits' && (
+                  <Link to="/credits">
+                    <Button size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs">Get Credits</Button>
+                  </Link>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setLastError(null)} className="rounded-lg text-xs">Dismiss</Button>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
