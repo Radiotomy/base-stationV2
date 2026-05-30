@@ -16,12 +16,16 @@ export function handleCreditError(err) {
   if (status === 402 || data?.error === 'Insufficient credits') {
     const msg = data?.message || 'You don\'t have enough credits for this generation.';
     toast.error(msg, {
-      description: `Required: ${data?.required ?? '?'} · Balance: ${data?.balance ?? '?'}`,
+      description: `Required: ${data?.required ?? '?'} · Balance: ${data?.balance ?? '?'} · Buy a credit pack or upgrade to a monthly plan for the best value.`,
       action: {
-        label: 'Get Credits',
+        label: 'Buy Credits',
         onClick: () => { window.location.href = '/credits'; },
       },
-      duration: 8000,
+      cancel: {
+        label: 'Upgrade Plan',
+        onClick: () => { window.location.href = '/credits?tab=subscriptions'; },
+      },
+      duration: 10000,
     });
     return true;
   }

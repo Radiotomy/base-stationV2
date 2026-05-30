@@ -614,21 +614,31 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
             <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${lastError.type === 'credits' ? 'text-amber-400' : 'text-red-400'}`} />
             <div className="flex-1 min-w-0">
               <p className={`text-sm font-bold mb-0.5 ${lastError.type === 'credits' ? 'text-amber-300' : 'text-red-300'}`}>
-                {lastError.type === 'credits' ? 'Insufficient Credits' : 'Generation Failed'}
+                {lastError.type === 'credits' ? 'Out of Credits' : 'Generation Failed'}
               </p>
               <p className="text-xs text-muted-foreground">{lastError.message}</p>
               {lastError.type === 'credits' && (lastError.required != null || lastError.balance != null) && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Required: <span className="font-semibold text-foreground">{lastError.required ?? '?'}</span> · Balance: <span className="font-semibold text-foreground">{lastError.balance ?? '?'}</span>
+                  Required: <span className="font-semibold text-foreground">{lastError.required ?? '?'}</span> · Your balance: <span className="font-semibold text-foreground">{lastError.balance ?? '?'}</span>
                 </p>
               )}
-              <div className="flex gap-2 mt-2">
+              {lastError.type === 'credits' && (
+                <p className="text-xs text-amber-200/80 mt-2">
+                  💡 Buy a one-time credit pack or upgrade to a monthly plan for the best per-track value.
+                </p>
+              )}
+              <div className="flex gap-2 mt-2 flex-wrap">
                 {lastError.type === 'credits' && (
-                  <Link to="/credits">
-                    <Button size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs">Get Credits</Button>
-                  </Link>
+                  <>
+                    <Link to="/credits">
+                      <Button size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold">Buy Credits</Button>
+                    </Link>
+                    <Link to="/credits?tab=subscriptions">
+                      <Button size="sm" variant="outline" className="rounded-lg text-xs border-amber-500/50 text-amber-300 hover:bg-amber-500/10">Upgrade Plan</Button>
+                    </Link>
+                  </>
                 )}
-                <Button size="sm" variant="outline" onClick={() => setLastError(null)} className="rounded-lg text-xs">Dismiss</Button>
+                <Button size="sm" variant="ghost" onClick={() => setLastError(null)} className="rounded-lg text-xs">Dismiss</Button>
               </div>
             </div>
           </motion.div>
