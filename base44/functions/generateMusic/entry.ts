@@ -148,12 +148,31 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics, model }
   };
   const wh = getWebhookConfig();
   if (wh) Object.assign(body, wh);
-  const res = await fetch(`${AI_BASE}/producer/create`, {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json();
+
+  // 25s timeout matching Sonic — Producer occasionally hangs which causes gateway 502s
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  let res, data;
+  try {
+    res = await fetch(`${AI_BASE}/producer/create`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    data = await res.json();
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') {
+      const err = new Error('Producer API timed out after 25s. Please try again or use Sonic.');
+      err.providerStatus = 504;
+      err.providerType = 'timeout';
+      throw err;
+    }
+    throw fetchErr;
+  } finally {
+    clearTimeout(timeout);
+  }
+  console.log('Producer create response:', JSON.stringify(data));
   if (!res.ok) {
     // Surface aimusicapi error structure { type, error } per spec
     // Special: HTTP 410 = endpoint_retired, 402 = insufficient_credits, 502 = upstream_error
