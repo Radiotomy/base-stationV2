@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
+import WavDownloadButton from '@/components/music/WavDownloadButton';
 
 const ASSET_ICONS = {
   track:    { icon: Music,    color: 'from-blue-600 to-cyan-700' },
@@ -67,11 +68,13 @@ export default function TrackCard({ asset, onDelete }) {
     ? new Date(asset.created_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : null;
 
-  // WAV url heuristic: if URL has an extension we can swap, try .wav; otherwise same URL (providers vary)
   const mp3Url = asset.file_url;
-  const wavUrl = asset.file_url?.replace(/\.(mp3|m4a|aac|ogg)(\?.*)?$/i, '.wav') !== asset.file_url
-    ? asset.file_url.replace(/\.(mp3|m4a|aac|ogg)(\?.*)?$/i, '.wav')
-    : null;
+  // WAV is provider-specific: Sonic requires on-demand fetch via clip_id;
+  // Producer/Tempolor return a wav_url at generation time. WavDownloadButton handles both.
+  const provider = m.provider;
+  const clipId = m.clip_id;
+  const storedWavUrl = m.wav_url;
+  const canDownloadWav = !!(storedWavUrl || (provider === 'sonic' && clipId));
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -134,7 +137,17 @@ export default function TrackCard({ asset, onDelete }) {
       {isTrack && asset.file_url && (
         <div className="px-4 pb-4 flex gap-2 flex-wrap items-center">
           <DownloadButton url={mp3Url} label="Download MP3" ext="mp3" title={asset.title} />
-          {wavUrl && <DownloadButton url={wavUrl} label="Download WAV" ext="wav" title={asset.title} />}
+          {canDownloadWav && (
+            <WavDownloadButton
+              wavUrl={storedWavUrl}
+              clipId={clipId}
+              provider={provider}
+              title={asset.title}
+              className="flex-1 text-xs h-9"
+              size="sm"
+              variant="outline"
+            />
+          )}
           <OpenInStudioMenu asset={asset} />
         </div>
       )}
