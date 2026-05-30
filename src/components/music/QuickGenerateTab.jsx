@@ -589,13 +589,20 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         )}
       </AnimatePresence>
 
-      {/* Generate Button */}
-      <Button onClick={generate} disabled={isProcessing || !prompt.trim()}
-        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-base py-5 gap-2">
-        <Zap className="w-5 h-5" />
-        {isProcessing ? (jobId ? `AI Composing… ${progress}%` : 'AI Analyzing Prompt…') : '⚡ Quick Generate'}
-        {!isProcessing && <CostBadge cost={(PROVIDER_COSTS[provider] || 5) + 2} />}
-      </Button>
+      {/* Generate Button — wrapped so empty-prompt clicks still show feedback */}
+      <div onClick={() => { if (!prompt.trim() && !isProcessing) toast.error('Enter a description for your track first.'); }}>
+        <Button onClick={generate} disabled={isProcessing || !prompt.trim()}
+          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-base py-5 gap-2">
+          <Zap className="w-5 h-5" />
+          {isProcessing ? (jobId ? `AI Composing… ${progress}%` : 'AI Analyzing Prompt…') : '⚡ Quick Generate'}
+          {!isProcessing && <CostBadge cost={(PROVIDER_COSTS[provider] || 5) + 2} />}
+        </Button>
+      </div>
+      {!prompt.trim() && !isProcessing && (
+        <p className="text-xs text-amber-400/80 -mt-3 flex items-center gap-1.5">
+          <AlertCircle className="w-3 h-3" /> Enter a description or pick an example below to enable Generate.
+        </p>
+      )}
 
       {/* Progress */}
       <AnimatePresence>
