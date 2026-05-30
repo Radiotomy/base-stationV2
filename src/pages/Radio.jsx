@@ -147,19 +147,39 @@ export default function Radio() {
         </motion.div>
 
         <div className="relative max-w-5xl mx-auto">
-          <div className="flex items-center gap-2 mb-4">
-            <RadioIcon className="w-4 h-4 text-white/60" />
-            <span className="text-white/60 text-xs font-medium tracking-widest uppercase">Base Station Radio</span>
-            <span className="flex items-center gap-1 text-xs text-emerald-400">
-              <Wifi className="w-3 h-3" /> Live
-            </span>
-          </div>
+          {/* Broadcast Console Hero — chrome nameplate */}
+          <div className="mb-5 rounded-2xl overflow-hidden border border-white/10 bg-[#08080F] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_8px_32px_-8px_rgba(0,0,0,0.8)]">
+            {/* ON AIR strip */}
+            <div className="relative px-4 sm:px-6 py-2 flex items-center justify-center gap-3 sm:gap-4 border-b border-white/10 bg-gradient-to-b from-white/[0.04] to-transparent">
+              <span className="text-white/70 text-[10px] sm:text-xs font-mono tracking-[0.3em] uppercase">On Air</span>
+              <span className="relative flex items-center justify-center">
+                <span className="absolute w-2.5 h-2.5 rounded-full bg-[#FF4D6D] animate-ping opacity-60" />
+                <span className="relative w-2 h-2 rounded-full bg-[#FF4D6D] shadow-[0_0_8px_#FF4D6D]" />
+              </span>
+              <span className="text-white/70 text-[10px] sm:text-xs font-mono tracking-[0.3em] uppercase whitespace-nowrap">Base Station Radio</span>
+              <Wifi className="w-3 h-3 text-emerald-400 hidden sm:inline" />
+            </div>
 
-          <motion.h1 key={activeChannel.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="font-display text-4xl md:text-6xl lg:text-7xl text-white mb-2 tracking-tight">
-            {activeChannel.emoji} {activeChannel.name}
-          </motion.h1>
-          <p className="text-white/50 text-sm md:text-base mb-5">{activeChannel.description}</p>
+            {/* Channel nameplate */}
+            <motion.div
+              key={activeChannel.name}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative px-4 sm:px-6 pt-5 pb-5 sm:pt-6 sm:pb-6"
+            >
+              <div className="flex items-center justify-center gap-3 sm:gap-5">
+                <span className="text-3xl sm:text-5xl md:text-6xl leading-none flex-shrink-0">{activeChannel.emoji}</span>
+                <h1 className="font-display text-4xl sm:text-6xl md:text-7xl lg:text-8xl text-iridescent tracking-tight leading-none">
+                  {activeChannel.name}
+                </h1>
+              </div>
+              {/* Chrome reflection underline */}
+              <div className="mt-3 sm:mt-4 mx-auto h-px max-w-[80%] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              <p className="mt-3 text-center text-white/55 text-xs sm:text-sm md:text-base">
+                {activeChannel.description}
+              </p>
+            </motion.div>
+          </div>
 
           {/* Now Playing info */}
           <AnimatePresence mode="wait">
