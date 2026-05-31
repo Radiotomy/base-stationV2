@@ -12,6 +12,7 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import StereoVUMeter from './StereoVUMeter';
 import ScrubWaveformPlayer from './ScrubWaveformPlayer';
 import AssetPicker from '@/components/studio/AssetPicker';
+import useMasteringChain from '@/hooks/useMasteringChain';
 
 // Character sliders — these match the visual sliders in the user's reference
 const CHARACTER_SLIDERS = [
@@ -62,125 +63,47 @@ export default function AIMasteringPanel() {
   const [balance, setBalance] = useState(0);       // -100 (full L) → +100 (full R)
   const [separation, setSeparation] = useState(0); // -100 (mono) → +100 (extra wide)
 
-  // ── Web Audio graph refs ──
+  // ── Web Audio graph ──
   const ctxRef = useRef(null);
-  const sourceRef = useRef(null);
-  const splitterRef = useRef(null);
-  const lGainRef = useRef(null);
-  const rGainRef = useRef(null);
-  const mergerRef = useRef(null);
-  // Mid/Side processing for separation: matrix mid = (L+R)/2, side = (L-R)/2
-  const midGainRef = useRef(null);
-  const sideGainRef = useRef(null);
-  const masterGainRef = useRef(null);
-  const lAnalyserRef = useRef(null);
-  const rAnalyserRef = useRef(null);
-  const [, forceRender] = useState(0);
+  const [graphReady, setGraphReady] = useState(false);
+  const chain = useMasteringChain();
 
   // Create shared AudioContext once
   useEffect(() => {
     if (!ctxRef.current) {
       ctxRef.current = new (window.AudioContext || window.webkitAudioContext)();
     }
-    return () => {
-      // Don't close ctx — it's shared with the scrubber's MediaElementSource
-    };
   }, []);
 
-  // Build the audio graph when the scrubber gives us the source node
+  // Build the mastering chain when the scrubber gives us the source node
   const handleAudioReady = useCallback((audioEl, source) => {
     const ctx = ctxRef.current;
     if (!ctx) return;
+    chain.attach(source, ctx);
+    setGraphReady(true);
+    // Force initial application of current state values
+    chain.setBalance(balance);
+    chain.setSeparation(separation);
+    Object.entries(eq).forEach(([k, v]) => chain.setEQBand(k, v));
+    Object.entries(character).forEach(([k, v]) => chain.setCharacter(k, v));
+    chain.setLufsTarget(lufsTarget);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chain]);
 
-    // Clean up any prior graph
-    try { sourceRef.current?.disconnect(); } catch {}
-    try { splitterRef.current?.disconnect(); } catch {}
-    try { lGainRef.current?.disconnect(); } catch {}
-    try { rGainRef.current?.disconnect(); } catch {}
-    try { mergerRef.current?.disconnect(); } catch {}
-    try { midGainRef.current?.disconnect(); } catch {}
-    try { sideGainRef.current?.disconnect(); } catch {}
-    try { masterGainRef.current?.disconnect(); } catch {}
-    try { lAnalyserRef.current?.disconnect(); } catch {}
-    try { rAnalyserRef.current?.disconnect(); } catch {}
-
-    sourceRef.current = source;
-
-    // Stereo balance: split L/R, apply per-channel gain, merge back
-    const splitter = ctx.createChannelSplitter(2);
-    const lGain = ctx.createGain();
-    const rGain = ctx.createGain();
-    const merger = ctx.createChannelMerger(2);
-
-    source.connect(splitter);
-    splitter.connect(lGain, 0);
-    splitter.connect(rGain, 1);
-    lGain.connect(merger, 0, 0);
-    rGain.connect(merger, 0, 1);
-
-    // Master output stage
-    const master = ctx.createGain();
-    master.gain.value = 1;
-    merger.connect(master);
-
-    // Per-channel analysers AFTER all processing for accurate metering
-    const splitterPost = ctx.createChannelSplitter(2);
-    const lAna = ctx.createAnalyser();
-    const rAna = ctx.createAnalyser();
-    lAna.fftSize = 1024;
-    rAna.fftSize = 1024;
-    lAna.smoothingTimeConstant = 0.3;
-    rAna.smoothingTimeConstant = 0.3;
-
-    master.connect(splitterPost);
-    splitterPost.connect(lAna, 0);
-    splitterPost.connect(rAna, 1);
-    master.connect(ctx.destination);
-
-    splitterRef.current = splitter;
-    lGainRef.current = lGain;
-    rGainRef.current = rGain;
-    mergerRef.current = merger;
-    masterGainRef.current = master;
-    lAnalyserRef.current = lAna;
-    rAnalyserRef.current = rAna;
-
-    forceRender(n => n + 1);
-  }, []);
-
-  // Apply balance + separation in real-time using simple gain matrix.
-  // Balance: equal-power pan between L and R.
-  // Separation: -100 collapses L=R to mono via cross-mixing; +100 keeps full stereo.
+  // Real-time bindings: every slider change flows to the audio graph
+  useEffect(() => { if (graphReady) chain.setBalance(balance); }, [balance, graphReady, chain]);
+  useEffect(() => { if (graphReady) chain.setSeparation(separation); }, [separation, graphReady, chain]);
   useEffect(() => {
-    const lGain = lGainRef.current;
-    const rGain = rGainRef.current;
-    if (!lGain || !rGain) return;
-
-    // Balance: -1..1
-    const b = balance / 100;
-    // Equal-power pan curve
-    const lPan = Math.cos((b + 1) * Math.PI / 4);
-    const rPan = Math.sin((b + 1) * Math.PI / 4);
-    // Normalize so center (b=0) = 1.0 on each side
-    const norm = 1 / Math.cos(Math.PI / 4);
-
-    lGain.gain.setTargetAtTime(lPan * norm, ctxRef.current.currentTime, 0.02);
-    rGain.gain.setTargetAtTime(rPan * norm, ctxRef.current.currentTime, 0.02);
-  }, [balance]);
-
-  // Note: True mid/side separation requires more nodes. For now we apply
-  // a simple approximation: at -100, force both channels to (L+R)/2 (mono).
-  // We rebuild routing when separation changes significantly.
+    if (!graphReady) return;
+    Object.entries(eq).forEach(([k, v]) => chain.setEQBand(k, v));
+  }, [eq, graphReady, chain]);
   useEffect(() => {
-    // For separation, we adjust an additional cross-feed.
-    // separation = +100 → no cross-feed (full stereo)
-    // separation = 0    → no cross-feed
-    // separation = -100 → 50% cross-feed each way (mono)
-    // This is implemented by setting lGain/rGain to incorporate a portion of the
-    // opposite channel via re-routing. For simplicity in this UI iteration we
-    // store the value; full mid/side widening would require an extra node graph.
-    // (Real-time width is signalled in the UI; offline render captures full profile.)
-  }, [separation]);
+    if (!graphReady) return;
+    Object.entries(character).forEach(([k, v]) => chain.setCharacter(k, v));
+  }, [character, graphReady, chain]);
+  useEffect(() => { if (graphReady) chain.setLufsTarget(lufsTarget); }, [lufsTarget, graphReady, chain]);
+
+  const analysers = graphReady ? chain.getAnalysers() : { left: null, right: null };
 
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -424,8 +347,8 @@ export default function AIMasteringPanel() {
 
         {/* Stereo VU Meter — always visible, lights up during playback */}
         <StereoVUMeter
-          leftAnalyser={lAnalyserRef.current}
-          rightAnalyser={rAnalyserRef.current}
+          leftAnalyser={analysers.left}
+          rightAnalyser={analysers.right}
           active={isPlaying}
         />
 
