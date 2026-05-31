@@ -42,7 +42,7 @@ export default function Radio() {
   const [queueIndex, setQueueIndex] = useState(0);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState([75]);
+  const [volume, setVolume] = useState([45]);
   const [muted, setMuted] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
   const [showEQ, setShowEQ] = useState(false); // mobile-only collapse; desktop always shows
@@ -117,7 +117,10 @@ export default function Radio() {
       setQueue(q);
       setLoadingQueue(false);
       if (q.length > 0) {
-        playTrack(q[0]);
+        // Pick a random starting track so each visit mixes Audius + community uploads
+        const startIdx = Math.floor(Math.random() * q.length);
+        setQueueIndex(startIdx);
+        playTrack(q[startIdx]);
       } else {
         toast.info("No tracks available for this channel yet — try another channel or submit a track.");
       }
