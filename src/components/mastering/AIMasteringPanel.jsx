@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Sparkles, Upload, Loader2, Save, Wand2, Volume2, Music, RotateCcw, Headphones } from 'lucide-react';
+import { Sparkles, Upload, Loader2, Save, Wand2, Volume2, Music, RotateCcw, Headphones, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import StereoVUMeter from './StereoVUMeter';
 import ScrubWaveformPlayer from './ScrubWaveformPlayer';
+import AssetPicker from '@/components/studio/AssetPicker';
 
 // Character sliders — these match the visual sliders in the user's reference
 const CHARACTER_SLIDERS = [
@@ -52,6 +54,9 @@ export default function AIMasteringPanel() {
   const [mastering, setMastering] = useState(false);
   const [result, setResult] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [librarySelection, setLibrarySelection] = useState([]);
+  const [libraryAssets, setLibraryAssets] = useState([]);
 
   // Stereo controls
   const [balance, setBalance] = useState(0);       // -100 (full L) → +100 (full R)
@@ -192,6 +197,35 @@ export default function AIMasteringPanel() {
     setUploading(false);
   };
 
+  const openLibrary = async () => {
+    setLibraryOpen(true);
+    setLibrarySelection([]);
+    try {
+      const me = await base44.auth.me();
+      const rows = await base44.entities.UserAsset.filter(
+        { user_id: me.id, asset_type: 'track' }, '-created_date', 100
+      );
+      setLibraryAssets(rows);
+    } catch {
+      setLibraryAssets([]);
+    }
+  };
+
+  const confirmLibrarySelection = () => {
+    const id = librarySelection[0];
+    const asset = libraryAssets.find(a => a.id === id);
+    if (!asset?.file_url) {
+      toast.error('Selected track is missing a file URL');
+      return;
+    }
+    setAudioUrl(asset.file_url);
+    setUploadedFile({ name: asset.title || 'Library Track' });
+    setTitle(asset.title || 'Library Track');
+    setResult(null);
+    setLibraryOpen(false);
+    toast.success('Track loaded from library!');
+  };
+
   const applyPreset = (preset) => {
     setStyle(preset.id);
     setCharacter(preset.character);
@@ -246,10 +280,50 @@ export default function AIMasteringPanel() {
               <p className="text-xs text-muted-foreground">{uploadedFile ? uploadedFile.name : 'Click to upload (MP3, WAV, FLAC)'}</p>
             </div>
           </label>
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <Button
+            type="button"
+            onClick={openLibrary}
+            variant="outline"
+            className="w-full rounded-xl text-xs gap-2"
+            disabled={uploading}
+          >
+            <Library className="w-4 h-4" /> Pick from Library
+          </Button>
           {audioUrl && (
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Track title" className="rounded-xl text-sm" />
           )}
         </div>
+
+        <Dialog open={libraryOpen} onOpenChange={setLibraryOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Library className="w-4 h-4 text-amber-400" /> Choose a Track
+              </DialogTitle>
+            </DialogHeader>
+            <AssetPicker
+              assetType="track"
+              multi={false}
+              selected={librarySelection}
+              onChange={setLibrarySelection}
+            />
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setLibraryOpen(false)}>Cancel</Button>
+              <Button
+                onClick={confirmLibrarySelection}
+                disabled={librarySelection.length === 0}
+                className="bg-gradient-to-r from-amber-600 to-orange-600"
+              >
+                Load Track
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
           <h3 className="text-sm font-black">Style Presets</h3>
