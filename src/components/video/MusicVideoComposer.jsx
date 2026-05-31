@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Trash2, Music, Upload, Zap, Loader2, Save, Download,
-  CheckCircle, Film, RotateCcw, Library, Wand2, X,
+  CheckCircle, Film, RotateCcw, Library, Wand2, X, Sparkles, Activity,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import LibraryTrackPickerModal from './LibraryTrackPickerModal';
 import SceneTransitionPicker from './SceneTransitionPicker';
+import SceneTemplatesPicker from './SceneTemplatesPicker';
+import { analyzeAudioOnsets, onsetsToSceneDurations } from '@/utils/audioOnsetDetection';
 
 const QUERY_SUGGESTIONS = [
   'city traffic timelapse', 'ocean waves sunset', 'neon lights night',
@@ -41,6 +43,8 @@ export default function MusicVideoComposer() {
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [analyzingBeats, setAnalyzingBeats] = useState(false);
   const audioProbeRef = useRef(null);
 
   // Probe audio duration via a hidden <audio> element. Resolves once metadata loads.
@@ -74,6 +78,39 @@ export default function MusicVideoComposer() {
       durationSeconds: per + (i === prev.length - 1 ? remainder : 0),
     })));
     toast.success(`Scenes fitted to ${audioDuration}s audio`);
+  };
+
+  // Audio-reactive: analyze track for beat onsets, then resize scenes to cut on beat.
+  // Adds/removes scenes as needed to match the number of detected onsets + 1 region.
+  const fitScenesToBeats = async () => {
+    if (!audioUrl) {
+      toast.error('Upload or pick a track first');
+      return;
+    }
+    setAnalyzingBeats(true);
+    try {
+      const { duration, onsets } = await analyzeAudioOnsets(audioUrl, {
+        maxOnsets: Math.max(2, Math.min(11, scenes.length + 4)),
+      });
+      const durations = onsetsToSceneDurations(duration, onsets);
+      setScenes((prev) => {
+        const next = durations.map((d, i) => ({
+          ...(prev[i] || newScene(QUERY_SUGGESTIONS[i % QUERY_SUGGESTIONS.length])),
+          durationSeconds: d,
+        }));
+        return next;
+      });
+      toast.success(`Cut on beat — ${durations.length} scenes, ${onsets.length} onsets detected`);
+    } catch (err) {
+      toast.error(`Beat analysis failed: ${err.message}`);
+    }
+    setAnalyzingBeats(false);
+  };
+
+  // Replace scenes from a template's prompt list
+  const applyTemplate = (prompts) => {
+    setScenes(prompts.map((q) => newScene(q)));
+    toast.success(`Loaded ${prompts.length}-scene template`);
   };
 
   const dims = aspectRatio === '9:16'
@@ -200,15 +237,28 @@ export default function MusicVideoComposer() {
             </div>
             <audio controls src={audioUrl} className="w-full" />
             {audioDuration > 0 && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={autoFitScenesToAudio}
-                className="w-full gap-1.5 rounded-lg text-xs"
-              >
-                <Wand2 className="w-3.5 h-3.5" /> Auto-fit scenes to audio ({audioDuration}s ÷ {scenes.length})
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={autoFitScenesToAudio}
+                  className="gap-1.5 rounded-lg text-xs"
+                >
+                  <Wand2 className="w-3.5 h-3.5" /> Auto-fit ({audioDuration}s)
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={fitScenesToBeats}
+                  disabled={analyzingBeats}
+                  className="gap-1.5 rounded-lg text-xs"
+                >
+                  {analyzingBeats ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Activity className="w-3.5 h-3.5" />}
+                  Cut on beat
+                </Button>
+              </div>
             )}
           </div>
         ) : (
@@ -266,7 +316,16 @@ export default function MusicVideoComposer() {
             <Film className="w-3.5 h-3.5" /> Scenes ({scenes.length})
             <InfoTip text="Each scene fetches a Pexels stock clip matching your query. Order them like a storyboard. Total length should roughly match your audio." />
           </p>
-          <Badge variant="outline" className="text-xs">Total: {totalDuration}s</Badge>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTemplatesOpen(true)}
+              className="text-xs px-2 py-1 rounded-md bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-bold flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3" /> Templates
+            </button>
+            <Badge variant="outline" className="text-xs">Total: {totalDuration}s</Badge>
+          </div>
         </div>
 
         {/* Storyboard timeline strip */}
@@ -403,6 +462,12 @@ export default function MusicVideoComposer() {
         open={libraryOpen}
         onClose={() => setLibraryOpen(false)}
         onSelect={({ file_url, title }) => setAudioFromSource(file_url, title)}
+      />
+
+      <SceneTemplatesPicker
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        onPick={applyTemplate}
       />
 
       {/* Result */}
