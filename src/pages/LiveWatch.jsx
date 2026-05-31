@@ -228,6 +228,13 @@ export default function LiveWatch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Test 3.5 — if creator disables Portals mid-session, auto-revert fan to Standard
+  useEffect(() => {
+    if (!portalsAvailable && fanVisualPreference === 'portals') {
+      setFanVisualPreference('standard');
+    }
+  }, [portalsAvailable, fanVisualPreference]);
+
   // If fan picks 3D but the Portals iframe fails to load within 8s, fall back.
   useEffect(() => {
     if (fanVisualPreference !== 'portals' || !portalsAvailable) return;

@@ -69,6 +69,7 @@ import FanClub from './pages/FanClub';
 import CreatorStore from './pages/CreatorStore';
 import SmokeTests from './pages/dev/SmokeTests';
 import ErrorLogViewer from './pages/dev/ErrorLogViewer';
+import LiveRegression from './pages/dev/LiveRegression';
 import MobileLayout from './components/layout/MobileLayout';
 
 const AuthenticatedApp = () => {
@@ -146,6 +147,7 @@ const AuthenticatedApp = () => {
           <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
           <Route path="/dev/smoke-tests" element={<SmokeTests />} />
           <Route path="/dev/error-log" element={<ErrorLogViewer />} />
+          <Route path="/dev/live-regression" element={<LiveRegression />} />
         </Route>
         <Route path="/admin" element={<AdminDashboard />}>
           <Route index element={<AdminOverview />} />
