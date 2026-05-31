@@ -16,6 +16,7 @@ import LibraryTrackPickerModal from './LibraryTrackPickerModal';
 import SceneTransitionPicker from './SceneTransitionPicker';
 import SceneTemplatesPicker from './SceneTemplatesPicker';
 import ScenePreviewThumb from './ScenePreviewThumb';
+import VibePromptBar from './VibePromptBar';
 import { analyzeAudioOnsets, onsetsToSceneDurations } from '@/utils/audioOnsetDetection';
 
 const QUERY_SUGGESTIONS = [
@@ -46,7 +47,7 @@ export default function MusicVideoComposer() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [analyzingBeats, setAnalyzingBeats] = useState(false);
-  const [previewCache, setPreviewCache] = useState({}); // query → thumbnail_url | null
+  const [previewCache, setPreviewCache] = useState({}); // query → { thumbnail_url, photographer, photographer_url, pexels_url } | null
   const [loadingPreviews, setLoadingPreviews] = useState({}); // query → bool
   const audioProbeRef = useRef(null);
 
@@ -65,12 +66,13 @@ export default function MusicVideoComposer() {
         return next;
       });
 
+      const orientation = aspectRatio === '9:16' ? 'portrait' : aspectRatio === '1:1' ? 'square' : 'landscape';
       try {
-        const res = await base44.functions.invoke('searchPexelsPreview', { queries: uniqueQueries });
+        const res = await base44.functions.invoke('searchPexelsPreview', { queries: uniqueQueries, orientation });
         const previews = res.data?.previews || [];
         setPreviewCache((prev) => {
           const next = { ...prev };
-          previews.forEach(p => { next[p.query] = p.thumbnail_url; });
+          previews.forEach(p => { next[p.query] = p; });
           return next;
         });
       } catch { /* silent — fall back to placeholder icon */ }
@@ -82,7 +84,12 @@ export default function MusicVideoComposer() {
       });
     }, 600);
     return () => clearTimeout(timer);
-  }, [scenes.map(s => s.query).join('|')]);
+  }, [scenes.map(s => s.query).join('|'), aspectRatio]);
+
+  // When aspect ratio changes, clear cache so we re-fetch with new orientation
+  useEffect(() => {
+    setPreviewCache({});
+  }, [aspectRatio]);
 
   // Probe audio duration via a hidden <audio> element. Resolves once metadata loads.
   const probeAudioDuration = (url) => new Promise((resolve) => {
@@ -148,6 +155,17 @@ export default function MusicVideoComposer() {
   const applyTemplate = (prompts) => {
     setScenes(prompts.map((q) => newScene(q)));
     toast.success(`Loaded ${prompts.length}-scene template`);
+  };
+
+  // Replace scenes from an AI-generated storyboard ({ query, durationSeconds, transitionOut }[])
+  const applyStoryboard = (storyboard) => {
+    setScenes(storyboard.map((s) => ({
+      id: crypto.randomUUID(),
+      kind: 'broll',
+      query: s.query,
+      durationSeconds: s.durationSeconds,
+      transitionOut: s.transitionOut === 'cut' ? null : s.transitionOut,
+    })));
   };
 
   const dims = aspectRatio === '9:16'
@@ -252,8 +270,23 @@ export default function MusicVideoComposer() {
     setSaving(false);
   };
 
+  // Photographers credited in the storyboard for Pexels attribution
+  const creditedPhotographers = [...new Map(
+    scenes
+      .map(s => previewCache[s.query?.trim()])
+      .filter(p => p?.photographer)
+      .map(p => [p.photographer, p])
+  ).values()];
+
   return (
     <div className="space-y-5">
+      {/* AI storyboard prompt — top of the composer */}
+      <VibePromptBar
+        audioDuration={audioDuration}
+        aspectRatio={aspectRatio}
+        onStoryboard={applyStoryboard}
+      />
+
       {/* Audio track upload */}
       <div className="p-4 rounded-xl bg-card border border-border space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
@@ -407,7 +440,7 @@ export default function MusicVideoComposer() {
                 </div>
                 <span className="text-xs font-bold text-muted-foreground w-6">#{idx + 1}</span>
                 <ScenePreviewThumb
-                  url={previewCache[scene.query?.trim()]}
+                  url={previewCache[scene.query?.trim()]?.thumbnail_url}
                   loading={!!loadingPreviews[scene.query?.trim()]}
                 />
                 <Input
@@ -510,6 +543,26 @@ export default function MusicVideoComposer() {
         onClose={() => setTemplatesOpen(false)}
         onPick={applyTemplate}
       />
+
+      {/* Pexels attribution (required by their TOS) */}
+      {creditedPhotographers.length > 0 && (
+        <div className="text-[10px] text-muted-foreground text-center leading-relaxed">
+          Stock footage from{' '}
+          <a href="https://www.pexels.com" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">Pexels</a>
+          {' · '}
+          {creditedPhotographers.slice(0, 5).map((p, i) => (
+            <span key={p.photographer}>
+              {i > 0 && ', '}
+              {p.photographer_url ? (
+                <a href={p.photographer_url} target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">{p.photographer}</a>
+              ) : (
+                <span>{p.photographer}</span>
+              )}
+            </span>
+          ))}
+          {creditedPhotographers.length > 5 && ` +${creditedPhotographers.length - 5} more`}
+        </div>
+      )}
 
       {/* Result */}
       <AnimatePresence>

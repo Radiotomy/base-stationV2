@@ -12,13 +12,20 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const PEXELS_KEY = Deno.env.get('PEXELS_API_KEY');
 
-async function searchOne(query) {
-  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=1&orientation=landscape`;
+async function searchOne(query, orientation) {
+  const orient = ['landscape', 'portrait', 'square'].includes(orientation) ? orientation : 'landscape';
+  const url = `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=1&orientation=${orient}`;
   const res = await fetch(url, { headers: { Authorization: PEXELS_KEY } });
   if (!res.ok) return null;
   const data = await res.json();
   const video = data.videos?.[0];
-  return video?.image || null; // Pexels exposes a still preview frame as `image`
+  if (!video) return null;
+  return {
+    image: video.image,
+    photographer: video.user?.name || null,
+    photographer_url: video.user?.url || null,
+    pexels_url: video.url || null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -28,17 +35,23 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
     if (!PEXELS_KEY) return Response.json({ error: 'PEXELS_API_KEY not configured' }, { status: 500 });
 
-    const { queries } = await req.json();
+    const { queries, orientation } = await req.json();
     if (!Array.isArray(queries)) {
       return Response.json({ error: 'queries[] required' }, { status: 400 });
     }
     const limited = queries.slice(0, 12);
 
     const results = await Promise.all(
-      limited.map(async (q) => ({
-        query: q,
-        thumbnail_url: q?.trim() ? await searchOne(q) : null,
-      }))
+      limited.map(async (q) => {
+        const hit = q?.trim() ? await searchOne(q, orientation) : null;
+        return {
+          query: q,
+          thumbnail_url: hit?.image || null,
+          photographer: hit?.photographer || null,
+          photographer_url: hit?.photographer_url || null,
+          pexels_url: hit?.pexels_url || null,
+        };
+      })
     );
 
     return Response.json({ previews: results });
