@@ -37,7 +37,7 @@ export default function MusicStudio() {
       <div className="relative overflow-hidden pt-10 pb-10 px-6 bg-gradient-to-br from-blue-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-2 tracking-tight">🎵 Music Studio</h1>
-          <p className="text-white/60 text-lg">AI tracks via Nuro, Sonic, Tempolor or Producer.</p>
+          <p className="text-white/60 text-lg">Generate studio-quality tracks from a single prompt.</p>
           {hasPrefill && (
             <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold">
               <RotateCcw className="w-3 h-3" /> Re-generating from history — settings pre-filled
