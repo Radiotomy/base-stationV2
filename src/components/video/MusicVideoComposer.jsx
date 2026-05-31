@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,6 +15,7 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import LibraryTrackPickerModal from './LibraryTrackPickerModal';
 import SceneTransitionPicker from './SceneTransitionPicker';
 import SceneTemplatesPicker from './SceneTemplatesPicker';
+import ScenePreviewThumb from './ScenePreviewThumb';
 import { analyzeAudioOnsets, onsetsToSceneDurations } from '@/utils/audioOnsetDetection';
 
 const QUERY_SUGGESTIONS = [
@@ -45,7 +46,43 @@ export default function MusicVideoComposer() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
   const [analyzingBeats, setAnalyzingBeats] = useState(false);
+  const [previewCache, setPreviewCache] = useState({}); // query → thumbnail_url | null
+  const [loadingPreviews, setLoadingPreviews] = useState({}); // query → bool
   const audioProbeRef = useRef(null);
+
+  // Debounced Pexels thumbnail prefetch — looks up any scene query we haven't
+  // resolved yet whenever the scene list stabilizes for 600ms.
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const uniqueQueries = [...new Set(
+        scenes.map(s => s.query?.trim()).filter(q => q && !(q in previewCache))
+      )];
+      if (uniqueQueries.length === 0) return;
+
+      setLoadingPreviews((prev) => {
+        const next = { ...prev };
+        uniqueQueries.forEach(q => { next[q] = true; });
+        return next;
+      });
+
+      try {
+        const res = await base44.functions.invoke('searchPexelsPreview', { queries: uniqueQueries });
+        const previews = res.data?.previews || [];
+        setPreviewCache((prev) => {
+          const next = { ...prev };
+          previews.forEach(p => { next[p.query] = p.thumbnail_url; });
+          return next;
+        });
+      } catch { /* silent — fall back to placeholder icon */ }
+
+      setLoadingPreviews((prev) => {
+        const next = { ...prev };
+        uniqueQueries.forEach(q => { delete next[q]; });
+        return next;
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [scenes.map(s => s.query).join('|')]);
 
   // Probe audio duration via a hidden <audio> element. Resolves once metadata loads.
   const probeAudioDuration = (url) => new Promise((resolve) => {
@@ -369,6 +406,10 @@ export default function MusicVideoComposer() {
                   >▼</button>
                 </div>
                 <span className="text-xs font-bold text-muted-foreground w-6">#{idx + 1}</span>
+                <ScenePreviewThumb
+                  url={previewCache[scene.query?.trim()]}
+                  loading={!!loadingPreviews[scene.query?.trim()]}
+                />
                 <Input
                   value={scene.query}
                   onChange={(e) => updateScene(scene.id, { query: e.target.value })}
