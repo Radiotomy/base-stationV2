@@ -211,19 +211,32 @@ export default function AIMasteringPanel() {
     }
   };
 
-  const confirmLibrarySelection = () => {
+  const confirmLibrarySelection = async () => {
     const id = librarySelection[0];
     const asset = libraryAssets.find(a => a.id === id);
     if (!asset?.file_url) {
       toast.error('Selected track is missing a file URL');
       return;
     }
-    setAudioUrl(asset.file_url);
-    setUploadedFile({ name: asset.title || 'Library Track' });
-    setTitle(asset.title || 'Library Track');
-    setResult(null);
     setLibraryOpen(false);
-    toast.success('Track loaded from library!');
+    setUploading(true);
+    try {
+      // Proxy external CDN URLs through Base44 storage so Web Audio + waveform
+      // analysis work (CORS headers required for fetch + MediaElementSource).
+      const res = await base44.functions.invoke('proxyAudioAsset', {
+        source_url: asset.file_url,
+        filename: (asset.title || 'library_track') + '.mp3',
+      });
+      const url = res?.data?.file_url || asset.file_url;
+      setAudioUrl(url);
+      setUploadedFile({ name: asset.title || 'Library Track' });
+      setTitle(asset.title || 'Library Track');
+      setResult(null);
+      toast.success('Track loaded from library!');
+    } catch (err) {
+      toast.error('Failed to load library track: ' + (err?.message || 'unknown'));
+    }
+    setUploading(false);
   };
 
   const applyPreset = (preset) => {
