@@ -396,6 +396,7 @@ export default function AIMasteringPanel() {
       <div className="lg:col-span-2 space-y-4">
         {playbackUrl ? (
           <ScrubWaveformPlayer
+            key={playbackUrl}
             audioUrl={playbackUrl}
             audioContext={ctxRef.current}
             onAudioReady={handleAudioReady}

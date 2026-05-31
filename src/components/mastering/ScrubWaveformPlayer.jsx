@@ -31,6 +31,10 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
   useEffect(() => {
     if (!audioUrl || !audioContext) return;
     const audio = new Audio();
+    // crossOrigin enables Web Audio analysis on CORS-enabled hosts. If the
+    // host doesn't return CORS headers, the audio element will throw
+    // NotSupportedError. We retry once without crossOrigin so playback still
+    // works (analysers will be silent in that case but the track plays).
     audio.crossOrigin = 'anonymous';
     audio.src = audioUrl;
     audio.preload = 'auto';
@@ -41,12 +45,23 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
     const onPlay = () => { setIsPlaying(true); onPlayingChange?.(true); };
     const onPause = () => { setIsPlaying(false); onPlayingChange?.(false); };
     const onEnd = () => { setIsPlaying(false); onPlayingChange?.(false); };
+    const onError = () => {
+      // Retry without crossOrigin for hosts that don't send CORS headers
+      if (audio.crossOrigin === 'anonymous') {
+        console.warn('Audio CORS failed, retrying without crossOrigin');
+        audio.removeAttribute('crossorigin');
+        audio.crossOrigin = null;
+        audio.src = audioUrl;
+        audio.load();
+      }
+    };
 
     audio.addEventListener('loadedmetadata', onMeta);
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('play', onPlay);
     audio.addEventListener('pause', onPause);
     audio.addEventListener('ended', onEnd);
+    audio.addEventListener('error', onError);
 
     try {
       const source = audioContext.createMediaElementSource(audio);
@@ -63,6 +78,7 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
       audio.removeEventListener('play', onPlay);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnd);
+      audio.removeEventListener('error', onError);
       audio.src = '';
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
