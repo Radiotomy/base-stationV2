@@ -23,6 +23,7 @@ import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropTrigger from '@/components/live/LiveDropTrigger';
 import AudioModeSelector from '@/components/live/AudioModeSelector';
 import LocalVisualizerPreview from '@/components/live/LocalVisualizerPreview';
+import PortalsToggle from '@/components/live/PortalsToggle';
 import { useStreamrAudio } from '@/hooks/useStreamrAudio';
 
 export default function LiveStudio() {
@@ -31,6 +32,7 @@ export default function LiveStudio() {
   const [description, setDescription] = useState('');
   const [sessionId, setSessionId] = useState('');
   const [audioMode, setAudioMode] = useState('sync'); // Phase 5.6
+  const [visualLayer, setVisualLayer] = useState('visualizer'); // canonical: visualizer | portals
   const [isLive, setIsLive] = useState(false);
   const [viewerCount, setViewerCount] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -230,12 +232,7 @@ export default function LiveStudio() {
         }
       }
 
-      // Optional Portal room (non-blocking)
-      base44.functions.invoke('createPortalRoom', {
-        sessionId,
-        title,
-        coverImageUrl: selectedTrack?.thumbnail_url || '',
-      }).catch(() => {});
+      // Portals is now opt-in via PortalsToggle. No auto-create here.
 
       await base44.entities.LiveSession.update(sessionId, {
         status: 'streaming',
@@ -499,6 +496,17 @@ export default function LiveStudio() {
                 disabled={!!sessionId}
                 streamrAvailable={streamrConfigured}
               />
+
+              {/* Visual Layer — optional Portals 3D stage */}
+              {sessionId && (
+                <PortalsToggle
+                  sessionId={sessionId}
+                  title={title}
+                  coverImageUrl={selectedTrack?.thumbnail_url || ''}
+                  value={visualLayer}
+                  onChange={setVisualLayer}
+                />
+              )}
 
               {!sessionId ? (
                 <Button onClick={createSession} className="w-full bg-red-600 hover:bg-red-500 rounded-xl font-bold gap-2">

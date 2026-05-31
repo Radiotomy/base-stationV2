@@ -33,6 +33,15 @@
       "default": "sync",
       "description": "Phase 5.6: How audio reaches fans. 'streamr' = true live audio transport, 'sync' = synchronized shared-track playback (each fan plays the same track_url locally)."
     },
+    "visual_layer": {
+      "type": "string",
+      "enum": [
+        "visualizer",
+        "portals"
+      ],
+      "default": "visualizer",
+      "description": "Canonical visual layer for the session. 'visualizer' = lightweight audio-reactive (default). 'portals' = immersive 3D stage (optional, requires portal_room_id)."
+    },
     "start_time": {
       "type": "string",
       "format": "date-time"
@@ -71,7 +80,7 @@
     },
     "portal_room_id": {
       "type": "string",
-      "description": "The Portal 3D room ID for the fan watch stage"
+      "description": "The Portal 3D room ID for the fan watch stage. Null when visual_layer='visualizer'."
     },
     "portals_room_id": {
       "type": "string",
@@ -135,6 +144,38 @@
       "type": "array",
       "items": {
         "type": "string"
+      }
+    },
+    "visual_layer_analytics": {
+      "type": "object",
+      "description": "Intelligence OS \u2014 visual layer usage counters for this session.",
+      "properties": {
+        "visual_layer_enabled_by_creator": {
+          "type": "boolean",
+          "default": false
+        },
+        "fan_visual_layer_choices": {
+          "type": "object",
+          "properties": {
+            "standard": {
+              "type": "number",
+              "default": 0
+            },
+            "portals": {
+              "type": "number",
+              "default": 0
+            }
+          }
+        },
+        "portals_load_failures": {
+          "type": "number",
+          "default": 0
+        },
+        "total_time_in_3d_ms": {
+          "type": "number",
+          "default": 0,
+          "description": "Sum of all fan-time spent in 3D Mode. Average = total_time_in_3d_ms / fan_visual_layer_choices.portals."
+        }
       }
     },
     "state": {

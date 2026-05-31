@@ -18,6 +18,7 @@ import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropOverlay from '@/components/live/LiveDropOverlay';
 import TipModal from '@/components/tipping/TipModal';
 import SessionEndedOverlay from '@/components/live/SessionEndedOverlay';
+import FanVisualLayerSelector from '@/components/live/FanVisualLayerSelector';
 import { useSyncPlayback } from '@/hooks/useSyncPlayback';
 import { useAudioAnalyzer } from '@/hooks/useAudioAnalyzer';
 import { useStreamrAudio } from '@/hooks/useStreamrAudio';
@@ -45,6 +46,12 @@ export default function LiveWatch() {
   const [nowPlaying, setNowPlaying] = useState(null);
   const [showTipModal, setShowTipModal] = useState(false);
   const hasJoinedRef = useRef(false);
+
+  // Fan-side visual layer preference (per-session, local state only).
+  // Only meaningful when session.visual_layer === 'portals'.
+  const [fanVisualPreference, setFanVisualPreference] = useState('standard');
+  const portalsEntryMsRef = useRef(0); // wall-clock when fan entered 3D
+  const analyticsCountedRef = useRef({ standard: false, portals: false });
 
   // Phase 5.7 — fan-side hidden audio element + sync playback hook
   const fanAudioRef = useRef(null);
@@ -110,6 +117,10 @@ export default function LiveWatch() {
     return unsub;
   }, [roomId]);
 
+  // Canonical visual layer (creator-controlled). Default visualizer.
+  const sessionVisualLayer = session?.visual_layer || 'visualizer';
+  const portalsAvailable = sessionVisualLayer === 'portals' && !!session?.portal_room_id;
+
   // Phase 5.6 — derive audio mode + handle subscriber failure fallback
   const sessionAudioMode = session?.audio_mode || session?.state?.audio_mode || 'sync';
   const [effectiveAudioMode, setEffectiveAudioMode] = useState('sync');
@@ -156,6 +167,84 @@ export default function LiveWatch() {
       try { fanAudioRef.current?.pause?.(); } catch {}
     }
   }, [session?.status]);
+
+  // ----- Visual layer analytics (Intelligence OS) -----
+  // Increment per-mode choice counters once each, and accumulate time-in-3D.
+  const bumpAnalytics = async (patch) => {
+    if (!roomId) return;
+    try {
+      const rows = await base44.entities.LiveSession.filter({ id: roomId });
+      const cur = rows[0]?.visual_layer_analytics || {
+        visual_layer_enabled_by_creator: portalsAvailable,
+        fan_visual_layer_choices: { standard: 0, portals: 0 },
+        portals_load_failures: 0,
+        total_time_in_3d_ms: 0,
+      };
+      const next = {
+        visual_layer_enabled_by_creator: !!cur.visual_layer_enabled_by_creator || portalsAvailable,
+        fan_visual_layer_choices: {
+          standard: (cur.fan_visual_layer_choices?.standard || 0) + (patch.standard || 0),
+          portals: (cur.fan_visual_layer_choices?.portals || 0) + (patch.portals || 0),
+        },
+        portals_load_failures: (cur.portals_load_failures || 0) + (patch.failures || 0),
+        total_time_in_3d_ms: (cur.total_time_in_3d_ms || 0) + (patch.time_in_3d_ms || 0),
+      };
+      await base44.entities.LiveSession.update(roomId, { visual_layer_analytics: next });
+    } catch { /* silent — analytics must never break the watch experience */ }
+  };
+
+  // When fan switches mode, count it (once per mode) and track 3D dwell time.
+  useEffect(() => {
+    if (!portalsAvailable) return;
+    if (fanVisualPreference === 'portals') {
+      portalsEntryMsRef.current = Date.now();
+      if (!analyticsCountedRef.current.portals) {
+        analyticsCountedRef.current.portals = true;
+        bumpAnalytics({ portals: 1 });
+      }
+    } else {
+      // Leaving 3D — flush dwell time
+      if (portalsEntryMsRef.current) {
+        const dwell = Date.now() - portalsEntryMsRef.current;
+        portalsEntryMsRef.current = 0;
+        if (dwell > 0) bumpAnalytics({ time_in_3d_ms: dwell });
+      }
+      if (!analyticsCountedRef.current.standard) {
+        analyticsCountedRef.current.standard = true;
+        bumpAnalytics({ standard: 1 });
+      }
+    }
+  }, [fanVisualPreference, portalsAvailable]);
+
+  // On unmount: flush in-progress 3D dwell time.
+  useEffect(() => {
+    return () => {
+      if (portalsEntryMsRef.current) {
+        const dwell = Date.now() - portalsEntryMsRef.current;
+        portalsEntryMsRef.current = 0;
+        if (dwell > 0) bumpAnalytics({ time_in_3d_ms: dwell });
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If fan picks 3D but the Portals iframe fails to load within 8s, fall back.
+  useEffect(() => {
+    if (fanVisualPreference !== 'portals' || !portalsAvailable) return;
+    let cancelled = false;
+    const t = setTimeout(() => {
+      if (cancelled) return;
+      const frame = document.querySelector('iframe[title="Live Stage"]');
+      // Heuristic: if the frame element exists but never loaded a same-origin
+      // document, leave it. Real failures bubble to the iframe onError below.
+      if (!frame) {
+        toast('3D Mode unavailable. Using Standard Mode.', { icon: '🎧' });
+        setFanVisualPreference('standard');
+        bumpAnalytics({ failures: 1 });
+      }
+    }, 8000);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [fanVisualPreference, portalsAvailable]);
 
   // Join as fan once when session is streaming — Phase 5.7 atomic via backend
   useEffect(() => {
@@ -282,8 +371,18 @@ export default function LiveWatch() {
 
       <div className="pt-14 min-h-screen flex flex-col">
 
-        {/* Phase 4 — Live Visualizer (Phase 5.7: now audio-reactive in sync mode) */}
-        {session.active_visualizer_preset_id && !session.portal_room_id && !session.portals_room_id && (
+        {/* Fan visual layer selector — only shown when creator enabled Portals */}
+        {portalsAvailable && (
+          <div className="px-4 pt-4">
+            <FanVisualLayerSelector
+              value={fanVisualPreference}
+              onChange={setFanVisualPreference}
+            />
+          </div>
+        )}
+
+        {/* Live Visualizer (Standard view) — shown when fan picked standard OR creator didn't enable Portals */}
+        {session.active_visualizer_preset_id && (!portalsAvailable || fanVisualPreference === 'standard') && (
           <div className="px-4 pt-4">
             <LiveVisualizer
               style={session.active_visualizer_preset_id}
@@ -320,8 +419,8 @@ export default function LiveWatch() {
           </div>
         )}
 
-        {/* Portal 3D stage or gradient fallback */}
-        {session.portal_room_id ? (
+        {/* Portal 3D stage — only when creator enabled Portals AND fan chose 3D */}
+        {portalsAvailable && fanVisualPreference === 'portals' ? (
           <div className="h-[55vh] w-full px-4 pt-4">
             <PortalStageViewer roomId={session.portal_room_id} />
           </div>

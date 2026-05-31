@@ -38,6 +38,22 @@ Deno.serve(async (req) => {
     }
     const topFans = Object.values(fanStats).sort((a, b) => b.score - a.score).slice(0, 5);
 
+    // Intelligence OS — visual layer analytics
+    const vla = session.visual_layer_analytics || {};
+    const choices = vla.fan_visual_layer_choices || { standard: 0, portals: 0 };
+    const visualLayerSummary = {
+      visual_layer: session.visual_layer || 'visualizer',
+      visual_layer_enabled_by_creator: !!vla.visual_layer_enabled_by_creator,
+      fan_visual_layer_choices: {
+        standard: choices.standard || 0,
+        portals: choices.portals || 0,
+      },
+      portals_load_failures: vla.portals_load_failures || 0,
+      average_time_in_3d_ms: choices.portals > 0
+        ? Math.round((vla.total_time_in_3d_ms || 0) / choices.portals)
+        : 0,
+    };
+
     return Response.json({
       session_id: sessionId,
       title: session.title,
@@ -56,6 +72,7 @@ Deno.serve(async (req) => {
       event_counts: eventCounts,
       events,
       participants,
+      visual_layer_summary: visualLayerSummary,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
