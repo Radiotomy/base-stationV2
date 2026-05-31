@@ -9,10 +9,75 @@ import { useEffect, useRef, useState } from 'react';
  *  - leftAnalyser, rightAnalyser: AnalyserNode | null
  *  - active: boolean — whether audio is currently flowing
  */
+
+// Industry-standard VU coloration presets. Each scheme returns the segment
+// color based on the segment's position (0..1) plus whether it's the moving
+// peak indicator. Zone thresholds reflect broadcast/mastering norms:
+//   green (safe) → yellow (caution) → red (over).
+const COLOR_SCHEMES = {
+  classic: {
+    label: 'Classic',
+    desc: 'Standard green / yellow / red',
+    seg: (p) => p < 0.7 ? 'bg-emerald-500' : p < 0.87 ? 'bg-yellow-400' : 'bg-red-500',
+    peak: 'bg-red-400',
+  },
+  broadcast: {
+    label: 'Broadcast',
+    desc: 'EBU R128 / BBC bands',
+    seg: (p) => p < 0.6 ? 'bg-lime-500' : p < 0.83 ? 'bg-amber-400' : 'bg-rose-600',
+    peak: 'bg-orange-300',
+  },
+  vintage: {
+    label: 'Vintage',
+    desc: 'Warm amber / cream / red',
+    seg: (p) => p < 0.7 ? 'bg-amber-500' : p < 0.87 ? 'bg-orange-400' : 'bg-red-600',
+    peak: 'bg-yellow-200',
+  },
+  mastering: {
+    label: 'Mastering',
+    desc: 'Cool blue → red (loud-zone aware)',
+    seg: (p) => p < 0.6 ? 'bg-sky-400' : p < 0.8 ? 'bg-cyan-300' : p < 0.92 ? 'bg-amber-400' : 'bg-red-500',
+    peak: 'bg-white',
+  },
+  studio: {
+    label: 'Studio',
+    desc: 'Neutral white / amber / red',
+    seg: (p) => p < 0.7 ? 'bg-zinc-200' : p < 0.87 ? 'bg-amber-400' : 'bg-red-500',
+    peak: 'bg-white',
+  },
+};
+
+// Glow effect presets — softer halo around lit segments.
+const GLOW_EFFECTS = {
+  soft:    { label: 'Soft',    blur: 4,  spread: 0 },
+  bloom:   { label: 'Bloom',   blur: 8,  spread: 1 },
+  neon:    { label: 'Neon',    blur: 12, spread: 2 },
+  none:    { label: 'None',    blur: 0,  spread: 0 },
+};
+
+const STORAGE_KEY = 'vumeter_color_scheme';
+const GLOW_STORAGE_KEY = 'vumeter_glow_effect';
+
 export default function StereoVUMeter({ leftAnalyser, rightAnalyser, active = false }) {
   const [levels, setLevels] = useState({ l: 0, r: 0, lPeak: 0, rPeak: 0, lDb: -Infinity, rDb: -Infinity });
+  const [scheme, setScheme] = useState(() => {
+    if (typeof window === 'undefined') return 'classic';
+    return localStorage.getItem(STORAGE_KEY) || 'classic';
+  });
+  const [glow, setGlow] = useState(() => {
+    if (typeof window === 'undefined') return 'soft';
+    return localStorage.getItem(GLOW_STORAGE_KEY) || 'soft';
+  });
+  const [showPicker, setShowPicker] = useState(false);
   const rafRef = useRef(null);
   const peakHoldRef = useRef({ l: 0, r: 0, lTime: 0, rTime: 0 });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, scheme);
+  }, [scheme]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') localStorage.setItem(GLOW_STORAGE_KEY, glow);
+  }, [glow]);
 
   useEffect(() => {
     if (!leftAnalyser || !rightAnalyser) return;
@@ -61,15 +126,64 @@ export default function StereoVUMeter({ leftAnalyser, rightAnalyser, active = fa
     }
   }, [active]);
 
+  const activeScheme = COLOR_SCHEMES[scheme] || COLOR_SCHEMES.classic;
+  const activeGlow = GLOW_EFFECTS[glow] || GLOW_EFFECTS.soft;
+
   return (
     <div className="bg-black rounded-xl border border-border p-3 space-y-2">
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-bold">
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase tracking-wider font-bold relative">
         <span>VU Meter</span>
-        <span>{active ? '● LIVE' : '○ IDLE'}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPicker(s => !s)}
+            className="text-[10px] normal-case tracking-normal text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded border border-border/40 hover:border-border"
+            title="VU meter color & glow"
+          >
+            {activeScheme.label} · {activeGlow.label}
+          </button>
+          <span>{active ? '● LIVE' : '○ IDLE'}</span>
+        </div>
+
+        {showPicker && (
+          <div className="absolute right-0 top-full mt-1 z-20 bg-zinc-900 border border-border rounded-lg p-2 shadow-xl min-w-[220px] space-y-2">
+            <div>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1 px-1">Color Scheme</p>
+              {Object.entries(COLOR_SCHEMES).map(([key, s]) => (
+                <label key={key} className="flex items-center gap-2 px-1.5 py-1 hover:bg-zinc-800 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={scheme === key}
+                    onChange={() => setScheme(key)}
+                    className="w-3 h-3 accent-amber-500"
+                  />
+                  <div className="flex-1 normal-case tracking-normal">
+                    <p className="text-[11px] font-semibold text-foreground">{s.label}</p>
+                    <p className="text-[9px] text-muted-foreground">{s.desc}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="border-t border-border/50 pt-2">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-1 px-1">Glow Effect</p>
+              {Object.entries(GLOW_EFFECTS).map(([key, g]) => (
+                <label key={key} className="flex items-center gap-2 px-1.5 py-1 hover:bg-zinc-800 rounded cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={glow === key}
+                    onChange={() => setGlow(key)}
+                    className="w-3 h-3 accent-amber-500"
+                  />
+                  <span className="text-[11px] font-semibold text-foreground normal-case tracking-normal">{g.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
       <div className="space-y-2">
-        <MeterRow label="L" level={levels.l} peak={levels.lPeak} db={levels.lDb} />
-        <MeterRow label="R" level={levels.r} peak={levels.rPeak} db={levels.rDb} />
+        <MeterRow label="L" level={levels.l} peak={levels.lPeak} db={levels.lDb} scheme={activeScheme} glow={activeGlow} />
+        <MeterRow label="R" level={levels.r} peak={levels.rPeak} db={levels.rDb} scheme={activeScheme} glow={activeGlow} />
       </div>
       {/* dB scale */}
       <div className="flex justify-between text-[9px] text-muted-foreground/60 font-mono px-6">
@@ -84,7 +198,7 @@ export default function StereoVUMeter({ leftAnalyser, rightAnalyser, active = fa
   );
 }
 
-function MeterRow({ label, level, peak, db }) {
+function MeterRow({ label, level, peak, db, scheme, glow }) {
   // 30 segments for blocky vintage VU look
   const segments = 30;
   const litCount = Math.round(level * segments);
@@ -97,18 +211,15 @@ function MeterRow({ label, level, peak, db }) {
         {Array.from({ length: segments }).map((_, i) => {
           const isLit = i < litCount;
           const isPeak = i === peakIdx - 1 && peakIdx > 0;
-          // Color zones: green 0-70%, yellow 70-87%, red 87%+
+          const p = i / segments;
           let bg = 'bg-zinc-800';
-          if (isLit || isPeak) {
-            if (i / segments < 0.7) bg = 'bg-emerald-500';
-            else if (i / segments < 0.87) bg = 'bg-yellow-400';
-            else bg = 'bg-red-500';
-          }
+          if (isLit) bg = scheme.seg(p);
+          else if (isPeak) bg = scheme.peak;
           return (
             <div
               key={i}
               className={`flex-1 rounded-sm ${bg} transition-colors ${isPeak && !isLit ? 'opacity-90' : ''}`}
-              style={{ boxShadow: isLit ? `0 0 4px currentColor` : 'none' }}
+              style={{ boxShadow: (isLit && glow.blur > 0) ? `0 0 ${glow.blur}px ${glow.spread}px currentColor` : 'none' }}
             />
           );
         })}
