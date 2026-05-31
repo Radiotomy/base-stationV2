@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Shield, Mail, Calendar, Music, Image as ImageIcon, FileText, Film, Zap, Coins, ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
+import AdminCreditEditor from "@/components/admin/AdminCreditEditor";
 
 const ASSET_ICON = {
   track: Music, lyric: FileText, coverart: ImageIcon, video: Film,
@@ -8,6 +10,7 @@ const ASSET_ICON = {
 };
 
 export default function UserDetailPanel({ user, tracks, assets, xp, credit, onClose }) {
+  const [liveCredit, setLiveCredit] = useState(credit);
   const assetGroups = assets.reduce((acc, a) => {
     (acc[a.asset_type] = acc[a.asset_type] || []).push(a);
     return acc;
@@ -56,8 +59,11 @@ export default function UserDetailPanel({ user, tracks, assets, xp, credit, onCl
               <StatBlock icon={Music} label="Tracks" value={tracks.length} color="text-purple-400" />
               <StatBlock icon={ImageIcon} label="Assets" value={assets.length} color="text-blue-400" />
               <StatBlock icon={Zap} label="Total XP" value={xp?.total_xp ?? 0} color="text-yellow-400" sub={`Lvl ${xp?.level ?? 1}`} />
-              <StatBlock icon={Coins} label="Credits" value={credit?.balance ?? 0} color="text-emerald-400" sub={credit?.is_premium ? "Premium" : "Free"} />
+              <StatBlock icon={Coins} label="Credits" value={liveCredit?.balance ?? 0} color="text-emerald-400" sub={liveCredit?.is_premium ? "Premium" : "Free"} />
             </div>
+
+            {/* Admin credit management */}
+            <AdminCreditEditor user={user} credit={liveCredit} onUpdated={setLiveCredit} />
 
             {/* Tracks */}
             <Section title="Submitted Tracks" count={tracks.length}>
