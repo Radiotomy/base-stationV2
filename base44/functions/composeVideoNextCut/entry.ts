@@ -29,23 +29,39 @@ function computeCost(sceneCount, hasAudio) {
   return 5 + sceneCount + (hasAudio ? 3 : 0);
 }
 
-function buildScene(scene, startFrame, fps) {
+const VALID_TRANSITIONS = new Set([
+  'crossfade', 'slide-left', 'slide-right', 'slide-up', 'wipe-left', 'wipe-right',
+]);
+
+function buildScene(scene, startFrame, fps, prevTransition) {
   const dur = Math.max(1, scene.durationSeconds || 4);
   const endFrame = startFrame + Math.round(dur * fps);
-  let layer;
+  const layers = [];
+
+  // Transition layer fades INTO this scene from the previous one
+  if (prevTransition && VALID_TRANSITIONS.has(prevTransition)) {
+    layers.push({
+      type: 'transition',
+      props: {
+        type: prevTransition,
+        durationInFrames: Math.round(0.5 * fps), // 0.5s transitions
+      },
+    });
+  }
+
   switch (scene.kind) {
     case 'broll':
-      layer = { type: 'broll', props: { query: scene.query || 'abstract', source: 'pexels' } };
+      layers.push({ type: 'broll', props: { query: scene.query || 'abstract', source: 'pexels' } });
       break;
     case 'video':
-      layer = { type: 'video', props: { src: scene.src } };
+      layers.push({ type: 'video', props: { src: scene.src } });
       break;
     case 'solid':
     default:
-      layer = { type: 'solid', props: { color: scene.color || '#000000' } };
+      layers.push({ type: 'solid', props: { color: scene.color || '#000000' } });
       break;
   }
-  return { startFrame, endFrame, layers: [layer] };
+  return { startFrame, endFrame, layers };
 }
 
 async function deductCreditsServerSide(base44, user, amount, { provider, job_id, description }) {
@@ -106,10 +122,13 @@ Deno.serve(async (req) => {
     const height = Math.min(body.height || 720, 1080); // Starter tier cap
     const fps = body.fps || 30;
 
-    // Build sequential scene timeline
+    // Build sequential scene timeline. Each scene can declare a
+    // `transitionOut` ('crossfade' | 'slide-*' | 'wipe-*') which is rendered
+    // as the entry transition on the NEXT scene.
     let cursor = 0;
-    const builtScenes = scenes.map((s) => {
-      const built = buildScene(s, cursor, fps);
+    const builtScenes = scenes.map((s, idx) => {
+      const prevTransition = idx > 0 ? scenes[idx - 1].transitionOut : null;
+      const built = buildScene(s, cursor, fps, prevTransition);
       cursor = built.endFrame;
       return built;
     });

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Trash2, GripVertical, Music, Upload, Zap, Loader2, Save, Download,
-  CheckCircle, Film, RotateCcw,
+  Plus, Trash2, Music, Upload, Zap, Loader2, Save, Download,
+  CheckCircle, Film, RotateCcw, Library, Wand2, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import InfoTip from '@/components/common/InfoTip';
 import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
+import LibraryTrackPickerModal from './LibraryTrackPickerModal';
+import SceneTransitionPicker from './SceneTransitionPicker';
 
 const QUERY_SUGGESTIONS = [
   'city traffic timelapse', 'ocean waves sunset', 'neon lights night',
@@ -25,16 +27,54 @@ const newScene = (q = '') => ({
   kind: 'broll',
   query: q,
   durationSeconds: 4,
+  transitionOut: null,
 });
 
 export default function MusicVideoComposer() {
   const [scenes, setScenes] = useState([newScene('city traffic timelapse'), newScene('ocean waves sunset')]);
   const [audioUrl, setAudioUrl] = useState('');
+  const [audioTitle, setAudioTitle] = useState('');
+  const [audioDuration, setAudioDuration] = useState(0); // seconds
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [composing, setComposing] = useState(false);
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const audioProbeRef = useRef(null);
+
+  // Probe audio duration via a hidden <audio> element. Resolves once metadata loads.
+  const probeAudioDuration = (url) => new Promise((resolve) => {
+    const a = document.createElement('audio');
+    a.preload = 'metadata';
+    a.src = url;
+    a.onloadedmetadata = () => resolve(isFinite(a.duration) ? a.duration : 0);
+    a.onerror = () => resolve(0);
+    audioProbeRef.current = a;
+  });
+
+  const setAudioFromSource = async (url, title = '') => {
+    setAudioUrl(url);
+    setAudioTitle(title);
+    const dur = await probeAudioDuration(url);
+    setAudioDuration(Math.round(dur));
+  };
+
+  const clearAudio = () => {
+    setAudioUrl(''); setAudioTitle(''); setAudioDuration(0);
+  };
+
+  // Auto-fit: divide audio duration evenly across all scenes (min 1s per scene)
+  const autoFitScenesToAudio = () => {
+    if (!audioDuration || scenes.length === 0) return;
+    const per = Math.max(1, Math.floor(audioDuration / scenes.length));
+    const remainder = audioDuration - per * scenes.length;
+    setScenes((prev) => prev.map((s, i) => ({
+      ...s,
+      durationSeconds: per + (i === prev.length - 1 ? remainder : 0),
+    })));
+    toast.success(`Scenes fitted to ${audioDuration}s audio`);
+  };
 
   const dims = aspectRatio === '9:16'
     ? { width: 720, height: 1080 }
@@ -70,7 +110,7 @@ export default function MusicVideoComposer() {
     setUploadingAudio(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setAudioUrl(file_url);
+      await setAudioFromSource(file_url, file.name);
       toast.success('Audio uploaded!');
     } catch (err) {
       toast.error(err.message);
@@ -92,6 +132,7 @@ export default function MusicVideoComposer() {
           kind: s.kind,
           query: s.query,
           durationSeconds: s.durationSeconds,
+          transitionOut: s.transitionOut || undefined,
         })),
         audioUrl: audioUrl || undefined,
         ...dims,
@@ -143,26 +184,58 @@ export default function MusicVideoComposer() {
       <div className="p-4 rounded-xl bg-card border border-border space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
           <Music className="w-3.5 h-3.5" /> Audio Track
-          <InfoTip text="Optional. Upload an MP3/WAV to mux behind your scenes. If omitted, the video will be silent." />
+          <InfoTip text="Optional. Upload an MP3/WAV or pick a track from your library. If omitted, the video will be silent." />
         </p>
-        <label className="block cursor-pointer">
-          <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
-          <div className={`border-2 border-dashed rounded-xl p-3 text-center transition-colors ${audioUrl ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-indigo-500'}`}>
-            {uploadingAudio ? (
-              <Loader2 className="w-5 h-5 mx-auto text-indigo-400 animate-spin" />
-            ) : audioUrl ? (
-              <>
-                <audio controls src={audioUrl} className="w-full mb-1" />
-                <p className="text-xs text-emerald-400">Audio ready</p>
-              </>
-            ) : (
-              <>
-                <Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
-                <p className="text-xs text-muted-foreground">Click to upload audio (optional)</p>
-              </>
+
+        {audioUrl ? (
+          <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-3 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs font-bold text-emerald-300 truncate">
+                {audioTitle || 'Audio ready'}
+                {audioDuration > 0 && <span className="text-muted-foreground font-normal ml-1.5">· {audioDuration}s</span>}
+              </p>
+              <button type="button" onClick={clearAudio} className="text-muted-foreground hover:text-rose-400">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <audio controls src={audioUrl} className="w-full" />
+            {audioDuration > 0 && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={autoFitScenesToAudio}
+                className="w-full gap-1.5 rounded-lg text-xs"
+              >
+                <Wand2 className="w-3.5 h-3.5" /> Auto-fit scenes to audio ({audioDuration}s ÷ {scenes.length})
+              </Button>
             )}
           </div>
-        </label>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            <label className="cursor-pointer">
+              <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
+              <div className="border-2 border-dashed rounded-xl p-3 text-center border-border hover:border-indigo-500 transition-colors">
+                {uploadingAudio ? (
+                  <Loader2 className="w-5 h-5 mx-auto text-indigo-400 animate-spin" />
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+                    <p className="text-xs text-muted-foreground">Upload audio</p>
+                  </>
+                )}
+              </div>
+            </label>
+            <button
+              type="button"
+              onClick={() => setLibraryOpen(true)}
+              className="border-2 border-dashed rounded-xl p-3 text-center border-border hover:border-indigo-500 transition-colors"
+            >
+              <Library className="w-5 h-5 mx-auto text-muted-foreground mb-1" />
+              <p className="text-xs text-muted-foreground">From library</p>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Aspect ratio */}
@@ -196,6 +269,22 @@ export default function MusicVideoComposer() {
           <Badge variant="outline" className="text-xs">Total: {totalDuration}s</Badge>
         </div>
 
+        {/* Storyboard timeline strip */}
+        {totalDuration > 0 && (
+          <div className="mb-2 rounded-lg bg-muted/40 border border-border p-1.5 flex gap-0.5 overflow-hidden">
+            {scenes.map((s, i) => (
+              <div
+                key={s.id}
+                className="h-5 rounded-sm bg-gradient-to-br from-indigo-500/60 to-purple-500/60 flex items-center justify-center text-[9px] font-bold text-white"
+                style={{ flexGrow: s.durationSeconds || 1 }}
+                title={`#${i + 1} ${s.query} (${s.durationSeconds}s)`}
+              >
+                {s.durationSeconds}s
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="space-y-2">
           {scenes.map((scene, idx) => (
             <motion.div
@@ -203,46 +292,53 @@ export default function MusicVideoComposer() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="p-3 rounded-xl bg-card border border-border flex items-center gap-2"
+              className="p-3 rounded-xl bg-card border border-border space-y-1"
             >
-              <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => moveScene(scene.id, -1)}
+                    disabled={idx === 0}
+                    className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs"
+                  >▲</button>
+                  <button
+                    type="button"
+                    onClick={() => moveScene(scene.id, 1)}
+                    disabled={idx === scenes.length - 1}
+                    className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs"
+                  >▼</button>
+                </div>
+                <span className="text-xs font-bold text-muted-foreground w-6">#{idx + 1}</span>
+                <Input
+                  value={scene.query}
+                  onChange={(e) => updateScene(scene.id, { query: e.target.value })}
+                  placeholder="e.g. neon city street rain"
+                  className="flex-1 text-xs"
+                />
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={scene.durationSeconds}
+                  onChange={(e) => updateScene(scene.id, { durationSeconds: Number(e.target.value) || 1 })}
+                  className="w-16 text-xs text-center"
+                />
+                <span className="text-xs text-muted-foreground">s</span>
                 <button
                   type="button"
-                  onClick={() => moveScene(scene.id, -1)}
-                  disabled={idx === 0}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs"
-                >▲</button>
-                <button
-                  type="button"
-                  onClick={() => moveScene(scene.id, 1)}
-                  disabled={idx === scenes.length - 1}
-                  className="text-muted-foreground hover:text-foreground disabled:opacity-30 text-xs"
-                >▼</button>
+                  onClick={() => removeScene(scene.id)}
+                  disabled={scenes.length === 1}
+                  className="text-muted-foreground hover:text-rose-400 disabled:opacity-30"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-              <span className="text-xs font-bold text-muted-foreground w-6">#{idx + 1}</span>
-              <Input
-                value={scene.query}
-                onChange={(e) => updateScene(scene.id, { query: e.target.value })}
-                placeholder="e.g. neon city street rain"
-                className="flex-1 text-xs"
+              <SceneTransitionPicker
+                value={scene.transitionOut}
+                onChange={(v) => updateScene(scene.id, { transitionOut: v })}
+                isLast={idx === scenes.length - 1}
               />
-              <Input
-                type="number"
-                min={1}
-                max={20}
-                value={scene.durationSeconds}
-                onChange={(e) => updateScene(scene.id, { durationSeconds: Number(e.target.value) || 1 })}
-                className="w-16 text-xs text-center"
-              />
-              <span className="text-xs text-muted-foreground">s</span>
-              <button
-                type="button"
-                onClick={() => removeScene(scene.id)}
-                disabled={scenes.length === 1}
-                className="text-muted-foreground hover:text-rose-400 disabled:opacity-30"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </motion.div>
           ))}
         </div>
@@ -296,6 +392,18 @@ export default function MusicVideoComposer() {
       <p className="text-xs text-muted-foreground text-center">
         {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}. Pexels footage included free.
       </p>
+
+      {audioDuration > 0 && Math.abs(totalDuration - audioDuration) > 1 && (
+        <p className="text-xs text-amber-400 text-center -mt-2">
+          ⚠ Scene total ({totalDuration}s) doesn't match audio ({audioDuration}s) — click Auto-fit above.
+        </p>
+      )}
+
+      <LibraryTrackPickerModal
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onSelect={({ file_url, title }) => setAudioFromSource(file_url, title)}
+      />
 
       {/* Result */}
       <AnimatePresence>
