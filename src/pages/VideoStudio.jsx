@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Film, Zap, Download, ArrowLeft, Save, RotateCcw,
-  CheckCircle, Sparkles, Clock, Image, Music, Upload, Loader2
+  CheckCircle, Sparkles, Clock, Image, Music, Upload, Loader2, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,6 +59,27 @@ export default function VideoStudio() {
   const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
   const [uploadingRef, setUploadingRef] = useState(false);
 
+  // Load recent video versions from the user's library so history survives refresh
+  useEffect(() => {
+    (async () => {
+      try {
+        const me = await base44.auth.me();
+        const rows = await base44.entities.UserAsset.filter(
+          { user_id: me.id, asset_type: 'project' }, '-created_date', 10
+        );
+        const videos = rows
+          .filter(a => a.file_url && /\.(mp4|mov|webm)(\?|$)/i.test(a.file_url))
+          .slice(0, 5)
+          .map(a => ({
+            video_url: a.file_url,
+            title: a.title,
+            ...(a.metadata || {}),
+          }));
+        if (videos.length > 0) setVersions(videos);
+      } catch { /* silent — fresh users have no history */ }
+    })();
+  }, []);
+
   const onComplete = useCallback((data) => {
     setGenerating(false);
     setResult(data);
@@ -73,6 +94,23 @@ export default function VideoStudio() {
 
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
   const isProcessing = generating || (jobId && status === 'processing');
+
+  const cancelGeneration = useCallback(async () => {
+    // Mark the job cancelled server-side so analytics are accurate, then
+    // detach the polling loop locally. Credits are only deducted on completion,
+    // so no refund is needed.
+    if (jobId) {
+      try {
+        await base44.entities.GenerationJob.update(jobId, {
+          status: 'cancelled',
+          completed_at: new Date().toISOString(),
+        });
+      } catch { /* best-effort */ }
+    }
+    setJobId('');
+    setGenerating(false);
+    toast.info('Generation cancelled');
+  }, [jobId]);
 
   const handleRefUpload = async (e, type) => {
     const file = e.target.files?.[0];
@@ -330,6 +368,14 @@ export default function VideoStudio() {
                     </div>
                   </div>
                   <p className="text-xs text-indigo-300">LTX is rendering your video — typically takes {Math.ceil(estimatedSeconds / 60)}–{Math.ceil(estimatedSeconds / 60) + 2} minutes…</p>
+                  <Button
+                    onClick={cancelGeneration}
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 rounded-lg border-indigo-500/40 text-indigo-200 hover:bg-indigo-500/10"
+                  >
+                    <X className="w-3.5 h-3.5" /> Cancel — no credits charged
+                  </Button>
                 </motion.div>
               )}
             </AnimatePresence>

@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import InfoTip from '@/components/common/InfoTip';
+import CostBadge from '@/components/credits/CostBadge';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 const QUERY_SUGGESTIONS = [
   'city traffic timelapse', 'ocean waves sunset', 'neon lights night',
@@ -41,6 +43,9 @@ export default function MusicVideoComposer() {
     : { width: 1080, height: 720 };
 
   const totalDuration = scenes.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
+
+  // Credit cost matches backend: 5 base + 1/scene + 3 if audio
+  const creditCost = 5 + scenes.length + (audioUrl ? 3 : 0);
 
   const updateScene = (id, patch) => {
     setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -94,12 +99,13 @@ export default function MusicVideoComposer() {
       });
       if (res.data?.video_url) {
         setResult(res.data);
+        refreshCreditsFromResponse(res.data);
         toast.success('🎬 Music video composed!');
       } else {
         toast.error(res.data?.error || 'Composition failed');
       }
     } catch (err) {
-      toast.error(err?.response?.data?.error || err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.error || err.message);
     }
     setComposing(false);
   };
@@ -282,12 +288,13 @@ export default function MusicVideoComposer() {
           <>
             <Zap className="w-5 h-5" />
             Compose Music Video
+            <CostBadge cost={creditCost} />
           </>
         )}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">
-        NextCut renders @ ~$0.0015–0.01 per video. Pexels footage included free.
+        {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}. Pexels footage included free.
       </p>
 
       {/* Result */}

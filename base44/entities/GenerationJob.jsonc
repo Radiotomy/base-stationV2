@@ -26,7 +26,8 @@
         "sonic",
         "producer",
         "tempcolor",
-        "ltx"
+        "ltx",
+        "nextcut"
       ],
       "description": "Which provider handled the generation"
     },
@@ -36,7 +37,8 @@
         "pending",
         "processing",
         "completed",
-        "failed"
+        "failed",
+        "cancelled"
       ],
       "default": "pending"
     },

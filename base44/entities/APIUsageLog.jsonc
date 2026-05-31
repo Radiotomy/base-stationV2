@@ -20,7 +20,8 @@
         "producer",
         "tempcolor",
         "ltx",
-        "core"
+        "core",
+        "nextcut"
       ]
     },
     "task": {
