@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Sparkles, Save, Download, Loader2 } from 'lucide-react';
+import { Sparkles, Save, Download, Loader2, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ import { toast } from 'sonner';
 export default function CoverSongResult({ data, sourceUrl, title }) {
   const [saving, setSaving] = useState({}); // { [url]: bool }
   const [savedUrls, setSavedUrls] = useState(new Set());
+  const autoSavedRef = useRef(false);
 
   const clips = data?.audio_urls && data.audio_urls.length > 0
     ? data.audio_urls.map((u, i) => ({
@@ -22,6 +24,58 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
     : data?.audio_url
       ? [{ url: data.audio_url, cover: data.cover_image_url, clip_id: data.clip_id }]
       : [];
+
+  // Auto-save every finished clip to the Library so the user never loses a generated cover,
+  // even if they navigate away before clicking Save.
+  useEffect(() => {
+    if (autoSavedRef.current || clips.length === 0) return;
+    autoSavedRef.current = true;
+    (async () => {
+      try {
+        const me = await base44.auth.me();
+        // Check if these clips were already saved (e.g. webhook race) — match by clip_id metadata
+        const existing = await base44.entities.UserAsset.filter({ user_id: me.id, asset_type: 'track' }, '-created_date', 50).catch(() => []);
+        const existingClipIds = new Set(existing.map(a => a?.metadata?.clip_id).filter(Boolean));
+
+        for (let i = 0; i < clips.length; i++) {
+          const clip = clips[i];
+          if (clip.clip_id && existingClipIds.has(clip.clip_id)) {
+            setSavedUrls(s => new Set([...s, clip.url]));
+            continue;
+          }
+          await base44.entities.UserAsset.create({
+            user_id: me.id,
+            user_email: me.email,
+            asset_type: 'track',
+            title: `${title || data.title || 'Cover'} ${clips.length > 1 ? `(v${i + 1})` : ''}`.trim(),
+            description: `AI cover song · ${data.model_version || 'sonic'} · ${data.tags || ''}`.trim(),
+            file_url: clip.url,
+            thumbnail_url: clip.cover || undefined,
+            origin: 'creator',
+            tags: ['cover-song', 'sonic', data.model_version].filter(Boolean),
+            metadata: {
+              task_kind: 'cover_song',
+              source_url: sourceUrl,
+              clip_id: clip.clip_id,
+              provider_clip_id: clip.clip_id,
+              model_version: data.model_version,
+              lyrics: data.lyrics || '',
+              tags: data.tags || '',
+              duration: data.duration,
+              cover_image_url: clip.cover,
+              auto_saved: true,
+              provenance: { created_by: 'cover_song_studio', source: sourceUrl },
+            },
+          });
+          setSavedUrls(s => new Set([...s, clip.url]));
+        }
+        toast.success(`Auto-saved ${clips.length} cover${clips.length > 1 ? 's' : ''} to your Library`, { icon: '📚' });
+      } catch (err) {
+        console.warn('Auto-save failed:', err.message);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.audio_url, data?.audio_urls?.length]);
 
   if (clips.length === 0) return null;
 
@@ -68,9 +122,16 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-emerald-400" />
         <span className="text-sm font-bold text-emerald-400">
-          {clips.length > 1 ? `${clips.length} Cover Versions Ready` : 'Cover Ready'}
+          {clips.length > 1 ? `${clips.length} Versions Ready` : 'Ready'}
         </span>
         {data.model_version && <Badge variant="outline" className="text-xs ml-auto">{data.model_version}</Badge>}
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <span className="text-emerald-300">✓ Auto-saved to your Library</span>
+        <Link to="/asset-gallery" className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+          <Library className="w-3 h-3" /> View Library
+        </Link>
       </div>
 
       <div className="space-y-4">
