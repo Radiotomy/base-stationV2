@@ -7,5 +7,6 @@
       "default": false,
       "description": "Whether the user has finished the 3-step onboarding tour"
     }
-  }
+  },
+  "required": []
 }

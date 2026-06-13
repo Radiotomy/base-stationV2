@@ -1,11 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { Radio, TrendingUp, Music, Star, Home, Headphones, Mic2, Film, Zap } from "lucide-react";
+import { Radio, TrendingUp, Music, Home, Upload } from "lucide-react";
 
 const NAV_ITEMS = [
   { path: "/", icon: Home, label: "Home" },
-  { path: "/music-studio", icon: Music, label: "Music" },
-  { path: "/lyrics-studio", icon: Mic2, label: "Lyrics" },
-  { path: "/video-studio", icon: Film, label: "Video" },
+  { path: "/studios", icon: Music, label: "Studios" },
+  { path: "/submit", icon: Upload, label: "Submit" },
   { path: "/radio", icon: Radio, label: "Radio" },
   { path: "/charts", icon: TrendingUp, label: "Charts" },
 ];

@@ -22,6 +22,7 @@ import Challenges from './pages/Challenges';
 import Leaderboard from './pages/Leaderboard';
 import Badges from './pages/Badges';
 import AIStudio from './pages/AIStudio';
+import StudioHub from './pages/StudioHub';
 import LyricsStudio from './pages/LyricsStudio';
 import MusicStudio from './pages/MusicStudio';
 import VideoStudio from './pages/VideoStudio';
@@ -111,6 +112,7 @@ const AuthenticatedApp = () => {
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/badges" element={<Badges />} />
+          <Route path="/studios" element={<StudioHub />} />
           <Route path="/ai-studio" element={<AIStudio />} />
           <Route path="/lyrics-studio" element={<LyricsStudio />} />
           <Route path="/music-studio" element={<MusicStudio />} />

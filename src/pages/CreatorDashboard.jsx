@@ -16,7 +16,6 @@ import TrackCard from "@/components/dashboard/TrackCard";
 import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPanel";
 import RewardFansModal from "@/components/creator/RewardFansModal";
 import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
-import MasteringTab from "@/components/mastering/MasteringTab";
 import SubmissionsTab from "@/components/dashboard/SubmissionsTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -167,7 +166,6 @@ export default function CreatorDashboard() {
   const TABS = [
     { key: "library",   label: `📂 Library (${assets.length})` },
     { key: "projects",  label: "🗂️ Projects" },
-    { key: "mastering", label: "🎚️ Mastering" },
     { key: "tracks",    label: `📤 Submissions (${tracks.length})` },
     { key: "fans",      label: "🏆 Fan Economy" },
     { key: "history",   label: "🕐 History" },
@@ -185,11 +183,16 @@ export default function CreatorDashboard() {
       {/* Hero */}
       <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 Studio Dashboard</h1>
+          <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 My Workspace</h1>
           <p className="text-muted-foreground">Your tracks, assets, projects & generation history.</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <CreditBalanceWidget />
+          <Link to="/studios">
+            <Button className="rounded-xl gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-sm">
+              <Music className="w-4 h-4" /> Open Studio Hub
+            </Button>
+          </Link>
           <Link to="/credits">
             <Button variant="outline" className="rounded-xl gap-2 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10 text-sm">
               <Zap className="w-4 h-4" /> Get Credits
@@ -218,24 +221,22 @@ export default function CreatorDashboard() {
         </div>
       )}
 
-      {/* Quick Create */}
+      {/* Quick Jump to Studios */}
       <div className="mb-8">
-        <h2 className="text-lg font-black text-foreground mb-4">Quick Create</h2>
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-          {[
-            { to: "/lyrics-studio",       label: "🎤 Lyrics" },
-            { to: "/music-studio",        label: "🎵 Music" },
-            { to: "/cover-art-studio",    label: "🎨 Cover Art" },
-            { to: "/video-studio",        label: "🎬 Video" },
-            { to: "/audio-remix-studio",  label: "🎛️ Remix" },
-            { to: "/social-automation",   label: "📱 Social" },
-          ].map(({ to, label }) => (
-            <Link key={to} to={to}
-              className="merc-card merc-card-hover rounded-xl py-3 text-center text-sm font-bold text-white transition-all">
-              {label}
-            </Link>
-          ))}
-        </div>
+        <Link to="/studios" className="block merc-card merc-card-hover rounded-2xl p-5 group">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center flex-shrink-0">
+                <Music className="w-6 h-6 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-black text-foreground text-base">Studio Hub</p>
+                <p className="text-sm text-muted-foreground truncate">All 11 creation, editing & publishing tools in one place</p>
+              </div>
+            </div>
+            <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+          </div>
+        </Link>
       </div>
 
       {/* Tabs */}
@@ -283,11 +284,6 @@ export default function CreatorDashboard() {
       {/* Projects Tab */}
       {activeTab === "projects" && user && (
         <ProjectsTab userId={user.id} assets={assets} />
-      )}
-
-      {/* Mastering Tab — AI Mastering + Editor + Multitrack + Remix */}
-      {activeTab === "mastering" && (
-        <MasteringTab />
       )}
 
       {/* Submissions Tab */}

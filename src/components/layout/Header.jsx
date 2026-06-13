@@ -21,10 +21,8 @@ const NAV_ITEMS = [
 ];
 
 const CREATOR_NAV = [
-  { to: "/creator-dashboard", label: "My Studio", icon: BarChart3 },
-  { to: "/music-studio", label: "Create Music", icon: Music },
-  { to: "/lyrics-studio", label: "Write Lyrics", icon: Mic2 },
-  { to: "/video-studio", label: "Make Videos", icon: Film },
+  { to: "/studios", label: "Studios", icon: Music },
+  { to: "/creator-dashboard", label: "My Workspace", icon: BarChart3 },
   { to: "/submit", label: "Submit Track", icon: Upload },
 ];
 
@@ -65,7 +63,7 @@ export default function Header({ user }) {
           {isCreator && (
             <>
               <div className="w-px h-6 bg-white/10 mx-1" />
-              {CREATOR_NAV.slice(0, 1).map(({ to, label, icon: Icon }) => {
+              {CREATOR_NAV.slice(0, 2).map(({ to, label, icon: Icon }) => {
                 const isActive = location.pathname === to;
                 return (
                   <Link
