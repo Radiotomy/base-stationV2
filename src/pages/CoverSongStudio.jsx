@@ -14,6 +14,7 @@ import StudioPageHeader from '@/components/studio/StudioPageHeader';
 import CostBadge from '@/components/credits/CostBadge';
 import AssetPicker from '@/components/studio/AssetPicker';
 import CoverSongResult from '@/components/coversong/CoverSongResult';
+import CoverAIAssistant from '@/components/coversong/CoverAIAssistant';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 
@@ -426,6 +427,38 @@ export default function CoverSongStudio() {
               </div>
             ))}
           </div>
+
+          {/* AI Assistant — fills missing fields with smart suggestions */}
+          <CoverAIAssistant
+            taskKind={taskKind}
+            sourceLabel={sourceLabel}
+            customMode={customMode}
+            lyrics={lyrics}
+            aiDescription={aiDescription}
+            title={title}
+            tags={tags}
+            negativeTags={negativeTags}
+            genre={genre}
+            mood={mood}
+            vocalGender={vocalGender}
+            instrumental={instrumental}
+            onApply={(s) => {
+              if (s.title !== undefined) setTitle(s.title.slice(0, 80));
+              if (s.genre !== undefined) setGenre(s.genre);
+              if (s.mood !== undefined) setMood(s.mood);
+              if (s.tags !== undefined) setTags(s.tags);
+              if (s.negative_tags !== undefined) setNegativeTags(s.negative_tags);
+              if (s.vocal_gender !== undefined && supportsVocalGender) setVocalGender(s.vocal_gender);
+              if (s.lyrics !== undefined) {
+                setLyrics(s.lyrics);
+                setCustomMode(true);
+              }
+              if (s.ai_description !== undefined) {
+                setAiDescription(s.ai_description.slice(0, 400));
+                setCustomMode(false);
+              }
+            }}
+          />
 
           {/* Generate */}
           <Button
