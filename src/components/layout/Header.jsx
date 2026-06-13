@@ -9,6 +9,7 @@ import {
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
+import JobNotificationBell from "@/components/notifications/JobNotificationBell";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: Home },
@@ -94,6 +95,7 @@ export default function Header({ user }) {
             <HelpCircle className="w-4 h-4" />
             <span className="hidden md:inline">Help</span>
           </Link>
+          {user && <JobNotificationBell />}
           {user && <CreditBalanceWidget />}
           {user && (
             <div className="relative">
