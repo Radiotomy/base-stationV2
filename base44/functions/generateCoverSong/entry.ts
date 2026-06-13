@@ -49,25 +49,50 @@ function isAuthGatedBase44Url(u) {
   } catch { return false; }
 }
 
-async function ensurePublicUrl(base44, sourceUrl) {
+// Base64url-encode a string (for the streamAudioForProvider path segment).
+function b64urlEncode(s) {
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Wrap any auth-gated Base44 URL through our public streamAudioForProvider proxy.
+// Sonic's fetcher rejects /api/apps/.../files/ URLs (HTTP 400 — auth required).
+// The proxy is unauthenticated and serves the bytes with a .mp3 extension so
+// Sonic's URL validation accepts it.
+function buildProxyUrl(reqUrl, targetUrl) {
+  const origin = new URL(reqUrl).origin;
+  const encoded = b64urlEncode(targetUrl);
+  return `${origin}/functions/streamAudioForProvider/${encoded}.mp3`;
+}
+
+async function ensurePublicUrl(base44, sourceUrl, reqUrl) {
+  // Non-Base44 URL → trust it if reachable, otherwise re-host.
   if (!isAuthGatedBase44Url(sourceUrl)) {
-    // Probe non-Base44 URLs to confirm public reachability; only re-host on failure.
     try {
       const probe = await fetch(sourceUrl, { method: 'GET', headers: { Range: 'bytes=0-1' } });
       if (probe.ok || probe.status === 206) return sourceUrl;
     } catch { /* fall through to re-host */ }
   } else {
-    console.log('Base44 auth-gated URL detected — forcing re-host:', sourceUrl);
+    console.log('Base44 auth-gated URL detected — wrapping via streamAudioForProvider:', sourceUrl);
   }
 
+  // Verify we can read the source before handing it to the proxy.
   const r = await fetch(sourceUrl);
   if (!r.ok) throw new Error(`Could not read source audio (HTTP ${r.status}). Re-upload the file and try again.`);
+
+  // If source is already Base44-owned, just wrap it through the proxy — no re-upload needed.
+  if (isAuthGatedBase44Url(sourceUrl)) {
+    const proxied = buildProxyUrl(reqUrl, sourceUrl);
+    console.log('Proxied URL for Sonic:', proxied);
+    return proxied;
+  }
+
+  // External non-Base44 URL that failed probe → re-host to Base44 storage, then proxy.
   const blob = await r.blob();
   const name = (sourceUrl.split('/').pop() || 'source.mp3').split('?')[0].replace(/[^\w.\-]/g, '_');
   const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
   const uploaded = await base44.integrations.Core.UploadFile({ file });
-  console.log('Re-hosted to public CDN:', uploaded.file_url);
-  return uploaded.file_url;
+  console.log('Re-hosted, now proxying:', uploaded.file_url);
+  return buildProxyUrl(reqUrl, uploaded.file_url);
 }
 
 Deno.serve(async (req) => {
@@ -183,7 +208,7 @@ Deno.serve(async (req) => {
     // combined endpoint can take 30-60s for the upload phase alone.
     (async () => {
       try {
-        const publicUrl = await ensurePublicUrl(base44, url);
+        const publicUrl = await ensurePublicUrl(base44, url, req.url);
         apiBody.url = publicUrl;
         console.log('Sonic upload-cover request — publicUrl:', publicUrl, 'mv:', mv);
 

@@ -48,17 +48,28 @@ function isAuthGatedBase44Url(u) {
   } catch { return false; }
 }
 
-async function ensurePublicUrl(base44, sourceUrl) {
+function b64urlEncode(s) {
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Wrap any auth-gated Base44 URL through our public streamAudioForProvider proxy.
+// Sonic's fetcher rejects /api/apps/.../files/ URLs (HTTP 400 — auth required),
+// and UploadFile returns another auth-gated URL, so re-hosting alone is not enough.
+function buildProxyUrl(reqUrl, targetUrl) {
+  const origin = new URL(reqUrl).origin;
+  const encoded = b64urlEncode(targetUrl);
+  return `${origin}/functions/streamAudioForProvider/${encoded}.mp3`;
+}
+
+async function ensurePublicUrl(base44, sourceUrl, reqUrl) {
   if (!isAuthGatedBase44Url(sourceUrl)) return sourceUrl;
-  console.log('Base44 auth-gated URL detected — re-hosting:', sourceUrl);
+  console.log('Base44 auth-gated URL detected — wrapping via streamAudioForProvider:', sourceUrl);
+  // Verify we can read the source before handing it to the proxy.
   const r = await fetch(sourceUrl);
   if (!r.ok) throw new Error(`Could not read source audio (HTTP ${r.status}). Re-upload the file and try again.`);
-  const blob = await r.blob();
-  const name = (sourceUrl.split('/').pop() || 'source.mp3').split('?')[0].replace(/[^\w.\-]/g, '_');
-  const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
-  const uploaded = await base44.integrations.Core.UploadFile({ file });
-  console.log('Re-hosted to public CDN:', uploaded.file_url);
-  return uploaded.file_url;
+  const proxied = buildProxyUrl(reqUrl, sourceUrl);
+  console.log('Proxied URL for Sonic:', proxied);
+  return proxied;
 }
 
 async function uploadToSonic(audioUrl) {
@@ -140,7 +151,7 @@ Deno.serve(async (req) => {
     let clipId = existingClipId;
     if (!clipId) {
       try {
-        const publicUrl = await ensurePublicUrl(base44, url);
+        const publicUrl = await ensurePublicUrl(base44, url, req.url);
         clipId = await uploadToSonic(publicUrl);
       } catch (e) {
         return Response.json({
