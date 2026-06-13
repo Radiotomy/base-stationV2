@@ -115,7 +115,18 @@ export default function CoverSongStudio() {
     (err) => {
       setGenerating(false);
       setJobId(null);
-      toast.error(err || 'Cover generation failed');
+      const msg = String(err || 'Cover generation failed');
+      // Sonic copyright-block: show a longer, more descriptive alert so the user
+      // understands it's not a system bug — the source matches a commercial recording.
+      if (/copyrighted|catalog|matches an existing recording/i.test(msg)) {
+        toast.error('Copyrighted track blocked', {
+          description: 'Sonic detected this source matches a commercial recording in their catalog and refused to cover it. Try an original, royalty-free, or AI-generated track instead.',
+          duration: 12000,
+          icon: '🚫',
+        });
+      } else {
+        toast.error(msg, { duration: 6000 });
+      }
     },
     80,
   );
