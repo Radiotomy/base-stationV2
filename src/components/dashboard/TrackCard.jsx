@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Image, FileText, Film, Trash2, ChevronDown, Download, Shield, Zap, Clock, Mic2, Hash } from 'lucide-react';
+import { Music, Image, FileText, Film, Trash2, ChevronDown, Download, Shield, Zap, Clock, Mic2, Hash, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -133,7 +134,7 @@ export default function TrackCard({ asset, onDelete }) {
         </div>
       )}
 
-      {/* Download buttons + Open in Studio — always visible for tracks */}
+      {/* Download buttons + Master + Open in Studio — always visible for tracks */}
       {isTrack && asset.file_url && (
         <div className="px-4 pb-4 flex gap-2 flex-wrap items-center">
           <DownloadButton url={mp3Url} label="Download MP3" ext="mp3" title={asset.title} />
@@ -148,7 +149,12 @@ export default function TrackCard({ asset, onDelete }) {
               variant="outline"
             />
           )}
-          <OpenInStudioMenu asset={asset} />
+          <Link to={`/mastering-studio?assetId=${asset.id}`} className="flex-1">
+            <Button size="sm" className="w-full rounded-lg gap-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white font-bold">
+              <Sparkles className="w-3 h-3" /> Master Track
+            </Button>
+          </Link>
+          <OpenInStudioMenu asset={asset} label="More" />
         </div>
       )}
 
