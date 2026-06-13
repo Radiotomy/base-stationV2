@@ -65,6 +65,9 @@ export default function AIMasteringPanel() {
   const [balance, setBalance] = useState(0);       // -100 (full L) → +100 (full R)
   const [separation, setSeparation] = useState(0); // -100 (mono) → +100 (extra wide)
 
+  // Export format — 16-bit (streaming) vs 24-bit (Apple / mastering submissions)
+  const [bitDepth, setBitDepth] = useState(16);
+
   // ── Web Audio graph ──
   const ctxRef = useRef(null);
   const [graphReady, setGraphReady] = useState(false);
@@ -196,11 +199,11 @@ export default function AIMasteringPanel() {
         stereo: { balance, separation },
       });
 
-      // 3. Encode to 16-bit PCM WAV
-      toast.loading('Encoding WAV…', { id: 'master' });
-      const wavBlob = audioBufferToWav(renderedBuffer);
+      // 3. Encode to PCM WAV (16-bit streaming · 24-bit Apple / mastering)
+      toast.loading(`Encoding ${bitDepth}-bit WAV…`, { id: 'master' });
+      const wavBlob = audioBufferToWav(renderedBuffer, { bitDepth });
       const safeName = (title || 'mastered_track').replace(/[^a-z0-9\s-]/gi, '').trim().replace(/\s+/g, '_');
-      const wavFile = new File([wavBlob], `${safeName}_master.wav`, { type: 'audio/wav' });
+      const wavFile = new File([wavBlob], `${safeName}_master_${bitDepth}bit.wav`, { type: 'audio/wav' });
 
       // 4. Upload the rendered WAV
       toast.loading('Uploading…', { id: 'master' });
@@ -225,7 +228,8 @@ export default function AIMasteringPanel() {
           stereo: { balance, separation },
           duration: renderedBuffer.duration,
           sample_rate: renderedBuffer.sampleRate,
-          format: 'wav',
+          bit_depth: bitDepth,
+          format: `wav-${bitDepth}bit`,
           rendered_client_side: true,
           provenance: {
             created_by: 'mastering_studio',
@@ -367,6 +371,30 @@ export default function AIMasteringPanel() {
           <Slider value={[lufsTarget]} onValueChange={([v]) => setLufsTarget(v)} min={-20} max={-6} step={0.5} />
           <p className="text-xs text-muted-foreground">
             Streaming: -14 · Loud: -8 · Club: -7 · Vinyl: -16
+          </p>
+        </div>
+
+        {/* Export bit depth — 16-bit streaming vs 24-bit Apple submissions */}
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+          <h3 className="text-sm font-black">Export Format</h3>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setBitDepth(16)}
+              className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                bitDepth === 16 ? 'border-amber-500 bg-amber-500/10' : 'border-border bg-muted/30 hover:border-amber-500/40'
+              }`}>
+              <p className="font-bold text-foreground">16-bit WAV</p>
+              <p className="text-muted-foreground text-[10px]">Streaming / web · smaller file</p>
+            </button>
+            <button onClick={() => setBitDepth(24)}
+              className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
+                bitDepth === 24 ? 'border-amber-500 bg-amber-500/10' : 'border-border bg-muted/30 hover:border-amber-500/40'
+              }`}>
+              <p className="font-bold text-foreground">24-bit WAV</p>
+              <p className="text-muted-foreground text-[10px]">Apple Music · mastering · HQ</p>
+            </button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Apple Music & most distributors require 24-bit WAV for HD/Lossless masters.
           </p>
         </div>
       </div>

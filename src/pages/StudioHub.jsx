@@ -12,10 +12,11 @@ const CATEGORIES = [
     icon: Music,
     accent: "bg-gradient-to-br from-violet-600 to-fuchsia-600",
     studios: [
-      { to: "/music-studio",  emoji: "🎵", label: "Music Studio",   desc: "Generate full tracks with AI" },
-      { to: "/lyrics-studio", emoji: "🎤", label: "Lyrics Studio",  desc: "Write song lyrics with AI" },
-      { to: "/voice-creator", emoji: "🗣️", label: "Voice Creator",  desc: "Custom AI voices & personas" },
-      { to: "/ai-studio",     emoji: "✨", label: "AI Prompt Tools", desc: "Lyric, prompt & art helpers" },
+      { to: "/music-studio",       emoji: "🎵", label: "Music Studio",       desc: "Generate full tracks with AI" },
+      { to: "/cover-song-studio",  emoji: "🎙️", label: "Cover Song Studio",  desc: "Re-imagine any track, any style" },
+      { to: "/lyrics-studio",      emoji: "🎤", label: "Lyrics Studio",      desc: "Write song lyrics with AI" },
+      { to: "/voice-creator",      emoji: "🗣️", label: "Voice Creator",      desc: "Custom AI voices & personas" },
+      { to: "/ai-studio",          emoji: "✨", label: "AI Prompt Tools",    desc: "Lyric, prompt & art helpers" },
     ],
   },
   {

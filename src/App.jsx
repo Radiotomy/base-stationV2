@@ -39,6 +39,7 @@ import StemCreatorStudio from './pages/StemCreatorStudio';
 import MashupStudio from './pages/MashupStudio';
 import VocalHarmonizer from './pages/VocalHarmonizer';
 import MasteringStudio from './pages/MasteringStudio';
+import CoverSongStudio from './pages/CoverSongStudio';
 import VisualizerStudio from './pages/VisualizerStudio';
 import StudioHistory from './pages/StudioHistory';
 import AudioRemixStudio from './pages/AudioRemixStudio';
@@ -131,6 +132,7 @@ const AuthenticatedApp = () => {
           <Route path="/mashup-studio" element={<MashupStudio />} />
           <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
           <Route path="/mastering-studio" element={<MasteringStudio />} />
+          <Route path="/cover-song-studio" element={<CoverSongStudio />} />
           <Route path="/visualizer-studio" element={<VisualizerStudio />} />
           <Route path="/ai-studio/history" element={<StudioHistory />} />
           <Route path="/voice-creator" element={<VoiceCreator />} />
