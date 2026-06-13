@@ -17,13 +17,14 @@ import CoverSongResult from '@/components/coversong/CoverSongResult';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 
+// Sonic upload-cover / extend-upload endpoints require v4.5+ to work reliably.
+// v3.5 and v4 frequently hang or fail on upload tasks. v5 / v5.5 strongly
+// recommended for longer source tracks (> 90s).
 const SONIC_MODELS = [
-  { id: 'sonic-v5-5',      label: 'Sonic v5.5',      desc: 'Latest · highest quality', vocalGender: true },
-  { id: 'sonic-v5',        label: 'Sonic v5',        desc: 'Premium quality',          vocalGender: true },
-  { id: 'sonic-v4-5-plus', label: 'Sonic v4.5+',     desc: 'Enhanced v4.5',            vocalGender: true },
-  { id: 'sonic-v4-5',      label: 'Sonic v4.5',      desc: 'Stable · recommended',     vocalGender: true },
-  { id: 'sonic-v4',        label: 'Sonic v4',        desc: 'Legacy',                   vocalGender: false },
-  { id: 'sonic-v3-5',      label: 'Sonic v3.5',      desc: 'Legacy',                   vocalGender: false },
+  { id: 'sonic-v5-5',      label: 'Sonic v5.5',      desc: 'Latest · best for long covers', vocalGender: true, recommended: true },
+  { id: 'sonic-v5',        label: 'Sonic v5',        desc: 'Recommended · premium quality', vocalGender: true, recommended: true },
+  { id: 'sonic-v4-5-plus', label: 'Sonic v4.5+',     desc: 'Enhanced v4.5',                 vocalGender: true },
+  { id: 'sonic-v4-5',      label: 'Sonic v4.5',      desc: 'Stable · short tracks only',    vocalGender: true },
 ];
 
 export default function CoverSongStudio() {
@@ -41,7 +42,7 @@ export default function CoverSongStudio() {
   const [continueAt, setContinueAt] = useState(0.1);
 
   // Creative controls
-  const [model, setModel] = useState('sonic-v4-5');
+  const [model, setModel] = useState('sonic-v5');
   const [customMode, setCustomMode] = useState(true);     // true = lyrics, false = AI description
   const [lyrics, setLyrics] = useState('');
   const [aiDescription, setAiDescription] = useState('');
@@ -247,9 +248,12 @@ export default function CoverSongStudio() {
                   className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all ${
                     model === m.id ? 'border-rose-500 bg-rose-500/10' : 'border-border bg-muted/30 hover:border-rose-500/40'
                   }`}>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-1.5">
                     <p className="font-bold text-foreground">{m.label}</p>
-                    {m.vocalGender && <Badge variant="outline" className="text-[9px]">VG</Badge>}
+                    <div className="flex items-center gap-1">
+                      {m.recommended && <Badge className="text-[9px] bg-emerald-500/20 text-emerald-300 border-emerald-500/40">★</Badge>}
+                      {m.vocalGender && <Badge variant="outline" className="text-[9px]">VG</Badge>}
+                    </div>
                   </div>
                   <p className="text-muted-foreground text-[10px]">{m.desc}</p>
                 </button>

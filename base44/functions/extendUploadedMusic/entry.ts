@@ -94,7 +94,9 @@ Deno.serve(async (req) => {
     const {
       url,                       // required — source audio URL (≤ 8 min)
       clip_id: existingClipId,   // optional — skip upload step if user already has a clip_id
-      mv = 'sonic-v4-5',
+      // Default to v5 — extend-upload hangs/fails on v3-5 and v4; v4-5 unreliable
+      // for longer source tracks. v5/v5-5 strongly recommended per Sonic docs.
+      mv = 'sonic-v5',
       custom_mode = true,
       prompt,
       gpt_description_prompt,
