@@ -36,6 +36,31 @@ function getWebhookConfig() {
   return { webhook_url: url, webhook_secret: WEBHOOK_SECRET };
 }
 
+// Sonic's /sonic/upload endpoint fetches the URL server-side, so it must be
+// publicly reachable. Auth-gated Base44 file URLs (base44.app/api/apps/...,
+// preview-sandbox) reject Sonic's unauthenticated fetch with HTTP 400.
+// Re-host any Base44-owned host (except the public media CDN) before sending.
+function isAuthGatedBase44Url(u) {
+  try {
+    const h = new URL(u).hostname;
+    if (h === 'media.base44.com') return false;
+    return /(^|\.)base44\.(app|com)$/.test(h) || h.includes('preview-sandbox');
+  } catch { return false; }
+}
+
+async function ensurePublicUrl(base44, sourceUrl) {
+  if (!isAuthGatedBase44Url(sourceUrl)) return sourceUrl;
+  console.log('Base44 auth-gated URL detected — re-hosting:', sourceUrl);
+  const r = await fetch(sourceUrl);
+  if (!r.ok) throw new Error(`Could not read source audio (HTTP ${r.status}). Re-upload the file and try again.`);
+  const blob = await r.blob();
+  const name = (sourceUrl.split('/').pop() || 'source.mp3').split('?')[0].replace(/[^\w.\-]/g, '_');
+  const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
+  const uploaded = await base44.integrations.Core.UploadFile({ file });
+  console.log('Re-hosted to public CDN:', uploaded.file_url);
+  return uploaded.file_url;
+}
+
 async function uploadToSonic(audioUrl) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), 60000); // upload can take ~20s+
@@ -113,7 +138,8 @@ Deno.serve(async (req) => {
     let clipId = existingClipId;
     if (!clipId) {
       try {
-        clipId = await uploadToSonic(url);
+        const publicUrl = await ensurePublicUrl(base44, url);
+        clipId = await uploadToSonic(publicUrl);
       } catch (e) {
         return Response.json({
           error: e.message || 'Upload to Sonic failed',

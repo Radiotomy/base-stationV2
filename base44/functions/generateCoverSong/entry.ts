@@ -34,22 +34,39 @@ function getWebhookConfig() {
 }
 
 // Make the source URL publicly fetchable by Sonic's servers.
-// Private Base44 file URLs return 400/404 to unauthenticated requests, so we
-// re-host them via UploadFile (public CDN URL).
-async function ensurePublicUrl(base44, sourceUrl) {
+// Auth-gated Base44 file URLs (base44.app/api/apps/..., preview-sandbox)
+// pass a server-side probe but reject Sonic's unauthenticated fetch.
+// Always re-host anything on a Base44-owned host; only trust true public CDNs
+// (e.g. media.base44.com) and arbitrary third-party URLs.
+function isAuthGatedBase44Url(u) {
   try {
-    const probe = await fetch(sourceUrl, { method: 'GET', headers: { Range: 'bytes=0-1' } });
-    if (probe.ok || probe.status === 206) return sourceUrl;
-  } catch { /* fall through */ }
+    const h = new URL(u).hostname;
+    // media.base44.com = public CDN (already fetchable by anyone) → leave it
+    if (h === 'media.base44.com') return false;
+    // Any other base44.app / base44.com / preview-sandbox host serving /api/apps/...
+    // requires auth — Sonic can't fetch it.
+    return /(^|\.)base44\.(app|com)$/.test(h) || h.includes('preview-sandbox');
+  } catch { return false; }
+}
 
-  console.log('Source not publicly reachable, re-hosting via UploadFile:', sourceUrl);
+async function ensurePublicUrl(base44, sourceUrl) {
+  if (!isAuthGatedBase44Url(sourceUrl)) {
+    // Probe non-Base44 URLs to confirm public reachability; only re-host on failure.
+    try {
+      const probe = await fetch(sourceUrl, { method: 'GET', headers: { Range: 'bytes=0-1' } });
+      if (probe.ok || probe.status === 206) return sourceUrl;
+    } catch { /* fall through to re-host */ }
+  } else {
+    console.log('Base44 auth-gated URL detected — forcing re-host:', sourceUrl);
+  }
+
   const r = await fetch(sourceUrl);
   if (!r.ok) throw new Error(`Could not read source audio (HTTP ${r.status}). Re-upload the file and try again.`);
   const blob = await r.blob();
   const name = (sourceUrl.split('/').pop() || 'source.mp3').split('?')[0].replace(/[^\w.\-]/g, '_');
   const file = new File([blob], name, { type: blob.type || 'audio/mpeg' });
   const uploaded = await base44.integrations.Core.UploadFile({ file });
-  console.log('Re-hosted to:', uploaded.file_url);
+  console.log('Re-hosted to public CDN:', uploaded.file_url);
   return uploaded.file_url;
 }
 
