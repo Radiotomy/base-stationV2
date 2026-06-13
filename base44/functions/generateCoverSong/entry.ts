@@ -185,6 +185,7 @@ Deno.serve(async (req) => {
       try {
         const publicUrl = await ensurePublicUrl(base44, url);
         apiBody.url = publicUrl;
+        console.log('Sonic upload-cover request — publicUrl:', publicUrl, 'mv:', mv);
 
         const controller = new AbortController();
         const t = setTimeout(() => controller.abort(), 90000);
@@ -199,13 +200,17 @@ Deno.serve(async (req) => {
           data = await res.json();
         } finally { clearTimeout(t); }
 
-        console.log('Sonic upload-cover response:', JSON.stringify(data));
+        console.log('Sonic upload-cover response status:', res.status, 'body:', JSON.stringify(data));
         const taskId = data?.task_id || data?.data?.task_id;
         if (!res.ok || !taskId) {
-          const msg = data?.error || data?.message || `Sonic HTTP ${res.status}`;
+          // Surface the full Sonic response so we can see the real failure reason
+          const providerMsg = data?.error || data?.message || data?.detail || `Sonic HTTP ${res.status}`;
+          const stepDetail = data?.steps?.upload?.error || data?.steps?.upload?.message || '';
+          const msg = stepDetail ? `${providerMsg} — upload step: ${stepDetail}` : providerMsg;
           await base44.asServiceRole.entities.GenerationJob.update(job.id, {
             status: 'failed',
             error_message: msg,
+            output_metadata: { sonic_response: data, sonic_http_status: res.status, public_url_sent: publicUrl },
             completed_at: new Date().toISOString(),
           });
           return;
