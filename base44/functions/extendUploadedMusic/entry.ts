@@ -36,40 +36,56 @@ function getWebhookConfig() {
   return { webhook_url: url, webhook_secret: WEBHOOK_SECRET };
 }
 
-// Sonic's /sonic/upload endpoint fetches the URL server-side, so it must be
-// publicly reachable. Auth-gated Base44 file URLs (base44.app/api/apps/...,
-// preview-sandbox) reject Sonic's unauthenticated fetch with HTTP 400.
-// Re-host any Base44-owned host (except the public media CDN) before sending.
-function isAuthGatedBase44Url(u) {
+// Sonic's /sonic/upload fetcher does a HEAD probe before downloading. Base44's
+// file API returns 404 on HEAD (only 200 on GET), so Sonic rejects every
+// Base44-hosted URL with HTTP 400. Backend-function proxies can't fix this
+// either — Base44's gateway requires a Base44-App-Id header on every function
+// call, which Sonic cannot supply.
+//
+// Fix: pin the audio to IPFS via Pinata. The gateway URL responds 200 on HEAD
+// with proper Content-Type, which Sonic accepts.
+const PINATA_JWT = Deno.env.get('PINATA_JWT');
+const PINATA_BASE = 'https://api.pinata.cloud';
+const PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
+
+async function pinFileFromUrl(fileUrl, name) {
+  const fileRes = await fetch(fileUrl);
+  if (!fileRes.ok) throw new Error(`Failed to fetch source file (HTTP ${fileRes.status})`);
+  const blob = await fileRes.blob();
+  const form = new FormData();
+  form.append('file', blob, name || 'source.mp3');
+  form.append('pinataMetadata', JSON.stringify({ name: name || 'sonic-source' }));
+  const res = await fetch(`${PINATA_BASE}/pinning/pinFileToIPFS`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${PINATA_JWT}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Pinata upload failed (${res.status}): ${err.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  return `${PINATA_GATEWAY}/${data.IpfsHash}`;
+}
+
+function isAlreadyPublic(u) {
   try {
     const h = new URL(u).hostname;
-    if (h === 'media.base44.com') return false;
-    return /(^|\.)base44\.(app|com)$/.test(h) || h.includes('preview-sandbox');
+    if (h === 'media.base44.com') return true;
+    if (h.endsWith('pinata.cloud') || h.endsWith('ipfs.io') || h.endsWith('w3s.link')) return true;
+    if (h.endsWith('cdn1.suno.ai') || h.endsWith('cdn.suno.ai')) return true;
+    return !/(^|\.)base44\.(app|com)$/.test(h) && !h.includes('preview-sandbox');
   } catch { return false; }
 }
 
-function b64urlEncode(s) {
-  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-// Wrap any auth-gated Base44 URL through our public streamAudioForProvider proxy.
-// Sonic's fetcher rejects /api/apps/.../files/ URLs (HTTP 400 — auth required),
-// and UploadFile returns another auth-gated URL, so re-hosting alone is not enough.
-function buildProxyUrl(reqUrl, targetUrl) {
-  const origin = new URL(reqUrl).origin;
-  const encoded = b64urlEncode(targetUrl);
-  return `${origin}/functions/streamAudioForProvider/${encoded}.mp3`;
-}
-
-async function ensurePublicUrl(base44, sourceUrl, reqUrl) {
-  if (!isAuthGatedBase44Url(sourceUrl)) return sourceUrl;
-  console.log('Base44 auth-gated URL detected — wrapping via streamAudioForProvider:', sourceUrl);
-  // Verify we can read the source before handing it to the proxy.
-  const r = await fetch(sourceUrl);
-  if (!r.ok) throw new Error(`Could not read source audio (HTTP ${r.status}). Re-upload the file and try again.`);
-  const proxied = buildProxyUrl(reqUrl, sourceUrl);
-  console.log('Proxied URL for Sonic:', proxied);
-  return proxied;
+async function ensurePublicUrl(_base44, sourceUrl) {
+  if (isAlreadyPublic(sourceUrl)) return sourceUrl;
+  if (!PINATA_JWT) throw new Error('PINATA_JWT not configured — cannot re-host Base44 audio for Sonic');
+  console.log('Base44-hosted source — pinning to IPFS for Sonic:', sourceUrl);
+  const name = (sourceUrl.split('/').pop() || 'source.mp3').split('?')[0].replace(/[^\w.\-]/g, '_');
+  const ipfsUrl = await pinFileFromUrl(sourceUrl, name);
+  console.log('Pinned to IPFS:', ipfsUrl);
+  return ipfsUrl;
 }
 
 async function uploadToSonic(audioUrl) {
@@ -85,7 +101,14 @@ async function uploadToSonic(audioUrl) {
     const data = await res.json();
     console.log('Sonic upload response:', JSON.stringify(data));
     if (!res.ok || !data.clip_id) {
-      const err = new Error(data?.error || data?.message || `Upload failed (HTTP ${res.status})`);
+      // Surface user-friendly copyright-block message when Sonic's fingerprint
+      // matcher rejects a commercial recording.
+      const providerMsg = data?.detail || data?.error || data?.message || `Upload failed (HTTP ${res.status})`;
+      const combined = providerMsg.toLowerCase();
+      const userMsg = (combined.includes('matches an existing recording') || combined.includes('catalog'))
+        ? "Sonic blocked this track: the source audio matches a copyrighted commercial recording in their catalog. Try uploading an original, royalty-free, or AI-generated track instead."
+        : providerMsg;
+      const err = new Error(userMsg);
       err.providerStatus = res.status;
       throw err;
     }
@@ -151,7 +174,7 @@ Deno.serve(async (req) => {
     let clipId = existingClipId;
     if (!clipId) {
       try {
-        const publicUrl = await ensurePublicUrl(base44, url, req.url);
+        const publicUrl = await ensurePublicUrl(base44, url);
         clipId = await uploadToSonic(publicUrl);
       } catch (e) {
         return Response.json({
