@@ -25,15 +25,19 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
       ? [{ url: data.audio_url, cover: data.cover_image_url, clip_id: data.clip_id }]
       : [];
 
+  // Track proxied (Base44-hosted) URLs so the audio element always loads
+  // even when the provider CDN (musicapi-cdn.b-cdn.net) blocks CORS or expires the link.
+  const [playableUrls, setPlayableUrls] = useState({}); // { [originalUrl]: base44Url }
+
   // Auto-save every finished clip to the Library so the user never loses a generated cover,
-  // even if they navigate away before clicking Save.
+  // even if they navigate away before clicking Save. ALSO re-host via proxyAudioAsset so the
+  // saved file is on Base44 storage (provider CDN URLs expire / lack CORS).
   useEffect(() => {
     if (autoSavedRef.current || clips.length === 0) return;
     autoSavedRef.current = true;
     (async () => {
       try {
         const me = await base44.auth.me();
-        // Check if these clips were already saved (e.g. webhook race) — match by clip_id metadata
         const existing = await base44.entities.UserAsset.filter({ user_id: me.id, asset_type: 'track' }, '-created_date', 50).catch(() => []);
         const existingClipIds = new Set(existing.map(a => a?.metadata?.clip_id).filter(Boolean));
 
@@ -41,21 +45,41 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
           const clip = clips[i];
           if (clip.clip_id && existingClipIds.has(clip.clip_id)) {
             setSavedUrls(s => new Set([...s, clip.url]));
+            // Recover the Base44-hosted URL from the existing asset if present
+            const existingAsset = existing.find(a => a?.metadata?.clip_id === clip.clip_id);
+            if (existingAsset?.file_url) {
+              setPlayableUrls(p => ({ ...p, [clip.url]: existingAsset.file_url }));
+            }
             continue;
           }
+
+          // Re-host via proxy so the file lives on Base44 storage permanently
+          let hostedUrl = clip.url;
+          try {
+            const proxy = await base44.functions.invoke('proxyAudioAsset', {
+              source_url: clip.url,
+              filename: `cover-${clip.clip_id || i}.mp3`,
+            });
+            if (proxy?.data?.file_url) hostedUrl = proxy.data.file_url;
+          } catch (e) {
+            console.warn('Proxy failed, falling back to provider URL:', e.message);
+          }
+          setPlayableUrls(p => ({ ...p, [clip.url]: hostedUrl }));
+
           await base44.entities.UserAsset.create({
             user_id: me.id,
             user_email: me.email,
             asset_type: 'track',
             title: `${title || data.title || 'Cover'} ${clips.length > 1 ? `(v${i + 1})` : ''}`.trim(),
             description: `AI cover song · ${data.model_version || 'sonic'} · ${data.tags || ''}`.trim(),
-            file_url: clip.url,
+            file_url: hostedUrl,
             thumbnail_url: clip.cover || undefined,
             origin: 'creator',
             tags: ['cover-song', 'sonic', data.model_version].filter(Boolean),
             metadata: {
               task_kind: 'cover_song',
               source_url: sourceUrl,
+              original_provider_url: clip.url,
               clip_id: clip.clip_id,
               provider_clip_id: clip.clip_id,
               model_version: data.model_version,
@@ -155,14 +179,14 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
                   )}
                 </div>
               </div>
-              <audio src={clip.url} controls className="w-full" />
+              <audio src={playableUrls[clip.url] || clip.url} controls className="w-full" preload="metadata" />
               <div className="flex gap-2">
                 <Button onClick={() => saveToLibrary(clip, i)} disabled={isSaving || isSaved}
                   variant="outline" className="flex-1 rounded-lg text-xs gap-1.5">
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   {isSaved ? 'Saved' : 'Save to Library'}
                 </Button>
-                <a href={clip.url} download className="flex-1">
+                <a href={playableUrls[clip.url] || clip.url} download className="flex-1">
                   <Button variant="ghost" className="w-full rounded-lg text-xs gap-1.5">
                     <Download className="w-3.5 h-3.5" /> Download
                   </Button>
