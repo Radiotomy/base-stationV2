@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Upload, Library, Loader2, Wand2, Music, Sparkles, Mic, Sliders, Save } from 'lucide-react';
+import { Upload, Library, Loader2, Wand2, Music, Sparkles, Mic, Sliders, Save, Repeat, FastForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,12 +27,18 @@ const SONIC_MODELS = [
 ];
 
 export default function CoverSongStudio() {
+  // Mode: 'cover' = re-imagine in new style · 'extend' = continue the track
+  const [taskKind, setTaskKind] = useState('cover');
+
   // Source
   const [sourceUrl, setSourceUrl] = useState('');
   const [sourceLabel, setSourceLabel] = useState('');
   const [uploading, setUploading] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [librarySelection, setLibrarySelection] = useState([]);
+
+  // Extend-only — where the extension picks up
+  const [continueAt, setContinueAt] = useState(0.1);
 
   // Creative controls
   const [model, setModel] = useState('sonic-v4-5');
@@ -101,7 +107,7 @@ export default function CoverSongStudio() {
       setGenerating(false);
       setResult(data);
       setJobId(null);
-      toast.success('Cover song ready!', { icon: '✨' });
+      toast.success(`${taskKind === 'extend' ? 'Extension' : 'Cover'} ready!`, { icon: '✨' });
     },
     (err) => {
       setGenerating(false);
@@ -124,7 +130,8 @@ export default function CoverSongStudio() {
     setGenerating(true);
     setResult(null);
     try {
-      const res = await base44.functions.invoke('generateCoverSong', {
+      const fn = taskKind === 'extend' ? 'extendUploadedMusic' : 'generateCoverSong';
+      const payload = {
         url: sourceUrl,
         mv: model,
         custom_mode: customMode,
@@ -140,11 +147,13 @@ export default function CoverSongStudio() {
         vocal_gender: supportsVocalGender ? (vocalGender || undefined) : undefined,
         genre: genre || undefined,
         mood: mood || undefined,
-      });
+        ...(taskKind === 'extend' && { continue_at: continueAt }),
+      };
+      const res = await base44.functions.invoke(fn, payload);
       const j = res.data?.job_id;
       if (!j) throw new Error(res.data?.error || 'No job_id returned');
       setJobId(j);
-      toast.success('Cover generation started — polling for result…');
+      toast.success(`${taskKind === 'extend' ? 'Extension' : 'Cover'} started — this can take 1-2 minutes…`);
     } catch (err) {
       setGenerating(false);
       if (!handleCreditError(err)) {
@@ -158,10 +167,37 @@ export default function CoverSongStudio() {
       <StudioPageHeader
         icon={Mic}
         accent="rose"
-        title="Cover Song Studio"
-        subtitle="Upload any track. Re-imagine it in any style, genre, mood, or vocal — no limits."
-        badge="Sonic Cover"
+        title="Cover & Extend Studio"
+        subtitle="Upload any track. Re-imagine it in a new style — or extend it with new sections."
+        badge="Sonic Upload"
       />
+
+      {/* Mode switcher */}
+      <div className="max-w-7xl mx-auto px-6 pt-2">
+        <div className="merc-card rounded-2xl p-1.5 inline-flex gap-1">
+          <button
+            onClick={() => setTaskKind('cover')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              taskKind === 'cover' ? 'bg-rose-500/20 text-rose-200 border border-rose-500/40' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Repeat className="w-3.5 h-3.5" /> Cover Song
+          </button>
+          <button
+            onClick={() => setTaskKind('extend')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              taskKind === 'extend' ? 'bg-fuchsia-500/20 text-fuchsia-200 border border-fuchsia-500/40' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <FastForward className="w-3.5 h-3.5" /> Extend Track
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-2">
+          {taskKind === 'cover'
+            ? 'Re-imagine your track in any new style, genre, or mood.'
+            : 'Continue your track from a specific point with new sections.'}
+        </p>
+      </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT — Source + Model */}
@@ -217,11 +253,34 @@ export default function CoverSongStudio() {
 
           {/* Title */}
           <div className="merc-card rounded-2xl p-5 space-y-2">
-            <h3 className="text-sm font-black">Cover Title</h3>
-            <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="My Cover Version"
+            <h3 className="text-sm font-black">{taskKind === 'extend' ? 'Extended Track Title' : 'Cover Title'}</h3>
+            <Input value={title} onChange={e => setTitle(e.target.value)}
+              placeholder={taskKind === 'extend' ? 'My Extended Track' : 'My Cover Version'}
               maxLength={80} className="rounded-xl text-sm" />
             <p className="text-[10px] text-muted-foreground">Max 80 chars</p>
           </div>
+
+          {/* Extend-only: continue-at marker */}
+          {taskKind === 'extend' && (
+            <div className="merc-card rounded-2xl p-5 space-y-3">
+              <h3 className="text-sm font-black flex items-center gap-2">
+                <FastForward className="w-4 h-4 text-fuchsia-400" /> Continue At
+              </h3>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  value={continueAt}
+                  onChange={e => setContinueAt(Math.max(0, Number(e.target.value) || 0))}
+                  step={0.1} min={0}
+                  className="rounded-xl text-sm flex-1"
+                />
+                <span className="text-xs font-mono text-muted-foreground">sec</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                Seconds into the source where the new content begins. <code className="text-fuchsia-400">0.1</code> is recommended.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* RIGHT — Creative controls */}
@@ -365,7 +424,9 @@ export default function CoverSongStudio() {
             className="w-full bg-gradient-to-r from-rose-600 to-fuchsia-600 hover:from-rose-500 hover:to-fuchsia-500 rounded-xl font-bold py-6 gap-2"
           >
             {generating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
-            {generating ? 'Generating cover…' : 'Generate Cover Song'}
+            {generating
+              ? (taskKind === 'extend' ? 'Extending…' : 'Generating cover…')
+              : (taskKind === 'extend' ? 'Extend Track' : 'Generate Cover Song')}
             {!generating && <CostBadge cost={10} />}
           </Button>
 
