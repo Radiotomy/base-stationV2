@@ -17,6 +17,12 @@ const WATCHED_TASK_KINDS = new Set([
 ]);
 
 const POLL_INTERVAL_MS = 8000;
+// After this many seconds of "processing", the bell starts driving the
+// provider poll itself. Covers the case where the user left the studio page
+// and the in-page polling loop was torn down.
+const DRIVE_POLL_AFTER_SECONDS = 90;
+// Stop driving after this many minutes — anything still processing is hung.
+const GIVE_UP_AFTER_MINUTES = 10;
 
 function describeJob(job) {
   const kind = job.input_data?.task_kind || '';
@@ -46,6 +52,7 @@ export default function JobNotificationBell() {
   const [notifications, setNotifications] = useState([]); // { id, status, title, type, icon, completedAt, read, fileUrl }
   const [activeCount, setActiveCount] = useState(0);
   const seenStatusRef = useRef(new Map()); // job_id -> last known status
+  const drivingRef = useRef(new Set()); // job_ids currently being driven (prevents concurrent invokes)
   const userIdRef = useRef(null);
 
   // Load current user once
@@ -75,6 +82,21 @@ export default function JobNotificationBell() {
         // Count currently-processing watched jobs (for the pulsing dot)
         const processing = watched.filter(j => j.status === 'processing' || j.status === 'pending');
         setActiveCount(processing.length);
+
+        // Watchdog: for any job that's been processing > DRIVE_POLL_AFTER_SECONDS,
+        // drive the provider poll ourselves. This rescues jobs whose studio page
+        // was closed before completion.
+        for (const job of processing) {
+          if (!job.provider_job_id) continue; // not yet submitted to provider
+          if (drivingRef.current.has(job.id)) continue;
+          const ageSec = (Date.now() - new Date(job.created_date).getTime()) / 1000;
+          if (ageSec < DRIVE_POLL_AFTER_SECONDS) continue;
+          if (ageSec > GIVE_UP_AFTER_MINUTES * 60) continue; // hung — leave for cleanup
+          drivingRef.current.add(job.id);
+          base44.functions.invoke('pollGenerationJob', { job_id: job.id })
+            .catch(() => {})
+            .finally(() => { drivingRef.current.delete(job.id); });
+        }
 
         // Detect status transitions → completed/failed
         for (const job of watched) {
