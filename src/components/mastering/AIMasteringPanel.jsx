@@ -13,6 +13,8 @@ import StereoVUMeter from './StereoVUMeter';
 import ScrubWaveformPlayer from './ScrubWaveformPlayer';
 import AssetPicker from '@/components/studio/AssetPicker';
 import useMasteringChain from '@/hooks/useMasteringChain';
+import { decodeAudioFromUrl, renderMasteringOffline } from '@/utils/offlineMastering';
+import { audioBufferToWav } from '@/utils/wavEncoder';
 
 // Character sliders — these match the visual sliders in the user's reference
 const CHARACTER_SLIDERS = [
@@ -181,21 +183,62 @@ export default function AIMasteringPanel() {
     if (!audioUrl) { toast.error('Upload a track first'); return; }
     setMastering(true);
     try {
-      const res = await base44.functions.invoke('aiMastering', {
-        audio_url: audioUrl,
+      // 1. Decode the source audio
+      toast.loading('Decoding audio…', { id: 'master' });
+      const sourceBuffer = await decodeAudioFromUrl(audioUrl);
+
+      // 2. Render the full DSP chain offline → AudioBuffer
+      toast.loading('Rendering master…', { id: 'master' });
+      const renderedBuffer = await renderMasteringOffline(sourceBuffer, {
         character,
         eq,
-        lufs_target: lufsTarget,
-        style: style || 'custom',
-        title,
-        // Include stereo controls in the mastering recipe
+        lufsTarget,
         stereo: { balance, separation },
       });
-      setResult(res.data);
-      refreshCreditsFromResponse(res.data);
-      toast.success('Master complete!', { icon: '✨' });
+
+      // 3. Encode to 16-bit PCM WAV
+      toast.loading('Encoding WAV…', { id: 'master' });
+      const wavBlob = audioBufferToWav(renderedBuffer);
+      const safeName = (title || 'mastered_track').replace(/[^a-z0-9\s-]/gi, '').trim().replace(/\s+/g, '_');
+      const wavFile = new File([wavBlob], `${safeName}_master.wav`, { type: 'audio/wav' });
+
+      // 4. Upload the rendered WAV
+      toast.loading('Uploading…', { id: 'master' });
+      const uploaded = await base44.integrations.Core.UploadFile({ file: wavFile });
+
+      // 5. Save as a `master` UserAsset
+      const me = await base44.auth.me();
+      const asset = await base44.entities.UserAsset.create({
+        user_id: me.id,
+        user_email: me.email,
+        asset_type: 'master',
+        title: `${title || 'Untitled'} — Mastered`,
+        description: `Client-rendered master · ${lufsTarget} LUFS target · style: ${style || 'custom'}`,
+        file_url: uploaded.file_url,
+        origin: 'creator',
+        tags: ['mastered', style || 'custom'],
+        metadata: {
+          mastering_profile: style || 'custom',
+          lufs_target: lufsTarget,
+          character,
+          eq,
+          stereo: { balance, separation },
+          duration: renderedBuffer.duration,
+          sample_rate: renderedBuffer.sampleRate,
+          format: 'wav',
+          rendered_client_side: true,
+          provenance: {
+            created_by: 'mastering_studio',
+            dsp: 'web_audio_offline',
+          },
+        },
+      });
+
+      setResult({ asset, profile: { lufs_target: lufsTarget } });
+      toast.success('Master rendered & saved to library!', { id: 'master', icon: '✨' });
     } catch (err) {
-      if (!handleCreditError(err)) toast.error(err?.response?.data?.error || err.message);
+      toast.dismiss('master');
+      if (!handleCreditError(err)) toast.error(err?.message || 'Mastering failed');
     }
     setMastering(false);
   };
