@@ -314,6 +314,25 @@ export const COVER_PRESETS = [
 
   // ── ERAS ──────────────────────────────────────────────────────────────────
   {
+    id: 'classic-rock-60s-70s',
+    name: "60s-70s Classic Rock",
+    emoji: '🎸',
+    category: 'era',
+    description: 'Hammond organ, fuzz guitar, analog warmth — Zeppelin/Stones era',
+    fields: {
+      title_suffix: '(Classic Rock Version)',
+      genre: 'classic rock',
+      mood: 'soulful, gritty, anthemic',
+      tags: 'fuzz guitar, Hammond B3 organ, analog tape warmth, live drums, electric bass, blues-rock licks, harmonica, vinyl character',
+      negative_tags: 'autotune, trap drums, EDM, modern pop production, digital sheen',
+      vocal_gender: 'm',
+      instrumental: false,
+      ai_description: 'A 60s-70s classic rock cover with fuzz guitar leads, swirling Hammond B3 organ, warm analog tape compression, live-feel drums, and a gritty soulful male lead. Zeppelin and Stones era energy.',
+      style_weight: 0.8, audio_weight: 0.5, weirdness: 0.3,
+      custom_mode_pref: 'ai',
+    },
+  },
+  {
     id: '80s-pop',
     name: '80s Pop',
     emoji: '📼',
