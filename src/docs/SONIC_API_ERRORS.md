@@ -21,7 +21,7 @@ Used by these backend functions:
 | `The 'make_instrumental' field should be boolean.` | Wrong type | `make_instrumental` |
 | `The 'custom_mode' field should be boolean.` | Wrong type | `custom_mode` |
 | `The prompt character length should be less than 3000.` | Lyrics too long on v3.5/v4 | `prompt` |
-| `The 'gpt_description_prompt' character length should be less than 200.` | AI-mode description over limit | `gpt_description_prompt` (we cap at 400 — **VERIFY: docs say 200**) |
+| `The 'gpt_description_prompt' character length should be less than 200.` | AI-mode description over limit | `gpt_description_prompt` (we cap at 400 — matches Sonic Instructions spec; this 200 error msg is outdated/stale) |
 | `The tags character length should be less than 200.` | Style tags too long on v3.5/v4 | `tags` |
 | `The title character length should be less than 80.` | Title over limit | `title` |
 | `description is required.` | Persona/upload-cover missing description | `description` |
@@ -32,8 +32,8 @@ Used by these backend functions:
 | `task not found.` | Polling unknown task_id | `task_id` |
 | `missing task id.` | Polling without task_id | `task_id` |
 
-### ⚠️ Discrepancy to verify
-Our `SONIC_LIMITS` constants currently set `gpt_description_prompt` to 400 chars, but docs say **200**. Verify against current API before next push — affects `generateCoverSong`, `extendUploadedMusic`, `generateMusic` AI-description mode.
+### ✅ gpt_description_prompt = 400 chars (verified)
+Sonic Instructions (https://docs.aimusicapi.ai/doc-2058749) defines the cap as **400 chars**. The error-handling page (doc-2058747) lists a 200-char error message but this appears to be stale/outdated docs. All three functions correctly cap at 400.
 
 ### ⚠️ Model name mapping
 Docs list canonical models as `chirp-v3-5`, `chirp-v4`, `chirp-v4-5`. We send `sonic-v3-5` / `sonic-v4` / `sonic-v4-5` / `sonic-v4-5-plus` / `sonic-v5` / `sonic-v5-5`. If a future API tightening rejects `sonic-*` aliases, map them server-side in each function's request builder.
@@ -97,7 +97,7 @@ For `upload-cover` and `extend` endpoints, the file URL is also validated:
 
 1. Validate `custom_mode`, `make_instrumental` as booleans before sending.
 2. Enforce per-model `prompt` / `tags` limits via `SONIC_LIMITS` map (already in place in `generateCoverSong`, `extendUploadedMusic`).
-3. Cap `gpt_description_prompt` at **200** (not 400 — fix pending verification).
+3. Cap `gpt_description_prompt` at **400** (per Sonic Instructions spec).
 4. Cap `title` at 80, `description` at 120 (or 200 for extend).
 5. For 403 errors, pass `message`/`error` text through to user UI verbatim.
 6. For 504 timeouts, restore user credits.
