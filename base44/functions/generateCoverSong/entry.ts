@@ -108,27 +108,13 @@ Deno.serve(async (req) => {
       }, { status: 402 });
     }
 
-    // ── Step 1: Upload (if needed) ───────────────────────────────────────────
-    let clipId = existingClipId;
-    if (!clipId) {
-      try {
-        clipId = await uploadToSonic(url);
-      } catch (e) {
-        return Response.json({
-          error: e.message || 'Upload to Sonic failed',
-          provider_status: e.providerStatus || 502,
-        }, { status: 502 });
-      }
-    }
-
-    // ── Step 2: Create cover task ────────────────────────────────────────────
+    // ── Pre-compute Sonic create body (used in background work) ──────────────
     const limits = SONIC_LIMITS[mv];
     const tagParts = [tags, genre, mood].filter(Boolean).map(s => String(s).trim()).filter(Boolean);
     const mergedTags = tagParts.join(', ').slice(0, limits.tags);
 
     const apiBody = {
       task_type: 'cover_upload_music',
-      continue_clip_id: clipId,
       custom_mode: !!custom_mode,
       mv,
     };
@@ -144,37 +130,10 @@ Deno.serve(async (req) => {
     if (vocal_gender && VOCAL_GENDER_MODELS.has(mv) && (vocal_gender === 'f' || vocal_gender === 'm')) {
       apiBody.vocal_gender = vocal_gender;
     }
-
     const wh = getWebhookConfig();
     if (wh) Object.assign(apiBody, wh);
 
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 30000);
-    let res, data;
-    try {
-      res = await fetch(`${AI_BASE}/sonic/create`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiBody),
-        signal: controller.signal,
-      });
-      data = await res.json();
-    } finally { clearTimeout(t); }
-
-    console.log('Sonic cover_upload_music response:', JSON.stringify(data));
-    if (!res.ok) {
-      const status = res.status === 402 ? 402 : res.status === 429 ? 429 : 502;
-      return Response.json({
-        error: data?.error || data?.message || `Sonic HTTP ${res.status}`,
-        provider_type: data?.type || null,
-        provider_status: res.status,
-      }, { status });
-    }
-
-    const taskId = data.task_id;
-    if (!taskId) return Response.json({ error: 'No task_id from Sonic', detail: data }, { status: 502 });
-
-    // ── Create GenerationJob ─────────────────────────────────────────────────
+    // ── Create the GenerationJob FIRST so the client can poll immediately ───
     const generatedAt = new Date().toISOString();
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
@@ -182,7 +141,7 @@ Deno.serve(async (req) => {
       status: 'processing',
       input_data: {
         cover_of: url || null,
-        upload_clip_id: clipId,
+        upload_clip_id: existingClipId || null,
         mv,
         custom_mode: !!custom_mode,
         prompt: custom_mode ? String(prompt || '').slice(0, 500) : undefined,
@@ -191,17 +150,15 @@ Deno.serve(async (req) => {
         tags: mergedTags,
         negative_tags,
         make_instrumental: !!make_instrumental,
-        style_weight,
-        weirdness_constraint,
-        audio_weight,
+        style_weight, weirdness_constraint, audio_weight,
         vocal_gender: apiBody.vocal_gender || null,
         genre, mood,
         lyrics: custom_mode ? prompt : '',
         model: mv,
         credit_cost: COVER_COST,
         task_kind: 'cover_upload_music',
+        stage: existingClipId ? 'creating' : 'uploading',
       },
-      provider_job_id: taskId,
       started_at: generatedAt,
     });
 
@@ -210,20 +167,64 @@ Deno.serve(async (req) => {
       provider: 'sonic', task: 'generate_cover_song',
       credits_used: 0, status: 'pending',
       timestamp: generatedAt, job_id: job.id,
-      metadata: {
-        model_version: mv,
-        base44_job_id: job.id,
-        provider_job_id: taskId,
-        upload_clip_id: clipId,
-        task_kind: 'cover_upload_music',
-      },
+      metadata: { model_version: mv, base44_job_id: job.id, task_kind: 'cover_upload_music' },
     }).catch(() => {});
 
+    // ── Background: upload (if needed) + create cover task on Sonic ──────────
+    // Don't await — this is fire-and-forget so we return well under gateway timeout.
+    (async () => {
+      try {
+        let clipId = existingClipId;
+        if (!clipId) {
+          clipId = await uploadToSonic(url);
+          await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+            input_data: { ...job.input_data, upload_clip_id: clipId, stage: 'creating' },
+          });
+        }
+        apiBody.continue_clip_id = clipId;
+
+        const controller = new AbortController();
+        const t = setTimeout(() => controller.abort(), 30000);
+        let res, data;
+        try {
+          res = await fetch(`${AI_BASE}/sonic/create`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(apiBody),
+            signal: controller.signal,
+          });
+          data = await res.json();
+        } finally { clearTimeout(t); }
+
+        console.log('Sonic cover_upload_music response:', JSON.stringify(data));
+        if (!res.ok || !data?.task_id) {
+          const msg = data?.error || data?.message || `Sonic HTTP ${res.status}`;
+          await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+            status: 'failed',
+            error_message: msg,
+            completed_at: new Date().toISOString(),
+          });
+          return;
+        }
+
+        await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+          provider_job_id: data.task_id,
+          input_data: { ...job.input_data, upload_clip_id: clipId, stage: 'processing' },
+        });
+      } catch (e) {
+        await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+          status: 'failed',
+          error_message: e.message || 'Background submission failed',
+          completed_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
+    })();
+
+    // Return immediately — client polls job.id until status flips
     return Response.json({
       job_id: job.id,
       status: 'processing',
-      task_id: taskId,
-      clip_id: clipId,
+      stage: existingClipId ? 'creating' : 'uploading',
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
