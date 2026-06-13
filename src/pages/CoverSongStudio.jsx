@@ -119,12 +119,18 @@ export default function CoverSongStudio() {
 
   // ── Submit ────────────────────────────────────────────────────────────────
   const runGenerate = async () => {
-    if (!sourceUrl) { toast.error('Add a source track first'); return; }
+    console.log('[CoverStudio] Generate clicked', { taskKind, sourceUrl, customMode, hasLyrics: !!lyrics.trim(), instrumental });
+    if (!sourceUrl) {
+      toast.error('Add a source track first — upload or pick from library', { duration: 5000 });
+      return;
+    }
     if (customMode && !lyrics.trim() && !instrumental) {
-      toast.error('Add lyrics (or switch to AI description mode / instrumental)'); return;
+      toast.error('Add lyrics (or toggle Instrumental / switch to AI Description tab)', { duration: 5000 });
+      return;
     }
     if (!customMode && !aiDescription.trim()) {
-      toast.error('Add an AI style description'); return;
+      toast.error('Add an AI style description', { duration: 5000 });
+      return;
     }
 
     setGenerating(true);

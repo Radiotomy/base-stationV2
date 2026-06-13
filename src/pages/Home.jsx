@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useAuth } from "@/lib/AuthContext";
 
 import {
   Radio, TrendingUp, Music, Star, Zap, ArrowRight,
@@ -47,28 +48,37 @@ export default function Home() {
   const [topTracks, setTopTracks] = useState([]);
   const [featuredArtists, setFeaturedArtists] = useState([]);
   const [featuredPlaylists, setFeaturedPlaylists] = useState([]);
-  const [user, setUser] = useState(null);
+  // Reuse the auth context user — no duplicate auth.me() roundtrip
+  const { user } = useAuth();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
-    base44.entities.TrackChart.filter({ period: "weekly" }, "-total_votes", 5).then(setTopTracks).catch(() => {});
-    base44.entities.FeaturedArtistApplication.filter({ status: "approved" }, "-featured_since", 6).then(setFeaturedArtists).catch(() => {});
-    base44.entities.Playlist.filter({ is_featured: true }, "-created_date", 6).then(setFeaturedPlaylists).catch(() => {});
+    let alive = true;
+    Promise.allSettled([
+      base44.entities.TrackChart.filter({ period: "weekly" }, "-total_votes", 5),
+      base44.entities.FeaturedArtistApplication.filter({ status: "approved" }, "-featured_since", 6),
+      base44.entities.Playlist.filter({ is_featured: true }, "-created_date", 6),
+    ]).then(([t, a, p]) => {
+      if (!alive) return;
+      if (t.status === 'fulfilled') setTopTracks(t.value || []);
+      if (a.status === 'fulfilled') setFeaturedArtists(a.value || []);
+      if (p.status === 'fulfilled') setFeaturedPlaylists(p.value || []);
+    });
+    return () => { alive = false; };
   }, []);
 
   return (
     <div className="min-h-screen relative" style={{ backgroundColor: "#0A0A12" }}>
+      {/* Single static backdrop — `position: fixed` + image keeps GPU layer cached, no per-scroll repaint */}
       <div
-        className="fixed inset-0 pointer-events-none"
+        className="fixed inset-0 pointer-events-none will-change-transform"
         style={{
-          backgroundImage: `url(${MERCURY_BG})`,
+          backgroundImage: `linear-gradient(to bottom, rgba(10,10,18,0) 0%, rgba(10,10,18,0.5) 70%, rgba(10,10,18,0.85) 100%), url(${MERCURY_BG})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
           opacity: 0.85,
         }}
       />
-      <div className="fixed inset-0 pointer-events-none bg-gradient-to-b from-transparent via-[#0A0A12]/40 to-[#0A0A12]/80" />
 
       <div className="relative">
         <section className="relative pt-20 pb-20 px-6">
