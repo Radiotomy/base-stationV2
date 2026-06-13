@@ -15,6 +15,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import AssetPicker from '@/components/studio/AssetPicker';
 import CoverSongResult from '@/components/coversong/CoverSongResult';
 import CoverAIAssistant from '@/components/coversong/CoverAIAssistant';
+import CoverPresetPicker from '@/components/coversong/CoverPresetPicker';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 
@@ -427,6 +428,30 @@ export default function CoverSongStudio() {
               </div>
             ))}
           </div>
+
+          {/* Style Templates — one-tap curated presets (comic, dark, parody, genre flips…) */}
+          <CoverPresetPicker
+            sourceLabel={sourceLabel}
+            onApply={(f) => {
+              if (f.title !== undefined) setTitle(String(f.title).slice(0, 80));
+              if (f.genre !== undefined) setGenre(f.genre);
+              if (f.mood !== undefined) setMood(f.mood);
+              if (f.tags !== undefined) setTags(f.tags);
+              if (f.negative_tags !== undefined) setNegativeTags(f.negative_tags);
+              if (f.vocal_gender !== undefined && supportsVocalGender) setVocalGender(f.vocal_gender);
+              if (typeof f.instrumental === 'boolean') setInstrumental(f.instrumental);
+              if (typeof f.style_weight === 'number') setStyleWeight(f.style_weight);
+              if (typeof f.audio_weight === 'number') setAudioWeight(f.audio_weight);
+              if (typeof f.weirdness === 'number') setWeirdness(f.weirdness);
+              if (f.custom_mode_pref === 'ai') {
+                setCustomMode(false);
+                if (f.ai_description) setAiDescription(String(f.ai_description).slice(0, 400));
+              } else if (f.custom_mode_pref === 'lyrics') {
+                setCustomMode(true);
+                if (f.lyrics) setLyrics(f.lyrics);
+              }
+            }}
+          />
 
           {/* AI Assistant — fills missing fields with smart suggestions */}
           <CoverAIAssistant
