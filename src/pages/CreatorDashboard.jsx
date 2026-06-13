@@ -7,6 +7,7 @@ import {
   Trash2, Image, FileText, Film,
   Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw, BarChart2
 } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
 import XPWidget from "@/components/dashboard/XPWidget";
 import ProjectsTab from "@/components/dashboard/ProjectsTab";
@@ -93,6 +94,7 @@ function AssetCard({ asset, onDelete }) {
 }
 
 export default function CreatorDashboard() {
+  const { user: authUser } = useAuth();
   const [user, setUser] = useState(null);
   const [tracks, setTracks] = useState([]);
   const [assets, setAssets] = useState([]);
@@ -104,11 +106,18 @@ export default function CreatorDashboard() {
   const navigate = useNavigate();
 
   const loadData = useCallback(async (userId) => {
-    const [userTracks, userAssets, logs] = await Promise.all([
-      base44.entities.TrackSubmission.filter({ artist_id: userId }, "-created_date", 50),
-      base44.entities.UserAsset.filter({ user_id: userId }, "-created_date", 100),
-      base44.entities.APIUsageLog.filter({ user_id: userId }, "-created_date", 200).catch(() => []),
-    ]);
+    // Sequence requests instead of Promise.all to avoid bursting the per-second rate limit.
+    // Each query is independently catch-guarded so a single 429 can't crash the whole dashboard.
+    const userTracks = await base44.entities.TrackSubmission
+      .filter({ artist_id: userId }, "-created_date", 50)
+      .catch(() => []);
+    const userAssets = await base44.entities.UserAsset
+      .filter({ user_id: userId }, "-created_date", 100)
+      .catch(() => []);
+    const logs = await base44.entities.APIUsageLog
+      .filter({ user_id: userId }, "-created_date", 200)
+      .catch(() => []);
+
     setTracks(userTracks);
     setAssets(userAssets);
     setUsageLogs(logs);
@@ -127,12 +136,12 @@ export default function CreatorDashboard() {
   }, []);
 
   useEffect(() => {
-    base44.auth.me().then(u => {
-      if (!u) { navigate("/"); return; }
-      setUser(u);
-      loadData(u.id).finally(() => setLoading(false));
-    }).catch(() => navigate("/"));
-  }, [navigate, loadData]);
+    // Reuse the auth context user — no duplicate auth.me() roundtrip on top of the burst.
+    if (authUser === undefined) return; // still loading
+    if (!authUser) { navigate("/"); return; }
+    setUser(authUser);
+    loadData(authUser.id).finally(() => setLoading(false));
+  }, [authUser, navigate, loadData]);
 
   // Real-time subscription to asset changes
   useEffect(() => {
