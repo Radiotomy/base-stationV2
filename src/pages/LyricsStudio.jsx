@@ -9,6 +9,7 @@ import {
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import { useNavigate } from 'react-router-dom';
 import ChipSelector from '@/components/music/ChipSelector';
+import MultiChipSelector from '@/components/music/MultiChipSelector';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -500,18 +501,14 @@ export default function LyricsStudio() {
                   {mood.length > 0 && <span className="text-pink-400 font-bold">({mood.length})</span>}
                   <InfoTip text="Pick 1–3 moods. Stacking opposites (e.g. Melancholic + Triumphant) creates emotional contrast that hooks listeners." />
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {MOOD_CHIPS.map(chip => {
-                    const active = mood.includes(chip);
-                    return (
-                      <button key={chip} type="button"
-                        onClick={() => setMood(prev => active ? prev.filter(m => m !== chip) : [...prev, chip])}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${active ? 'bg-pink-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                        {chip}
-                      </button>
-                    );
-                  })}
-                </div>
+                <MultiChipSelector
+                  chipType="mood"
+                  defaults={MOOD_CHIPS}
+                  selected={mood}
+                  onChange={setMood}
+                  activeClass="bg-pink-600 text-white"
+                  addLabel="Custom mood…"
+                />
                 {mood.length > 0 && (
                   <p className="text-xs text-pink-300/70">Mixed: {mood.join(' + ')}</p>
                 )}
@@ -524,18 +521,14 @@ export default function LyricsStudio() {
                   {style.length > 0 && <span className="text-purple-400 font-bold">({style.length})</span>}
                   <InfoTip text="Genre shapes vocabulary, rhyme density and structure. Mixing styles (e.g. Hip-Hop + Pop) gives you a crossover feel." />
                 </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {STYLE_CHIPS.map(chip => {
-                    const active = style.includes(chip);
-                    return (
-                      <button key={chip} type="button"
-                        onClick={() => setStyle(prev => active ? prev.filter(s => s !== chip) : [...prev, chip])}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${active ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                        {chip}
-                      </button>
-                    );
-                  })}
-                </div>
+                <MultiChipSelector
+                  chipType="style"
+                  defaults={STYLE_CHIPS}
+                  selected={style}
+                  onChange={setStyle}
+                  activeClass="bg-purple-600 text-white"
+                  addLabel="Custom style…"
+                />
                 {style.length > 0 && (
                   <p className="text-xs text-purple-300/70">Mixed: {style.join(' + ')}</p>
                 )}
