@@ -4,8 +4,9 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
-  CheckCircle, Sparkles, Keyboard, Plus, X, History, Award, Music
+  CheckCircle, Sparkles, Keyboard, Plus, X, History, Award, Music, Crown
 } from 'lucide-react';
+import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import { useNavigate } from 'react-router-dom';
 import ChipSelector from '@/components/music/ChipSelector';
 import { Button } from '@/components/ui/button';
@@ -72,6 +73,8 @@ export default function LyricsStudio() {
   const [length, setLength] = useState('Medium (32 bars)');
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
   const [proMode, setProMode] = useState(false);
+  const [mastersMode, setMastersMode] = useState(false);
+  const [mastersResult, setMastersResult] = useState(null);
   const [referenceArtists, setReferenceArtists] = useState('');
   const [proBpm, setProBpm] = useState('');
   const [matchedGenre, setMatchedGenre] = useState(null);
@@ -135,10 +138,34 @@ export default function LyricsStudio() {
   const generate = async () => {
     if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
+    setMastersResult(null);
     try {
       let text = '';
       let lastResponse = null;
-      if (proMode) {
+      if (mastersMode) {
+        // 243 Masters Engine — lyrics + chords + arrangement + production brief
+        const maxCharsMap = {
+          'Short (8–16 bars)': 1500,
+          'Medium (32 bars)': 2500,
+          'Long (64+ bars)': 4000,
+          'Full Song': 5000,
+        };
+        const res = await base44.functions.invoke('generate243Masters', {
+          topic,
+          genre: style.join(', '),
+          mood: mood.join(', '),
+          rhyme_scheme: rhymeScheme,
+          reference_artists: referenceArtists || undefined,
+          bpm: proBpm ? Number(proBpm) : undefined,
+          max_chars: maxCharsMap[length] || 2500,
+        });
+        lastResponse = res;
+        text = res.data?.lyrics_clamped || res.data?.lyrics || '';
+        setMastersResult(res.data);
+        if (res.data?.clamped) {
+          toast.warning(`Clamped to ${text.length} chars for provider compatibility.`);
+        }
+      } else if (proMode) {
         // Professional Songwriting Engine — CanonicalLyricJob-compatible
         const maxCharsMap = {
           'Short (8–16 bars)': 1500,
@@ -171,7 +198,7 @@ export default function LyricsStudio() {
       if (text) {
         if (lyrics) setVersions(v => [{ text: lyrics, timestamp: Date.now() }, ...v].slice(0, 5));
         setLyrics(text);
-        toast.success(proMode ? '🎼 Pro lyrics generated!' : 'Lyrics generated!');
+        toast.success(mastersMode ? '👑 243 Masters engine complete!' : proMode ? '🎼 Pro lyrics generated!' : 'Lyrics generated!');
         // Refresh credits widget — server returns credits_remaining on success
         refreshCreditsFromResponse(lastResponse?.data);
       } else {
@@ -232,11 +259,26 @@ export default function LyricsStudio() {
         metadata: { mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics },
       });
       toast.success('🎵 Saved & exporting to Music Studio…');
+      // If we have a Masters brief, persist it on the asset metadata so Music Studio can pick it up
+      if (mastersResult?.production_brief) {
+        await base44.entities.UserAsset.update(asset.id, {
+          metadata: {
+            ...asset.metadata,
+            masters_brief: mastersResult.production_brief,
+            masters_key: mastersResult.key,
+            masters_bpm: mastersResult.bpm,
+            masters_chord_progression: mastersResult.chord_progression,
+            masters_arrangement: mastersResult.arrangement,
+            masters_used: mastersResult.masters_used,
+          },
+        }).catch(() => {});
+      }
       const params = new URLSearchParams({
         tab: 'advanced',
         lyrics: asset.id,
         ...(style[0] && { genre: style[0] }),
         ...(topic && { topic }),
+        ...(mastersResult?.production_brief && { masters: '1' }),
       });
       navigate(`/music-studio?${params.toString()}`);
     } catch (err) {
@@ -308,10 +350,30 @@ export default function LyricsStudio() {
                 <InfoTip size="sm" text="These settings control the AI lyrics engine. Pro Songwriter unlocks chart-grade rhyme craft + a writer-style auto-fill." />
               </h3>
 
+              {/* 243 Masters Toggle — premium tier */}
+              <button
+                type="button"
+                onClick={() => { setMastersMode(p => !p); if (!mastersMode) setProMode(false); }}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${mastersMode ? 'bg-gradient-to-r from-amber-500/15 to-purple-500/15 border-amber-400/50' : 'bg-muted/30 border-border hover:border-amber-400/30'}`}
+              >
+                <Crown className={`w-5 h-5 flex-shrink-0 ${mastersMode ? 'text-amber-300' : 'text-muted-foreground'}`} />
+                <div className="flex-1 text-left">
+                  <p className={`text-xs font-black ${mastersMode ? 'text-amber-200' : 'text-foreground'}`}>
+                    👑 243 Masters {mastersMode && '· ON'}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Lyrics + chord progression + arrangement, derived from 243 legendary writers
+                  </p>
+                </div>
+                <div className={`w-9 h-5 rounded-full transition-all flex-shrink-0 ${mastersMode ? 'bg-amber-400' : 'bg-muted'}`}>
+                  <div className={`w-4 h-4 mt-0.5 rounded-full bg-white transition-all ${mastersMode ? 'ml-[18px]' : 'ml-0.5'}`} />
+                </div>
+              </button>
+
               {/* Pro Songwriter Toggle */}
               <button
                 type="button"
-                onClick={() => setProMode(p => !p)}
+                onClick={() => { setProMode(p => !p); if (!proMode) setMastersMode(false); }}
                 className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${proMode ? 'bg-gradient-to-r from-amber-500/10 to-pink-500/10 border-amber-500/40' : 'bg-muted/30 border-border hover:border-amber-500/30'}`}
               >
                 <Award className={`w-5 h-5 flex-shrink-0 ${proMode ? 'text-amber-400' : 'text-muted-foreground'}`} />
@@ -509,10 +571,10 @@ export default function LyricsStudio() {
               </div>
 
               <Button onClick={generate} disabled={loading || !topic}
-                className="w-full bg-pink-600 hover:bg-pink-500 rounded-xl font-bold gap-2">
-                <Zap className="w-4 h-4" />
-                {loading ? 'Generating…' : 'Generate  (⌘↵)'}
-                <CostBadge cost={2} size="sm" />
+                className={`w-full rounded-xl font-bold gap-2 ${mastersMode ? 'bg-amber-500 hover:bg-amber-400 text-black' : 'bg-pink-600 hover:bg-pink-500'}`}>
+                {mastersMode ? <Crown className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+                {loading ? 'Generating…' : mastersMode ? 'Run Masters Engine (⌘↵)' : 'Generate  (⌘↵)'}
+                <CostBadge cost={mastersMode ? 3 : 2} size="sm" />
               </Button>
             </div>
 
@@ -642,6 +704,13 @@ export default function LyricsStudio() {
                 </Button>
               </div>
             </div>
+
+            {/* 243 Masters brief panel — chord progression, arrangement, production brief */}
+            {mastersResult && (
+              <div className="mt-5">
+                <MastersBriefDisplay result={mastersResult} />
+              </div>
+            )}
           </div>
         </div>
       </div>

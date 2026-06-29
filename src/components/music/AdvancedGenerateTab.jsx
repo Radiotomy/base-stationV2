@@ -13,6 +13,8 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import ChipSelector from '@/components/music/ChipSelector';
+import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
+import { Crown } from 'lucide-react';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 
@@ -83,6 +85,8 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [lastError, setLastError] = useState(null); // persistent failure banner
+  const [mastersBrief, setMastersBrief] = useState(null); // 243 Masters brief imported from Lyrics Studio
+  const [runningMasters, setRunningMasters] = useState(false);
   const savedRef = useRef(false); // prevent duplicate auto-saves
 
   // Debounced values to prevent input handler violations on rapid keystrokes
@@ -118,6 +122,22 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           setLyricsMode('custom');
           setImportedFromStudio(true);
           toast.success('🎤 Lyrics imported from Lyrics Studio');
+        }
+        // 243 Masters brief — if present on the asset, surface it + prefill the sound prompt
+        const meta = asset?.metadata || {};
+        if (meta.masters_brief) {
+          setMastersBrief({
+            title: asset.title,
+            key: meta.masters_key,
+            bpm: meta.masters_bpm,
+            chord_progression: meta.masters_chord_progression || [],
+            arrangement: meta.masters_arrangement || [],
+            production_brief: meta.masters_brief,
+            masters_used: meta.masters_used || [],
+          });
+          setSoundPrompt(prev => prev || meta.masters_brief);
+          if (meta.masters_bpm) setTempo(String(meta.masters_bpm));
+          toast.success('👑 243 Masters brief loaded — production prompt prefilled');
         }
       } catch {
         toast.error('Could not load lyrics from your library');
@@ -296,6 +316,31 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       } else { toast.error('Extension failed'); }
     } catch (err) { toast.error(err.message); }
     setExtending(false);
+  };
+
+  const runMastersEngine = async () => {
+    if (!soundPrompt && !genre) { toast.error('Add a sound description or genre first'); return; }
+    setRunningMasters(true);
+    try {
+      const res = await base44.functions.invoke('generate243Masters', {
+        topic: soundPrompt || `${mood} ${genre} track`,
+        genre, mood,
+        bpm: tempo ? Number(tempo) : undefined,
+        max_chars: 3000,
+      });
+      const data = res.data;
+      if (data?.error) { toast.error(data.error); setRunningMasters(false); return; }
+      setMastersBrief(data);
+      // Push production brief into the sound prompt + lyrics into the lyrics field
+      if (data.production_brief) setSoundPrompt(data.production_brief);
+      if (data.lyrics) { setLyrics(data.lyrics); setLyricsMode('custom'); }
+      if (data.bpm) setTempo(String(data.bpm));
+      refreshCreditsFromResponse(data);
+      toast.success('👑 243 Masters brief ready — chord chart + arrangement + prompt loaded');
+    } catch (err) {
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
+    }
+    setRunningMasters(false);
   };
 
   const generateLyricsAI = async () => {
@@ -553,6 +598,32 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* 243 Masters — Craft Engine */}
+          <div className="p-3 rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/5 to-purple-500/5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-300" />
+                <div>
+                  <p className="text-xs font-black text-amber-200">243 Masters Engine</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Lyrics + chord chart + arrangement + prompt, from 243 legendary writers
+                  </p>
+                </div>
+              </div>
+              <Button onClick={runMastersEngine} disabled={runningMasters}
+                size="sm"
+                className="rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold gap-1.5 text-xs">
+                {runningMasters ? 'Composing…' : 'Craft with Masters'}
+                <CostBadge cost={3} size="sm" />
+              </Button>
+            </div>
+            {mastersBrief && (
+              <div className="mt-3">
+                <MastersBriefDisplay result={mastersBrief} />
+              </div>
+            )}
           </div>
 
           {/* Sound Description */}
