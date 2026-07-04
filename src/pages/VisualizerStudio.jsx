@@ -6,19 +6,11 @@ import { toast } from 'sonner';
 
 import StudioPageHeader from '@/components/studio/StudioPageHeader';
 import AssetPicker from '@/components/studio/AssetPicker';
-import VisualizerPreview from '@/components/studio/VisualizerPreview';
+import MilkdropVisualizer from '@/components/studio/MilkdropVisualizer';
+import PresetPicker from '@/components/studio/PresetPicker';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 import InfoTip from '@/components/common/InfoTip';
-
-const STYLES = [
-  { id: 'spectrum',  label: 'Spectrum',  emoji: '📊', desc: 'Animated frequency bars' },
-  { id: 'particles', label: 'Particles', emoji: '✨', desc: 'Flowing particle field' },
-  { id: 'waveform',  label: 'Waveform',  emoji: '〰️', desc: 'Pure waveform pulse' },
-  { id: 'liquid',    label: 'Liquid',    emoji: '💧', desc: 'Reactive liquid metal' },
-  { id: 'cinematic', label: 'Cinematic', emoji: '🎬', desc: 'AI-generated film loop' },
-  { id: 'retro',     label: 'Retro',     emoji: '📺', desc: 'VHS / 80s glitch' },
-];
 
 export default function VisualizerStudio() {
   const params = new URLSearchParams(window.location.search);
@@ -29,7 +21,7 @@ export default function VisualizerStudio() {
   const [uploadedAssetId, setUploadedAssetId] = useState(null);
   const [uploadedName, setUploadedName] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [style, setStyle] = useState('spectrum');
+  const [preset, setPreset] = useState(null);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -65,9 +57,10 @@ export default function VisualizerStudio() {
   const generate = async () => {
     const assetId = source === 'upload' ? uploadedAssetId : selected[0];
     if (!assetId) { toast.error(source === 'upload' ? 'Upload a track first' : 'Pick a track first'); return; }
+    if (!preset) { toast.error('Pick a MilkDrop preset first'); return; }
     setRunning(true);
     try {
-      const r = await base44.functions.invoke('generateVisualizer', { assetId, style });
+      const r = await base44.functions.invoke('generateVisualizer', { assetId, style: preset });
       const asset = r.data?.data?.asset || r.data?.asset;
       setResult(asset);
       toast.success('Visualizer generated!', { icon: '🎬' });
@@ -132,21 +125,10 @@ export default function VisualizerStudio() {
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <h3 className="text-sm font-black flex items-center gap-2">
-              2. Visualizer Style
-              <InfoTip text="Spectrum & Waveform react directly to audio frequencies. Particles & Liquid are mood-driven. Cinematic uses LTX to generate an AI film loop." />
+              2. MilkDrop Preset
+              <InfoTip text="Real MilkDrop visualizations rendered with Butterchurn — the same engine behind BeatDrop and the community preset collections. Search, pick, or shuffle a preset." />
             </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {STYLES.map(s => (
-                <button key={s.id} onClick={() => setStyle(s.id)}
-                  className={`p-3 rounded-xl border text-left transition-all ${style === s.id
-                    ? 'border-purple-500 bg-purple-500/10'
-                    : 'border-border bg-muted/30 hover:border-purple-500/40'}`}>
-                  <div className="text-lg mb-0.5">{s.emoji}</div>
-                  <p className="text-xs font-bold">{s.label}</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight">{s.desc}</p>
-                </button>
-              ))}
-            </div>
+            <PresetPicker value={preset} onChange={setPreset} />
           </div>
 
           <Button onClick={generate} disabled={running || (source === 'library' ? selected.length === 0 : !uploadedAssetId)}
@@ -160,7 +142,7 @@ export default function VisualizerStudio() {
           {!result && (
             <div className="bg-muted/30 border border-dashed border-border rounded-2xl p-8 text-center">
               <Film className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-30" />
-              <p className="text-sm text-muted-foreground">Pick a track and a visualizer style.</p>
+              <p className="text-sm text-muted-foreground">Pick a track and a MilkDrop preset.</p>
             </div>
           )}
 
@@ -171,7 +153,7 @@ export default function VisualizerStudio() {
                   <p className="text-sm font-bold truncate">{result.title}</p>
                   <AddToProjectButton asset={result} tool="visualizer_studio" toolRoute="/visualizer-studio" />
                 </div>
-                <VisualizerPreview src={result.file_url} style={result.metadata?.visualizer_style || style} title={result.title} />
+                <MilkdropVisualizer src={result.file_url} presetName={result.metadata?.visualizer_style || preset} title={result.title} />
               </div>
               <ProvenancePanel asset={result} />
             </>

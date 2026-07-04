@@ -9,7 +9,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  */
 
 const CREDITS_PER_VISUALIZER = 12;
-const VALID_STYLES = ['spectrum', 'particles', 'waveform', 'liquid', 'cinematic', 'retro'];
 
 Deno.serve(async (req) => {
   try {
@@ -17,26 +16,24 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { assetId, style = 'spectrum' } = await req.json();
+    const { assetId, style = 'milkdrop', preset = null } = await req.json();
     if (!assetId) return Response.json({ error: 'assetId required' }, { status: 400 });
-    if (!VALID_STYLES.includes(style)) {
-      return Response.json({ error: `style must be one of: ${VALID_STYLES.join(', ')}` }, { status: 400 });
+    if (typeof style !== 'string' || !style.trim()) {
+      return Response.json({ error: 'style (MilkDrop preset name) required' }, { status: 400 });
     }
 
     const arr = await base44.entities.UserAsset.filter({ id: assetId });
     const source = arr[0];
     if (!source) return Response.json({ error: 'Source asset not found' }, { status: 404 });
 
-    // LTX is the primary visual provider; falls back to local shader templates
-    const balances = await base44.asServiceRole.entities.ProviderBalance.list().catch(() => []);
-    const ltx = balances.find(b => b.provider === 'ltx');
-    const primary = (ltx?.health_status === 'healthy' && ltx?.status === 'active') ? 'ltx' : 'shader_template';
+    // Visuals render client-side with Butterchurn (MilkDrop engine) — no external provider.
+    const primary = 'milkdrop';
 
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id,
       user_email: user.email,
       job_type: 'video',
-      provider: primary === 'ltx' ? 'ltx' : 'sonic', // schema enum compatibility
+      provider: 'sonic', // schema enum compatibility — real renderer is milkdrop (see output_metadata)
       status: 'completed',
       input_data: { assetId, style, action: 'visualizer' },
       output_url: source.file_url,
@@ -49,7 +46,7 @@ Deno.serve(async (req) => {
       await base44.functions.invoke('deductCredits', {
         amount: CREDITS_PER_VISUALIZER,
         job_id: job.id,
-        provider: primary === 'ltx' ? 'ltx' : 'sonic',
+        provider: 'sonic',
         description: `Visualizer (${style}) for ${source.title}`,
       });
     } catch { /* non-blocking */ }
@@ -67,6 +64,7 @@ Deno.serve(async (req) => {
       tags: ['visualizer', style, 'video'],
       metadata: {
         visualizer_style: style,
+        milkdrop_preset: preset,
         source_asset_id: source.id,
         source_title: source.title,
         provider: primary,
