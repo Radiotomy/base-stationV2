@@ -11,7 +11,7 @@ import {
 import ActivityFeed from "@/components/feed/ActivityFeed";
 import CommunityMetrics from "@/components/home/CommunityMetrics";
 
-const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/c358fbcd9_generated_image.png";
+const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
 
 const STATS = [
   { label: "AI Tracks Created", value: "10K+" },
@@ -67,12 +67,12 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen relative" style={{ backgroundColor: "#0A0A12" }}>
+    <div className="min-h-screen relative" style={{ backgroundColor: "#14100C" }}>
       {/* Single static backdrop — `position: fixed` + image keeps GPU layer cached, no per-scroll repaint */}
       <div
         className="fixed inset-0 pointer-events-none will-change-transform"
         style={{
-          backgroundImage: `linear-gradient(to bottom, rgba(10,10,18,0) 0%, rgba(10,10,18,0.5) 70%, rgba(10,10,18,0.85) 100%), url(${MERCURY_BG})`,
+          backgroundImage: `linear-gradient(to bottom, rgba(20,16,12,0) 0%, rgba(20,16,12,0.5) 70%, rgba(20,16,12,0.85) 100%), url(${MERCURY_BG})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
@@ -84,12 +84,12 @@ export default function Home() {
         <section className="relative pt-20 pb-20 px-6">
           <div className="max-w-5xl mx-auto text-center">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-              <h1 className="font-display text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] mb-8">
+              <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[0.95] mb-8" style={{ color: "#FBF3E4" }}>
                 Where All Creators<br />Own Their Music
               </h1>
 
-              <div className="inline-block merc-card rounded-full px-5 py-2 mb-6">
-                <span className="text-[10px] font-bold tracking-[0.25em] text-white/90">MULTI-CHAIN AI MUSIC ON BASE</span>
+              <div className="inline-block rounded-full px-5 py-2 mb-6" style={{ background: "linear-gradient(135deg, #FF9A3D 0%, #FF7A2F 100%)", boxShadow: "0 4px 16px -2px rgba(255,140,60,0.5)" }}>
+                <span className="text-[10px] font-bold tracking-[0.25em] text-[#2A1508]">MULTI-CHAIN AI MUSIC ON BASE</span>
               </div>
 
               <p className="text-white/60 text-sm max-w-xl mx-auto leading-relaxed mb-8">
@@ -100,19 +100,19 @@ export default function Home() {
                 {user ? (
                   <>
                     <Link to={user?.is_creator === false ? "/radio" : "/creator-dashboard"}>
-                      <button className="merc-button-dark rounded-full px-6 py-2.5 font-semibold text-sm">
+                      <button className="merc-button rounded-full px-6 py-2.5 font-bold text-sm">
                         {user?.is_creator === false ? "Tune In" : "Go to Studio"}
                       </button>
                     </Link>
                     {user?.is_creator !== false && (
                       <Link to="/music-studio">
-                        <button className="merc-button rounded-full px-6 py-2.5 font-semibold text-sm">
+                        <button className="merc-button rounded-full px-6 py-2.5 font-bold text-sm">
                           Create Music
                         </button>
                       </Link>
                     )}
                     <Link to="/why-base-station">
-                      <button className="merc-button-dark rounded-full px-6 py-2.5 font-semibold text-sm">
+                      <button className="merc-button rounded-full px-6 py-2.5 font-bold text-sm">
                         Learn Why
                       </button>
                     </Link>
@@ -123,12 +123,12 @@ export default function Home() {
                       Join Free
                     </button>
                     <Link to="/radio">
-                      <button className="merc-button-dark rounded-full px-6 py-2.5 font-semibold text-sm">
+                      <button className="merc-button rounded-full px-6 py-2.5 font-bold text-sm">
                         Explore
                       </button>
                     </Link>
                     <Link to="/why-base-station">
-                      <button className="merc-button-dark rounded-full px-6 py-2.5 font-semibold text-sm">
+                      <button className="merc-button rounded-full px-6 py-2.5 font-bold text-sm">
                         Learn Why
                       </button>
                     </Link>
@@ -142,11 +142,22 @@ export default function Home() {
         <section className="py-12 px-6">
           <div className="max-w-6xl mx-auto">
             <h3 className="font-display text-white text-2xl md:text-3xl mb-6">Base Station by the Numbers</h3>
-            <div className="flex flex-wrap gap-4 md:gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {STATS.map(({ label, value }) => (
-                <div key={label} className="merc-bubble rounded-full w-28 h-28 md:w-32 md:h-32 flex flex-col items-center justify-center text-center p-3 flex-shrink-0">
-                  <p className="font-display text-[#1a1530] text-2xl md:text-3xl leading-none">{value}</p>
-                  <p className="text-[9px] md:text-[10px] text-[#1a1530]/70 mt-1 font-bold leading-tight">{label}</p>
+                <div
+                  key={label}
+                  className="rounded-[2rem] h-28 md:h-36 flex flex-col items-center justify-center text-center p-4 -skew-x-6"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,179,71,0.55) 0%, rgba(255,122,47,0.65) 55%, rgba(224,107,46,0.55) 100%)",
+                    border: "1px solid rgba(255,200,130,0.6)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35), 0 0 40px -6px rgba(255,150,60,0.55)",
+                    backdropFilter: "blur(8px)",
+                  }}
+                >
+                  <div className="skew-x-6">
+                    <p className="font-display text-white text-3xl md:text-5xl leading-none drop-shadow-[0_2px_8px_rgba(120,50,0,0.5)]">{value}</p>
+                    <p className="text-[10px] md:text-xs text-white/85 mt-1.5 font-bold leading-tight">{label}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -190,7 +201,7 @@ export default function Home() {
               <div className="merc-card rounded-3xl p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-display text-xl text-white">Top Tracks</h3>
-                  <Link to="/charts" className="text-xs text-white/60 hover:text-white flex items-center gap-1 font-semibold">
+                  <Link to="/charts" className="merc-button text-xs rounded-full px-3.5 py-1.5 flex items-center gap-1 font-bold">
                     Full Charts <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -210,6 +221,15 @@ export default function Home() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate text-white">{track.track_title}</p>
                           <p className="text-xs text-white/50 truncate">{track.artist_name}</p>
+                          <div className="h-1 mt-1.5 rounded-full bg-white/10 overflow-hidden">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${Math.max(8, Math.round(((track.total_votes || 0) / Math.max(1, topTracks[0]?.total_votes || 1)) * 100))}%`,
+                                background: "linear-gradient(90deg, #FFB347 0%, #FF6B4A 100%)",
+                              }}
+                            />
+                          </div>
                         </div>
                         <span className="text-xs font-bold text-white/60 flex-shrink-0">{track.total_votes?.toLocaleString() || 0}</span>
                       </Link>
@@ -231,21 +251,29 @@ export default function Home() {
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-display text-white text-2xl md:text-3xl">Featured Collections</h2>
-                <Link to="/playlists" className="text-xs text-white/60 hover:text-white flex items-center gap-1 font-semibold">
+                <Link to="/playlists" className="merc-button text-xs rounded-full px-3.5 py-1.5 flex items-center gap-1 font-bold">
                   All Playlists <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {featuredPlaylists.slice(0, 3).map((pl) => (
-                  <Link key={pl.id} to={`/playlists/${pl.id}`} className="merc-card merc-card-hover flex items-center gap-3 rounded-2xl p-3 transition-all group">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 overflow-hidden flex-shrink-0">
+                  <Link
+                    key={pl.id}
+                    to={`/playlists/${pl.id}`}
+                    className="flex items-center gap-3 rounded-2xl p-3 transition-all group hover:brightness-110"
+                    style={{
+                      background: "linear-gradient(135deg, #FFB347 0%, #FF8A3D 55%, #FF6B4A 100%)",
+                      boxShadow: "0 6px 24px -6px rgba(255,140,60,0.5)",
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-black/30 overflow-hidden flex-shrink-0">
                       {pl.cover_image_url && <img src={pl.cover_image_url} alt={pl.title} className="w-full h-full object-cover" />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm truncate text-white">{pl.title}</p>
-                      <p className="text-[11px] text-white/50">{pl.track_count || 0} tracks</p>
+                      <p className="font-bold text-sm truncate text-[#2A1508]">{pl.title}</p>
+                      <p className="text-[11px] text-[#2A1508]/70 font-semibold">{pl.track_count || 0} tracks</p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white" />
+                    <ChevronRight className="w-4 h-4 text-[#2A1508]/60 group-hover:text-[#2A1508]" />
                   </Link>
                 ))}
               </div>
@@ -279,7 +307,7 @@ export default function Home() {
         )}
 
         <section className="py-20 px-6 text-center">
-          <div className="max-w-3xl mx-auto merc-card rounded-[3rem] p-12">
+          <div className="max-w-3xl mx-auto">
             <h2 className="font-display text-5xl md:text-7xl mb-6">
               <span className="text-iridescent">Human + AI</span>
             </h2>
@@ -288,7 +316,7 @@ export default function Home() {
             </p>
             {user ? (
               <Link to="/radio">
-                <button className="merc-button-dark rounded-full px-10 py-3 font-semibold text-sm">
+                <button className="merc-button rounded-full px-10 py-3 font-bold text-sm">
                   Go to Radio
                 </button>
               </Link>
@@ -302,7 +330,7 @@ export default function Home() {
 
         <footer className="border-t border-white/10 py-8 px-6">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-white/50">
-            <div className="font-display text-base text-white">BaseStation</div>
+            <div className="font-display text-base" style={{ color: "#FF7A2F" }}>BaseStation</div>
             <p>BaseStation — Multi-Chain AI Music</p>
             <p>© 2026 BaseStation. Multi-Chain, Always.</p>
           </div>

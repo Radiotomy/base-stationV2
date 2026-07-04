@@ -65,7 +65,7 @@ export default function CommunityMetrics() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader className="w-5 h-5 animate-spin text-purple-400" />
+        <Loader className="w-5 h-5 animate-spin text-orange-400" />
       </div>
     );
   }
@@ -75,15 +75,15 @@ export default function CommunityMetrics() {
       icon: Music,
       label: 'Tracks Created Today',
       value: metrics?.tracksToday || 0,
-      color: 'text-blue-400',
-      bg: 'from-blue-600/10 to-cyan-600/10',
+      color: 'text-amber-400',
+      bg: 'from-amber-600/10 to-orange-600/10',
     },
     {
       icon: Users,
       label: 'New Users This Week',
       value: metrics?.newUsersThisWeek || 0,
-      color: 'text-purple-400',
-      bg: 'from-purple-600/10 to-pink-600/10',
+      color: 'text-orange-400',
+      bg: 'from-orange-600/10 to-red-600/10',
     },
     {
       icon: Zap,
@@ -96,8 +96,8 @@ export default function CommunityMetrics() {
       icon: Globe,
       label: 'Tracks On-Chain',
       value: metrics?.registeredOnChain || 0,
-      color: 'text-emerald-400',
-      bg: 'from-emerald-600/10 to-teal-600/10',
+      color: 'text-amber-300',
+      bg: 'from-orange-600/10 to-amber-600/10',
     },
   ];
 
@@ -116,7 +116,7 @@ export default function CommunityMetrics() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className={`p-4 rounded-xl bg-gradient-to-br ${stat.bg} border border-white/5 hover:border-white/10 transition-all`}
+              className={`p-4 rounded-xl bg-gradient-to-br ${stat.bg} border border-orange-500/20 hover:border-orange-500/40 transition-all`}
             >
               <Icon className={`w-5 h-5 ${stat.color} mb-2`} />
               <p className="text-2xl font-black text-foreground">{stat.value.toLocaleString()}</p>

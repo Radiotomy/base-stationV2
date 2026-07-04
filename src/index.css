@@ -7,76 +7,76 @@
 @layer base {
   :root {
     /* Liquid Mercury — obsidian + chrome iridescent */
-    --background: 240 20% 5%;
+    --background: 24 25% 6%;
     --foreground: 0 0% 98%;
-    --card: 240 15% 8%;
+    --card: 24 20% 9%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 15% 8%;
+    --popover: 24 20% 9%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
-    --primary-foreground: 240 20% 5%;
-    --secondary: 240 10% 14%;
+    --primary-foreground: 24 25% 6%;
+    --secondary: 24 15% 13%;
     --secondary-foreground: 0 0% 95%;
-    --muted: 240 10% 12%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 210 15% 80%;
-    --accent-foreground: 240 20% 5%;
+    --muted: 24 15% 11%;
+    --muted-foreground: 30 12% 66%;
+    --accent: 25 95% 62%;
+    --accent-foreground: 24 25% 6%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 10% 18%;
-    --input: 240 10% 14%;
-    --ring: 210 15% 70%;
+    --border: 24 20% 16%;
+    --input: 24 15% 13%;
+    --ring: 25 90% 58%;
     --chart-1: 290 80% 65%;
     --chart-2: 190 90% 60%;
     --chart-3: 60 95% 65%;
     --chart-4: 330 85% 70%;
     --chart-5: 145 65% 60%;
     --radius: 1rem;
-    --sidebar-background: 240 15% 8%;
+    --sidebar-background: 24 20% 9%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 210 15% 80%;
-    --sidebar-primary-foreground: 240 20% 5%;
-    --sidebar-accent: 240 10% 14%;
+    --sidebar-primary: 25 95% 62%;
+    --sidebar-primary-foreground: 24 25% 6%;
+    --sidebar-accent: 24 15% 13%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 10% 18%;
-    --sidebar-ring: 210 15% 70%;
+    --sidebar-border: 24 20% 16%;
+    --sidebar-ring: 25 90% 58%;
     --font-display: 'Inter', sans-serif;
     --font-body: 'Inter', sans-serif;
   }
 
   .dark {
-    --background: 240 20% 5%;
+    --background: 24 25% 6%;
     --foreground: 0 0% 98%;
-    --card: 240 15% 8%;
+    --card: 24 20% 9%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 15% 8%;
+    --popover: 24 20% 9%;
     --popover-foreground: 0 0% 98%;
     --primary: 0 0% 98%;
-    --primary-foreground: 240 20% 5%;
-    --secondary: 240 10% 14%;
+    --primary-foreground: 24 25% 6%;
+    --secondary: 24 15% 13%;
     --secondary-foreground: 0 0% 95%;
-    --muted: 240 10% 12%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 210 15% 80%;
-    --accent-foreground: 240 20% 5%;
+    --muted: 24 15% 11%;
+    --muted-foreground: 30 12% 66%;
+    --accent: 25 95% 62%;
+    --accent-foreground: 24 25% 6%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 10% 18%;
-    --input: 240 10% 14%;
-    --ring: 210 15% 70%;
+    --border: 24 20% 16%;
+    --input: 24 15% 13%;
+    --ring: 25 90% 58%;
     --chart-1: 290 80% 65%;
     --chart-2: 190 90% 60%;
     --chart-3: 60 95% 65%;
     --chart-4: 330 85% 70%;
     --chart-5: 145 65% 60%;
-    --sidebar-background: 240 15% 8%;
+    --sidebar-background: 24 20% 9%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 210 15% 80%;
-    --sidebar-primary-foreground: 240 20% 5%;
-    --sidebar-accent: 240 10% 14%;
+    --sidebar-primary: 25 95% 62%;
+    --sidebar-primary-foreground: 24 25% 6%;
+    --sidebar-accent: 24 15% 13%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 10% 18%;
-    --sidebar-ring: 210 15% 70%;
+    --sidebar-border: 24 20% 16%;
+    --sidebar-ring: 25 90% 58%;
   }
 }
 
@@ -86,16 +86,16 @@
   }
 
   html, body {
-    background-color: #0A0A12 !important;
+    background-color: #14100C !important;
   }
 
   body {
     @apply text-foreground;
     font-family: var(--font-body);
     background-image:
-      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(199, 184, 234, 0.12), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 80% 20%, rgba(0, 200, 255, 0.08), transparent 60%),
-      radial-gradient(ellipse 90% 70% at 50% 100%, rgba(255, 100, 200, 0.06), transparent 60%) !important;
+      radial-gradient(ellipse 80% 60% at 20% 0%, rgba(255, 179, 71, 0.10), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 80% 20%, rgba(255, 107, 74, 0.08), transparent 60%),
+      radial-gradient(ellipse 90% 70% at 50% 100%, rgba(255, 154, 77, 0.06), transparent 60%) !important;
     background-attachment: fixed !important;
     min-height: 100vh;
   }
@@ -112,7 +112,7 @@
 /* Hero containers with bg-gradient-to-* + overflow-hidden
    are page heroes — flatten to obsidian glass */
 html .overflow-hidden[class*="bg-gradient-to-"] {
-  background-image: linear-gradient(145deg, rgba(21, 21, 31, 0.85) 0%, rgba(10, 10, 18, 0.95) 100%) !important;
+  background-image: linear-gradient(145deg, rgba(32, 24, 18, 0.85) 0%, rgba(20, 16, 12, 0.95) 100%) !important;
 }
 
 /* Same treatment for page-wide gradient backgrounds at
@@ -120,7 +120,7 @@ html .overflow-hidden[class*="bg-gradient-to-"] {
 html .pt-20[class*="bg-gradient-to-"],
 html .pt-16[class*="bg-gradient-to-"],
 html .pt-24[class*="bg-gradient-to-"] {
-  background-image: linear-gradient(145deg, rgba(21, 21, 31, 0.85) 0%, rgba(10, 10, 18, 0.95) 100%) !important;
+  background-image: linear-gradient(145deg, rgba(32, 24, 18, 0.85) 0%, rgba(20, 16, 12, 0.95) 100%) !important;
 }
 
 /* Arbitrary radial-gradient overlays inside heroes → off */
@@ -143,7 +143,7 @@ html .min-h-screen.bg-black {
 
 /* Fixed top-nav backdrops on studio pages → glass dark */
 html .bg-background\/80, html .bg-background\/90, html .bg-background\/95 {
-  background-color: rgba(10, 10, 18, 0.85) !important;
+  background-color: rgba(20, 16, 12, 0.85) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
 }
@@ -174,8 +174,8 @@ html .from-rose-950, html .from-rose-900, html .from-rose-800,
 html .from-teal-950, html .from-teal-900, html .from-teal-800,
 html .from-amber-950, html .from-amber-900, html .from-amber-800,
 html .from-yellow-950, html .from-yellow-900, html .from-yellow-800 {
-  --tw-gradient-from: #15151F var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgb(21 21 31 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-from: #201812 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(32 24 18 / 0) var(--tw-gradient-to-position) !important;
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
 }
 
@@ -194,7 +194,7 @@ html .via-fuchsia-950, html .via-fuchsia-900, html .via-fuchsia-800,
 html .via-rose-950, html .via-rose-900, html .via-rose-800,
 html .via-teal-950, html .via-teal-900, html .via-teal-800,
 html .via-amber-950, html .via-amber-900, html .via-amber-800 {
-  --tw-gradient-via: #10101A var(--tw-gradient-via-position) !important;
+  --tw-gradient-via: #1A140E var(--tw-gradient-via-position) !important;
   --tw-gradient-via-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
   --tw-gradient-stops: var(--tw-gradient-via-stops) !important;
 }
@@ -214,7 +214,7 @@ html .to-fuchsia-950, html .to-fuchsia-900, html .to-fuchsia-800,
 html .to-rose-950, html .to-rose-900, html .to-rose-800,
 html .to-teal-950, html .to-teal-900, html .to-teal-800,
 html .to-amber-950, html .to-amber-900, html .to-amber-800 {
-  --tw-gradient-to: #0A0A12 var(--tw-gradient-to-position) !important;
+  --tw-gradient-to: #14100C var(--tw-gradient-to-position) !important;
 }
 
 /* Solid 950-shade backgrounds → obsidian */
@@ -224,7 +224,7 @@ html .bg-violet-950, html .bg-cyan-950, html .bg-fuchsia-950, html .bg-red-950,
 html .bg-rose-950, html .bg-teal-950, html .bg-amber-950, html .bg-yellow-950,
 html .bg-purple-900, html .bg-indigo-900, html .bg-slate-900, html .bg-zinc-900,
 html .bg-violet-900, html .bg-blue-900 {
-  background-color: #0A0A12 !important;
+  background-color: #14100C !important;
 }
 
 /* Vivid 500/600/700 chip & button backgrounds → chrome */
@@ -239,8 +239,8 @@ html .bg-fuchsia-600, html .bg-fuchsia-500,
 html .bg-rose-600, html .bg-rose-500,
 html .bg-teal-600, html .bg-teal-500 {
   background-color: transparent !important;
-  background-image: linear-gradient(135deg, #E8E8F0 0%, #C8CDD2 50%, #FFE5F5 100%) !important;
-  color: #0A0A12 !important;
+  background-image: linear-gradient(135deg, #FFC26E 0%, #FF9A4D 50%, #FF6B4A 100%) !important;
+  color: #14100C !important;
 }
 html .bg-purple-600:hover, html .bg-purple-500:hover, html .bg-purple-700:hover,
 html .bg-indigo-600:hover, html .bg-indigo-500:hover,
@@ -249,7 +249,7 @@ html .bg-orange-600:hover, html .bg-orange-500:hover,
 html .bg-pink-600:hover, html .bg-pink-500:hover,
 html .bg-emerald-600:hover, html .bg-emerald-500:hover,
 html .bg-violet-600:hover, html .bg-violet-500:hover {
-  background-image: linear-gradient(135deg, #FFFFFF 0%, #E0E5EC 50%, #FFDDF0 100%) !important;
+  background-image: linear-gradient(135deg, #FFFFFF 0%, #FFAD5C 50%, #FF8A5C 100%) !important;
 }
 
 /* hover: variants */
@@ -257,7 +257,7 @@ html .hover\:bg-purple-500:hover, html .hover\:bg-purple-600:hover,
 html .hover\:bg-indigo-500:hover, html .hover\:bg-indigo-600:hover,
 html .hover\:bg-orange-500:hover, html .hover\:bg-emerald-500:hover,
 html .hover\:bg-blue-500:hover, html .hover\:bg-pink-500:hover {
-  background-image: linear-gradient(135deg, #FFFFFF 0%, #E0E5EC 50%, #FFDDF0 100%) !important;
+  background-image: linear-gradient(135deg, #FFFFFF 0%, #FFAD5C 50%, #FF8A5C 100%) !important;
 }
 
 /* Subtle tinted backgrounds (10% / 20% opacity) → soft chrome glass */
@@ -278,14 +278,14 @@ html .from-blue-400, html .from-cyan-400, html .from-indigo-400,
 html .from-violet-400, html .from-emerald-400, html .from-yellow-400,
 html .from-amber-400, html .from-rose-400, html .from-fuchsia-400,
 html .from-teal-400, html .from-green-400, html .from-red-400 {
-  --tw-gradient-from: #E8DFF5 var(--tw-gradient-from-position) !important;
+  --tw-gradient-from: #FFC98A var(--tw-gradient-from-position) !important;
 }
 html .to-purple-400, html .to-pink-400, html .to-orange-400,
 html .to-blue-400, html .to-cyan-400, html .to-indigo-400,
 html .to-violet-400, html .to-emerald-400, html .to-yellow-400,
 html .to-amber-400, html .to-rose-400, html .to-fuchsia-400,
 html .to-teal-400, html .to-green-400, html .to-red-400 {
-  --tw-gradient-to: #FFE5F5 var(--tw-gradient-to-position) !important;
+  --tw-gradient-to: #FF6B4A var(--tw-gradient-to-position) !important;
 }
 
 /* Gradient stops at 500/600/700 shades (used in avatars, chips, hero bgs) → chrome */
@@ -302,8 +302,8 @@ html .from-rose-500, html .from-rose-600, html .from-rose-700,
 html .from-teal-500, html .from-teal-600, html .from-teal-700,
 html .from-yellow-500, html .from-yellow-600, html .from-amber-500, html .from-amber-600,
 html .from-red-500, html .from-red-600, html .from-green-500, html .from-green-600 {
-  --tw-gradient-from: #C8CDD2 var(--tw-gradient-from-position) !important;
-  --tw-gradient-to: rgb(200 205 210 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-from: #FF9A4D var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(255 154 77 / 0) var(--tw-gradient-to-position) !important;
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
 }
 html .to-purple-500, html .to-purple-600, html .to-purple-700, html .to-purple-800,
@@ -319,7 +319,7 @@ html .to-rose-500, html .to-rose-600, html .to-rose-700,
 html .to-teal-500, html .to-teal-600, html .to-teal-700,
 html .to-yellow-500, html .to-yellow-600, html .to-amber-500, html .to-amber-600,
 html .to-red-500, html .to-red-600, html .to-green-500, html .to-green-600 {
-  --tw-gradient-to: #FFE5F5 var(--tw-gradient-to-position) !important;
+  --tw-gradient-to: #FF6B4A var(--tw-gradient-to-position) !important;
 }
 html .via-purple-500, html .via-purple-600, html .via-purple-700,
 html .via-indigo-500, html .via-indigo-600, html .via-indigo-700,
@@ -327,7 +327,7 @@ html .via-pink-500, html .via-pink-600, html .via-blue-500, html .via-blue-600,
 html .via-orange-500, html .via-orange-600, html .via-emerald-500, html .via-emerald-600,
 html .via-violet-500, html .via-violet-600, html .via-cyan-500, html .via-cyan-600,
 html .via-yellow-500, html .via-amber-500, html .via-rose-500, html .via-fuchsia-500 {
-  --tw-gradient-via: #E8DFF5 var(--tw-gradient-via-position) !important;
+  --tw-gradient-via: #FFC98A var(--tw-gradient-via-position) !important;
   --tw-gradient-via-stops: var(--tw-gradient-from), var(--tw-gradient-via), var(--tw-gradient-to) !important;
   --tw-gradient-stops: var(--tw-gradient-via-stops) !important;
 }
@@ -345,7 +345,7 @@ html .min-h-screen.bg-zinc-950 {
 
 /* Card surfaces → glass merc-card look */
 html .bg-card {
-  background: linear-gradient(145deg, rgba(28, 28, 38, 0.85) 0%, rgba(18, 18, 26, 0.95) 100%) !important;
+  background: linear-gradient(145deg, rgba(36, 28, 20, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -364,10 +364,10 @@ html .text-indigo-400, html .text-indigo-300,
 html .text-pink-400, html .text-pink-300,
 html .text-violet-400, html .text-violet-300,
 html .text-fuchsia-400, html .text-fuchsia-300 {
-  color: #E8DFF5 !important;
+  color: #FFC98A !important;
 }
 html .text-blue-400, html .text-blue-300, html .text-cyan-400, html .text-cyan-300 {
-  color: #C7E0F5 !important;
+  color: #FFD9A8 !important;
 }
 html .text-orange-400, html .text-orange-300, html .text-yellow-400, html .text-yellow-300, html .text-amber-400 {
   color: #F5E5C7 !important;
@@ -391,7 +391,7 @@ html .hover\:text-indigo-400:hover {
   }
   /* Iridescent rainbow text */
   .text-iridescent {
-    background: linear-gradient(110deg, #FF61D2 0%, #00F0FF 25%, #FBFF00 50%, #C7B8EA 75%, #FF61D2 100%);
+    background: linear-gradient(110deg, #FFD9A8 0%, #FFB347 30%, #FF6B4A 65%, #FF9A4D 100%);
     background-size: 200% 200%;
     -webkit-background-clip: text;
     background-clip: text;
@@ -400,7 +400,7 @@ html .hover\:text-indigo-400:hover {
   }
   /* Polished obsidian glass card */
   .merc-card {
-    background: linear-gradient(145deg, rgba(28, 28, 38, 0.85) 0%, rgba(18, 18, 26, 0.95) 100%);
+    background: linear-gradient(145deg, rgba(36, 28, 20, 0.85) 0%, rgba(24, 18, 13, 0.95) 100%);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -408,27 +408,27 @@ html .hover\:text-indigo-400:hover {
   }
   .merc-card-hover:hover {
     border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(199, 184, 234, 0.15);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 179, 71, 0.2);
   }
   /* Chrome iridescent button */
   .merc-button {
-    background: linear-gradient(135deg, #E8E8F0 0%, #C8CDD2 30%, #FFE5F5 60%, #E0F0FF 100%);
+    background: linear-gradient(135deg, #FFC26E 0%, #FF9A4D 30%, #FF6B4A 60%, #FFB347 100%);
     background-size: 200% 200%;
-    color: #0A0A12;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(120, 110, 150, 0.3), 0 4px 16px -2px rgba(180, 160, 220, 0.4);
+    color: #14100C;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 4px rgba(180, 90, 30, 0.35), 0 4px 16px -2px rgba(255, 140, 60, 0.45);
     animation: chrome-shimmer 5s ease-in-out infinite;
   }
   /* Dark glass button */
   .merc-button-dark {
-    background: linear-gradient(145deg, rgba(40, 40, 55, 0.9) 0%, rgba(20, 20, 30, 0.95) 100%);
+    background: linear-gradient(145deg, rgba(50, 38, 28, 0.9) 0%, rgba(26, 20, 14, 0.95) 100%);
     color: #F0F0F8;
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.5);
   }
   /* Iridescent chrome bubble for stats */
   .merc-bubble {
-    background: radial-gradient(circle at 30% 30%, #FFFFFF 0%, #E8DFF5 20%, #C8CDD2 45%, #B8C5E0 65%, #9A9CB8 100%);
-    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), inset 0 -4px 8px rgba(100, 90, 140, 0.4), 0 6px 20px -4px rgba(150, 130, 200, 0.5), 0 0 30px rgba(180, 160, 220, 0.3);
+    background: radial-gradient(circle at 30% 30%, #FFFFFF 0%, #FFC98A 20%, #FF9A4D 45%, #FF8A3D 65%, #E06B2E 100%);
+    box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), inset 0 -4px 8px rgba(180, 90, 30, 0.4), 0 6px 20px -4px rgba(255, 140, 60, 0.5), 0 0 30px rgba(255, 160, 70, 0.35);
     position: relative;
   }
   .merc-bubble::after {
@@ -436,7 +436,7 @@ html .hover\:text-indigo-400:hover {
     position: absolute;
     inset: 0;
     border-radius: inherit;
-    background: linear-gradient(135deg, rgba(255, 100, 200, 0.15) 0%, rgba(0, 200, 255, 0.15) 50%, rgba(255, 220, 100, 0.15) 100%);
+    background: linear-gradient(135deg, rgba(255, 179, 71, 0.2) 0%, rgba(255, 107, 74, 0.18) 50%, rgba(255, 220, 150, 0.15) 100%);
     mix-blend-mode: screen;
     pointer-events: none;
   }
