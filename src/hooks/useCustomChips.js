@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 
-// Module-level cache so multiple components share the same fetched chips
-const _cache = { genre: null, mood: null, duration: null };
+// Module-level cache so multiple components share the same fetched chips.
+// Keys are created lazily so every chip_type (genre, mood, duration, style, …) works.
+const _cache = {};
 
 /**
  * Loads and manages custom user-added chips for a given type (genre | mood | duration).
@@ -10,10 +11,10 @@ const _cache = { genre: null, mood: null, duration: null };
  */
 export function useCustomChips(chipType) {
   const [customChips, setCustomChips] = useState(_cache[chipType] || []);
-  const [loaded, setLoaded] = useState(_cache[chipType] !== null);
+  const [loaded, setLoaded] = useState(Array.isArray(_cache[chipType]));
 
   useEffect(() => {
-    if (_cache[chipType] !== null) return;
+    if (Array.isArray(_cache[chipType])) return;
     base44.entities.CustomChip.filter({ chip_type: chipType }, 'value', 200)
       .then(items => {
         const vals = items.map(i => i.value);

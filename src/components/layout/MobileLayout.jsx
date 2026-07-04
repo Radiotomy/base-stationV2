@@ -1,4 +1,5 @@
 import { Outlet } from "react-router-dom";
+import MobileNav from "@/components/layout/MobileNav";
 
 export default function MobileLayout() {
   return (
@@ -7,6 +8,7 @@ export default function MobileLayout() {
       <main className="flex-1 pb-20 md:pb-0">
         <Outlet />
       </main>
+      <MobileNav />
     </div>
   );
 }
