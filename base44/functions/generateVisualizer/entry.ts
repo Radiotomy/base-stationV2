@@ -16,10 +16,14 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { assetId, style = 'milkdrop', preset = null } = await req.json();
-    if (!assetId) return Response.json({ error: 'assetId required' }, { status: 400 });
-    if (typeof style !== 'string' || !style.trim()) {
-      return Response.json({ error: 'style (MilkDrop preset name) required' }, { status: 400 });
+    const body = await req.json().catch(() => ({}));
+    const { assetId, preset = null } = body;
+    let { style } = body;
+    // Be tolerant: fall back rather than reject when style is absent/invalid
+    if (typeof style !== 'string' || !style.trim()) style = preset || 'milkdrop';
+    if (!assetId) {
+      console.error('generateVisualizer 400 — missing assetId. payload:', JSON.stringify(body));
+      return Response.json({ error: 'assetId required — pick or upload a track first' }, { status: 400 });
     }
 
     const arr = await base44.entities.UserAsset.filter({ id: assetId });
