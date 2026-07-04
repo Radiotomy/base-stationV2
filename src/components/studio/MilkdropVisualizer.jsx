@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { base44 } from '@/api/base44Client';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import { Play, Pause } from 'lucide-react';
@@ -17,6 +18,9 @@ export default function MilkdropVisualizer({ src, presetName, title }) {
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(null);
   const [corsBlocked, setCorsBlocked] = useState(false);
+  const [proxySrc, setProxySrc] = useState(null);
+  const [proxying, setProxying] = useState(false);
+  const triedProxy = useRef(false);
 
   const loadPreset = (viz, name, blend) => {
     const presets = butterchurnPresets.getPresets();
@@ -29,19 +33,43 @@ export default function MilkdropVisualizer({ src, presetName, title }) {
     if (vizRef.current && presetName) loadPreset(vizRef.current, presetName, 2.0);
   }, [presetName]);
 
-  // CORS fallback: if the audio host blocks anonymous CORS, drop crossorigin so
-  // plain playback works — the visualizer then runs without audio input.
+  // Reset fallback state when the track changes
+  useEffect(() => {
+    triedProxy.current = false;
+    setProxySrc(null);
+    setError(null);
+    setCorsBlocked(false);
+  }, [src]);
+
+  // Fallback chain when the audio fails to load:
+  // 1. Proxy the file through the backend (re-uploads to CORS-enabled storage —
+  //    also rescues external CDNs that block CORS or use expiring links).
+  // 2. If proxying fails, retry without crossorigin (plays, but no reactivity).
+  // 3. Otherwise report the link as dead.
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
-    const onError = () => {
+    const onError = async () => {
+      if (!triedProxy.current) {
+        triedProxy.current = true;
+        setProxying(true);
+        try {
+          const r = await base44.functions.invoke('proxyAudioAsset', { source_url: src, filename: 'track.mp3' });
+          if (r.data?.file_url && r.data.file_url !== src) {
+            setProxySrc(r.data.file_url);
+            setProxying(false);
+            return;
+          }
+        } catch { /* fall through */ }
+        setProxying(false);
+      }
       if (a.crossOrigin) {
         a.removeAttribute('crossorigin');
         setCorsBlocked(true);
         setError(null);
         a.load();
       } else {
-        setError('Audio source unreachable');
+        setError("This track's audio link has expired or is unreachable — try regenerating or re-uploading it.");
       }
     };
     a.addEventListener('error', onError);
@@ -119,7 +147,8 @@ export default function MilkdropVisualizer({ src, presetName, title }) {
           </button>
         )}
       </div>
-      <audio ref={audioRef} src={src} crossOrigin={corsBlocked ? undefined : 'anonymous'} onEnded={() => setPlaying(false)} />
+      <audio ref={audioRef} src={proxySrc || src} crossOrigin={corsBlocked ? undefined : 'anonymous'} onEnded={() => setPlaying(false)} />
+      {proxying && <p className="text-[10px] text-muted-foreground">Fetching a playable copy of this track…</p>}
       {error && <p className="text-xs text-amber-400">⚠ {error}</p>}
       {corsBlocked && !error && (
         <p className="text-[10px] text-muted-foreground">ⓘ Audio source isn't CORS-enabled — preset runs without audio reactivity.</p>
