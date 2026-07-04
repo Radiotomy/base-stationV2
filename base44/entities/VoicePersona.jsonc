@@ -62,16 +62,21 @@
     "provider": {
       "type": "string",
       "enum": [
+        "sonic",
         "elevenlabs",
         "google",
         "azure",
         "custom"
       ],
-      "description": "Voice synthesis provider"
+      "description": "Voice synthesis provider. 'sonic' = cloned via Sonic create-voice, usable in persona_music generation"
     },
     "provider_voice_id": {
       "type": "string",
-      "description": "Provider's unique voice ID"
+      "description": "Provider's unique voice ID (Sonic persona_id for provider='sonic')"
+    },
+    "source_asset_id": {
+      "type": "string",
+      "description": "UserAsset id the voice was cloned from (track/stem), if any"
     },
     "tags": {
       "type": "array",

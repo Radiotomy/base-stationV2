@@ -52,7 +52,7 @@ const SONIC_LIMITS = {
   'sonic-v5-5':     { prompt: 5000, tags: 1000 },
 };
 
-async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics }) {
+async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id }) {
   // Ensure a vocal-capable model is used
   const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
   const safeModel = (!model || LEGACY_MODELS.includes(model)) ? 'sonic-v4-5' : model;
@@ -94,6 +94,12 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
       mv: safeModel,
       gpt_description_prompt: desc,
     };
+  }
+
+  // Voice persona — sing with a cloned Sonic voice (persona_music task type)
+  if (sonic_persona_id) {
+    body.task_type = 'persona_music';
+    body.persona_id = sonic_persona_id;
   }
 
   // Attach webhook callback (if configured) — provider will POST results to our handler
@@ -292,7 +298,21 @@ Deno.serve(async (req) => {
 
     let { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
           tempo, sound_prompt, lyrics, model, tempolor_mode, routing_reason,
-          voice_id, cover_audio_url } = await req.json();
+          voice_id, cover_audio_url, voice_persona_id } = await req.json();
+
+    // Resolve a cloned Sonic voice persona (VoicePersona with provider='sonic')
+    let sonicPersonaId = null;
+    if (voice_persona_id && provider === 'sonic') {
+      try {
+        const personas = await base44.entities.VoicePersona.filter({ id: voice_persona_id });
+        const p = personas[0];
+        if (p && p.provider === 'sonic' && p.provider_voice_id) {
+          sonicPersonaId = p.provider_voice_id;
+          // Track usage (non-blocking)
+          base44.entities.VoicePersona.update(p.id, { usage_count: (p.usage_count || 0) + 1 }).catch(() => {});
+        }
+      } catch (e) { console.warn('VoicePersona lookup failed:', e.message); }
+    }
 
     // Nuro deprecated — auto-redirect to Sonic (vocal) or Producer (instrumental)
     if (provider === 'nuro') {
@@ -319,7 +339,7 @@ Deno.serve(async (req) => {
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
       else // default: sonic
-        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics });
+        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics, sonic_persona_id: sonicPersonaId });
     } catch (providerErr) {
       // Map aimusicapi HTTP codes to actionable client responses per spec:
       // 400 validation_error · 401 unauthorized · 402/403 insufficient_credits/forbidden ·

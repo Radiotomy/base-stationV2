@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import VoicePersonaForm from '@/components/voice/VoicePersonaForm';
+import SonicVoiceCloner from '@/components/voice/SonicVoiceCloner';
 import VoicePersonaCard from '@/components/voice/VoicePersonaCard';
 import VoiceSynthesisPanel from '@/components/voice/VoiceSynthesisPanel';
 import InfoTip from '@/components/common/InfoTip';
@@ -16,6 +17,7 @@ export default function VoiceCreator() {
   const [personas, setPersonas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [showCloner, setShowCloner] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
   const [selectedPersona, setSelectedPersona] = useState(null);
 
@@ -102,15 +104,23 @@ export default function VoiceCreator() {
             Your Voice Personas
             <InfoTip size="sm" text="Build a persona once (voice type, age, characteristics) and reuse it across every Music Studio generation for a consistent artist identity." />
           </h2>
-          <Button
-            onClick={() => {
-              setEditingPersona(null);
-              setShowForm(true);
-            }}
-            className="bg-pink-600 hover:bg-pink-500 rounded-xl gap-2 font-bold"
-          >
-            <Plus className="w-4 h-4" /> Create Persona
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowCloner(true)}
+              className="bg-cyan-600 hover:bg-cyan-500 rounded-xl gap-2 font-bold"
+            >
+              <Mic2 className="w-4 h-4" /> Clone Voice
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingPersona(null);
+                setShowForm(true);
+              }}
+              className="bg-pink-600 hover:bg-pink-500 rounded-xl gap-2 font-bold"
+            >
+              <Plus className="w-4 h-4" /> Create Persona
+            </Button>
+          </div>
         </div>
 
         {/* Form Modal */}
@@ -140,6 +150,35 @@ export default function VoiceCreator() {
                     setShowForm(false);
                     setEditingPersona(null);
                   }}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Voice Cloner Modal */}
+        <AnimatePresence>
+          {showCloner && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+              onClick={() => setShowCloner(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-card rounded-2xl border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              >
+                <SonicVoiceCloner
+                  onCreated={(persona) => {
+                    setPersonas([persona, ...personas]);
+                    setShowCloner(false);
+                  }}
+                  onCancel={() => setShowCloner(false)}
                 />
               </motion.div>
             </motion.div>
