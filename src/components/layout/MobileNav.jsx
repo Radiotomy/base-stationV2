@@ -13,7 +13,10 @@ export default function MobileNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 md:hidden bg-[#0A0A12]/90 backdrop-blur-xl border-t border-white/10 flex items-center justify-around h-20 px-2 z-40">
+    <nav
+      className="fixed bottom-0 left-0 right-0 md:hidden bg-[#0A0A12]/90 backdrop-blur-xl border-t border-white/10 flex items-center justify-around px-2 z-40"
+      style={{ height: 'calc(5rem + env(safe-area-inset-bottom))', paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
       {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
         const isActive = location.pathname === path;
         return (
