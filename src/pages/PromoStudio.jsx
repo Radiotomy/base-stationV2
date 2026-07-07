@@ -9,6 +9,7 @@ import AssetPicker from '@/components/studio/AssetPicker';
 import PresetPicker from '@/components/studio/PresetPicker';
 import PromoCardOptions from '@/components/promo/PromoCardOptions';
 import PromoPackageViewer from '@/components/promo/PromoPackageViewer';
+import SavedPromoPackages from '@/components/promo/SavedPromoPackages';
 import InfoTip from '@/components/common/InfoTip';
 
 export default function PromoStudio() {
@@ -26,6 +27,11 @@ export default function PromoStudio() {
   const [running, setRunning] = useState(false);
   const [stage, setStage] = useState('');
   const [pkg, setPkg] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const openSaved = (asset) => {
+    setPkg({ visualizer: asset, cardUrl: asset.metadata.promo_card_url });
+  };
 
   const generate = async () => {
     const assetId = selected[0];
@@ -60,7 +66,7 @@ export default function PromoStudio() {
 
       // 3. Link everything into one package on the visualizer asset
       setStage('Packaging…');
-      await base44.entities.UserAsset.update(visualizer.id, {
+      const linked = await base44.entities.UserAsset.update(visualizer.id, {
         related_track_id: track.id,
         metadata: {
           ...visualizer.metadata,
@@ -70,7 +76,8 @@ export default function PromoStudio() {
         },
       });
 
-      setPkg({ visualizer, cardUrl });
+      setPkg({ visualizer: linked || { ...visualizer, related_track_id: track.id }, cardUrl });
+      setRefreshKey(k => k + 1);
       toast.success('Promo package ready!', { icon: '📣' });
     } catch (e) {
       toast.error(e?.response?.data?.error || e.message || 'Promo package failed');
@@ -118,6 +125,8 @@ export default function PromoStudio() {
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
             {running ? (stage || 'Working…') : 'Create Promo Package'}
           </Button>
+
+          <SavedPromoPackages onOpen={openSaved} refreshKey={refreshKey} />
         </div>
 
         <div className="lg:col-span-2 space-y-4">

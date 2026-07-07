@@ -2,19 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Video, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 /**
  * Real MilkDrop visualizer powered by Butterchurn (WebGL port of MilkDrop 2).
  * Renders community presets reacting to the actual audio stream.
  */
-export default function MilkdropVisualizer({ src, presetName, title }) {
+export default function MilkdropVisualizer({ src, presetName, title, enableRecording = false }) {
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
   const ctxRef = useRef(null);
   const vizRef = useRef(null);
   const rafRef = useRef(null);
+  const recorderRef = useRef(null);
+  const recDestRef = useRef(null);
+  const [recording, setRecording] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [error, setError] = useState(null);
   const [corsBlocked, setCorsBlocked] = useState(false);
@@ -90,6 +93,9 @@ export default function MilkdropVisualizer({ src, presetName, title }) {
         const source = ctx.createMediaElementSource(audioRef.current);
         source.connect(ctx.destination);
         viz.connectAudio(source);
+        const dest = ctx.createMediaStreamDestination();
+        source.connect(dest);
+        recDestRef.current = dest;
       } catch {
         setCorsBlocked(true);
       }
@@ -104,12 +110,39 @@ export default function MilkdropVisualizer({ src, presetName, title }) {
     rafRef.current = requestAnimationFrame(renderLoop);
   };
 
+  const stopRecording = () => {
+    if (recorderRef.current?.state !== 'inactive') recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  };
+
+  const startRecording = () => {
+    const canvasStream = canvasRef.current.captureStream(30);
+    const tracks = [...canvasStream.getVideoTracks()];
+    if (recDestRef.current) tracks.push(...recDestRef.current.stream.getAudioTracks());
+    const rec = new MediaRecorder(new MediaStream(tracks), { mimeType: 'video/webm' });
+    const chunks = [];
+    rec.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+    rec.onstop = () => {
+      const url = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(title || 'visualizer').replace(/[^\w-]+/g, '_')}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    rec.start();
+    recorderRef.current = rec;
+    setRecording(true);
+  };
+
   const togglePlay = async () => {
     const a = audioRef.current;
     if (!a) return;
     if (playing) {
       a.pause();
       cancelAnimationFrame(rafRef.current);
+      if (recording) stopRecording();
       setPlaying(false);
     } else {
       setup();
@@ -146,8 +179,16 @@ export default function MilkdropVisualizer({ src, presetName, title }) {
             <Pause className="w-4 h-4 text-white" />
           </button>
         )}
+        {playing && enableRecording && (
+          <button onClick={recording ? stopRecording : startRecording}
+            title={recording ? 'Stop & download video' : 'Record video with audio'}
+            className={`absolute bottom-3 right-14 w-10 h-10 rounded-full flex items-center justify-center backdrop-blur ${recording ? 'bg-red-600/90 animate-pulse' : 'bg-black/60 hover:bg-black/80'}`}>
+            {recording ? <Square className="w-4 h-4 text-white" /> : <Video className="w-4 h-4 text-white" />}
+          </button>
+        )}
       </div>
-      <audio ref={audioRef} src={proxySrc || src} crossOrigin={corsBlocked ? undefined : 'anonymous'} onEnded={() => setPlaying(false)} />
+      <audio ref={audioRef} src={proxySrc || src} crossOrigin={corsBlocked ? undefined : 'anonymous'}
+        onEnded={() => { if (recorderRef.current) stopRecording(); setPlaying(false); }} />
       {proxying && <p className="text-[10px] text-muted-foreground">Fetching a playable copy of this track…</p>}
       {error && <p className="text-xs text-amber-400">⚠ {error}</p>}
       {corsBlocked && !error && (
