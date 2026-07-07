@@ -41,6 +41,7 @@ import VocalHarmonizer from './pages/VocalHarmonizer';
 import MasteringStudio from './pages/MasteringStudio';
 import CoverSongStudio from './pages/CoverSongStudio';
 import VisualizerStudio from './pages/VisualizerStudio';
+import PromoStudio from './pages/PromoStudio';
 import StudioHistory from './pages/StudioHistory';
 import AudioRemixStudio from './pages/AudioRemixStudio';
 import VoiceCreator from './pages/VoiceCreator';
@@ -134,6 +135,7 @@ const AuthenticatedApp = () => {
           <Route path="/mastering-studio" element={<MasteringStudio />} />
           <Route path="/cover-song-studio" element={<CoverSongStudio />} />
           <Route path="/visualizer-studio" element={<VisualizerStudio />} />
+          <Route path="/promo-studio" element={<PromoStudio />} />
           <Route path="/ai-studio/history" element={<StudioHistory />} />
           <Route path="/voice-creator" element={<VoiceCreator />} />
           <Route path="/my-profile" element={<MyProfile />} />
