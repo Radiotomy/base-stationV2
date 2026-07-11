@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Radio, Square, Zap, ArrowLeft, Users, Clock } from 'lucide-react';
+import { Radio, Square, Zap, ArrowLeft, Users, Clock, LayoutList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -463,6 +463,9 @@ export default function LiveStudio() {
         <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="w-5 h-5" />
           <span className="text-sm font-semibold">Back</span>
+        </Link>
+        <Link to="/live-manager" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm font-semibold">
+          <LayoutList className="w-4 h-4" /> Manage Sessions
         </Link>
         {isLive && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="ml-auto flex items-center gap-3">
