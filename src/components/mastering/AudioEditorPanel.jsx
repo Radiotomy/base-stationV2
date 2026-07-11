@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import WaveformVisualizer from '@/components/audio/WaveformVisualizer';
 import CostBadge from '@/components/credits/CostBadge';
+import { cleanupAudio } from '@/utils/audioCleanup';
 
 const CLEANUP_TOOLS = [
   { key: 'denoise',       label: 'De-Noise',     desc: 'Remove background hiss & room noise',  icon: '🌬️', cost: 3 },
@@ -51,25 +52,13 @@ export default function AudioEditorPanel() {
     setProcessing(true);
     setActiveTool(tool.key);
     try {
-      // Map cleanup tools to backend equivalents. Vocal_enhance → vox_enhance.
-      const taskMap = {
-        vocal_enhance: 'vox_enhance',
-        auto_enhance: 'remaster',
-        denoise: 'vox_enhance',
-        dehum: 'vox_enhance',
-        declick: 'vox_enhance',
-        desibilance: 'vox_enhance',
-      };
-      const task = taskMap[tool.key] || 'remaster';
-      const res = await base44.functions.invoke('processMusicEdits', {
-        task,
-        audioUrl,
-        parameters: { denoise: true, clarity: 'high', cleanup_mode: tool.key },
-      });
-      const out = res.data?.outputUrl || res.data?.output_url || audioUrl;
-      setEditedAudio(out);
+      // Process locally with offline Web Audio DSP, then host the result
+      const wavBlob = await cleanupAudio(editedAudio || audioUrl, tool.key);
+      const file = new File([wavBlob], `${(title || 'audio')}-${tool.key}.wav`, { type: 'audio/wav' });
+      const r = await base44.integrations.Core.UploadFile({ file });
+      setEditedAudio(r.file_url);
       toast.success(`${tool.label} applied!`);
-    } catch (err) { toast.error(err.message); }
+    } catch (err) { toast.error(err.message || 'Processing failed'); }
     setProcessing(false);
     setActiveTool(null);
   };
