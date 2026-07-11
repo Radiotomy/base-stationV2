@@ -3,10 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Radio, Pencil, MessageSquare, Archive, Trash2, BarChart3, Users, Clock, Globe, ExternalLink } from 'lucide-react';
+import { Radio, Pencil, MessageSquare, Archive, Trash2, BarChart3, Users, Clock, Globe, ExternalLink, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import SessionEditDialog from './SessionEditDialog';
 import ChatModerationPanel from './ChatModerationPanel';
+import ShowcaseManagerDialog from './ShowcaseManagerDialog';
 
 const STATUS_STYLES = {
   streaming: 'bg-red-500/20 text-red-400',
@@ -19,8 +20,10 @@ export default function SessionCard({ session, onChanged }) {
   const [editOpen, setEditOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showcaseOpen, setShowcaseOpen] = useState(false);
 
   const isActive = session.status === 'streaming' || session.status === 'draft';
+  const hasVenue = !!(session.portal_room_id || session.portals_room_id);
 
   const formatDuration = (s) => {
     if (!s) return '—';
@@ -87,6 +90,11 @@ export default function SessionCard({ session, onChanged }) {
         <Button size="sm" variant="outline" onClick={() => setChatOpen(true)} className="rounded-xl gap-1.5">
           <MessageSquare className="w-3.5 h-3.5" /> Moderate Chat
         </Button>
+        {hasVenue && (
+          <Button size="sm" variant="outline" onClick={() => setShowcaseOpen(true)} className="rounded-xl gap-1.5 border-fuchsia-500/30 text-fuchsia-300 hover:text-fuchsia-200">
+            <Sparkles className="w-3.5 h-3.5" /> Venue Showcase
+          </Button>
+        )}
         {session.status === 'completed' && (
           <Button size="sm" variant="ghost" onClick={archive} className="rounded-xl gap-1.5 text-muted-foreground">
             <Archive className="w-3.5 h-3.5" /> Archive
@@ -101,6 +109,7 @@ export default function SessionCard({ session, onChanged }) {
 
       {editOpen && <SessionEditDialog session={session} open={editOpen} onOpenChange={setEditOpen} onSaved={onChanged} />}
       {chatOpen && <ChatModerationPanel session={session} open={chatOpen} onOpenChange={setChatOpen} />}
+      {showcaseOpen && <ShowcaseManagerDialog session={session} open={showcaseOpen} onOpenChange={setShowcaseOpen} onSaved={onChanged} />}
     </div>
   );
 }
