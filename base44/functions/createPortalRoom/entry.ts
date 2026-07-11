@@ -57,10 +57,27 @@ function baseItem(prefabName, pos, scale, extra = {}) {
 // GLB/models face +Z; screens face the audience spawn area (+Z side).
 function buildStageItems({ title, coverImageUrl }) {
   const items = {
-    // Dance floor
-    '100': baseItem('ResizableCube', { x: 0, y: 0.05, z: 0 }, { x: 30, y: 0.1, z: 24 }),
+    // Dance floor (enlarged venue)
+    '100': baseItem('ResizableCube', { x: 0, y: 0.05, z: 2 }, { x: 44, y: 0.1, z: 36 }),
     // Raised performance stage
     '102': baseItem('ResizableCube', { x: 0, y: 0.35, z: -8 }, { x: 14, y: 0.7, z: 6 }),
+    // ── Modern bar / saloon at the back of the room (+Z, opposite the stage) ──
+    // Bar counter body
+    '110': baseItem('ResizableCube', { x: 0, y: 0.55, z: 15 }, { x: 12, y: 1.1, z: 1 }, {
+      hoverTitle: 'The BASE Bar', hoverBodyContent: 'Grab a seat and enjoy the show',
+    }),
+    // Polished counter top slab
+    '111': baseItem('ResizableCube', { x: 0, y: 1.14, z: 15 }, { x: 12.6, y: 0.08, z: 1.4 }),
+    // Back-bar shelf wall
+    '112': baseItem('ResizableCube', { x: 0, y: 1.6, z: 17.4 }, { x: 12, y: 3.2, z: 0.3 }),
+    // Glowing shelf boards
+    '113': baseItem('ResizableCube', { x: 0, y: 1.9, z: 17.1 }, { x: 11, y: 0.06, z: 0.5 }),
+    '114': baseItem('ResizableCube', { x: 0, y: 2.5, z: 17.1 }, { x: 11, y: 0.06, z: 0.5 }),
+    // Bar stools
+    '115': baseItem('ResizableCube', { x: -4.5, y: 0.35, z: 13.6 }, { x: 0.5, y: 0.7, z: 0.5 }),
+    '116': baseItem('ResizableCube', { x: -1.5, y: 0.35, z: 13.6 }, { x: 0.5, y: 0.7, z: 0.5 }),
+    '117': baseItem('ResizableCube', { x: 1.5, y: 0.35, z: 13.6 }, { x: 0.5, y: 0.7, z: 0.5 }),
+    '118': baseItem('ResizableCube', { x: 4.5, y: 0.35, z: 13.6 }, { x: 0.5, y: 0.7, z: 0.5 }),
   };
   if (coverImageUrl) {
     // Main backdrop screen — now playing cover art
@@ -227,6 +244,16 @@ Deno.serve(async (req) => {
           ...(roomData.logic || {}),
           '100': JSON.stringify({ col: '14100c', e: 0.35, s: true, Tasks: [], ViewNodes: [] }),
           '102': JSON.stringify({ col: '1a1a2e', e: 0.5, s: true, Tasks: [], ViewNodes: [] }),
+          // Bar/saloon — warm walnut counter, glossy top, dark back wall, amber-glow shelves, dark stools
+          '110': JSON.stringify({ col: '3a2a1c', e: 0.2, s: true, Tasks: [], ViewNodes: [] }),
+          '111': JSON.stringify({ col: '0e0b08', e: 0.6, s: true, Tasks: [], ViewNodes: [] }),
+          '112': JSON.stringify({ col: '1a140e', e: 0.15, s: true, Tasks: [], ViewNodes: [] }),
+          '113': JSON.stringify({ col: 'ff9a4d', e: 1.2, s: true, Tasks: [], ViewNodes: [] }),
+          '114': JSON.stringify({ col: 'ff9a4d', e: 1.2, s: true, Tasks: [], ViewNodes: [] }),
+          '115': JSON.stringify({ col: '241c14', e: 0.25, s: true, Tasks: [], ViewNodes: [] }),
+          '116': JSON.stringify({ col: '241c14', e: 0.25, s: true, Tasks: [], ViewNodes: [] }),
+          '117': JSON.stringify({ col: '241c14', e: 0.25, s: true, Tasks: [], ViewNodes: [] }),
+          '118': JSON.stringify({ col: '241c14', e: 0.25, s: true, Tasks: [], ViewNodes: [] }),
         },
       };
       await uploadRoomData(roomId, newRoomData);
