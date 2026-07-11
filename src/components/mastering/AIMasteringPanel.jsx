@@ -25,13 +25,9 @@ const CHARACTER_SLIDERS = [
   { key: 'master_punch', label: 'Master Punch', desc: 'Transients, compression, loudness', color: 'from-amber-500 to-yellow-500' },
 ];
 
-const EQ_BANDS = [
-  { key: 'low',     label: 'Low',      hz: '60Hz' },
-  { key: 'lowMid',  label: 'Low Mid',  hz: '250Hz' },
-  { key: 'mid',     label: 'Mid',      hz: '1kHz' },
-  { key: 'highMid', label: 'High Mid', hz: '4kHz' },
-  { key: 'high',    label: 'High',     hz: '12kHz' },
-];
+// 7-zone parametric EQ — shared with the live chain + offline renderer
+import { PARAMETRIC_EQ_ZONES, DEFAULT_PARAMETRIC_EQ } from '@/config/parametricEQZones';
+const EQ_BANDS = PARAMETRIC_EQ_ZONES;
 
 const STYLE_PRESETS = [
   { id: 'streaming', label: '🎧 Streaming', desc: '-14 LUFS · Balanced',  lufs: -14, character: { radio: 10, destroy: 5,  heaven_low: 30, space: 25, master_punch: 55 } },
@@ -43,7 +39,7 @@ const STYLE_PRESETS = [
 ];
 
 const DEFAULT_CHARACTER = { radio: 0, destroy: 0, heaven_low: 0, space: 0, master_punch: 0 };
-const DEFAULT_EQ = { low: 0, lowMid: 0, mid: 0, highMid: 0, high: 0 };
+const DEFAULT_EQ = DEFAULT_PARAMETRIC_EQ;
 
 export default function AIMasteringPanel() {
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -451,15 +447,15 @@ export default function AIMasteringPanel() {
           </div>
         </div>
 
-        {/* EQ band sliders */}
+        {/* 7-Zone Parametric EQ */}
         <div className="bg-card rounded-2xl border border-border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-black">5-Band EQ</h3>
-            <p className="text-xs text-muted-foreground">±12 dB</p>
+            <h3 className="text-sm font-black">7-Zone Parametric EQ</h3>
+            <p className="text-xs text-muted-foreground">±12 dB · mastering zones</p>
           </div>
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
             {EQ_BANDS.map(b => (
-              <div key={b.key} className="flex flex-col items-center gap-2">
+              <div key={b.key} className="flex flex-col items-center gap-2" title={b.desc}>
                 <span className="text-xs font-mono text-foreground">{(eq[b.key] > 0 ? '+' : '') + eq[b.key].toFixed(1)}</span>
                 <div className="h-32 flex items-center">
                   <div className="rotate-[270deg] origin-center w-32">
@@ -469,11 +465,14 @@ export default function AIMasteringPanel() {
                 </div>
                 <div className="text-center">
                   <p className="text-xs font-bold text-foreground">{b.label}</p>
-                  <p className="text-[10px] text-muted-foreground">{b.hz}</p>
+                  <p className="text-[10px] text-muted-foreground font-mono">{b.hz}</p>
                 </div>
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-muted-foreground mt-3">
+            Sub &lt;40Hz: cut to clean headroom · Mud 200–500Hz: wide gentle cuts clear vocals · Air: broad shelf adds sparkle
+          </p>
         </div>
 
         {/* Action */}

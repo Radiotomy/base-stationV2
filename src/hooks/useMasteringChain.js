@@ -1,4 +1,5 @@
 import { useRef, useCallback, useEffect } from 'react';
+import { PARAMETRIC_EQ_ZONES } from '@/config/parametricEQZones';
 
 /**
  * useMasteringChain
@@ -156,21 +157,14 @@ export default function useMasteringChain() {
     sideGain.connect(sideInv);
     sideInv.connect(msMerge, 0, 1);
 
-    // ─── 5-Band Peaking EQ ───
-    const bands = [
-      { key: 'low',     freq: 60,    Q: 0.9 },
-      { key: 'lowMid',  freq: 250,   Q: 1.0 },
-      { key: 'mid',     freq: 1000,  Q: 1.0 },
-      { key: 'highMid', freq: 4000,  Q: 1.0 },
-      { key: 'high',    freq: 12000, Q: 0.9 },
-    ];
+    // ─── 7-Zone Parametric EQ (shared config) ───
     let cursor = msMerge;
     eqNodesRef.current = {};
-    bands.forEach(b => {
+    PARAMETRIC_EQ_ZONES.forEach(b => {
       const f = ctx.createBiquadFilter();
-      f.type = 'peaking';
+      f.type = b.type;
       f.frequency.value = b.freq;
-      f.Q.value = b.Q;
+      f.Q.value = b.q;
       f.gain.value = 0;
       cursor.connect(f);
       cursor = f;
