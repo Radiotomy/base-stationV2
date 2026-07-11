@@ -7,6 +7,11 @@ import { useEffect, useRef, useState } from 'react';
  *
  * Pure local audio analysis — no event-bus involvement.
  */
+// An HTMLMediaElement can only ever be attached to ONE MediaElementSourceNode.
+// Cache the audio graph per element so remounts reuse it instead of failing silently
+// (a failed re-attach left audio routed into a dead graph = playing but muted).
+const graphCache = new WeakMap();
+
 export function useAudioAnalyzer(audioRef, { fftSize = 256, enabled = true } = {}) {
   const [data, setData] = useState({
     spectrum: new Array(fftSize / 2).fill(0),
@@ -30,18 +35,23 @@ export function useAudioAnalyzer(audioRef, { fftSize = 256, enabled = true } = {
 
     const setup = () => {
       try {
-        if (!ctxRef.current) {
+        let graph = graphCache.get(el);
+        if (!graph) {
           const Ctx = window.AudioContext || window.webkitAudioContext;
           if (!Ctx) return;
-          ctxRef.current = new Ctx();
+          const ctx = new Ctx();
+          const source = ctx.createMediaElementSource(el);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = fftSize;
+          source.connect(analyser);
+          analyser.connect(ctx.destination);
+          graph = { ctx, source, analyser };
+          graphCache.set(el, graph);
         }
-        if (!sourceRef.current) {
-          sourceRef.current = ctxRef.current.createMediaElementSource(el);
-          analyserRef.current = ctxRef.current.createAnalyser();
-          analyserRef.current.fftSize = fftSize;
-          sourceRef.current.connect(analyserRef.current);
-          analyserRef.current.connect(ctxRef.current.destination);
-        }
+        ctxRef.current = graph.ctx;
+        sourceRef.current = graph.source;
+        analyserRef.current = graph.analyser;
+        graph.ctx.resume?.().catch(() => {});
       } catch {
         // createMediaElementSource throws if already connected; safe to ignore.
       }

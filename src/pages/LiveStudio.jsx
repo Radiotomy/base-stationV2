@@ -451,6 +451,7 @@ export default function LiveStudio() {
       {selectedTrack?.file_url && (
         <audio
           ref={audioRef}
+          crossOrigin="anonymous"
           src={selectedTrack.file_url}
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
           onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
