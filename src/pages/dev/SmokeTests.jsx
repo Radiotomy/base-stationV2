@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import SmokeTestResultCard from '@/components/dev/SmokeTestResultCard';
 import FrontendSmokeRunner from '@/components/dev/FrontendSmokeRunner';
+import MasteringPipelineSmoke from '@/components/dev/MasteringPipelineSmoke';
 
 /**
  * Phase 5.5 — Admin-only dev page for running smoke tests.
@@ -90,6 +91,9 @@ export default function SmokeTests() {
         )}
 
         <FrontendSmokeRunner />
+        <div className="mt-6">
+          <MasteringPipelineSmoke />
+        </div>
       </div>
     </div>
   );
