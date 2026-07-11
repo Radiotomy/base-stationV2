@@ -11,6 +11,23 @@ const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
+// Copy an external provider URL into Base44 storage so files persist
+// (provider CDN links expire and block CORS). Falls back to original URL.
+async function persistUrl(base44, url, filename) {
+  try {
+    if (!url || /base44/i.test(url)) return url;
+    const r = await fetch(url);
+    if (!r.ok) return url;
+    const blob = await r.blob();
+    const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
+    const file = new File([blob], safeName, { type: blob.type || 'application/octet-stream' });
+    const up = await base44.integrations.Core.UploadFile({ file });
+    return up?.file_url || url;
+  } catch {
+    return url;
+  }
+}
+
 /**
  * Poll the provider's status endpoint for a given task_id.
  * Returns normalized: { status: 'completed'|'processing'|'failed', audio_url?, video_url?, error? }
@@ -329,6 +346,20 @@ Deno.serve(async (req) => {
       try { providerData = await pollProvider(job.provider, job.provider_job_id, job); } catch {}
 
       if (providerData?.status === 'completed') {
+        // Persist all generated files to Base44 storage upon creation
+        const baseName = (providerData.title || job.job_type || 'output').slice(0, 60);
+        if (providerData.audio_urls?.length) {
+          providerData.audio_urls = await Promise.all(
+            providerData.audio_urls.map((u, i) => persistUrl(base44, u, `${baseName}_${i + 1}.mp3`))
+          );
+          providerData.audio_url = providerData.audio_urls[0];
+        } else if (providerData.audio_url) {
+          providerData.audio_url = await persistUrl(base44, providerData.audio_url, `${baseName}.mp3`);
+        }
+        if (providerData.video_url) providerData.video_url = await persistUrl(base44, providerData.video_url, `${baseName}.mp4`);
+        if (providerData.wav_url) providerData.wav_url = await persistUrl(base44, providerData.wav_url, `${baseName}.wav`);
+        if (providerData.cover_image_url) providerData.cover_image_url = await persistUrl(base44, providerData.cover_image_url, `${baseName}_cover.jpg`);
+
         const outputUrl = providerData.audio_url || providerData.video_url;
         const completedAt = new Date().toISOString();
 

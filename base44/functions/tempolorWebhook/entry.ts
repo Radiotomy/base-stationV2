@@ -26,6 +26,23 @@ import { createClient } from 'npm:@base44/sdk@0.8.25';
 const APP_ID = Deno.env.get('BASE44_APP_ID');
 const WEBHOOK_SECRET = Deno.env.get('TEMPOLOR_WEBHOOK_SECRET') || '';
 
+// Copy an external provider URL into Base44 storage so files persist
+// (provider CDN links expire and block CORS). Falls back to original URL.
+async function persistUrl(base44, url, filename) {
+  try {
+    if (!url || /base44/i.test(url)) return url;
+    const r = await fetch(url);
+    if (!r.ok) return url;
+    const blob = await r.blob();
+    const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
+    const file = new File([blob], safeName, { type: blob.type || 'application/octet-stream' });
+    const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+    return up?.file_url || url;
+  } catch {
+    return url;
+  }
+}
+
 function ackSuccess() {
   // Tempolor docs: "If the request is successful, please return: success"
   return new Response('success', { status: 200, headers: { 'Content-Type': 'text/plain' } });
@@ -104,9 +121,16 @@ Deno.serve(async (req) => {
         last_event: event,
       };
 
-      const audioUrl = song.audio_url || existingMeta.audio_url || job.output_url;
+      let audioUrl = song.audio_url || existingMeta.audio_url || job.output_url;
       const isFinal = st === 'succeeded' || st === 'main_succeeded';
       const wasAlreadyCompleted = job.status === 'completed';
+
+      // Persist generated files to Base44 storage upon creation
+      const baseName = (mergedMeta.title || 'track').slice(0, 60);
+      if (isFinal && audioUrl) audioUrl = await persistUrl(base44, audioUrl, `${baseName}.mp3`);
+      if (mergedMeta.wav_url) mergedMeta.wav_url = await persistUrl(base44, mergedMeta.wav_url, `${baseName}.wav`);
+      if (mergedMeta.cover_image_url) mergedMeta.cover_image_url = await persistUrl(base44, mergedMeta.cover_image_url, `${baseName}_cover.jpg`);
+      if (isFinal && audioUrl) mergedMeta.audio_url = audioUrl;
 
       // First time we have audio → mark completed + deduct credits + finalize log.
       // Subsequent callbacks (wav_complete, lrcsections_complete) just merge metadata.

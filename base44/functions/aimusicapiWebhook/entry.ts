@@ -105,6 +105,23 @@ function normalizePayload(body) {
   return { task_id: body.task_id, provider: platform, status: 'processing' };
 }
 
+// Copy an external provider URL into Base44 storage so files persist
+// (provider CDN links expire and block CORS). Falls back to original URL.
+async function persistUrl(base44, url, filename) {
+  try {
+    if (!url || /base44/i.test(url)) return url;
+    const r = await fetch(url);
+    if (!r.ok) return url;
+    const blob = await r.blob();
+    const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
+    const file = new File([blob], safeName, { type: blob.type || 'application/octet-stream' });
+    const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+    return up?.file_url || url;
+  } catch {
+    return url;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
@@ -160,6 +177,20 @@ Deno.serve(async (req) => {
     }
 
     // status === 'completed'
+    // Persist all generated files to Base44 storage upon creation
+    const baseName = (normalized.title || job.job_type || 'output').slice(0, 60);
+    if (normalized.audio_urls?.length) {
+      normalized.audio_urls = await Promise.all(
+        normalized.audio_urls.map((u, i) => persistUrl(base44, u, `${baseName}_${i + 1}.mp3`))
+      );
+      normalized.audio_url = normalized.audio_urls[0];
+    } else if (normalized.audio_url) {
+      normalized.audio_url = await persistUrl(base44, normalized.audio_url, `${baseName}.mp3`);
+    }
+    if (normalized.video_url) normalized.video_url = await persistUrl(base44, normalized.video_url, `${baseName}.mp4`);
+    if (normalized.wav_url) normalized.wav_url = await persistUrl(base44, normalized.wav_url, `${baseName}.wav`);
+    if (normalized.cover_image_url) normalized.cover_image_url = await persistUrl(base44, normalized.cover_image_url, `${baseName}_cover.jpg`);
+
     const outputUrl = normalized.audio_url || normalized.video_url;
     const completedAt = new Date().toISOString();
 
