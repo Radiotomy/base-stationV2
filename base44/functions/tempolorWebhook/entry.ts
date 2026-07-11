@@ -98,6 +98,7 @@ Deno.serve(async (req) => {
         model_version: song.model || existingMeta.model_version || job.input_data?.model || null,
         lyrics: song.lyrics || existingMeta.lyrics || job.input_data?.lyrics || '',
         wav_url: song.audio_hi_url || existingMeta.wav_url || null,
+        cover_image_url: song.image_url || song.cover_url || existingMeta.cover_image_url || null,
         aligned_lyrics: aligned || existingMeta.aligned_lyrics || null,
         delivered_via: 'webhook',
         last_event: event,
@@ -112,6 +113,18 @@ Deno.serve(async (req) => {
       if (isFinal && audioUrl && !wasAlreadyCompleted) {
         const completedAt = new Date().toISOString();
         const cost = job.input_data?.credit_cost ?? 10;
+
+        // Cover art fallback — Tempolor models don't produce album artwork.
+        // Generate one so the track lands in the library with a cover like Sonic/Producer tracks.
+        if (!mergedMeta.cover_image_url) {
+          try {
+            const meta = job.input_data || {};
+            const img = await base44.asServiceRole.integrations.Core.GenerateImage({
+              prompt: `Album cover artwork for a ${meta.mood || 'modern'} ${meta.genre || ''} song titled "${mergedMeta.title || meta.sound_prompt || 'Untitled'}". Professional music album cover, square composition, bold striking visual style true to the ${meta.genre || 'modern'} genre, no text or lettering.`,
+            });
+            if (img?.url) mergedMeta.cover_image_url = img.url;
+          } catch (e) { console.warn('Tempolor cover art fallback failed:', e.message); }
+        }
 
         await base44.asServiceRole.entities.GenerationJob.update(job.id, {
           status: 'completed',

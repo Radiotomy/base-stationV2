@@ -162,6 +162,18 @@ Deno.serve(async (req) => {
     // status === 'completed'
     const outputUrl = normalized.audio_url || normalized.video_url;
     const completedAt = new Date().toISOString();
+
+    // Cover art fallback — Sonic/Producer normally include image_url, but if a clip
+    // arrives without one, generate album artwork so every track has a cover.
+    if (job.job_type === 'music' && !normalized.cover_image_url) {
+      try {
+        const meta = job.input_data || {};
+        const img = await base44.asServiceRole.integrations.Core.GenerateImage({
+          prompt: `Album cover artwork for a ${meta.mood || 'modern'} ${meta.genre || ''} song titled "${normalized.title || meta.sound_prompt || 'Untitled'}". Professional music album cover, square composition, bold striking visual style true to the ${meta.genre || 'modern'} genre, no text or lettering.`,
+        });
+        if (img?.url) normalized.cover_image_url = img.url;
+      } catch (e) { console.warn('Webhook cover art fallback failed:', e.message); }
+    }
     const stampedCost = job.input_data?.credit_cost;
     const cost = stampedCost ?? 10;
 

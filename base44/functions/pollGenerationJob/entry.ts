@@ -332,6 +332,20 @@ Deno.serve(async (req) => {
         const outputUrl = providerData.audio_url || providerData.video_url;
         const completedAt = new Date().toISOString();
 
+        // ── Cover art fallback ────────────────────────────────────────────────
+        // Sonic & Producer return image_url with each clip; Tempolor models
+        // (v4.6/v3.5/Lyria/Mureka/MiniMax + instrumentals) usually don't.
+        // Auto-generate album artwork so every completed track has a cover.
+        if (job.job_type === 'music' && !providerData.cover_image_url) {
+          try {
+            const meta = job.input_data || {};
+            const img = await base44.asServiceRole.integrations.Core.GenerateImage({
+              prompt: `Album cover artwork for a ${meta.mood || 'modern'} ${meta.genre || ''} song titled "${providerData.title || meta.sound_prompt || 'Untitled'}". Professional music album cover, square composition, bold striking visual style true to the ${meta.genre || 'modern'} genre, no text or lettering.`,
+            });
+            if (img?.url) providerData.cover_image_url = img.url;
+          } catch (e) { console.warn('Cover art fallback failed:', e.message); }
+        }
+
         // Use cost stamped on input_data at generation start; fallback to defaults
         const stampedCost = job.input_data?.credit_cost;
         const cost = stampedCost ?? (job.job_type === 'video' ? Math.max(2, Math.round((job.input_data?.duration || 5) * 2)) : 10);
