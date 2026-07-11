@@ -18,6 +18,7 @@ import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPane
 import RewardFansModal from "@/components/creator/RewardFansModal";
 import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
 import SubmissionsTab from "@/components/dashboard/SubmissionsTab";
+import LiveSessionsTab from "@/components/dashboard/LiveSessionsTab";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -176,6 +177,7 @@ export default function CreatorDashboard() {
     { key: "library",   label: `📂 Library (${assets.length})` },
     { key: "projects",  label: "🗂️ Projects" },
     { key: "tracks",    label: `📤 Submissions (${tracks.length})` },
+    { key: "live",      label: "🔴 Live Sessions" },
     { key: "fans",      label: "🏆 Fan Economy" },
     { key: "history",   label: "🕐 History" },
     { key: "analytics", label: "📊 Analytics" },
@@ -298,6 +300,11 @@ export default function CreatorDashboard() {
       {/* Submissions Tab */}
       {activeTab === "tracks" && (
         <SubmissionsTab tracks={tracks} />
+      )}
+
+      {/* Live Sessions Tab */}
+      {activeTab === "live" && user && (
+        <LiveSessionsTab userId={user.id} />
       )}
 
       {/* Phase 5 — Fan Economy Tab */}
