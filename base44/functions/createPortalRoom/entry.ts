@@ -16,6 +16,8 @@
 //                         settings, persist portal_room_id on the session
 //   "update_now_playing"— push current track title + cover art onto the in-room
 //                         screens + room settings so the 3D venue stays in sync
+//   "set_screen_video"  — put an MP4/video on the big video wall above the stage
+//                         (empty videoUrl clears it and restores the image screen)
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
@@ -194,6 +196,39 @@ Deno.serve(async (req) => {
       if (coverImageUrl) await updateRoomSettings(roomId, { image: coverImageUrl });
 
       return Response.json({ ok: true, roomId, fanUrl: `https://theportal.to/?room=${roomId}` });
+    }
+
+    // ── set_screen_video — MP4/video performance on the stage video wall ────
+    if (action === 'set_screen_video') {
+      const { sessionId, videoUrl, videoTitle } = body;
+      if (!sessionId) return Response.json({ error: 'sessionId required' }, { status: 400 });
+      const sessions = await base44.entities.LiveSession.filter({ id: sessionId });
+      const session = sessions[0];
+      if (!session) return Response.json({ error: 'Session not found' }, { status: 404 });
+      if (session.user_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const roomId = session.portal_room_id;
+      if (!roomId) return Response.json({ error: 'No Portals room on this session' }, { status: 400 });
+
+      const roomData = await downloadRoomData(roomId);
+      const items = { ...(roomData.roomItems || {}) };
+
+      if (videoUrl) {
+        // Big video wall — replaces the main backdrop image while active (id 105)
+        items['105'] = baseItem('DefaultVideo', { x: 0, y: 5, z: -11.8 }, { x: 14, y: 8, z: 1 }, {
+          contentString: videoUrl,
+          hoverTitle: videoTitle || 'Live Video',
+          hoverBodyContent: 'Now Showing',
+        });
+        // Hide the static image backdrop behind the video wall while video plays
+        if (items['101']) items['101'] = { ...items['101'], pos: { ...items['101'].pos, y: -50 } };
+      } else {
+        // Clear video wall, restore the image backdrop
+        delete items['105'];
+        if (items['101']) items['101'] = { ...items['101'], pos: { ...items['101'].pos, y: 5 } };
+      }
+
+      await uploadRoomData(roomId, { ...roomData, roomItems: items });
+      return Response.json({ ok: true, roomId, videoActive: !!videoUrl });
     }
 
     // ── create (default) — build the live venue room ─────────────────────────

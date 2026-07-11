@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import PortalStageViewer from '@/components/live/PortalStageViewer';
+import PortalsVideoWall from '@/components/live/PortalsVideoWall';
 
 /**
  * Full Portals 3D venue control panel for Live Studio performers.
@@ -164,6 +165,7 @@ export default function PortalsVenuePanel({ sessionId, title, currentTrack, valu
             {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
             {syncing ? 'Updating stage…' : 'Sync Now Playing to Stage'}
           </Button>
+          <PortalsVideoWall sessionId={sessionId} />
           <p className="text-[10px] text-muted-foreground leading-snug">
             Enter the stage yourself to perform — Portals has built-in voice chat (allow your mic).
             Fans watching in 3D Mode join the same room. "Sync" pushes your current track's title and cover art onto the venue screens.
