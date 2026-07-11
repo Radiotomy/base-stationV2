@@ -58,34 +58,55 @@ export default function Radio() {
   const [showEQ, setShowEQ] = useState(false); // mobile-only collapse; desktop always shows
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const audioRef = useRef(null);
+  const audioRef = useRef(null);      // CORS-enabled element wired to EQ + VU meters
+  const fallbackRef = useRef(null);   // plain element for CORS-blocked streams (Audius CDN etc.)
+  const activeElRef = useRef(null);
+  const playSeqRef = useRef(0);
+  const [eqActive, setEqActive] = useState(true);
   const { setBandGain, analyserL, analyserR } = useAudioProcessor(audioRef);
+
+  // Quick CORS probe — if the stream host allows CORS we can route it
+  // through the Web Audio EQ/VU chain; otherwise play it directly.
+  const probeCors = async (url) => {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, { mode: 'cors', signal: controller.signal });
+      clearTimeout(timer);
+      try { controller.abort(); } catch { /* stop body download */ }
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
 
   const nowPlaying = queue[queueIndex] || null;
 
-  // Time tracking for progress bar
+  // Time tracking for progress bar — listen on both elements, respond only to the active one
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const onTime = () => setCurrentTime(audio.currentTime || 0);
-    const onMeta = () => setDuration(audio.duration || 0);
-    const onLoadStart = () => { setCurrentTime(0); setDuration(0); };
-    audio.addEventListener('timeupdate', onTime);
-    audio.addEventListener('loadedmetadata', onMeta);
-    audio.addEventListener('durationchange', onMeta);
-    audio.addEventListener('loadstart', onLoadStart);
-    return () => {
-      audio.removeEventListener('timeupdate', onTime);
-      audio.removeEventListener('loadedmetadata', onMeta);
-      audio.removeEventListener('durationchange', onMeta);
-      audio.removeEventListener('loadstart', onLoadStart);
-    };
+    const els = [audioRef.current, fallbackRef.current].filter(Boolean);
+    const onTime = (e) => { if (e.target === activeElRef.current) setCurrentTime(e.target.currentTime || 0); };
+    const onMeta = (e) => { if (e.target === activeElRef.current) setDuration(e.target.duration || 0); };
+    const onLoadStart = (e) => { if (e.target === activeElRef.current) { setCurrentTime(0); setDuration(0); } };
+    els.forEach(a => {
+      a.addEventListener('timeupdate', onTime);
+      a.addEventListener('loadedmetadata', onMeta);
+      a.addEventListener('durationchange', onMeta);
+      a.addEventListener('loadstart', onLoadStart);
+    });
+    return () => els.forEach(a => {
+      a.removeEventListener('timeupdate', onTime);
+      a.removeEventListener('loadedmetadata', onMeta);
+      a.removeEventListener('durationchange', onMeta);
+      a.removeEventListener('loadstart', onLoadStart);
+    });
   }, []);
 
   const handleSeek = (val) => {
-    if (!audioRef.current || !duration) return;
+    const el = activeElRef.current;
+    if (!el || !duration) return;
     const t = (val[0] / 100) * duration;
-    audioRef.current.currentTime = t;
+    el.currentTime = t;
     setCurrentTime(t);
   };
 
@@ -103,11 +124,11 @@ export default function Radio() {
       .catch(() => {});
   }, []);
 
-  // Volume / mute sync
+  // Volume / mute sync — apply to both playback elements
   useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = muted ? 0 : volume[0] / 100;
-    }
+    [audioRef.current, fallbackRef.current].forEach(el => {
+      if (el) el.volume = muted ? 0 : volume[0] / 100;
+    });
   }, [volume, muted]);
 
   // Load queue when channel changes
@@ -116,7 +137,10 @@ export default function Radio() {
     setQueue([]);
     setQueueIndex(0);
     setIsPlaying(false);
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    playSeqRef.current++;
+    [audioRef.current, fallbackRef.current].forEach(el => {
+      if (el) { el.pause(); el.removeAttribute('src'); }
+    });
 
     try {
       const res = await base44.functions.invoke('radioQueue', {
@@ -144,26 +168,32 @@ export default function Radio() {
     loadQueue(activeChannel);
   }, [activeChannel]);
 
-  const playTrack = (track) => {
-    if (!track?.audio_url || !audioRef.current) return;
-    audioRef.current.src = track.audio_url;
-    audioRef.current.play().catch(() => setIsPlaying(false));
+  const playTrack = async (track) => {
+    if (!track?.audio_url) return;
+    const seq = ++playSeqRef.current;
+    const useEQ = await probeCors(track.audio_url);
+    if (seq !== playSeqRef.current) return; // user skipped while probing
+    const el = useEQ ? audioRef.current : fallbackRef.current;
+    const other = useEQ ? fallbackRef.current : audioRef.current;
+    if (!el) return;
+    if (other) { other.pause(); other.removeAttribute('src'); }
+    activeElRef.current = el;
+    setEqActive(useEQ);
+    el.src = track.audio_url;
+    el.play().catch(() => setIsPlaying(false));
     setIsPlaying(true);
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    const el = activeElRef.current;
     if (isPlaying) {
-      audioRef.current.pause();
+      el?.pause();
       setIsPlaying(false);
-    } else {
-      if (nowPlaying?.audio_url) {
-        if (!audioRef.current.src || audioRef.current.src === window.location.href) {
-          audioRef.current.src = nowPlaying.audio_url;
-        }
-        audioRef.current.play().catch(() => setIsPlaying(false));
-        setIsPlaying(true);
-      }
+    } else if (el?.getAttribute('src')) {
+      el.play().catch(() => setIsPlaying(false));
+      setIsPlaying(true);
+    } else if (nowPlaying?.audio_url) {
+      playTrack(nowPlaying);
     }
   };
 
@@ -180,6 +210,12 @@ export default function Radio() {
   };
 
   const handleTrackEnd = () => {
+    skipNext();
+  };
+
+  // Skip broken tracks — but ignore error events from the idle element or a cleared src
+  const handleAudioError = (e) => {
+    if (e.target !== activeElRef.current || !e.target.getAttribute('src')) return;
     skipNext();
   };
 
@@ -400,11 +436,11 @@ export default function Radio() {
           <div className="md:hidden space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
+                <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} />
                 <p className="text-center text-white/70 text-xs font-semibold">Left</p>
               </div>
               <div className="space-y-1.5">
-                <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying} />
+                <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} />
                 <p className="text-center text-white/70 text-xs font-semibold">Right</p>
               </div>
             </div>
@@ -426,11 +462,11 @@ export default function Radio() {
           {/* Desktop: VU L / VU R / EQ */}
           <div className="hidden md:grid grid-cols-[1fr_1fr_1.2fr] gap-4 items-start">
             <div className="space-y-2">
-              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying} />
+              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} />
               <p className="text-center text-white/70 text-sm font-semibold">Left</p>
             </div>
             <div className="space-y-2">
-              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying} />
+              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} />
               <p className="text-center text-white/70 text-sm font-semibold">Right</p>
             </div>
             <EQPanel setBandGain={setBandGain} />
@@ -495,7 +531,8 @@ export default function Radio() {
         </RackUnit>
       </div>
 
-      <audio ref={audioRef} onEnded={handleTrackEnd} onError={skipNext} crossOrigin="anonymous" />
+      <audio ref={audioRef} onEnded={handleTrackEnd} onError={handleAudioError} crossOrigin="anonymous" />
+      <audio ref={fallbackRef} onEnded={handleTrackEnd} onError={handleAudioError} />
 
       <AnimatePresence>
         {showBuilder && (

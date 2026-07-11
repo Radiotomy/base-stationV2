@@ -31,14 +31,22 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
   useEffect(() => {
     if (!audioUrl || !audioContext) return;
     const audio = new Audio();
-    // crossOrigin enables Web Audio analysis on CORS-enabled hosts. If the
-    // host doesn't return CORS headers, the audio element will throw
-    // NotSupportedError. We retry once without crossOrigin so playback still
-    // works (analysers will be silent in that case but the track plays).
-    audio.crossOrigin = 'anonymous';
-    audio.src = audioUrl;
     audio.preload = 'auto';
     audioRef.current = audio;
+
+    // Play from a locally fetched blob — same-origin, so the Web Audio chain
+    // always receives real signal (no CORS "outputs zeroes" silence).
+    let objectUrl = null;
+    (async () => {
+      try {
+        const res = await fetch(audioUrl);
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        audio.src = objectUrl;
+      } catch {
+        audio.src = audioUrl; // fallback to direct streaming
+      }
+    })();
 
     const onMeta = () => setDuration(audio.duration);
     const onTime = () => setCurrentTime(audio.currentTime);
@@ -46,11 +54,8 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
     const onPause = () => { setIsPlaying(false); onPlayingChange?.(false); };
     const onEnd = () => { setIsPlaying(false); onPlayingChange?.(false); };
     const onError = () => {
-      // Retry without crossOrigin for hosts that don't send CORS headers
-      if (audio.crossOrigin === 'anonymous') {
-        console.warn('Audio CORS failed, retrying without crossOrigin');
-        audio.removeAttribute('crossorigin');
-        audio.crossOrigin = null;
+      // Blob playback failed — fall back to streaming the URL directly
+      if (objectUrl && audio.src === objectUrl) {
         audio.src = audioUrl;
         audio.load();
       }
@@ -80,6 +85,7 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
       audio.removeEventListener('ended', onEnd);
       audio.removeEventListener('error', onError);
       audio.src = '';
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audioUrl, audioContext]);
