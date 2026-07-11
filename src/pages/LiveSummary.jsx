@@ -4,11 +4,10 @@ import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Users, Heart, MessageSquare, Play, Pause,
-  Crown, Download, ExternalLink, Radio, Clock, Headphones, Loader2, CheckCircle2
+  Crown, Download, ExternalLink, Radio, Clock, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
 
 function formatDuration(seconds) {
   if (!seconds) return '0:00';
@@ -38,25 +37,6 @@ export default function LiveSummary() {
   const [summary, setSummary] = useState(null);
   const [bundle, setBundle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [publishing, setPublishing] = useState(false);
-
-  const handlePublishToAudius = async () => {
-    if (!bundle?.id) return;
-    setPublishing(true);
-    try {
-      const r = await base44.functions.invoke('publishLiveSessionBundle', { bundleId: bundle.id });
-      if (r.data?.audius_track_id) {
-        setBundle(b => ({ ...b, audius_track_id: r.data.audius_track_id, audius_publish_status: 'success' }));
-        toast.success('Session published to Audius!', { icon: '🎧' });
-      } else {
-        toast.error(r.data?.error || 'Publish failed');
-      }
-    } catch (e) {
-      toast.error(e?.response?.data?.error || e.message || 'Publish failed');
-    } finally {
-      setPublishing(false);
-    }
-  };
 
   useEffect(() => {
     if (!sessionId) { setLoading(false); return; }
@@ -174,15 +154,10 @@ export default function LiveSummary() {
                   </Button>
                 </a>
               </div>
-              {bundle.audius_track_id ? (
-                <Button disabled className="w-full rounded-xl gap-2 mt-2 text-emerald-400 border-emerald-500/30" variant="outline">
+              {bundle.audius_track_id && (
+                <p className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 mt-2">
                   <CheckCircle2 className="w-4 h-4" /> Published to Audius
-                </Button>
-              ) : (
-                <Button onClick={handlePublishToAudius} disabled={publishing} className="w-full rounded-xl gap-2 mt-2 bg-emerald-600 hover:bg-emerald-500">
-                  {publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
-                  {publishing ? 'Publishing…' : 'Publish Session to Audius'}
-                </Button>
+                </p>
               )}
             </>
           ) : (

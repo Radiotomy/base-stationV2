@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import SessionEditDialog from './SessionEditDialog';
 import ChatModerationPanel from './ChatModerationPanel';
 import ShowcaseManagerDialog from './ShowcaseManagerDialog';
+import PublishSessionToAudiusButton from './PublishSessionToAudiusButton';
 
 const STATUS_STYLES = {
   streaming: 'bg-red-500/20 text-red-400',
@@ -95,6 +96,7 @@ export default function SessionCard({ session, onChanged }) {
             <Sparkles className="w-3.5 h-3.5" /> Venue Showcase
           </Button>
         )}
+        {session.status === 'completed' && <PublishSessionToAudiusButton sessionId={session.id} />}
         {session.status === 'completed' && (
           <Button size="sm" variant="ghost" onClick={archive} className="rounded-xl gap-1.5 text-muted-foreground">
             <Archive className="w-3.5 h-3.5" /> Archive
