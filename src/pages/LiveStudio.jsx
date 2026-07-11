@@ -354,7 +354,12 @@ export default function LiveStudio() {
 
   const handlePlay = async () => {
     if (!audioRef.current) return;
-    audioRef.current.play();
+    try {
+      await audioRef.current.play();
+    } catch {
+      toast.error('Playback failed — tap play again or reselect the track.');
+      return;
+    }
     setIsPlaying(true);
     const positionMs = Math.round((audioRef.current.currentTime || 0) * 1000);
     await safePublish('play', {
@@ -456,6 +461,15 @@ export default function LiveStudio() {
           onTimeUpdate={() => setCurrentTime(audioRef.current?.currentTime || 0)}
           onLoadedMetadata={() => setAudioDuration(audioRef.current?.duration || 0)}
           onEnded={() => { setIsPlaying(false); setCurrentTime(0); }}
+          onError={() => {
+            const el = audioRef.current;
+            if (el && el.crossOrigin !== null) {
+              // Host doesn't allow CORS — retry without it so playback still works.
+              el.crossOrigin = null;
+              el.load();
+              if (isPlaying) el.play().catch(() => {});
+            }
+          }}
         />
       )}
 
