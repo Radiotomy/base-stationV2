@@ -550,7 +550,7 @@ export default function LiveStudio() {
             <ShareLinkButton sessionId={sessionId} />
 
             {/* Track Selector */}
-            <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <div className="relative z-30 bg-card rounded-2xl border border-border p-5 space-y-3">
               <h3 className="font-black text-foreground text-sm">Track</h3>
               <LiveTrackSelector onSelect={handleTrackSelect} selectedTrack={selectedTrack} disabled={false} />
             </div>
