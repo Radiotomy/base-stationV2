@@ -18,6 +18,9 @@ import { toast } from 'sonner';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
+import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
+import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
+import { getLyricsSpec } from '@/config/modelLyricsSpec';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
@@ -90,6 +93,7 @@ export default function LyricsStudio() {
   const [exporting, setExporting] = useState(false);
   const [lookingUpWriter, setLookingUpWriter] = useState(false);
   const [writerProfile, setWriterProfile] = useState(null);
+  const [targetModel, setTargetModel] = useState('sonic|sonic-v4-5-plus');
   const textareaRef = useRef(null);
   const navigate = useNavigate();
 
@@ -136,6 +140,17 @@ export default function LyricsStudio() {
     sessionStorage.setItem('lyricsCharLimitNoticeSeen', '1');
   };
 
+  // Model-aware lyric budget: length preset capped by the target music model's hard limit
+  const [tmProvider, tmModel] = targetModel.split('|');
+  const modelMaxChars = getLyricsSpec(tmProvider, tmModel).maxLyricsChars;
+  const maxCharsMap = {
+    'Short (8–16 bars)': 1500,
+    'Medium (32 bars)': 2500,
+    'Long (64+ bars)': 4000,
+    'Full Song': 5000,
+  };
+  const effectiveMaxChars = (len) => Math.min(maxCharsMap[len] || 2500, modelMaxChars);
+
   const generate = async () => {
     if (!topic) { toast.error('Enter a topic first'); return; }
     setLoading(true);
@@ -145,12 +160,6 @@ export default function LyricsStudio() {
       let lastResponse = null;
       if (mastersMode) {
         // 243 Masters Engine — lyrics + chords + arrangement + production brief
-        const maxCharsMap = {
-          'Short (8–16 bars)': 1500,
-          'Medium (32 bars)': 2500,
-          'Long (64+ bars)': 4000,
-          'Full Song': 5000,
-        };
         const res = await base44.functions.invoke('generate243Masters', {
           topic,
           genre: style.join(', '),
@@ -158,22 +167,16 @@ export default function LyricsStudio() {
           rhyme_scheme: rhymeScheme,
           reference_artists: referenceArtists || undefined,
           bpm: proBpm ? Number(proBpm) : undefined,
-          max_chars: maxCharsMap[length] || 2500,
+          max_chars: effectiveMaxChars(length),
         });
         lastResponse = res;
         text = res.data?.lyrics_clamped || res.data?.lyrics || '';
         setMastersResult(res.data);
         if (res.data?.clamped) {
-          toast.warning(`Clamped to ${text.length} chars for provider compatibility.`);
+          toast.warning(`Clamped to ${text.length} chars for ${tmModel} compatibility.`);
         }
       } else if (proMode) {
         // Professional Songwriting Engine — CanonicalLyricJob-compatible
-        const maxCharsMap = {
-          'Short (8–16 bars)': 1500,
-          'Medium (32 bars)': 2500,
-          'Long (64+ bars)': 4000,
-          'Full Song': 5000,
-        };
         const res = await base44.functions.invoke('generateLyricsPro', {
           concept: topic,
           genre: style.join(', '),
@@ -181,17 +184,17 @@ export default function LyricsStudio() {
           rhyme_scheme: rhymeScheme,
           reference_artists: referenceArtists || undefined,
           bpm: proBpm ? Number(proBpm) : undefined,
-          max_chars: maxCharsMap[length] || 2500,
+          max_chars: effectiveMaxChars(length),
         });
         lastResponse = res;
         text = res.data?.lyrics_clamped || res.data?.lyrics || '';
         setMatchedGenre(res.data?.matched_genre || null);
         setGenreCraft(res.data?.genre_craft || null);
         if (res.data?.clamped) {
-          toast.warning(`Clamped to ${text.length} chars (was ${res.data.original_length}) for provider compatibility.`);
+          toast.warning(`Clamped to ${text.length} chars (was ${res.data.original_length}) for ${tmModel} compatibility.`);
         }
       } else {
-        const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme });
+        const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme, max_chars: effectiveMaxChars(length) });
         lastResponse = res;
         text = res.data?.lyrics || res.data?.text || res.data?.content || '';
       }
@@ -476,6 +479,9 @@ export default function LyricsStudio() {
                 </div>
               )}
 
+              {/* Target music model — caps lyric budget per model */}
+              <TargetModelSelect value={targetModel} onChange={setTargetModel} />
+
               {/* Topic */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
@@ -682,6 +688,9 @@ export default function LyricsStudio() {
                 onFocus={showCharLimitNotice}
                 placeholder={`Your lyrics will appear here after generation.\n\nTip: Use ⌘+Enter to generate, ⌘+S to save.`}
                 className="w-full h-96 rounded-xl font-mono text-sm resize-none" />
+
+              {/* Live per-model compatibility check against the selected target model */}
+              <LyricsCompatibilityCheck lyrics={lyrics} provider={tmProvider} model={tmModel} mode="song" />
 
               <div className="flex gap-2 flex-wrap">
                 <Button variant="outline" onClick={generate} disabled={loading || !topic} className="rounded-xl gap-1.5 text-sm">
