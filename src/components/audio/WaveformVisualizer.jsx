@@ -6,30 +6,30 @@ import { Button } from '@/components/ui/button';
 export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled = false }) {
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
-  const audioContextRef = useRef(null);
-  const analyserRef = useRef(null);
+  const peaksRef = useRef(null);
   const animationIdRef = useRef(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [waveformData, setWaveformData] = useState(new Uint8Array(256));
   const [isLoading, setIsLoading] = useState(false);
   const [selectedStart, setSelectedStart] = useState(null);
   const [selectedEnd, setSelectedEnd] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragMode, setDragMode] = useState(null);
 
-  // Initialize Web Audio API
+  // Load audio element + decode static waveform peaks
   useEffect(() => {
     if (!audioUrl) return;
+    setIsLoading(true);
+    peaksRef.current = null;
 
     const audio = new Audio(audioUrl);
+    audio.preload = 'auto';
     audioRef.current = audio;
 
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration);
-      setIsLoading(false);
     });
 
     audio.addEventListener('timeupdate', () => {
@@ -40,22 +40,41 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
     audio.addEventListener('pause', () => setIsPlaying(false));
     audio.addEventListener('ended', () => setIsPlaying(false));
 
-    // Initialize Web Audio Context
-    if (!audioContextRef.current) {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      audioContextRef.current = ctx;
+    // Decode the file once and compute peak buckets for a static waveform
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await fetch(audioUrl);
+        const arrayBuf = await resp.arrayBuffer();
+        const decodeCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const buffer = await decodeCtx.decodeAudioData(arrayBuf);
+        decodeCtx.close();
+        if (cancelled) return;
 
-      const source = ctx.createMediaElementSource(audio);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      source.connect(analyser);
-      analyser.connect(ctx.destination);
-      analyserRef.current = analyser;
-    }
-
-    setIsLoading(true);
+        const data = buffer.getChannelData(0);
+        const buckets = 256;
+        const step = Math.floor(data.length / buckets) || 1;
+        const peaks = new Float32Array(buckets);
+        for (let i = 0; i < buckets; i++) {
+          let max = 0;
+          const start = i * step;
+          for (let j = start; j < start + step && j < data.length; j += 16) {
+            const v = Math.abs(data[j]);
+            if (v > max) max = v;
+          }
+          peaks[i] = max;
+        }
+        peaksRef.current = peaks;
+        if (!duration) setDuration(buffer.duration);
+      } catch {
+        // Decode failed (unsupported codec / CORS) — playback still works, waveform stays flat
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
 
     return () => {
+      cancelled = true;
       audio.pause();
       audio.src = '';
     };
@@ -64,15 +83,9 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
   // Draw waveform
   const drawWaveform = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !analyserRef.current) return;
+    if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    const analyser = analyserRef.current;
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-    analyser.getByteFrequencyData(dataArray);
-
-    setWaveformData(dataArray);
-
     const width = canvas.width;
     const height = canvas.height;
 
@@ -91,25 +104,26 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
       ctx.stroke();
     }
 
-    // Draw waveform
-    ctx.strokeStyle = '#8b5cf6';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-
-    const barWidth = width / dataArray.length;
-    for (let i = 0; i < dataArray.length; i++) {
-      const barHeight = (dataArray[i] / 256) * height;
-      const y = height - barHeight;
-      const x = i * barWidth;
-
-      if (i === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
+    // Draw static waveform (mirrored peaks around center line)
+    const peaks = peaksRef.current;
+    if (peaks) {
+      const barWidth = width / peaks.length;
+      const center = height / 2;
+      ctx.fillStyle = '#8b5cf6';
+      for (let i = 0; i < peaks.length; i++) {
+        const barHeight = Math.max(peaks[i] * height * 0.9, 1.5);
+        ctx.fillRect(i * barWidth, center - barHeight / 2, Math.max(barWidth - 1, 1), barHeight);
+      }
+      // Highlight the already-played portion
+      if (duration > 0) {
+        const playedBars = Math.floor((currentTime / duration) * peaks.length);
+        ctx.fillStyle = '#06b6d4';
+        for (let i = 0; i < playedBars; i++) {
+          const barHeight = Math.max(peaks[i] * height * 0.9, 1.5);
+          ctx.fillRect(i * barWidth, center - barHeight / 2, Math.max(barWidth - 1, 1), barHeight);
+        }
       }
     }
-
-    ctx.stroke();
 
     // Draw playback line
     const playbackX = (currentTime / duration) * width;
