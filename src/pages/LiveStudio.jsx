@@ -23,7 +23,7 @@ import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropTrigger from '@/components/live/LiveDropTrigger';
 import AudioModeSelector from '@/components/live/AudioModeSelector';
 import LocalVisualizerPreview from '@/components/live/LocalVisualizerPreview';
-import PortalsToggle from '@/components/live/PortalsToggle';
+import PortalsVenuePanel from '@/components/live/PortalsVenuePanel';
 import { useStreamrAudio } from '@/hooks/useStreamrAudio';
 
 export default function LiveStudio() {
@@ -332,6 +332,15 @@ export default function LiveStudio() {
       position_ms: 0,
       isPlaying: false,
     });
+    // Portals venue: auto-sync the new track's title + cover onto the 3D stage screens
+    if (visualLayer === 'portals') {
+      base44.functions.invoke('createPortalRoom', {
+        action: 'update_now_playing',
+        sessionId,
+        trackTitle: track.title || '',
+        coverImageUrl: track.thumbnail_url || '',
+      }).catch(() => {});
+    }
   };
 
   const handlePlay = async () => {
@@ -497,12 +506,12 @@ export default function LiveStudio() {
                 streamrAvailable={streamrConfigured}
               />
 
-              {/* Visual Layer — optional Portals 3D stage */}
+              {/* Visual Layer — full Portals 3D venue (stage, screens, spatial voice) */}
               {sessionId && (
-                <PortalsToggle
+                <PortalsVenuePanel
                   sessionId={sessionId}
                   title={title}
-                  coverImageUrl={selectedTrack?.thumbnail_url || ''}
+                  currentTrack={selectedTrack}
                   value={visualLayer}
                   onChange={setVisualLayer}
                 />
