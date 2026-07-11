@@ -101,29 +101,55 @@ export default function CommunityMetrics() {
     },
   ];
 
+  const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
+
   return (
-    <div>
-      <div className="mb-6 text-center">
-        <h3 className="text-xl font-black text-foreground">🌍 Base Station Community</h3>
-        <p className="text-sm text-muted-foreground mt-1">Live activity across all creators</p>
+    <div className="space-y-3">
+      {/* Liquid-metal banner */}
+      <div
+        className="rounded-lg border border-black/70 py-4 px-4 text-center overflow-hidden"
+        style={{
+          backgroundImage: `linear-gradient(rgba(30,15,5,0.4), rgba(30,15,5,0.55)), url(${MERCURY_BG})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px -6px rgba(0,0,0,0.7)",
+        }}
+      >
+        <h3 className="text-lg font-black text-white drop-shadow">🌍 Base Station Community</h3>
+        <p className="text-xs text-white/80 mt-0.5 font-semibold">Live activity across all creators</p>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {statCards.map((stat, i) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className={`p-4 rounded-xl bg-gradient-to-br ${stat.bg} border border-orange-500/20 hover:border-orange-500/40 transition-all`}
+
+      {/* Green LCD readout chips */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {statCards.map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="rounded-lg border border-black/80 bg-gradient-to-b from-[#26201A] to-[#14100C] p-2 flex items-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+          >
+            <div
+              className="flex-1 rounded-md border border-black/60 px-3 py-2 min-w-0"
+              style={{
+                background: "linear-gradient(180deg, #C8EF92 0%, #A9DC66 100%)",
+                boxShadow: "inset 0 2px 10px rgba(30,58,14,0.35)",
+              }}
             >
-              <Icon className={`w-5 h-5 ${stat.color} mb-2`} />
-              <p className="text-2xl font-black text-foreground">{stat.value.toLocaleString()}</p>
-              <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
-            </motion.div>
-          );
-        })}
+              <p className="text-xl sm:text-2xl font-black text-[#1F3A0E] leading-none">{stat.value.toLocaleString()}</p>
+              <p className="text-[10px] font-bold text-[#2E4A16]/80 mt-1 leading-tight truncate">{stat.label}</p>
+            </div>
+            <span
+              className="w-7 h-7 rounded-full flex-shrink-0 border border-black/70 flex items-center justify-center"
+              style={{
+                background: "radial-gradient(circle at 35% 30%, #FFC98A 0%, #FF9A4D 45%, #B05018 100%)",
+                boxShadow: "inset 0 1px 2px rgba(255,255,255,0.5)",
+              }}
+            >
+              <span className="w-2.5 h-2.5 rounded-full bg-black shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]" />
+            </span>
+          </motion.div>
+        ))}
       </div>
     </div>
   );
