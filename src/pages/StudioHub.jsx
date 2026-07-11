@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sparkles, Music, Sliders, Palette, Send, BarChart3, Folder } from "lucide-react";
+import { Sparkles, Music, Sliders, Palette, Send, BarChart3, Folder, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StudioCategoryCard from "@/components/studios/StudioCategoryCard";
@@ -42,6 +42,16 @@ const CATEGORIES = [
       { to: "/cover-art-studio",  emoji: "🎨", label: "Cover Art Studio",  desc: "AI album & track art" },
       { to: "/video-studio",      emoji: "🎬", label: "Video Studio",      desc: "Music videos & b-roll" },
       { to: "/visualizer-studio", emoji: "🌈", label: "Visualizer Studio", desc: "Audio-reactive visuals" },
+    ],
+  },
+  {
+    title: "Perform Live",
+    subtitle: "Stream to your fans",
+    icon: Radio,
+    accent: "bg-gradient-to-br from-red-600 to-orange-600",
+    studios: [
+      { to: "/live-studio",   emoji: "🔴", label: "Live Studio",   desc: "Go live with synced playback & 3D venues" },
+      { to: "/live-manager",  emoji: "🗂️", label: "Live Manager",  desc: "Manage sessions, venues & moderation" },
     ],
   },
   {
