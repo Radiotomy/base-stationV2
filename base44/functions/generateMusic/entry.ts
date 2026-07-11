@@ -195,14 +195,39 @@ async function generateWithProducer({ genre, mood, sound_prompt, lyrics, model }
 
 // ── Tempolor ──────────────────────────────────────────────────────────────────
 // Auth: Authorization header = raw API key (e.g. "Tempo-xxx-3w"), NOT Bearer
-// Song:         POST /open-apis/v1/song/generate          { prompt, model, lyrics?, voice_id?, callback_url }
-// Instrumental: POST /open-apis/v1/instrumental/generate  { prompt, model, callback_url }
-// callback_url is required but we pass a no-op placeholder
+// Docs audit (platform.tempolor.com/docs, 2026-07): single documented endpoint
+//   POST /open-apis/v1/song/generate { prompt, model, lyrics?, instrumental?, action?, upload_audio_url?, callback_url }
+//   Instrumental generation now uses instrumental:true on this endpoint (the old
+//   /instrumental/generate route is no longer documented).
+// Model catalog (docs/6665893m0 — Model and Pricing):
+//   Song:  TemPolor v4.6 (flagship — musicality/quality/prompt-following, 5min, 30+ languages, streaming)
+//          TemPolor v3.5 (natural lifelike vocals, 4.5min, zh/yue/en/ja)
+//          Lyria 3 Pro   (by Google — polished vocals, 3min, multilingual)
+//          Mureka V9     (richest arrangements, 5.5min, 10+ languages)
+//          MiniMax 2.6   (premium vocals, longest tracks — 6min)
+//   Instrumental: TemPolor i3.5 (flagship, 4.5min, precise duration control)
+//          TemPolor i3   (fastest — <3s generation, 2min, cheapest)
+//          Lyria 3 Pro / Mureka V9 / MiniMax 2.6 (as above, instrumental mode)
+//   Cover (action=upload_cover): TemPolor v4.6 (keeps vocal melody, reshapes style)
+//          Mureka V9 (full remix — mp3/m4a source, no instrumentals)
 const TEMPOLOR_BASE = 'https://api.tempolor.com/open-apis/v1';
+const TEMPOLOR_SONG_MODELS = ['TemPolor v4.6', 'TemPolor v3.5', 'Lyria 3 Pro', 'Mureka V9', 'MiniMax 2.6'];
+const TEMPOLOR_INSTRUMENTAL_MODELS = ['TemPolor i3.5', 'TemPolor i3', 'Lyria 3 Pro', 'Mureka V9', 'MiniMax 2.6'];
+const TEMPOLOR_COVER_MODELS = ['TemPolor v4.6', 'Mureka V9'];
+// Legacy model names → current equivalents
+const TEMPOLOR_LEGACY_MAP = { 'TemPolor v3': 'TemPolor v3.5' };
+
 async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url }) {
   const isInstrumental = tempolor_mode === 'instrumental' || (!lyrics && !voice_id && !cover_audio_url);
-  const endpoint = isInstrumental ? `${TEMPOLOR_BASE}/instrumental/generate` : `${TEMPOLOR_BASE}/song/generate`;
-  const defaultModel = isInstrumental ? 'TemPolor i3.5' : 'TemPolor v4.6';
+
+  // Resolve + validate the model against the documented catalog per mode
+  const requested = TEMPOLOR_LEGACY_MAP[model] || model;
+  let resolvedModel;
+  if (cover_audio_url) resolvedModel = TEMPOLOR_COVER_MODELS.includes(requested) ? requested : 'TemPolor v4.6';
+  else if (isInstrumental) resolvedModel = TEMPOLOR_INSTRUMENTAL_MODELS.includes(requested) ? requested : 'TemPolor i3.5';
+  else resolvedModel = TEMPOLOR_SONG_MODELS.includes(requested) ? requested : 'TemPolor v4.6';
+
+  const endpoint = `${TEMPOLOR_BASE}/song/generate`;
 
   // Tempolor hard limit: lyrics must be <= 3000 chars
   const safeLyrics = lyrics ? String(lyrics).slice(0, 3000) : null;
@@ -211,22 +236,20 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   // to /functions/tempolorWebhook. Falls back to webhook.site placeholder if not configured (dev mode).
   const callbackUrl = Deno.env.get('TEMPOLOR_WEBHOOK_URL') || 'https://webhook.site/tempolor-callback';
 
-  const body = isInstrumental
-    ? {
-        prompt: (sound_prompt || `${mood} ${genre} instrumental music`).slice(0, 1000),
-        model: model || defaultModel,
-        callback_url: callbackUrl,
-      }
-    : {
-        prompt: (sound_prompt || `${mood} ${genre} music`).slice(0, 1000),
-        model: model || defaultModel,
-        lyrics: safeLyrics,
-        callback_url: callbackUrl,
-        // Optional: official singer voice (see Tempolor "Voice ID option table" in docs)
-        ...(voice_id && { voice_id }),
-        // Optional: cover mode — generates a stylistic cover of a reference track
-        ...(cover_audio_url && { action: 'upload_cover', upload_audio_url: cover_audio_url }),
-      };
+  const body = {
+    prompt: (sound_prompt || `${mood} ${genre}${isInstrumental ? ' instrumental' : ''} music`).slice(0, 1000),
+    model: resolvedModel,
+    callback_url: callbackUrl,
+    ...(isInstrumental
+      ? { instrumental: true }
+      : {
+          lyrics: safeLyrics,
+          // Optional: official singer voice (see Tempolor "Voice ID option table" in docs)
+          ...(voice_id && { voice_id }),
+          // Optional: cover mode — generates a stylistic cover of a reference track
+          ...(cover_audio_url && { action: 'upload_cover', upload_audio_url: cover_audio_url }),
+        }),
+  };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
@@ -246,7 +269,7 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   if (!res.ok || data.status !== 200000) throw new Error(data.message || JSON.stringify(data));
   const itemId = data.data?.item_ids?.[0];
   if (!itemId) throw new Error('No item_id from Tempolor: ' + JSON.stringify(data));
-  return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song' };
+  return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song', model: resolvedModel };
 }
 
 // ── Credit cost table (per provider) ─────────────────────────────────────────
@@ -367,7 +390,7 @@ Deno.serve(async (req) => {
     const modelVersionMap = {
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
       producer: 'FUZZ-2.0',
-      tempcolor: model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
+      tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
     };
     const modelVersion = modelVersionMap[provider] || provider;
 

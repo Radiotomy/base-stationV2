@@ -39,13 +39,21 @@ const SONIC_MODELS = [
   { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
 ];
 
+// Tempolor model catalog — audited from platform.tempolor.com/docs (Model and Pricing).
+// Each entry's desc classifies the model's specialty so users can pick the right tool.
 const TEMPOLOR_SONG_MODELS = [
-  { value: 'TemPolor v4.6', label: 'v4.6', desc: 'Best quality, 5 min' },
-  { value: 'TemPolor v3', label: 'v3', desc: 'Fast, up to 2 min' },
+  { value: 'TemPolor v4.6', label: 'TemPolor v4.6', desc: '⭐ Flagship — best all-round, 5 min, 30+ languages' },
+  { value: 'TemPolor v3.5', label: 'TemPolor v3.5', desc: 'Natural, lifelike vocals — 4.5 min, EN/ZH/JA/Cantonese' },
+  { value: 'Lyria 3 Pro', label: 'Lyria 3 Pro', desc: 'By Google — polished vocals, 3 min, multilingual' },
+  { value: 'Mureka V9', label: 'Mureka V9', desc: 'Richest arrangements — 5.5 min, 10+ languages' },
+  { value: 'MiniMax 2.6', label: 'MiniMax 2.6', desc: 'Premium vocals — longest tracks (6 min)' },
 ];
 const TEMPOLOR_INSTRUMENTAL_MODELS = [
-  { value: 'TemPolor i3.5', label: 'i3.5', desc: 'High quality, 270s' },
-  { value: 'TemPolor i3', label: 'i3', desc: 'Fast, 120s' },
+  { value: 'TemPolor i3.5', label: 'TemPolor i3.5', desc: '⭐ Flagship instrumental — 4.5 min, precise duration control' },
+  { value: 'TemPolor i3', label: 'TemPolor i3', desc: 'Fastest (<3s) & most cost-effective — 2 min' },
+  { value: 'Lyria 3 Pro', label: 'Lyria 3 Pro', desc: 'By Google — clean instrumentals, 3 min' },
+  { value: 'Mureka V9', label: 'Mureka V9', desc: 'Rich, layered arrangements — 4.5 min' },
+  { value: 'MiniMax 2.6', label: 'MiniMax 2.6', desc: 'Premium — longest instrumentals (6 min)' },
 ];
 
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];

@@ -70,12 +70,23 @@ export function routeProvider({
     };
   }
 
-  // Rule 4: Speed priority — Sonic v4-5-plus is the fastest reliable option
+  // Rule 4: Speed priority — TemPolor i3 generates instrumentals in under 3 seconds
+  // (industry-leading per Tempolor docs); vocal tracks stay on Sonic v4-5-plus.
   if (speed_priority) {
+    if (!needs_lyrics) {
+      return {
+        provider: 'tempcolor',
+        model: 'TemPolor i3',
+        tempolor_mode: 'instrumental',
+        reason: `TemPolor i3 selected — fastest instrumental generation (under 3 seconds).`,
+        routing_key: 'speed_priority_instrumental',
+        fallbackChain: ['sonic', 'producer'],
+      };
+    }
     return {
       provider: 'sonic',
       model: 'sonic-v4-5-plus',
-      reason: `Sonic v4-5-plus selected — fastest reliable provider.`,
+      reason: `Sonic v4-5-plus selected — fastest reliable provider for vocal tracks.`,
       routing_key: 'speed_priority',
       fallbackChain: ['producer', 'tempcolor'],
     };
