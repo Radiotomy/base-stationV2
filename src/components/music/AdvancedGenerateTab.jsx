@@ -17,6 +17,8 @@ import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import { Crown } from 'lucide-react';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
+import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
+import { getLyricsSpec } from '@/config/modelLyricsSpec';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
@@ -326,6 +328,10 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     setExtending(false);
   };
 
+  // Current model per provider — drives lyric char budgets + compatibility checks
+  const activeModel = provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : 'FUZZ-2.0';
+  const activeLyricsMax = getLyricsSpec(provider, activeModel).maxLyricsChars;
+
   const runMastersEngine = async () => {
     if (!soundPrompt && !genre) { toast.error('Add a sound description or genre first'); return; }
     setRunningMasters(true);
@@ -334,7 +340,8 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         topic: soundPrompt || `${mood} ${genre} track`,
         genre, mood,
         bpm: tempo ? Number(tempo) : undefined,
-        max_chars: 3000,
+        // Model-aware budget so Masters lyrics never exceed the selected gen model's limit
+        max_chars: activeLyricsMax,
       });
       const data = res.data;
       if (data?.error) { toast.error(data.error); setRunningMasters(false); return; }
@@ -359,6 +366,8 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         mood,
         style: genre,
         length: 'medium',
+        // Model-aware char budget — keeps output within the selected gen model's lyric limit
+        max_chars: activeLyricsMax,
       });
       setLyrics(res.data?.lyrics || '');
       refreshCreditsFromResponse(res.data);
@@ -684,6 +693,16 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
               <textarea value={lyrics} onChange={e => setLyrics(e.target.value)}
                 placeholder="Paste or write your lyrics here…" rows={6}
                 className="w-full rounded-xl border border-input bg-transparent px-3 py-2 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
+            )}
+
+            {/* Per-model compatibility check — chars vs budget, vocal support, language + tag guidance */}
+            {lyricsMode !== 'none' && (
+              <LyricsCompatibilityCheck
+                lyrics={lyrics}
+                provider={provider}
+                model={activeModel}
+                mode={provider === 'tempcolor' ? temporlorMode : 'song'}
+              />
             )}
 
             {lyricsMode === 'saved' && savedLyrics.length > 0 && (

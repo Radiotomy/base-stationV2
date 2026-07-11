@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // ── Dedicated LLM Lyrics Generation (Claude Sonnet) ──────────────────────────
-async function generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure }) {
+async function generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars }) {
 
   const rhymeGuide = {
     'ABAB': 'Alternate rhyme (ABAB): lines 1 & 3 rhyme, lines 2 & 4 rhyme with a different sound. Most popular rap/pop scheme.',
@@ -51,6 +51,7 @@ STRUCTURE TO FOLLOW:
 ${structureGuide}
 
 Label each section clearly with [Section Name] tags.
+${max_chars ? `HARD LENGTH LIMIT: The COMPLETE lyrics (including section tags) must be UNDER ${max_chars} characters — the music generation model truncates anything longer mid-song. If needed, trim verses rather than exceed this limit.` : ''}
 Output ONLY the song lyrics — no explanations, no commentary, no titles outside the lyrics.`;
 
   const result = await base44.integrations.Core.InvokeLLM({ prompt, model: 'claude_sonnet_4_6' });
@@ -92,7 +93,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { topic, mood = 'Happy', style = 'Hip-Hop', length = 'Medium (32 bars)', rhyme_scheme, structure } = await req.json();
+    const { topic, mood = 'Happy', style = 'Hip-Hop', length = 'Medium (32 bars)', rhyme_scheme, structure, max_chars } = await req.json();
     if (!topic) return Response.json({ error: 'Missing topic' }, { status: 400 });
 
     // Pre-check credit balance
@@ -115,7 +116,7 @@ Deno.serve(async (req) => {
     });
 
     // Dedicated Claude Sonnet lyrics generation
-    const result = await generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure });
+    const result = await generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars });
 
     if (!result?.lyrics) {
       await base44.entities.GenerationJob.update(job.id, { status: 'failed', error_message: 'All providers failed' });
