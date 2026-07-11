@@ -212,11 +212,30 @@ Deno.serve(async (req) => {
       const roomData = await downloadRoomData(roomId);
       const items = { ...(roomData.roomItems || {}) };
 
-      if (videoUrl) {
+      // Always-On Showcase management
+      if (body.isShowcase && videoUrl) {
+        await base44.asServiceRole.entities.LiveSession.update(sessionId, {
+          showcase_video_url: videoUrl,
+          showcase_video_title: videoTitle || '',
+        });
+      }
+      if (body.clearShowcase) {
+        await base44.asServiceRole.entities.LiveSession.update(sessionId, {
+          showcase_video_url: null,
+          showcase_video_title: null,
+        });
+      }
+      const showcaseUrl = body.clearShowcase ? '' : session.showcase_video_url;
+
+      // Effective video: explicit videoUrl wins; otherwise fall back to the showcase
+      const effectiveUrl = videoUrl || showcaseUrl || '';
+      const effectiveTitle = videoUrl ? (videoTitle || 'Live Video') : (session.showcase_video_title || 'Showcase');
+
+      if (effectiveUrl) {
         // Big video wall — replaces the main backdrop image while active (id 105)
         items['105'] = baseItem('DefaultVideo', { x: 0, y: 5, z: -11.8 }, { x: 14, y: 8, z: 1 }, {
-          contentString: videoUrl,
-          hoverTitle: videoTitle || 'Live Video',
+          contentString: effectiveUrl,
+          hoverTitle: effectiveTitle,
           hoverBodyContent: 'Now Showing',
         });
         // Hide the static image backdrop behind the video wall while video plays
@@ -228,7 +247,7 @@ Deno.serve(async (req) => {
       }
 
       await uploadRoomData(roomId, { ...roomData, roomItems: items });
-      return Response.json({ ok: true, roomId, videoActive: !!videoUrl });
+      return Response.json({ ok: true, roomId, videoActive: !!effectiveUrl, showcaseActive: !videoUrl && !!showcaseUrl });
     }
 
     // ── create (default) — build the live venue room ─────────────────────────

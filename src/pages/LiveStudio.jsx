@@ -276,6 +276,15 @@ export default function LiveStudio() {
     await safePublish('session-end', { performerId: currentUser?.id });
     await safePublish('leave', { performerId: currentUser?.id, role: 'performer' });
 
+    // Portals venue — restore the Always-On Showcase on the video wall after the show
+    if (visualLayer === 'portals') {
+      base44.functions.invoke('createPortalRoom', {
+        action: 'set_screen_video',
+        sessionId,
+        videoUrl: '',
+      }).catch(() => {});
+    }
+
     // Fire analytics + recording (non-blocking on UI redirect)
     base44.functions.invoke('trackAnalytics', {
       event_type: 'live_session_ended',

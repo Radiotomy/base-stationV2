@@ -101,6 +101,14 @@
       ],
       "description": "Phase 4: 3D scene preset"
     },
+    "showcase_video_url": {
+      "type": "string",
+      "description": "Always-On Showcase: default video that plays on the venue's stage video wall whenever the artist is not live performing. Auto-restored when live ends."
+    },
+    "showcase_video_title": {
+      "type": "string",
+      "description": "Always-On Showcase: title for the showcase video"
+    },
     "streamr_enabled": {
       "type": "boolean",
       "default": false,
