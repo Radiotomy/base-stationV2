@@ -45,7 +45,7 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       audioContextRef.current = ctx;
 
-      const source = ctx.createMediaElementAudioSource(audio);
+      const source = ctx.createMediaElementSource(audio);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
