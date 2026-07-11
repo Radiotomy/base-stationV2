@@ -313,7 +313,24 @@ export default function LiveStudio() {
     }
   };
 
-  const handleTrackSelect = async (track) => {
+  const handleTrackSelect = async (rawTrack) => {
+    let track = rawTrack;
+    // External CDNs (e.g. Suno) block CORS — proxy to Base44 storage so audio + visualizer work.
+    if (rawTrack?.file_url && !/base44/i.test(rawTrack.file_url)) {
+      const loadingId = toast.loading('Preparing track…');
+      try {
+        const r = await base44.functions.invoke('proxyAudioAsset', {
+          source_url: rawTrack.file_url,
+          filename: `${rawTrack.title || 'track'}.mp3`,
+        });
+        if (r?.data?.file_url) {
+          track = { ...rawTrack, file_url: r.data.file_url };
+          // Persist the CORS-safe URL so future selections skip the proxy step.
+          if (rawTrack.id) base44.entities.UserAsset.update(rawTrack.id, { file_url: r.data.file_url }).catch(() => {});
+        }
+      } catch { /* fall back to original URL */ }
+      toast.dismiss(loadingId);
+    }
     setSelectedTrack(track);
     setIsPlaying(false);
     setCurrentTime(0);
