@@ -5,6 +5,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import AuthGate from '@/components/auth/AuthGate';
 import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
 import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -95,8 +96,18 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
+      // Logged-out visitors can browse the landing + info pages;
+      // everything else shows the branded sign-in gate.
+      return (
+        <Routes>
+          <Route element={<MobileLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/why-base-station" element={<WhyBaseStation />} />
+            <Route path="/help" element={<Help />} />
+          </Route>
+          <Route path="*" element={<AuthGate />} />
+        </Routes>
+      );
     }
   }
 
