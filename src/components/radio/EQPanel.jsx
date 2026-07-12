@@ -5,12 +5,35 @@ import { EQ_BANDS } from "@/hooks/useAudioProcessor";
 const MIN_DB = -12;
 const MAX_DB = 12;
 
+// Standard EQ presets mapped to the 5 bands: 60Hz, 250Hz, 1kHz, 4kHz, 12kHz
+const PRESETS = [
+  { name: "Flat",         gains: [0, 0, 0, 0, 0] },
+  { name: "Rock",         gains: [5, 3, -2, 3, 5] },
+  { name: "Pop",          gains: [-1, 2, 4, 2, -1] },
+  { name: "Jazz",         gains: [3, 1, -1, 2, 4] },
+  { name: "Classical",    gains: [4, 2, -1, 2, 3] },
+  { name: "Dance",        gains: [6, 4, 0, 3, 4] },
+  { name: "Electronic",   gains: [5, 2, -1, 2, 5] },
+  { name: "Hip-Hop",      gains: [7, 4, -1, 1, 3] },
+  { name: "R&B",          gains: [5, 3, -1, 2, 2] },
+  { name: "Acoustic",     gains: [4, 2, 1, 2, 3] },
+  { name: "Vocal Boost",  gains: [-2, 1, 5, 4, 1] },
+  { name: "Bass Boost",   gains: [8, 5, 0, 0, 0] },
+  { name: "Bass Cut",     gains: [-8, -4, 0, 0, 0] },
+  { name: "Treble Boost", gains: [0, 0, 0, 5, 8] },
+  { name: "Treble Cut",   gains: [0, 0, 0, -4, -8] },
+  { name: "Loudness",     gains: [6, 2, 0, 1, 6] },
+  { name: "Lounge",       gains: [2, 1, 0, 1, 2] },
+  { name: "Small Speakers", gains: [6, 3, 1, 2, 4] },
+];
+
 /**
  * 5-band EQ with vertical sliders, Mercury chrome styling.
  * Each slider controls a BiquadFilter gain (in dB) via setBandGain.
  */
 export default function EQPanel({ setBandGain }) {
   const [gains, setGains] = useState([0, 0, 0, 0, 0]);
+  const [activePreset, setActivePreset] = useState("Flat");
 
   const update = (i, val) => {
     const v = Math.max(MIN_DB, Math.min(MAX_DB, val));
@@ -20,12 +43,16 @@ export default function EQPanel({ setBandGain }) {
       return next;
     });
     setBandGain(i, v);
+    setActivePreset(null); // manual tweak = custom
   };
 
-  const reset = () => {
-    setGains([0, 0, 0, 0, 0]);
-    EQ_BANDS.forEach((_, i) => setBandGain(i, 0));
+  const applyPreset = (preset) => {
+    setGains([...preset.gains]);
+    preset.gains.forEach((g, i) => setBandGain(i, g));
+    setActivePreset(preset.name);
   };
+
+  const reset = () => applyPreset(PRESETS[0]);
 
   return (
     <div className="merc-card rounded-2xl p-4">
@@ -38,6 +65,19 @@ export default function EQPanel({ setBandGain }) {
           className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white px-2 py-1 rounded-md hover:bg-white/5 transition-colors">
           <RotateCcw className="w-3 h-3" /> Flat
         </button>
+      </div>
+
+      {/* Preset chips */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide -mx-1 px-1">
+        {PRESETS.map((p) => (
+          <button key={p.name} onClick={() => applyPreset(p)}
+            className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide transition-colors border
+              ${activePreset === p.name
+                ? "bg-[#FF9A4D]/20 border-[#FF9A4D]/60 text-[#FFC98A]"
+                : "bg-black/30 border-white/10 text-white/50 hover:text-white/80 hover:border-white/25"}`}>
+            {p.name}
+          </button>
+        ))}
       </div>
 
       <div className="flex items-end justify-between gap-3 px-1">
