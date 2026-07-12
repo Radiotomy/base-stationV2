@@ -34,12 +34,29 @@ export default function Header({ user }) {
   const isCreator = user?.is_creator || false;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#0A0A12]/70 backdrop-blur-2xl border-b border-white/10">
+    <header
+      className="sticky top-0 z-40 border-b-2 border-black"
+      style={{
+        background: "linear-gradient(180deg, #221B14 0%, #16110D 60%, #0F0C09 100%)",
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08), 0 6px 20px rgba(0,0,0,0.7)",
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="font-display text-xl tracking-tight flex-shrink-0">
-          <span className="text-iridescent">Base</span>
-          <span className="text-foreground">Station</span>
+        <Link to="/" className="font-display text-xl tracking-tight flex-shrink-0 flex items-center gap-2">
+          <span
+            className="w-2 h-2 rounded-full bg-[#FF5A1F] flex-shrink-0"
+            style={{ boxShadow: "0 0 8px rgba(255,90,30,0.9), 0 0 18px rgba(255,90,30,0.5)" }}
+          />
+          <span>
+            <span
+              className="text-[#FF9A4D]"
+              style={{ textShadow: "0 0 10px rgba(255,154,77,0.5)" }}
+            >
+              Base
+            </span>
+            <span className="text-[#E8E0D0]">Station</span>
+          </span>
         </Link>
 
         {/* Desktop Nav */}
@@ -50,11 +67,12 @@ export default function Header({ user }) {
               <Link
                 key={to}
                 to={to}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
                   isActive
-                    ? "bg-white/10 text-white border border-white/15"
-                    : "text-white/60 hover:text-white hover:bg-white/5"
+                    ? "text-[#1F3A0E] border-black shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                    : "text-white/60 border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40"
                 }`}
+                style={isActive ? { background: "linear-gradient(180deg, #C8EF92 0%, #A9DC66 100%)" } : undefined}
               >
                 <Icon className="w-4 h-4" />
                 {label}
@@ -63,18 +81,19 @@ export default function Header({ user }) {
           })}
           {isCreator && (
             <>
-              <div className="w-px h-6 bg-white/10 mx-1" />
+              <div className="w-px h-6 bg-black shadow-[1px_0_0_rgba(255,255,255,0.08)] mx-1" />
               {CREATOR_NAV.slice(0, 2).map(({ to, label, icon: Icon }) => {
                 const isActive = location.pathname === to;
                 return (
                   <Link
                     key={to}
                     to={to}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
                       isActive
-                        ? "bg-white/10 text-white border border-white/15"
-                        : "text-white/60 hover:text-white hover:bg-white/5"
+                        ? "text-[#1F3A0E] border-black shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                        : "text-white/60 border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40"
                     }`}
+                    style={isActive ? { background: "linear-gradient(180deg, #C8EF92 0%, #A9DC66 100%)" } : undefined}
                   >
                     <Icon className="w-4 h-4" />
                     {label}
@@ -90,7 +109,7 @@ export default function Header({ user }) {
           <Link
             to="/help"
             title="Help & How-To"
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium text-white/60 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold text-white/60 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
           >
             <HelpCircle className="w-4 h-4" />
             <span className="hidden md:inline">Help</span>
@@ -101,7 +120,11 @@ export default function Header({ user }) {
             <div className="relative">
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="merc-bubble w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-[#1a1530] hover:scale-105 transition-all"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black text-[#2A1508] border border-black/70 hover:scale-105 transition-all"
+                style={{
+                  background: "radial-gradient(circle at 35% 30%, #FFC98A 0%, #FF9A4D 45%, #B05018 100%)",
+                  boxShadow: "0 0 12px rgba(255,154,77,0.4), inset 0 1px 2px rgba(255,255,255,0.6), inset 0 -3px 5px rgba(120,50,10,0.5)",
+                }}
               >
                 {(user.full_name || "U")[0].toUpperCase()}
               </button>
@@ -112,9 +135,9 @@ export default function Header({ user }) {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 8 }}
-                    className="merc-card absolute right-0 mt-2 w-48 rounded-2xl overflow-hidden"
+                    className="absolute right-0 mt-2 w-48 rounded-lg overflow-hidden border-2 border-black bg-gradient-to-b from-[#221B14] to-[#0F0C09] shadow-[0_12px_36px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.08)]"
                   >
-                    <div className="p-3 border-b border-white/10">
+                    <div className="p-3 border-b border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]">
                       <p className="text-sm font-bold text-white truncate">{user.full_name}</p>
                       <p className="text-xs text-white/50 truncate">{user.email}</p>
                     </div>
@@ -161,7 +184,7 @@ export default function Header({ user }) {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden w-9 h-9 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-all"
+            className="lg:hidden w-9 h-9 rounded-md flex items-center justify-center text-white/70 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
           >
             {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -175,7 +198,8 @@ export default function Header({ user }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="lg:hidden border-t border-white/10 bg-[#0A0A12]/90 backdrop-blur-xl"
+            className="lg:hidden border-t-2 border-black"
+            style={{ background: "linear-gradient(180deg, #1A1410 0%, #0F0C09 100%)" }}
           >
             <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
               {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
@@ -183,7 +207,7 @@ export default function Header({ user }) {
                   key={to}
                   to={to}
                   onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                  className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-white/70 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
                 >
                   <Icon className="w-4 h-4" />
                   {label}
@@ -191,13 +215,13 @@ export default function Header({ user }) {
               ))}
               {isCreator && (
                 <>
-                  <div className="my-2 border-t border-white/10" />
+                  <div className="my-2 border-t border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]" />
                   {CREATOR_NAV.map(({ to, label, icon: Icon }) => (
                     <Link
                       key={to}
                       to={to}
                       onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                      className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-white/70 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
                     >
                       <Icon className="w-4 h-4" />
                       {label}
