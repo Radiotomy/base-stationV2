@@ -439,11 +439,11 @@ export default function Radio() {
           <div className="md:hidden space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} />
+                <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
                 <p className="text-center text-white/70 text-xs font-semibold">Left</p>
               </div>
               <div className="space-y-1.5">
-                <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} />
+                <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
                 <p className="text-center text-white/70 text-xs font-semibold">Right</p>
               </div>
             </div>
@@ -465,11 +465,11 @@ export default function Radio() {
           {/* Desktop: VU L / VU R / EQ */}
           <div className="hidden md:grid grid-cols-[1fr_1fr_1.2fr] gap-4 items-start">
             <div className="space-y-2">
-              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} />
+              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
               <p className="text-center text-white/70 text-sm font-semibold">Left</p>
             </div>
             <div className="space-y-2">
-              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} />
+              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
               <p className="text-center text-white/70 text-sm font-semibold">Right</p>
             </div>
             <EQPanel setBandGain={setBandGain} />

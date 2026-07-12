@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
  */
 const REST = -45;
 
-export default function VUMeter({ analyserRef, label = "L", isActive = true }) {
+export default function VUMeter({ analyserRef, label = "L", isActive = true, simulate = false }) {
   const [angle, setAngle] = useState(REST);
   const rafRef = useRef(null);
   const bufferRef = useRef(null);
@@ -18,11 +18,30 @@ export default function VUMeter({ analyserRef, label = "L", isActive = true }) {
 
   useEffect(() => {
     let stopped = false;
+    // Per-channel phase offset so L/R needles don't move in lockstep
+    const phase = label === "R" ? 1.7 : 0;
 
     const tick = () => {
       if (stopped) return;
       const analyser = analyserRef?.current;
-      if (analyser && isActive) {
+      if (simulate) {
+        // Stream can't be routed through the Web Audio analyser (no CORS) —
+        // drive the needle with a music-like synthetic level instead.
+        const t = performance.now() / 1000;
+        const beat = Math.max(0, Math.sin((t + phase) * 4.2)) ** 3;        // rhythmic pulses
+        const sway = Math.sin((t + phase) * 0.7) * 3;                       // slow drift
+        const jitter = (Math.random() - 0.5) * 2.5;
+        const db = -12 + beat * 10 + sway + jitter;                         // ~ -15..-1 dB
+        let targetAngle;
+        if (db <= -20) targetAngle = -45;
+        else if (db >= 3) targetAngle = 45;
+        else if (db <= 0) targetAngle = -45 + ((db + 20) / 20) * 70;
+        else targetAngle = 25 + (db / 3) * 20;
+        const prev = smoothedRef.current;
+        const next = prev + (targetAngle - prev) * 0.22;
+        smoothedRef.current = next;
+        setAngle(next);
+      } else if (analyser && isActive) {
         if (!bufferRef.current || bufferRef.current.length !== analyser.fftSize) {
           bufferRef.current = new Float32Array(analyser.fftSize);
         }
@@ -62,7 +81,7 @@ export default function VUMeter({ analyserRef, label = "L", isActive = true }) {
       stopped = true;
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [analyserRef, isActive]);
+  }, [analyserRef, isActive, simulate, label]);
 
   // Scale ticks (angle mapping above)
   const ticks = [
