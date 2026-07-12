@@ -21,6 +21,11 @@ Deno.serve(async (req) => {
     const session = arr[0];
     if (!session) return Response.json({ error: 'Session not found' }, { status: 404 });
 
+    // Only the session owner may invite co-performers
+    if (session.user_id !== me.id) {
+      return Response.json({ error: 'Forbidden: only the session owner can add co-performers' }, { status: 403 });
+    }
+
     const participants = session?.state?.participants || [];
     if (participants.find(p => p.id === userId)) {
       return Response.json({ ok: true, already: true });

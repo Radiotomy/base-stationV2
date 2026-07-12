@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { collectibleId, source = 'free', sessionId = null } = await req.json();
+    const { collectibleId, sessionId = null } = await req.json();
     if (!collectibleId) return Response.json({ error: 'collectibleId required' }, { status: 400 });
 
     const arr = await base44.asServiceRole.entities.Collectible.filter({ id: collectibleId });
@@ -28,6 +28,25 @@ Deno.serve(async (req) => {
     }
     if (c.supply != null && c.claimed_count >= c.supply) {
       return Response.json({ error: 'Sold out' }, { status: 410 });
+    }
+
+    // Enforce the collectible's own claim_type — never trust a client-supplied source.
+    const source = c.claim_type || 'free';
+    if (source === 'purchase') {
+      return Response.json({ error: 'This collectible must be purchased' }, { status: 403 });
+    }
+    if (source === 'quest') {
+      return Response.json({ error: 'This collectible is awarded by quest rewards only' }, { status: 403 });
+    }
+    if (source === 'live_drop') {
+      // Only claimable while it is the active drop in the given live session
+      const sessions = sessionId
+        ? await base44.asServiceRole.entities.LiveSession.filter({ id: sessionId })
+        : [];
+      const sess = sessions[0];
+      if (!sess || !sess.live_drops_enabled || sess.active_drop_id !== collectibleId) {
+        return Response.json({ error: 'This collectible is not currently dropping' }, { status: 403 });
+      }
     }
 
     // Already claimed?

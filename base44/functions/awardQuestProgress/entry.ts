@@ -4,7 +4,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  * Phase 4 — Track fan progress on a LiveQuest and award XP/badges
  * when target is reached.
  *
- * Payload: { questId, increment? = 1 }
+ * Payload: { questId }
+ * Progress always advances by exactly 1 per call — the client cannot
+ * supply an increment amount (prevents quest/reward spoofing).
  */
 Deno.serve(async (req) => {
   try {
@@ -12,8 +14,9 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { questId, increment = 1 } = await req.json();
+    const { questId } = await req.json();
     if (!questId) return Response.json({ error: 'questId required' }, { status: 400 });
+    const increment = 1; // fixed server-side — never trust client-supplied amounts
 
     const arr = await base44.asServiceRole.entities.LiveQuest.filter({ id: questId });
     const quest = arr[0];
