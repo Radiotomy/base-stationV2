@@ -66,8 +66,8 @@ function normalizeAudiusTrack(t, i = 0) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
-    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    // Public endpoint — serves only Audius trending + approved community tracks,
+    // so logged-out radio listeners can tune in too.
 
     const { genre, limit = 15 } = await req.json().catch(() => ({}));
 
