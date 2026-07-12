@@ -3,9 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Triggered by entity automation when a GenerationJob changes status to completed/failed.
 // Payload: { event, data, old_data }
 
+const escapeHtml = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Reject unauthenticated direct calls — only the platform automation
+    // (which invokes with platform auth) or an admin may send job emails.
+    const caller = await base44.auth.me().catch(() => null);
+    if (!caller || caller.role !== 'admin') {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await req.json();
 
     // Support both direct call and entity automation payload
@@ -29,7 +41,7 @@ Deno.serve(async (req) => {
       ? `
         <h2 style="color:#a855f7">Your ${typeLabel}${providerLabel} is ready! 🎵</h2>
         <p>Great news — your AI-generated ${typeLabel.toLowerCase()} has finished processing on Base Station.</p>
-        ${output_url ? `<p><a href="${output_url}" style="color:#a855f7">Click here to listen / download</a></p>` : ''}
+        ${output_url && /^https?:\/\//i.test(output_url) ? `<p><a href="${escapeHtml(output_url)}" style="color:#a855f7">Click here to listen / download</a></p>` : ''}
         <p>Head back to your <strong>Creator Dashboard</strong> or the relevant Studio to access and save your track.</p>
         <br/>
         <p style="color:#888;font-size:12px">Base Station — AI Music Platform</p>
@@ -37,7 +49,7 @@ Deno.serve(async (req) => {
       : `
         <h2 style="color:#ef4444">Your ${typeLabel}${providerLabel} generation failed</h2>
         <p>Unfortunately, your ${typeLabel.toLowerCase()} generation did not complete successfully.</p>
-        ${error_message ? `<p><strong>Reason:</strong> ${error_message}</p>` : ''}
+        ${error_message ? `<p><strong>Reason:</strong> ${escapeHtml(error_message)}</p>` : ''}
         <p>Please try again from your Studio — your credits have not been charged for failed jobs.</p>
         <br/>
         <p style="color:#888;font-size:12px">Base Station — AI Music Platform</p>

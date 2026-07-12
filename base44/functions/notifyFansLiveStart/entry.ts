@@ -4,6 +4,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 // Notifies every follower of the artist by email and posts to the community activity feed.
 // Payload: { event, data, old_data, changed_fields }
 
+const escapeHtml = (s) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -39,7 +43,7 @@ Deno.serve(async (req) => {
     let artistName = 'An artist you follow';
     try {
       const artists = await base44.asServiceRole.entities.User.filter({ id: session.user_id });
-      if (artists[0]?.full_name) artistName = artists[0].full_name;
+      if (artists[0]?.full_name) artistName = escapeHtml(artists[0].full_name);
     } catch (_) { /* artist lookup is best-effort */ }
 
     // Collect all followers (paginated)
@@ -77,7 +81,7 @@ Deno.serve(async (req) => {
           subject: `🔴 ${artistName} is LIVE right now!`,
           body: `
             <h2 style="color:#a855f7">${artistName} just went live! 🎤</h2>
-            <p>${session.title ? `They're performing <strong>"${session.title}"</strong> right now.` : 'They\'re performing right now.'}</p>
+            <p>${session.title ? `They're performing <strong>"${escapeHtml(session.title)}"</strong> right now.` : 'They\'re performing right now.'}</p>
             ${session.visual_layer === 'portals' ? '<p>🌐 This show has an immersive <strong>3D venue</strong> — walk in with your avatar!</p>' : ''}
             <p><a href="${watchUrl}" style="display:inline-block;background:#a855f7;color:#fff;padding:10px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Join the Live Session</a></p>
             <br/>

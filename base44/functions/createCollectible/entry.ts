@@ -25,6 +25,10 @@ Deno.serve(async (req) => {
       const arr = await base44.asServiceRole.entities.UserAsset.filter({ id: media_asset_id });
       const asset = arr[0];
       if (!asset) return Response.json({ error: 'Asset not found' }, { status: 404 });
+      // Ownership check — service-role fetch bypasses RLS, so enforce it here
+      if (asset.user_id !== user.id) {
+        return Response.json({ error: 'Forbidden: you do not own this asset' }, { status: 403 });
+      }
       if (asset.origin === 'loudly') {
         return Response.json({ error: 'Loudly-origin assets cannot be used for collectibles' }, { status: 403 });
       }
