@@ -3,6 +3,22 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Using jsmediatags to read ID3v2 and write back
 // For simplicity, we'll handle ID3v2.4 tags via fetching the file and re-encoding with new tags
 
+// SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
+function assertSafeUrl(raw) {
+  let u;
+  try { u = new URL(raw); } catch { throw new Error('Invalid URL'); }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error('Only http(s) URLs are allowed');
+  const host = u.hostname.toLowerCase();
+  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+  if (
+    ipv4.test(host) || host.includes(':') ||
+    host === 'localhost' || host.endsWith('.localhost') ||
+    host.endsWith('.local') || host.endsWith('.internal') ||
+    !host.includes('.')
+  ) throw new Error('URL host not allowed');
+  return u.toString();
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -12,8 +28,8 @@ Deno.serve(async (req) => {
     const { audio_url, tags = {}, cover_image_url } = await req.json();
     if (!audio_url) return Response.json({ error: 'Missing audio_url' }, { status: 400 });
 
-    // Fetch the audio file
-    const audioRes = await fetch(audio_url);
+    // Fetch the audio file (URL validated against internal/loopback targets)
+    const audioRes = await fetch(assertSafeUrl(audio_url));
     if (!audioRes.ok) throw new Error('Failed to fetch audio file');
     const audioBuffer = await audioRes.arrayBuffer();
 
@@ -77,7 +93,7 @@ Deno.serve(async (req) => {
     // Add cover image if provided
     if (cover_image_url) {
       try {
-        const imgRes = await fetch(cover_image_url);
+        const imgRes = await fetch(assertSafeUrl(cover_image_url));
         if (imgRes.ok) {
           const imgBuffer = await imgRes.arrayBuffer();
           const imgArray = new Uint8Array(imgBuffer);

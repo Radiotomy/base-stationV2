@@ -14,12 +14,12 @@ Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
   try {
-    // Allow scheduled (no auth) or admin-only manual calls
+    // Admin-only (scheduled automations invoke with platform auth context)
     const user = await base44.auth.me().catch(() => null);
-    const isScheduled = !user; // automations run without app-user auth
-    if (user && user.role !== 'admin') {
+    if (!user || user.role !== 'admin') {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
+    const isScheduled = false;
 
     // Default: previous calendar month (UTC)
     const now = new Date();

@@ -42,9 +42,25 @@ async function pinJSON(payload, name) {
   return data.IpfsHash;
 }
 
+// SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
+function assertSafeUrl(raw) {
+  let u;
+  try { u = new URL(raw); } catch { throw new Error('Invalid URL'); }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error('Only http(s) URLs are allowed');
+  const host = u.hostname.toLowerCase();
+  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+  if (
+    ipv4.test(host) || host.includes(':') ||
+    host === 'localhost' || host.endsWith('.localhost') ||
+    host.endsWith('.local') || host.endsWith('.internal') ||
+    !host.includes('.')
+  ) throw new Error('URL host not allowed');
+  return u.toString();
+}
+
 async function pinFileFromUrl(fileUrl, name) {
-  // Fetch the asset
-  const fileRes = await fetch(fileUrl);
+  // Fetch the asset (URL validated against internal/loopback targets)
+  const fileRes = await fetch(assertSafeUrl(fileUrl));
   if (!fileRes.ok) throw new Error(`Failed to fetch source file: ${fileRes.status}`);
   const blob = await fileRes.blob();
 

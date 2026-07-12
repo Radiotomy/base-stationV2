@@ -52,17 +52,9 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
 
-    // Allow both scheduled (no user) and admin manual trigger
-    let isAuthorized = false;
-    try {
-      const user = await base44.auth.me();
-      if (user?.role === "admin") isAuthorized = true;
-    } catch {
-      // Scheduled call — no user context, allow via service role
-      isAuthorized = true;
-    }
-
-    if (!isAuthorized) {
+    // Admin-only (scheduled automations invoke with platform auth context)
+    const user = await base44.auth.me().catch(() => null);
+    if (!user || user.role !== "admin") {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
