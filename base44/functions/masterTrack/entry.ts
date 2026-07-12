@@ -50,6 +50,8 @@ Deno.serve(async (req) => {
       job_type: 'music',
       provider: primary,
       status: 'completed',
+      // RIAA GenAI label — AI mastering of a human track = ai_assisted; AI source stays ai_generated
+      ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
       input_data: { assetId, style, action: 'mastering' },
       output_url: source.file_url,
       output_metadata: profile,
@@ -75,6 +77,7 @@ Deno.serve(async (req) => {
       file_url: source.file_url,
       thumbnail_url: source.thumbnail_url,
       origin: source.origin === 'audius' ? 'audius' : 'creator',
+      ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
       parent_asset_id: source.id,
       tags: ['mastered', style, ...(source.tags || [])],
       metadata: {

@@ -212,6 +212,7 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider: 'sonic',
       status: 'processing',
+      ai_label: 'ai_generated', // RIAA GenAI label — AI generates the mashup recording
       input_data: {
         action: 'mashup',
         assetIds,

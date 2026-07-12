@@ -244,6 +244,7 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider: 'sonic',
       status: 'processing',
+      ai_label: 'ai_generated', // RIAA GenAI label — AI generates the extension audio
       input_data: {
         source_url: url || null,
         upload_clip_id: clipId,

@@ -78,6 +78,8 @@ Deno.serve(async (req) => {
         file_url: source.file_url, // placeholder until real DSP wiring
         thumbnail_url: source.thumbnail_url,
         origin: source.origin || 'creator',
+        // RIAA GenAI label — stem separation is non-generative, inherit source label
+        ...(source.ai_label && { ai_label: source.ai_label }),
         parent_asset_id: source.id,
         stem_type: stemType,
         tags: ['stem', stemType, ...(source.tags || [])],

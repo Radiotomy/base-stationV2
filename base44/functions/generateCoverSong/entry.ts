@@ -167,6 +167,7 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider: 'sonic',
       status: 'processing',
+      ai_label: 'ai_generated', // RIAA GenAI label — AI regenerates the primary audio
       input_data: {
         cover_of: url,
         mv,

@@ -40,6 +40,9 @@ Deno.serve(async (req) => {
       job_type: 'music',
       provider: primary,
       status: 'completed',
+      // RIAA GenAI label — inherits most AI-intensive label in chain:
+      // AI-generated source stays ai_generated; human source + AI harmony layer = ai_assisted
+      ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
       input_data: { assetId, harmonyType, custom, action: 'harmonize' },
       output_url: source.file_url,
       output_metadata: { harmonyType, source_provider: source.metadata?.provider },
@@ -65,6 +68,7 @@ Deno.serve(async (req) => {
       file_url: source.file_url,
       thumbnail_url: source.thumbnail_url,
       origin: 'creator',
+      ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
       parent_asset_id: source.id,
       tags: ['harmony', harmonyType, 'creator'],
       metadata: {
