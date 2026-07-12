@@ -97,8 +97,16 @@ export default function useAudioProcessor(audioRef) {
     };
 
     el.addEventListener("play", resume);
+    // Mobile browsers only allow creating/resuming an AudioContext inside a
+    // real user gesture — the programmatic play() after an async CORS probe
+    // doesn't count, leaving the context suspended (dead VU meters / EQ).
+    // Hook document-level gestures so the first tap unlocks the audio graph.
+    document.addEventListener("pointerdown", resume, { passive: true });
+    document.addEventListener("touchend", resume, { passive: true });
     return () => {
       el.removeEventListener("play", resume);
+      document.removeEventListener("pointerdown", resume);
+      document.removeEventListener("touchend", resume);
     };
   }, [audioRef]);
 
