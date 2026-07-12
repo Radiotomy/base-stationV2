@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import MobileNav from "@/components/layout/MobileNav";
+import AppFooter from "@/components/layout/AppFooter";
 
 export default function MobileLayout() {
   return (
@@ -7,6 +8,7 @@ export default function MobileLayout() {
       {/* pb-20 on mobile leaves room for the bottom nav; md+ has no bottom nav */}
       <main className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
         <Outlet />
+        <AppFooter />
       </main>
       <MobileNav />
     </div>

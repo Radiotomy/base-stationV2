@@ -142,11 +142,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Copyright + credit */}
-            <div className="px-4 pb-1 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[11px] text-white/40 font-semibold">
-              <p>© {new Date().getFullYear()} BASE Station. All rights reserved.</p>
-              <p>Developed with <span className="text-[#FF6B4A]">❤️</span> by Radiotomy</p>
-            </div>
           </div>
           <RailHoles />
         </div>
