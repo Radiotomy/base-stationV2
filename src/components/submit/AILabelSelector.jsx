@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import AILabelBadge from '@/components/common/AILabelBadge';
 
 /**
@@ -48,7 +49,10 @@ export default function AILabelSelector({ value, onChange }) {
         </button>
       ))}
       <p className="text-xs text-muted-foreground/70 pt-1">
-        Per the RIAA/IFPI industry standard, this label covers the sound recording only — lyrics and cover art are not included.
+        Per the RIAA/IFPI industry standard, this label covers the sound recording only — lyrics and cover art are not included.{' '}
+        <Link to="/transparency" className="text-[#FFC98A] underline underline-offset-2">Learn more about these labels</Link>.
+        By submitting, you confirm your declaration is accurate per our{' '}
+        <Link to="/terms" className="text-[#FFC98A] underline underline-offset-2">Terms of Use</Link>.
       </p>
     </div>
   );

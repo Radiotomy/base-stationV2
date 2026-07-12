@@ -72,6 +72,8 @@ const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
 const SocialMediaAutomation = lazy(() => import('./pages/SocialMediaAutomation'));
 const WhyBaseStation = lazy(() => import('./pages/WhyBaseStation'));
 const Help = lazy(() => import('./pages/Help'));
+const Terms = lazy(() => import('./pages/Terms'));
+const AITransparency = lazy(() => import('./pages/AITransparency'));
 const FanClub = lazy(() => import('./pages/FanClub'));
 const CreatorStore = lazy(() => import('./pages/CreatorStore'));
 const SmokeTests = lazy(() => import('./pages/dev/SmokeTests'));
@@ -113,6 +115,8 @@ const AuthenticatedApp = () => {
               <Route path="/radio" element={<Radio />} />
               <Route path="/why-base-station" element={<WhyBaseStation />} />
               <Route path="/help" element={<Help />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/transparency" element={<AITransparency />} />
             </Route>
             <Route path="*" element={<AuthGate />} />
           </Routes>
@@ -174,6 +178,8 @@ const AuthenticatedApp = () => {
             <Route path="/social-automation" element={<SocialMediaAutomation />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/transparency" element={<AITransparency />} />
             <Route path="/fanclub/:creatorId" element={<FanClub />} />
             <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
             <Route path="/dev/smoke-tests" element={<SmokeTests />} />

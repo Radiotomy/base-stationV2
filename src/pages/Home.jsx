@@ -129,6 +129,18 @@ export default function Home() {
             )}
 
             <HomeCTAPanel user={user} />
+
+            {/* Legal / transparency footer strip */}
+            <div className="rounded-xl border border-black/70 bg-[#0F0C09] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <p className="text-[11px] text-white/50 font-semibold text-center sm:text-left">
+                Every track on BASE Station carries an industry-standard AI disclosure label (RIAA/IFPI, 2026).
+              </p>
+              <div className="flex items-center gap-4 flex-shrink-0 text-[11px] font-bold">
+                <Link to="/transparency" className="text-[#FFC98A] hover:text-white transition-colors">AI Transparency</Link>
+                <span className="text-white/20">·</span>
+                <Link to="/terms" className="text-white/60 hover:text-white transition-colors">Terms of Use</Link>
+              </div>
+            </div>
           </div>
           <RailHoles />
         </div>
