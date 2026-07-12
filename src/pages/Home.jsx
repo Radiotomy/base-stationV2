@@ -141,6 +141,12 @@ export default function Home() {
                 <Link to="/terms" className="text-white/60 hover:text-white transition-colors">Terms of Use</Link>
               </div>
             </div>
+
+            {/* Copyright + credit */}
+            <div className="px-4 pb-1 flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[11px] text-white/40 font-semibold">
+              <p>© {new Date().getFullYear()} BASE Station. All rights reserved.</p>
+              <p>Developed with <span className="text-[#FF6B4A]">❤️</span> by Radiotomy</p>
+            </div>
           </div>
           <RailHoles />
         </div>
