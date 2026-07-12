@@ -56,28 +56,31 @@ export default function EQPanel({ setBandGain }) {
 
   return (
     <div className="merc-card rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-baseline gap-2">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-baseline gap-2 flex-shrink-0">
           <p className="text-white/80 text-xs font-bold tracking-widest uppercase">5-Band EQ</p>
-          <span className="text-[10px] text-white/40">±12 dB</span>
+          <span className="text-[10px] text-white/40 hidden sm:inline">±12 dB</span>
         </div>
-        <button onClick={reset}
-          className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white px-2 py-1 rounded-md hover:bg-white/5 transition-colors">
-          <RotateCcw className="w-3 h-3" /> Flat
-        </button>
-      </div>
-
-      {/* Preset chips */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide -mx-1 px-1">
-        {PRESETS.map((p) => (
-          <button key={p.name} onClick={() => applyPreset(p)}
-            className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide transition-colors border
-              ${activePreset === p.name
-                ? "bg-[#FF9A4D]/20 border-[#FF9A4D]/60 text-[#FFC98A]"
-                : "bg-black/30 border-white/10 text-white/50 hover:text-white/80 hover:border-white/25"}`}>
-            {p.name}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {/* Compact preset dropdown */}
+          <select
+            value={activePreset || "__custom"}
+            onChange={(e) => {
+              const p = PRESETS.find(x => x.name === e.target.value);
+              if (p) applyPreset(p);
+            }}
+            aria-label="EQ preset"
+            className="min-w-0 max-w-[130px] rounded-md bg-black/40 border border-white/15 text-[10px] font-bold tracking-wide text-[#FFC98A] px-2 py-1 outline-none hover:border-white/30 cursor-pointer">
+            {activePreset === null && <option value="__custom" disabled>Custom</option>}
+            {PRESETS.map((p) => (
+              <option key={p.name} value={p.name} className="bg-[#14100C] text-white">{p.name}</option>
+            ))}
+          </select>
+          <button onClick={reset} aria-label="Reset to flat"
+            className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white px-1.5 py-1 rounded-md hover:bg-white/5 transition-colors flex-shrink-0">
+            <RotateCcw className="w-3 h-3" />
           </button>
-        ))}
+        </div>
       </div>
 
       <div className="flex items-end justify-between gap-3 px-1">
