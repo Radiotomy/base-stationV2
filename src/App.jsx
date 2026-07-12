@@ -102,6 +102,7 @@ const AuthenticatedApp = () => {
         <Routes>
           <Route element={<MobileLayout />}>
             <Route path="/" element={<Home />} />
+            <Route path="/radio" element={<Radio />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
             <Route path="/help" element={<Help />} />
           </Route>
