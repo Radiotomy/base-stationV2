@@ -26,11 +26,28 @@ import { createClient } from 'npm:@base44/sdk@0.8.25';
 const APP_ID = Deno.env.get('BASE44_APP_ID');
 const WEBHOOK_SECRET = Deno.env.get('TEMPOLOR_WEBHOOK_SECRET') || '';
 
+// SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
+function isSafeUrl(raw) {
+  let u;
+  try { u = new URL(raw); } catch { return false; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  const host = u.hostname.toLowerCase();
+  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+  if (
+    ipv4.test(host) || host.includes(':') ||
+    host === 'localhost' || host.endsWith('.localhost') ||
+    host.endsWith('.local') || host.endsWith('.internal') ||
+    !host.includes('.')
+  ) return false;
+  return true;
+}
+
 // Copy an external provider URL into Base44 storage so files persist
 // (provider CDN links expire and block CORS). Falls back to original URL.
 async function persistUrl(base44, url, filename) {
   try {
     if (!url || /base44/i.test(url)) return url;
+    if (!isSafeUrl(url)) return null; // never fetch or store internal/unsafe URLs
     const r = await fetch(url);
     if (!r.ok) return url;
     const blob = await r.blob();
@@ -52,14 +69,22 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   try {
-    // Shared-secret check (when configured)
-    if (WEBHOOK_SECRET) {
-      const url = new URL(req.url);
-      const provided = url.searchParams.get('secret') || req.headers.get('x-tempolor-secret') || '';
-      if (provided !== WEBHOOK_SECRET) {
-        console.warn('Tempolor webhook: invalid secret');
-        return new Response('Unauthorized', { status: 401 });
-      }
+    // Shared-secret check — REQUIRED. Tempolor doesn't sign callbacks, so the
+    // shared secret is the trust boundary; fail closed if it isn't configured.
+    if (!WEBHOOK_SECRET) {
+      console.error('Tempolor webhook: TEMPOLOR_WEBHOOK_SECRET not configured — rejecting');
+      return new Response('Webhook not configured', { status: 503 });
+    }
+    const url = new URL(req.url);
+    const provided = url.searchParams.get('secret') || req.headers.get('x-tempolor-secret') || '';
+    // Constant-time comparison to prevent timing attacks
+    let mismatch = provided.length === WEBHOOK_SECRET.length ? 0 : 1;
+    for (let i = 0; i < WEBHOOK_SECRET.length; i++) {
+      mismatch |= WEBHOOK_SECRET.charCodeAt(i) ^ (provided.charCodeAt(i) || 0);
+    }
+    if (mismatch !== 0) {
+      console.warn('Tempolor webhook: invalid secret');
+      return new Response('Unauthorized', { status: 401 });
     }
 
     const body = await req.json();

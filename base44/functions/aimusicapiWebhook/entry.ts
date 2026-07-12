@@ -105,11 +105,28 @@ function normalizePayload(body) {
   return { task_id: body.task_id, provider: platform, status: 'processing' };
 }
 
+// SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
+function isSafeUrl(raw) {
+  let u;
+  try { u = new URL(raw); } catch { return false; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
+  const host = u.hostname.toLowerCase();
+  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
+  if (
+    ipv4.test(host) || host.includes(':') ||
+    host === 'localhost' || host.endsWith('.localhost') ||
+    host.endsWith('.local') || host.endsWith('.internal') ||
+    !host.includes('.')
+  ) return false;
+  return true;
+}
+
 // Copy an external provider URL into Base44 storage so files persist
 // (provider CDN links expire and block CORS). Falls back to original URL.
 async function persistUrl(base44, url, filename) {
   try {
     if (!url || /base44/i.test(url)) return url;
+    if (!isSafeUrl(url)) return null; // never fetch or store internal/unsafe URLs
     const r = await fetch(url);
     if (!r.ok) return url;
     const blob = await r.blob();
