@@ -16,6 +16,7 @@ import RackUnit from "@/components/radio/RackUnit";
 import ChannelSelector from "@/components/radio/ChannelSelector";
 import TransportKnob from "@/components/radio/TransportKnob";
 import useAudioProcessor from "@/hooks/useAudioProcessor";
+import AILabelBadge from "@/components/common/AILabelBadge";
 
 // Channel genres map to Audius trending genres + community submission genres
 const DEFAULT_CHANNELS = [
@@ -272,6 +273,7 @@ export default function Radio() {
                       <p className="text-[#C6F27E] text-base sm:text-xl leading-tight truncate" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{nowPlaying.track_title}</p>
                       <p className="text-[#A8C97E]/80 text-sm sm:text-base truncate" style={MONO_LCD}>{nowPlaying.artist_name}</p>
                     </div>
+                    <AILabelBadge label={nowPlaying.ai_label} size="xs" className="flex-shrink-0" />
                     {nowPlaying.source && (
                       <Badge className={`hidden sm:inline-flex text-xs border flex-shrink-0 ${SOURCE_BADGE[nowPlaying.source]?.cls || ""}`}>
                         {SOURCE_BADGE[nowPlaying.source]?.label || nowPlaying.source}
@@ -419,6 +421,7 @@ export default function Radio() {
                         <p className={`text-xs font-semibold truncate ${i === queueIndex ? "text-[#E4FCA8]" : "text-[#A8C97E]"}`}>{t.track_title}</p>
                         <p className="text-xs text-[#A8C97E]/40 truncate">{t.artist_name}</p>
                       </div>
+                      <AILabelBadge label={t.ai_label} size="xs" className="flex-shrink-0" />
                       <Badge className={`text-xs border flex-shrink-0 ${SOURCE_BADGE[t.source]?.cls || "bg-white/10 text-white/50"}`}>
                         {SOURCE_BADGE[t.source]?.label || t.source || "?"}
                       </Badge>

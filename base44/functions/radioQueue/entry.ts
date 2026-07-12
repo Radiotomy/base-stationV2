@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
         audio_url: s.track_url || '',
         duration_seconds: s.duration_seconds || 0,
         genre: s.genre || '',
+        ai_label: s.ai_label || null,
         source: 'community',
         bpm: s.bpm || null,
         position: i,

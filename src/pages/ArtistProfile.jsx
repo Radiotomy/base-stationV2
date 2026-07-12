@@ -14,6 +14,7 @@ import TrackReactions from "@/components/community/TrackReactions";
 import TrackComments from "@/components/community/TrackComments";
 import TopFans from "@/components/community/TopFans";
 import CollectiblesGrid from "@/components/collectibles/CollectiblesGrid";
+import AILabelBadge from "@/components/common/AILabelBadge";
 
 function StatBox({ value, label }) {
   return (
@@ -55,6 +56,7 @@ function TrackRow({ track, isPlaying, onPlay, currentUser }) {
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm truncate text-foreground">{track.title}</p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <AILabelBadge label={track.ai_label} size="xs" />
             {track.genre && <Badge variant="outline" className="text-xs capitalize px-1.5 py-0">{track.genre}</Badge>}
             {track.bpm && <span className="text-xs text-muted-foreground">{track.bpm} BPM</span>}
             {track.key && <span className="text-xs text-muted-foreground">{track.key}</span>}

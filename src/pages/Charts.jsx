@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Minus, Play, Music, Flame, Calendar, Globe, S
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ProvenanceBadge from "@/components/common/ProvenanceBadge";
+import AILabelBadge from "@/components/common/AILabelBadge";
 
 const PERIODS = [
   { key: "weekly", label: "This Week", icon: Flame },
@@ -182,6 +183,7 @@ export default function Charts() {
                     <h3 className="font-bold text-sm truncate text-foreground">{track.track_title}</h3>
                     <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <AILabelBadge label={track.ai_label} size="xs" />
                       <ProvenanceBadge origin={track.source || track.origin || 'community'} size="xs" />
                       {track.genre && <Badge variant="outline" className="text-xs px-1.5 py-0 capitalize border-border">{track.genre}</Badge>}
                     </div>
