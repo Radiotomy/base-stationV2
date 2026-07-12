@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -11,72 +12,78 @@ import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
-
-// Pages
-import Home from './pages/Home.jsx';
-import Playlists from './pages/Playlists';
-import PlaylistDetail from './pages/PlaylistDetail';
-import Charts from './pages/Charts';
-import Radio from './pages/Radio';
-import FeaturedArtists from './pages/FeaturedArtists';
-import Challenges from './pages/Challenges';
-import Leaderboard from './pages/Leaderboard';
-import Badges from './pages/Badges';
-import AIStudio from './pages/AIStudio';
-import StudioHub from './pages/StudioHub';
-import LyricsStudio from './pages/LyricsStudio';
-import MusicStudio from './pages/MusicStudio';
-import VideoStudio from './pages/VideoStudio';
-import AssetGallery from './pages/AssetGallery';
-import LiveStudio from './pages/LiveStudio';
-import LiveManager from './pages/LiveManager';
-import LiveWatch from './pages/LiveWatch';
-import LiveSummary from './pages/LiveSummary';
-import AudiusTrending from './pages/AudiusTrending';
-import AudiusSearch from './pages/AudiusSearch';
-import AudiusArtist from './pages/AudiusArtist';
-import AudiusTrack from './pages/AudiusTrack';
-import CoverArtStudio from './pages/CoverArtStudio';
-import StemCreatorStudio from './pages/StemCreatorStudio';
-import MashupStudio from './pages/MashupStudio';
-import VocalHarmonizer from './pages/VocalHarmonizer';
-import MasteringStudio from './pages/MasteringStudio';
-import CoverSongStudio from './pages/CoverSongStudio';
-import VisualizerStudio from './pages/VisualizerStudio';
-import PromoStudio from './pages/PromoStudio';
-import StudioHistory from './pages/StudioHistory';
-import AudioRemixStudio from './pages/AudioRemixStudio';
-import VoiceCreator from './pages/VoiceCreator';
-import MyProfile from './pages/MyProfile';
-import SubmitTrack from './pages/SubmitTrack';
-import ArtistProfile from './pages/ArtistProfile';
-import SolanaRegistry from './pages/SolanaRegistry';
-import BlockchainRegistry from './pages/BlockchainRegistry';
-import ID3TagStudio from './pages/ID3TagStudio';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminOverview from './pages/admin/AdminOverview';
-import AdminTracks from './pages/admin/AdminTracks';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminChallenges from './pages/admin/AdminChallenges';
-import AdminFeatured from './pages/admin/AdminFeatured';
-import AdminArtists from './pages/admin/AdminArtists';
-import AdminSolana from './pages/admin/AdminSolana';
-import AdminBlockchainWallets from './pages/admin/AdminBlockchainWallets';
-import AdminAnalytics from './pages/admin/AdminAnalytics';
-import AdminAIIntegrations from './pages/admin/AdminAIIntegrations';
-import CreatorDashboard from './pages/CreatorDashboard';
-import Credits from './pages/Credits';
-import CommunityTemplates from './pages/CommunityTemplates';
-import SocialMediaAutomation from './pages/SocialMediaAutomation';
-import WhyBaseStation from './pages/WhyBaseStation';
-import Help from './pages/Help';
-import FanClub from './pages/FanClub';
-import CreatorStore from './pages/CreatorStore';
-import SmokeTests from './pages/dev/SmokeTests';
-import ErrorLogViewer from './pages/dev/ErrorLogViewer';
-import LiveRegression from './pages/dev/LiveRegression';
-import LiveMulticlient from './pages/dev/LiveMulticlient';
 import MobileLayout from './components/layout/MobileLayout';
+
+// Pages — lazy-loaded so each route only downloads its own code (big mobile perf win)
+const Home = lazy(() => import('./pages/Home.jsx'));
+const Playlists = lazy(() => import('./pages/Playlists'));
+const PlaylistDetail = lazy(() => import('./pages/PlaylistDetail'));
+const Charts = lazy(() => import('./pages/Charts'));
+const Radio = lazy(() => import('./pages/Radio'));
+const FeaturedArtists = lazy(() => import('./pages/FeaturedArtists'));
+const Challenges = lazy(() => import('./pages/Challenges'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
+const Badges = lazy(() => import('./pages/Badges'));
+const AIStudio = lazy(() => import('./pages/AIStudio'));
+const StudioHub = lazy(() => import('./pages/StudioHub'));
+const LyricsStudio = lazy(() => import('./pages/LyricsStudio'));
+const MusicStudio = lazy(() => import('./pages/MusicStudio'));
+const VideoStudio = lazy(() => import('./pages/VideoStudio'));
+const AssetGallery = lazy(() => import('./pages/AssetGallery'));
+const LiveStudio = lazy(() => import('./pages/LiveStudio'));
+const LiveManager = lazy(() => import('./pages/LiveManager'));
+const LiveWatch = lazy(() => import('./pages/LiveWatch'));
+const LiveSummary = lazy(() => import('./pages/LiveSummary'));
+const AudiusTrending = lazy(() => import('./pages/AudiusTrending'));
+const AudiusSearch = lazy(() => import('./pages/AudiusSearch'));
+const AudiusArtist = lazy(() => import('./pages/AudiusArtist'));
+const AudiusTrack = lazy(() => import('./pages/AudiusTrack'));
+const CoverArtStudio = lazy(() => import('./pages/CoverArtStudio'));
+const StemCreatorStudio = lazy(() => import('./pages/StemCreatorStudio'));
+const MashupStudio = lazy(() => import('./pages/MashupStudio'));
+const VocalHarmonizer = lazy(() => import('./pages/VocalHarmonizer'));
+const MasteringStudio = lazy(() => import('./pages/MasteringStudio'));
+const CoverSongStudio = lazy(() => import('./pages/CoverSongStudio'));
+const VisualizerStudio = lazy(() => import('./pages/VisualizerStudio'));
+const PromoStudio = lazy(() => import('./pages/PromoStudio'));
+const StudioHistory = lazy(() => import('./pages/StudioHistory'));
+const AudioRemixStudio = lazy(() => import('./pages/AudioRemixStudio'));
+const VoiceCreator = lazy(() => import('./pages/VoiceCreator'));
+const MyProfile = lazy(() => import('./pages/MyProfile'));
+const SubmitTrack = lazy(() => import('./pages/SubmitTrack'));
+const ArtistProfile = lazy(() => import('./pages/ArtistProfile'));
+const SolanaRegistry = lazy(() => import('./pages/SolanaRegistry'));
+const BlockchainRegistry = lazy(() => import('./pages/BlockchainRegistry'));
+const ID3TagStudio = lazy(() => import('./pages/ID3TagStudio'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
+const AdminTracks = lazy(() => import('./pages/admin/AdminTracks'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminChallenges = lazy(() => import('./pages/admin/AdminChallenges'));
+const AdminFeatured = lazy(() => import('./pages/admin/AdminFeatured'));
+const AdminArtists = lazy(() => import('./pages/admin/AdminArtists'));
+const AdminSolana = lazy(() => import('./pages/admin/AdminSolana'));
+const AdminBlockchainWallets = lazy(() => import('./pages/admin/AdminBlockchainWallets'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminAIIntegrations = lazy(() => import('./pages/admin/AdminAIIntegrations'));
+const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'));
+const Credits = lazy(() => import('./pages/Credits'));
+const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
+const SocialMediaAutomation = lazy(() => import('./pages/SocialMediaAutomation'));
+const WhyBaseStation = lazy(() => import('./pages/WhyBaseStation'));
+const Help = lazy(() => import('./pages/Help'));
+const FanClub = lazy(() => import('./pages/FanClub'));
+const CreatorStore = lazy(() => import('./pages/CreatorStore'));
+const SmokeTests = lazy(() => import('./pages/dev/SmokeTests'));
+const ErrorLogViewer = lazy(() => import('./pages/dev/ErrorLogViewer'));
+const LiveRegression = lazy(() => import('./pages/dev/LiveRegression'));
+const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-[#FF9A4D]/30 border-t-[#FF9A4D] rounded-full animate-spin"></div>
+  </div>
+);
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -99,15 +106,17 @@ const AuthenticatedApp = () => {
       // Logged-out visitors can browse the landing + info pages;
       // everything else shows the branded sign-in gate.
       return (
-        <Routes>
-          <Route element={<MobileLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/radio" element={<Radio />} />
-            <Route path="/why-base-station" element={<WhyBaseStation />} />
-            <Route path="/help" element={<Help />} />
-          </Route>
-          <Route path="*" element={<AuthGate />} />
-        </Routes>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route element={<MobileLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/radio" element={<Radio />} />
+              <Route path="/why-base-station" element={<WhyBaseStation />} />
+              <Route path="/help" element={<Help />} />
+            </Route>
+            <Route path="*" element={<AuthGate />} />
+          </Routes>
+        </Suspense>
       );
     }
   }
@@ -116,75 +125,77 @@ const AuthenticatedApp = () => {
     <>
       {user && <Header user={user} />}
       {user && <Breadcrumbs />}
-      <Routes>
-        <Route element={<MobileLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/playlists" element={<Playlists />} />
-          <Route path="/playlists/:id" element={<PlaylistDetail />} />
-          <Route path="/charts" element={<Charts />} />
-          <Route path="/radio" element={<Radio />} />
-          <Route path="/featured-artists" element={<FeaturedArtists />} />
-          <Route path="/challenges" element={<Challenges />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/badges" element={<Badges />} />
-          <Route path="/studios" element={<StudioHub />} />
-          <Route path="/ai-studio" element={<AIStudio />} />
-          <Route path="/lyrics-studio" element={<LyricsStudio />} />
-          <Route path="/music-studio" element={<MusicStudio />} />
-          <Route path="/cover-art-studio" element={<CoverArtStudio />} />
-          <Route path="/video-studio" element={<VideoStudio />} />
-          <Route path="/asset-gallery" element={<AssetGallery />} />
-          <Route path="/live-studio" element={<LiveStudio />} />
-          <Route path="/live-manager" element={<LiveManager />} />
-          <Route path="/live-watch" element={<LiveWatch />} />
-          <Route path="/live-summary" element={<LiveSummary />} />
-          <Route path="/audius-trending" element={<AudiusTrending />} />
-          <Route path="/audius-search" element={<AudiusSearch />} />
-          <Route path="/audius-artist/:id" element={<AudiusArtist />} />
-          <Route path="/audius-track/:id" element={<AudiusTrack />} />
-          <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
-          <Route path="/stem-creator" element={<StemCreatorStudio />} />
-          <Route path="/mashup-studio" element={<MashupStudio />} />
-          <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
-          <Route path="/mastering-studio" element={<MasteringStudio />} />
-          <Route path="/cover-song-studio" element={<CoverSongStudio />} />
-          <Route path="/visualizer-studio" element={<VisualizerStudio />} />
-          <Route path="/promo-studio" element={<PromoStudio />} />
-          <Route path="/ai-studio/history" element={<StudioHistory />} />
-          <Route path="/voice-creator" element={<VoiceCreator />} />
-          <Route path="/my-profile" element={<MyProfile />} />
-          <Route path="/submit" element={<SubmitTrack />} />
-          <Route path="/artist/:id" element={<ArtistProfile />} />
-          <Route path="/solana" element={<SolanaRegistry />} />
-          <Route path="/blockchain" element={<BlockchainRegistry />} />
-          <Route path="/id3-studio" element={<ID3TagStudio />} />
-          <Route path="/creator-dashboard" element={<CreatorDashboard />} />
-          <Route path="/credits" element={<Credits />} />
-          <Route path="/templates" element={<CommunityTemplates />} />
-          <Route path="/social-automation" element={<SocialMediaAutomation />} />
-          <Route path="/why-base-station" element={<WhyBaseStation />} />
-          <Route path="/help" element={<Help />} />
-          <Route path="/fanclub/:creatorId" element={<FanClub />} />
-          <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
-          <Route path="/dev/smoke-tests" element={<SmokeTests />} />
-          <Route path="/dev/error-log" element={<ErrorLogViewer />} />
-          <Route path="/dev/live-regression" element={<LiveRegression />} />
-          <Route path="/dev/live-multiclient" element={<LiveMulticlient />} />
-        </Route>
-        <Route path="/admin" element={<AdminDashboard />}>
-          <Route index element={<AdminOverview />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="tracks" element={<AdminTracks />} />
-          <Route path="challenges" element={<AdminChallenges />} />
-          <Route path="featured" element={<AdminFeatured />} />
-          <Route path="artists" element={<AdminArtists />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="ai-integrations" element={<AdminAIIntegrations />} />
-          <Route path="solana" element={<AdminSolana />} />
-          <Route path="blockchain-wallets" element={<AdminBlockchainWallets />} />
-        </Route>
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route element={<MobileLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/playlists" element={<Playlists />} />
+            <Route path="/playlists/:id" element={<PlaylistDetail />} />
+            <Route path="/charts" element={<Charts />} />
+            <Route path="/radio" element={<Radio />} />
+            <Route path="/featured-artists" element={<FeaturedArtists />} />
+            <Route path="/challenges" element={<Challenges />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/badges" element={<Badges />} />
+            <Route path="/studios" element={<StudioHub />} />
+            <Route path="/ai-studio" element={<AIStudio />} />
+            <Route path="/lyrics-studio" element={<LyricsStudio />} />
+            <Route path="/music-studio" element={<MusicStudio />} />
+            <Route path="/cover-art-studio" element={<CoverArtStudio />} />
+            <Route path="/video-studio" element={<VideoStudio />} />
+            <Route path="/asset-gallery" element={<AssetGallery />} />
+            <Route path="/live-studio" element={<LiveStudio />} />
+            <Route path="/live-manager" element={<LiveManager />} />
+            <Route path="/live-watch" element={<LiveWatch />} />
+            <Route path="/live-summary" element={<LiveSummary />} />
+            <Route path="/audius-trending" element={<AudiusTrending />} />
+            <Route path="/audius-search" element={<AudiusSearch />} />
+            <Route path="/audius-artist/:id" element={<AudiusArtist />} />
+            <Route path="/audius-track/:id" element={<AudiusTrack />} />
+            <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
+            <Route path="/stem-creator" element={<StemCreatorStudio />} />
+            <Route path="/mashup-studio" element={<MashupStudio />} />
+            <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
+            <Route path="/mastering-studio" element={<MasteringStudio />} />
+            <Route path="/cover-song-studio" element={<CoverSongStudio />} />
+            <Route path="/visualizer-studio" element={<VisualizerStudio />} />
+            <Route path="/promo-studio" element={<PromoStudio />} />
+            <Route path="/ai-studio/history" element={<StudioHistory />} />
+            <Route path="/voice-creator" element={<VoiceCreator />} />
+            <Route path="/my-profile" element={<MyProfile />} />
+            <Route path="/submit" element={<SubmitTrack />} />
+            <Route path="/artist/:id" element={<ArtistProfile />} />
+            <Route path="/solana" element={<SolanaRegistry />} />
+            <Route path="/blockchain" element={<BlockchainRegistry />} />
+            <Route path="/id3-studio" element={<ID3TagStudio />} />
+            <Route path="/creator-dashboard" element={<CreatorDashboard />} />
+            <Route path="/credits" element={<Credits />} />
+            <Route path="/templates" element={<CommunityTemplates />} />
+            <Route path="/social-automation" element={<SocialMediaAutomation />} />
+            <Route path="/why-base-station" element={<WhyBaseStation />} />
+            <Route path="/help" element={<Help />} />
+            <Route path="/fanclub/:creatorId" element={<FanClub />} />
+            <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
+            <Route path="/dev/smoke-tests" element={<SmokeTests />} />
+            <Route path="/dev/error-log" element={<ErrorLogViewer />} />
+            <Route path="/dev/live-regression" element={<LiveRegression />} />
+            <Route path="/dev/live-multiclient" element={<LiveMulticlient />} />
+          </Route>
+          <Route path="/admin" element={<AdminDashboard />}>
+            <Route index element={<AdminOverview />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="tracks" element={<AdminTracks />} />
+            <Route path="challenges" element={<AdminChallenges />} />
+            <Route path="featured" element={<AdminFeatured />} />
+            <Route path="artists" element={<AdminArtists />} />
+            <Route path="analytics" element={<AdminAnalytics />} />
+            <Route path="ai-integrations" element={<AdminAIIntegrations />} />
+            <Route path="solana" element={<AdminSolana />} />
+            <Route path="blockchain-wallets" element={<AdminBlockchainWallets />} />
+          </Route>
+          <Route path="*" element={<PageNotFound />} />
+        </Routes>
+      </Suspense>
       <AIHelpAssistant />
       {user && <OnboardingModal />}
       {user && <PWAInstallPrompt />}
