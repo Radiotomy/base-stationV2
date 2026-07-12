@@ -44,6 +44,15 @@
     "ai_tools_used": {
       "type": "string"
     },
+    "ai_label": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "ai_assisted",
+        "human"
+      ],
+      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard), self-declared by the artist at submission. ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording."
+    },
     "tags": {
       "type": "array",
       "items": {

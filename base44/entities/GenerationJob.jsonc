@@ -42,6 +42,15 @@
       ],
       "default": "pending"
     },
+    "ai_label": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "ai_assisted",
+        "human"
+      ],
+      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard). ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording. Applies to sound recordings only (not lyrics/cover art/video)."
+    },
     "input_data": {
       "type": "object",
       "description": "Generation parameters (mood, genre, duration, etc.)"

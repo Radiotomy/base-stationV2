@@ -216,6 +216,8 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.GenerationJob.update(job.id, {
       status: 'completed',
       output_url: outputUrl,
+      // RIAA GenAI label — stamp legacy music jobs created before labeling rollout
+      ...(job.job_type === 'music' && { ai_label: job.ai_label || 'ai_generated' }),
       output_metadata: {
         bpm: normalized.bpm, key: normalized.key,
         duration: normalized.duration || job.input_data?.duration,

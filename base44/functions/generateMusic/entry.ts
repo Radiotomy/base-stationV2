@@ -401,6 +401,8 @@ Deno.serve(async (req) => {
     const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 
     const logMetadata = {
+      // RIAA/IFPI GenAI label — entirely prompt-generated sound recording
+      ai_label: 'ai_generated',
       model_version: modelVersion,
       input_parameters: { duration, mood, genre, tempo, sound_prompt: (sound_prompt || '').slice(0, 200), has_lyrics: !!(lyrics && lyrics.trim()) },
       routing_reason: routing_reason || 'direct',
@@ -415,6 +417,7 @@ Deno.serve(async (req) => {
         user_id: user.id, user_email: user.email,
         job_type: 'music', provider,
         status: 'completed',
+        ai_label: 'ai_generated',
         input_data: { duration, mood, genre, tempo, sound_prompt, credit_cost: cost },
         output_url: providerResult.audio_url,
         output_metadata: { bpm: providerResult.bpm, key: providerResult.key, duration },
@@ -463,6 +466,7 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider,
       status: 'processing',
+      ai_label: 'ai_generated',
       input_data: {
         duration, mood, genre, tempo, sound_prompt,
         lyrics: lyrics || '',

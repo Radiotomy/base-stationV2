@@ -72,6 +72,15 @@
       "default": "creator",
       "description": "Content origin tag for legal separation. creator=user-generated AI; loudly=Loudly catalog/AI; audius=imported from Audius"
     },
+    "ai_label": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "ai_assisted",
+        "human"
+      ],
+      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard). ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording. Applies to audio asset types only (not lyrics/cover art/video per the standard). Derived assets inherit the most AI-intensive label in their provenance chain."
+    },
     "parent_asset_id": {
       "type": "string",
       "description": "Phase 3: Source asset this was derived from (for stems, mashups, masters, harmonies, visualizers)"

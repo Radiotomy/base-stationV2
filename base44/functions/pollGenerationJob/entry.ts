@@ -334,6 +334,7 @@ Deno.serve(async (req) => {
         clip_id: m.clip_id || undefined,
         clip_ids: m.clip_ids || undefined,
         aligned_lyrics: m.aligned_lyrics || undefined,
+        ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
       });
     }
     if (job.status === 'failed') {
@@ -391,6 +392,8 @@ Deno.serve(async (req) => {
         await base44.entities.GenerationJob.update(job.id, {
           status: 'completed',
           output_url: outputUrl,
+          // RIAA GenAI label — stamp legacy music jobs created before labeling rollout
+          ...(job.job_type === 'music' && { ai_label: job.ai_label || 'ai_generated' }),
           output_metadata: {
             bpm: providerData.bpm, key: providerData.key,
             duration: providerData.duration || job.input_data?.duration,
@@ -517,6 +520,7 @@ Deno.serve(async (req) => {
           clip_id: providerData.clip_id || undefined,
           clip_ids: providerData.clip_ids || undefined,
           aligned_lyrics: providerData.aligned_lyrics || undefined,
+          ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
           content_hash: contentHash,
         });
       }
