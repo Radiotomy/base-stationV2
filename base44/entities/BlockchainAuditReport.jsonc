@@ -58,18 +58,24 @@
     "period_end"
   ],
   "rls": {
-    "read": {
+    "create": {
       "user_condition": {
-        "role": {
-          "$eq": "admin"
-        }
+        "role": "admin"
       }
     },
-    "write": {
+    "read": {
       "user_condition": {
-        "role": {
-          "$eq": "admin"
-        }
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
       }
     }
   }

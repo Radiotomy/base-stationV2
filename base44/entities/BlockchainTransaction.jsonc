@@ -88,25 +88,31 @@
     "action"
   ],
   "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
     "read": {
       "$or": [
         {
-          "user_condition": {
-            "role": {
-              "$eq": "admin"
-            }
-          }
+          "data.user_id": "{{user.id}}"
         },
         {
-          "created_by": "{{user.email}}"
+          "user_condition": {
+            "role": "admin"
+          }
         }
       ]
     },
-    "write": {
+    "update": {
       "user_condition": {
-        "role": {
-          "$eq": "admin"
-        }
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
       }
     }
   }
