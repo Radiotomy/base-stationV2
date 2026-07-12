@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
+import AILabelBadge from '@/components/common/AILabelBadge';
 import WavDownloadButton from '@/components/music/WavDownloadButton';
 
 const ASSET_ICONS = {
@@ -94,6 +95,7 @@ export default function TrackCard({ asset, onDelete }) {
         <div className="flex-1 min-w-0">
           <p className="font-black text-sm text-foreground truncate">{asset.title}</p>
           <div className="flex flex-wrap gap-1 mt-0.5 items-center">
+            <AILabelBadge label={asset.ai_label} size="xs" />
             <ProvenanceBadge
               origin={asset.origin || (m.provider ? 'ai' : 'creator')}
               provider={m.provider}

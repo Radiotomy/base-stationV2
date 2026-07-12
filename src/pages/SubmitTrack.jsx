@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import AILabelSelector from "@/components/submit/AILabelSelector";
 
 const BASE_GENRES = [
   "hip-hop", "trap", "drill", "edm", "house", "deep house", "future bass", "dubstep",
@@ -71,6 +72,7 @@ export default function SubmitTrack() {
   const [customGenreInput, setCustomGenreInput] = useState("");
   const [customToolInput, setCustomToolInput] = useState("");
   const [selectedTools, setSelectedTools] = useState([]);
+  const [aiLabel, setAiLabel] = useState("ai_generated");
 
   const [form, setForm] = useState({
     title: "", description: "", track_url: "", cover_image_url: "",
@@ -165,6 +167,7 @@ export default function SubmitTrack() {
       tags: tagsArr,
       bpm: form.bpm ? parseInt(form.bpm) : undefined,
       ai_tools_used: selectedTools.join(", "),
+      ai_label: aiLabel,
       artist_id: user.id,
       artist_name: user.full_name,
       artist_email: user.email,
@@ -237,6 +240,7 @@ export default function SubmitTrack() {
               <Button onClick={() => {
                 setSubmitted(false);
                 setSelectedTools([]);
+                setAiLabel("ai_generated");
                 setSelectedAsset(null);
                 setForm({ title: "", description: "", track_url: "", cover_image_url: "", genre: "", tags: "", lyrics: "", bpm: "" });
               }} variant="outline" className="rounded-full px-8">Submit Another</Button>
@@ -327,6 +331,13 @@ export default function SubmitTrack() {
                   <Input value={form.tags} onChange={e => update("tags", e.target.value)} placeholder="vibe, dark, summer..." className="rounded-xl" />
                 </div>
               </div>
+            </div>
+
+            {/* AI Disclosure (RIAA standard) */}
+            <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+              <h3 className="font-black text-foreground text-lg flex items-center gap-2"><Sparkles className="w-5 h-5 text-emerald-400" /> AI Disclosure *</h3>
+              <p className="text-xs text-muted-foreground -mt-2">How was generative AI used in this sound recording? (RIAA industry standard)</p>
+              <AILabelSelector value={aiLabel} onChange={setAiLabel} />
             </div>
 
             {/* Track Source */}
