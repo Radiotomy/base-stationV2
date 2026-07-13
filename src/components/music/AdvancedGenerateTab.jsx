@@ -14,6 +14,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import ChipSelector from '@/components/music/ChipSelector';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
+import SaveMastersReportButton from '@/components/songwriting/SaveMastersReportButton';
 import { Crown } from 'lucide-react';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
@@ -235,12 +236,21 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           sound_prompt: extraMeta?.sound_prompt || '',
           auto_saved: true,
           id3_tagged: finalUrl !== audioUrl,
+          ...(mastersBrief && {
+            masters_report: true,
+            masters_brief: mastersBrief.production_brief,
+            masters_key: mastersBrief.key,
+            masters_bpm: mastersBrief.bpm,
+            masters_chord_progression: mastersBrief.chord_progression,
+            masters_arrangement: mastersBrief.arrangement,
+            masters_used: mastersBrief.masters_used,
+          }),
         },
       });
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
-  }, [mood, genre, provider, tempo, duration]);
+  }, [mood, genre, provider, tempo, duration, mastersBrief]);
 
   const onComplete = useCallback(async (data) => {
     if (savedRef.current) return; // prevent duplicate calls
@@ -466,11 +476,20 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           content_hash: result?.content_hash || '',
           clip_id: result?.clip_id || '',
           wav_url: result?.wav_url || '',
+          ...(mastersBrief && {
+            masters_report: true,
+            masters_brief: mastersBrief.production_brief,
+            masters_key: mastersBrief.key,
+            masters_bpm: mastersBrief.bpm,
+            masters_chord_progression: mastersBrief.chord_progression,
+            masters_arrangement: mastersBrief.arrangement,
+            masters_used: mastersBrief.masters_used,
+          }),
         },
       });
-      toast.success('Saved to library!');
+      toast.success(mastersBrief ? '👑 Saved with full Masters report!' : 'Saved to library!');
     } catch (err) {
-      toast.error(err.message);
+      toast.error(err?.response?.data?.message || err?.response?.data?.error || err.message);
     }
     setSaving(false);
   };
@@ -637,7 +656,10 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
               </Button>
             </div>
             {mastersBrief && (
-              <div className="mt-3">
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-end">
+                  <SaveMastersReportButton brief={mastersBrief} lyrics={lyrics} genre={genre} mood={mood} />
+                </div>
                 <MastersBriefDisplay result={mastersBrief} />
               </div>
             )}
@@ -698,7 +720,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             {/* Per-model compatibility check — chars vs budget, vocal support, language + tag guidance */}
             {lyricsMode !== 'none' && (
               <LyricsCompatibilityCheck
-                lyrics={lyrics}
+                lyrics={debouncedLyrics}
                 provider={provider}
                 model={activeModel}
                 mode={provider === 'tempcolor' ? temporlorMode : 'song'}

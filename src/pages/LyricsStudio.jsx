@@ -21,6 +21,7 @@ import InfoTip from '@/components/common/InfoTip';
 import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
@@ -96,6 +97,8 @@ export default function LyricsStudio() {
   const [targetModel, setTargetModel] = useState('sonic|sonic-v4-5-plus');
   const textareaRef = useRef(null);
   const navigate = useNavigate();
+  // Debounce lyrics for the compatibility checker — prevents per-keystroke lag/lockups
+  const debouncedLyrics = useDebouncedValue(lyrics, 250);
 
   const lookupWriter = async () => {
     const name = referenceArtists.trim();
@@ -730,7 +733,7 @@ export default function LyricsStudio() {
                 className="w-full h-96 rounded-xl font-mono text-sm resize-none" />
 
               {/* Live per-model compatibility check against the selected target model */}
-              <LyricsCompatibilityCheck lyrics={lyrics} provider={tmProvider} model={tmModel} mode="song" />
+              <LyricsCompatibilityCheck lyrics={debouncedLyrics} provider={tmProvider} model={tmModel} mode="song" />
 
               <div className="flex gap-2 flex-wrap">
                 <Button variant="outline" onClick={generate} disabled={loading || !topic} className="rounded-xl gap-1.5 text-sm">

@@ -443,28 +443,59 @@ Deno.serve(async (req) => {
     const raw = await base44.integrations.Core.InvokeLLM({
       prompt,
       model: 'claude_sonnet_4_6',
+      // Structured output — guarantees parseable JSON, eliminating intermittent 500/502s
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          key: { type: 'string' },
+          bpm: { type: 'number' },
+          lyrics: { type: 'string' },
+          chord_progression: {
+            type: 'array',
+            items: { type: 'object', properties: { section: { type: 'string' }, nashville: { type: 'string' }, roman: { type: 'string' }, notes: { type: 'string' } } },
+          },
+          arrangement: {
+            type: 'array',
+            items: { type: 'object', properties: { section: { type: 'string' }, instrumentation: { type: 'string' }, dynamics: { type: 'string' }, production_detail: { type: 'string' } } },
+          },
+          production_brief: { type: 'string' },
+        },
+        required: ['lyrics'],
+      },
     });
 
-    // Claude returns a string — extract JSON from it (may be wrapped in ```json ... ```)
-    const rawStr = typeof raw === 'string' ? raw : (raw?.text || raw?.content || JSON.stringify(raw));
+    // With response_json_schema, InvokeLLM returns a parsed object directly.
     let parsed;
-    try {
-      // Strip markdown code fences if present
-      const cleaned = rawStr
-        .replace(/^```(?:json)?\s*/i, '')
-        .replace(/\s*```\s*$/i, '')
-        .trim();
-      // Find the first { and the last } to handle any extra prose around the JSON
-      const start = cleaned.indexOf('{');
-      const end = cleaned.lastIndexOf('}');
-      const jsonSlice = start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned;
-      parsed = JSON.parse(jsonSlice);
-    } catch (parseErr) {
-      console.error('JSON parse failed:', parseErr.message, 'raw:', rawStr.slice(0, 500));
-      return Response.json({
-        error: 'Engine returned unparseable output — please try again',
-        debug: rawStr.slice(0, 300),
-      }, { status: 502 });
+    if (raw && typeof raw === 'object' && typeof raw.lyrics === 'string' && raw.lyrics.length > 0) {
+      parsed = raw;
+    } else {
+      // Fallback: extract JSON from string output (may be wrapped in ```json ... ```)
+      const rawStr = typeof raw === 'string' ? raw
+        : (typeof raw?.response === 'string' ? raw.response
+        : typeof raw?.text === 'string' ? raw.text
+        : typeof raw?.content === 'string' ? raw.content
+        : JSON.stringify(raw?.response || raw));
+      try {
+        const cleaned = rawStr
+          .replace(/^```(?:json)?\s*/i, '')
+          .replace(/\s*```\s*$/i, '')
+          .trim();
+        const start = cleaned.indexOf('{');
+        const end = cleaned.lastIndexOf('}');
+        const jsonSlice = start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned;
+        parsed = JSON.parse(jsonSlice);
+      } catch (parseErr) {
+        console.error('JSON parse failed:', parseErr.message, 'raw:', rawStr.slice(0, 500));
+        return Response.json({
+          error: 'Engine returned unparseable output — please try again',
+          debug: rawStr.slice(0, 300),
+        }, { status: 502 });
+      }
+    }
+    if (!parsed?.lyrics) {
+      console.error('Engine returned empty lyrics. parsed keys:', parsed && typeof parsed === 'object' ? Object.keys(parsed).join(',') : typeof parsed);
+      return Response.json({ error: 'Engine returned an empty result — please try again' }, { status: 502 });
     }
 
     const llmResult = parsed;
