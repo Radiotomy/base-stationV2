@@ -671,6 +671,21 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
               </div>
             )}
 
+            {/* Vocal-provider detection — key signal for AI model selection */}
+            {(provider === 'sonic' || (provider === 'tempcolor' && temporlorMode === 'song')) &&
+              !(lyricsMode !== 'none' && lyrics.trim().length > 0) && (
+              <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-amber-300">This provider supports vocal generation</p>
+                  <p className="text-xs text-muted-foreground">
+                    Add lyrics below for best results, or AI will generate an instrumental.{' '}
+                    <Link to="/lyrics-studio" className="text-amber-300 underline hover:text-amber-200">Open Lyrics Studio →</Link>
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2 mb-3 flex-wrap">
               {[
                 { value: 'none', label: 'No Lyrics' },
@@ -754,40 +769,6 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
               )}
             </div>
           </div>
-
-          {/* Lyrics nudge for vocal providers */}
-          {(() => {
-            const isVocalProvider = provider === 'sonic' ||
-              (provider === 'tempcolor' && temporlorMode === 'song');
-            const hasLyrics = lyricsMode !== 'none' && lyrics.trim().length > 0;
-            if (isVocalProvider && !hasLyrics) {
-              return (
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30">
-                  <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-amber-300 mb-1">This provider supports vocal generation</p>
-                    <p className="text-xs text-muted-foreground mb-2">Add lyrics for best results, or AI will generate an instrumental.</p>
-                    <div className="flex gap-2 flex-wrap">
-                      <button onClick={() => setLyricsMode('generate')}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-colors">
-                        ✨ AI Generate Lyrics
-                      </button>
-                      <button onClick={() => setLyricsMode('custom')}
-                        className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-colors">
-                        ✍️ Write My Own
-                      </button>
-                      <Link to="/lyrics-studio">
-                        <button className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 text-xs font-semibold hover:bg-amber-500/30 transition-colors">
-                          🎤 Lyrics Studio →
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-            return null;
-          })()}
 
           {/* Persistent error banner — survives toast dismissal so users always see why generation stopped */}
           <AnimatePresence>
