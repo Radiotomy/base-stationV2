@@ -623,60 +623,41 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
 
         {/* Right: Prompt + Lyrics + Output */}
         <div className="lg:col-span-2 space-y-5">
-          {/* Prompt Templates */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> Templates</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {/* STEP 1 — Sound Description (primary input, always visible first) */}
+          <div className={`p-4 rounded-2xl border-2 transition-colors ${soundPrompt.trim() ? 'border-blue-500/40 bg-blue-500/5' : 'border-amber-500/50 bg-amber-500/5'}`}>
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <p className="text-xs font-black text-foreground uppercase flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-black flex items-center justify-center">1</span>
+                Sound Description
+              </p>
+              {!soundPrompt.trim() && (
+                <span className="text-[10px] font-bold text-amber-300 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> Required — describe your track
+                </span>
+              )}
+            </div>
+            <textarea value={soundPrompt} onChange={e => setSoundPrompt(e.target.value)}
+              placeholder="Describe the sound: e.g. hard 808s, mellow Rhodes, driving guitar riff…"
+              rows={3}
+              className="w-full rounded-xl border border-input bg-background/60 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mt-2 mb-1.5 flex items-center gap-1"><Sparkles className="w-3 h-3" /> Or start from a template</p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
               {PROMPT_TEMPLATES.map(t => (
                 <button key={t.label} onClick={() => setSoundPrompt(t.prompt)}
-                  className={`p-2 rounded-xl border text-left text-xs font-medium transition-all ${soundPrompt === t.prompt ? 'border-blue-500 bg-blue-500/10 text-foreground' : 'border-border bg-card text-muted-foreground'}`}>
+                  className={`p-2 rounded-lg border text-left text-xs font-medium transition-all ${soundPrompt === t.prompt ? 'border-blue-500 bg-blue-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/60'}`}>
                   {t.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* 243 Masters — Craft Engine */}
-          <div className="p-3 rounded-2xl border border-amber-400/30 bg-gradient-to-br from-amber-500/5 to-purple-500/5">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-300" />
-                <div>
-                  <p className="text-xs font-black text-amber-200">243 Masters Engine</p>
-                  <p className="text-[10px] text-muted-foreground leading-tight">
-                    Lyrics + chord chart + arrangement + prompt, from 243 legendary writers
-                  </p>
-                </div>
-              </div>
-              <Button onClick={runMastersEngine} disabled={runningMasters}
-                size="sm"
-                className="rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold gap-1.5 text-xs">
-                {runningMasters ? 'Composing…' : 'Craft with Masters'}
-                <CostBadge cost={3} size="sm" />
-              </Button>
-            </div>
-            {mastersBrief && (
-              <div className="mt-3 space-y-2">
-                <div className="flex justify-end">
-                  <SaveMastersReportButton brief={mastersBrief} lyrics={lyrics} genre={genre} mood={mood} />
-                </div>
-                <MastersBriefDisplay result={mastersBrief} />
-              </div>
-            )}
-          </div>
-
-          {/* Sound Description */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Sound Description</p>
-            <textarea value={soundPrompt} onChange={e => setSoundPrompt(e.target.value)}
-              placeholder="Describe the sound: e.g. hard 808s, mellow Rhodes, driving guitar riff…"
-              rows={3}
-              className="w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
-          </div>
-
-          {/* Lyrics Section */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5"><Music2 className="w-3 h-3" /> Lyrics</p>
+          {/* STEP 2 — Lyrics & Songwriting (all lyric tools in one card) */}
+          <div className="p-4 rounded-2xl border border-pink-500/30 bg-card space-y-4">
+            <p className="text-xs font-black text-foreground uppercase flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-pink-600 text-white text-[10px] font-black flex items-center justify-center">2</span>
+              <Music2 className="w-3 h-3 text-pink-400" /> Lyrics & Songwriting
+              <span className="text-[10px] font-semibold text-muted-foreground normal-case">optional</span>
+            </p>
 
             {importedFromStudio && (
               <div className="mb-3 flex items-center gap-2 p-2.5 rounded-xl bg-pink-500/10 border border-pink-500/30">
@@ -738,6 +719,35 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                 ))}
               </div>
             )}
+
+            {/* 243 Masters — pro songwriting inside the lyrics toolkit */}
+            <div className="pt-3 border-t border-border/60">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Crown className="w-4 h-4 text-amber-300" />
+                  <div>
+                    <p className="text-xs font-black text-amber-200">243 Masters Engine</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight">
+                      Writes lyrics, chords, arrangement & fills the sound description for you
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={runMastersEngine} disabled={runningMasters}
+                  size="sm"
+                  className="rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold gap-1.5 text-xs">
+                  {runningMasters ? 'Composing…' : 'Craft with Masters'}
+                  <CostBadge cost={3} size="sm" />
+                </Button>
+              </div>
+              {mastersBrief && (
+                <div className="mt-3 space-y-2">
+                  <div className="flex justify-end">
+                    <SaveMastersReportButton brief={mastersBrief} lyrics={lyrics} genre={genre} mood={mood} />
+                  </div>
+                  <MastersBriefDisplay result={mastersBrief} />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Lyrics nudge for vocal providers */}
