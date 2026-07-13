@@ -97,7 +97,8 @@ Deno.serve(async (req) => {
         if (imgRes.ok) {
           const imgBuffer = await imgRes.arrayBuffer();
           const imgArray = new Uint8Array(imgBuffer);
-          frameData = concatArrays(frameData, buildAPICFrame(imgArray));
+          const imgMime = (imgRes.headers.get('content-type') || 'image/jpeg').split(';')[0];
+          frameData = concatArrays(frameData, buildAPICFrame(imgArray, imgMime));
         }
       } catch (e) {
         console.warn('Failed to embed cover art:', e.message);
@@ -129,9 +130,11 @@ Deno.serve(async (req) => {
     // Combine ID3 tag + audio data
     const finalAudio = concatArrays(id3Tag, new Uint8Array(newAudioData));
 
-    // Upload the modified file
-    const modifiedBlob = new Blob([finalAudio], { type: 'audio/mpeg' });
-    const uploadRes = await base44.integrations.Core.UploadFile({ file: modifiedBlob });
+    // Upload the modified file — must be a File (with a filename), a bare Blob
+    // serializes to an empty object and the upload is rejected.
+    const safeTitle = (tags.title || 'track').replace(/[^\w.\-]/g, '_').slice(0, 60);
+    const modifiedFile = new File([finalAudio], `${safeTitle}_tagged.mp3`, { type: 'audio/mpeg' });
+    const uploadRes = await base44.integrations.Core.UploadFile({ file: modifiedFile });
     
     return Response.json({
       download_url: uploadRes.file_url,
@@ -202,8 +205,7 @@ function buildTXXXFrame(description, value) {
 }
 
 // Helper: Build APIC (attached picture) frame
-function buildAPICFrame(imageBuffer) {
-  const mimeType = 'image/jpeg'; // assume JPEG for simplicity
+function buildAPICFrame(imageBuffer, mimeType = 'image/jpeg') {
   const description = '';
   const pictureType = 0x03; // Front cover
   
