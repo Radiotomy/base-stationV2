@@ -19,12 +19,11 @@ import InfoTip from '@/components/common/InfoTip';
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
 // Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, producer: 10 };
+const PROVIDER_COSTS = { sonic: 10, tempcolor: 10 };
 
 const ALL_PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
   { value: 'tempcolor', label: 'Tempolor', emoji: '🎶' },
-  { value: 'producer',  label: 'Producer', emoji: '🎤' },
 ];
 
 const QUICK_EXAMPLES = [
@@ -473,7 +472,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
             AI Provider
-            <InfoTip text="Auto-routing picks the best provider based on your prompt: Sonic for vocals, Tempolor for genre fidelity, Producer for instrumentals. Override only if you have a strong preference." />
+            <InfoTip text="Auto-routing picks the best provider based on your prompt: Sonic for vocals, Tempolor for genre fidelity and instrumentals (incl. Lyria 3 Pro). Override only if you have a strong preference." />
           </p>
           <button onClick={() => { setShowProviderOverride(p => !p); setProviderOverride(null); }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">

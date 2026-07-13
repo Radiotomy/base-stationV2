@@ -14,7 +14,6 @@
 export const PROVIDER_DETAILS = {
   sonic:     { label: 'Sonic',    model: 'sonic-v4-5-plus', emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
   tempcolor: { label: 'Tempolor', model: 'TemPolor v4.6',   emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
-  producer:  { label: 'Producer', model: 'FUZZ-2.0',        emoji: '🎤', color: 'border-purple-500 bg-purple-500/10 text-purple-300' },
 };
 
 /**
@@ -44,7 +43,7 @@ export function routeProvider({
       tempolor_mode: needs_lyrics ? 'song' : 'instrumental',
       reason: `Tempolor selected — only provider supporting tracks over 2 minutes (up to 5 min).`,
       routing_key: 'long_duration',
-      fallbackChain: ['sonic', 'producer'],
+      fallbackChain: ['sonic'],
     };
   }
 
@@ -55,7 +54,7 @@ export function routeProvider({
       model: 'sonic-v4-5-plus',
       reason: `Sonic v4-5-plus selected — best vocal generation quality for lyric-driven tracks.`,
       routing_key: 'vocal_track',
-      fallbackChain: ['tempcolor', 'producer'],
+      fallbackChain: ['tempcolor'],
     };
   }
 
@@ -66,7 +65,7 @@ export function routeProvider({
       model: 'sonic-v5-5',
       reason: `Sonic selected — generates 2 track variations per call for comparison.`,
       routing_key: 'multiple_variations',
-      fallbackChain: ['producer', 'tempcolor'],
+      fallbackChain: ['tempcolor'],
     };
   }
 
@@ -80,7 +79,7 @@ export function routeProvider({
         tempolor_mode: 'instrumental',
         reason: `TemPolor i3 selected — fastest instrumental generation (under 3 seconds).`,
         routing_key: 'speed_priority_instrumental',
-        fallbackChain: ['sonic', 'producer'],
+        fallbackChain: ['sonic'],
       };
     }
     return {
@@ -88,7 +87,7 @@ export function routeProvider({
       model: 'sonic-v4-5-plus',
       reason: `Sonic v4-5-plus selected — fastest reliable provider for vocal tracks.`,
       routing_key: 'speed_priority',
-      fallbackChain: ['producer', 'tempcolor'],
+      fallbackChain: ['tempcolor'],
     };
   }
 
@@ -98,6 +97,6 @@ export function routeProvider({
     model: 'sonic-v4-5-plus',
     reason: `Sonic selected — best general-purpose quality for this track type.`,
     routing_key: 'general_purpose',
-    fallbackChain: ['producer', 'tempcolor'],
+    fallbackChain: ['tempcolor'],
   };
 }

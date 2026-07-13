@@ -24,12 +24,11 @@ import { getLyricsSpec } from '@/config/modelLyricsSpec';
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
 // Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, producer: 10 };
+const PROVIDER_COSTS = { sonic: 10, tempcolor: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',     label: 'Sonic',    desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
-  { value: 'tempcolor', label: 'Tempolor', desc: 'Song & instrumental modes',       color: 'border-amber-500 bg-amber-500/10' },
-  { value: 'producer',  label: 'Producer', desc: 'Google Lyria 3 Pro',             color: 'border-purple-500 bg-purple-500/10' },
+  { value: 'tempcolor', label: 'Tempolor', desc: 'Song & instrumental modes + Lyria 3 Pro', color: 'border-amber-500 bg-amber-500/10' },
 ];
 
 const SONIC_MODELS = [
@@ -70,6 +69,12 @@ const PROMPT_TEMPLATES = [
   { label: '🎷 Neo Soul', prompt: 'Soulful Rhodes piano, live bass groove, lush harmonies, smooth R&B feel' },
   { label: '🌙 Chill R&B', prompt: 'Soft drum machine, warm pads, falsetto vibes, late-night feels' },
   { label: '🎸 Indie Rock', prompt: 'Distorted guitar riffs, driving drums, anthemic chorus, raw energy' },
+  { label: '🤠 Country', prompt: 'Acoustic guitar strumming, pedal steel, warm fiddle, heartfelt storytelling, backroad twang' },
+  { label: '🎺 Blues', prompt: 'Gritty electric guitar bends, shuffle drums, walking bass, smoky barroom soul' },
+  { label: '🎤 Pop Anthem', prompt: 'Bright punchy synths, catchy hook-driven chorus, polished radio-ready production' },
+  { label: '🪕 Red Dirt', prompt: 'Raw twangy Telecaster, driving country-rock drums, honest outlaw grit, live-band feel' },
+  { label: '🎻 Cinematic', prompt: 'Sweeping strings, epic percussion swells, emotional builds, film-score grandeur' },
+  { label: '🏝️ Reggae', prompt: 'Laid-back skank guitar, deep dub bass, one-drop drums, sunny island groove' },
 ];
 
 export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initialGenre = '', initialTopic = '' }) {
@@ -501,7 +506,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       {/* Provider */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Provider</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {PROVIDERS.map(p => (
             <button key={p.value} onClick={() => setProvider(p.value)}
               className={`p-3 rounded-xl border text-left transition-all ${provider === p.value ? p.color : 'border-border bg-card hover:border-border/80'}`}>
@@ -640,11 +645,11 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
               placeholder="Describe the sound: e.g. hard 808s, mellow Rhodes, driving guitar riff…"
               rows={3}
               className="w-full rounded-xl border border-input bg-background/60 px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase mt-2 mb-1.5 flex items-center gap-1"><Sparkles className="w-3 h-3" /> Or start from a template</p>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase mt-2 mb-1.5 flex items-center gap-1"><Sparkles className="w-3 h-3" /> Or start from a template — scroll for more →</p>
+            <div className="flex gap-1.5 overflow-x-auto pb-1.5 -mx-1 px-1" style={{ scrollbarWidth: 'thin' }}>
               {PROMPT_TEMPLATES.map(t => (
                 <button key={t.label} onClick={() => setSoundPrompt(t.prompt)}
-                  className={`p-2 rounded-lg border text-left text-xs font-medium transition-all ${soundPrompt === t.prompt ? 'border-blue-500 bg-blue-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/60'}`}>
+                  className={`flex-shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${soundPrompt === t.prompt ? 'border-blue-500 bg-blue-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-blue-500/40 hover:text-foreground'}`}>
                   {t.label}
                 </button>
               ))}
@@ -752,7 +757,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
 
           {/* Lyrics nudge for vocal providers */}
           {(() => {
-            const isVocalProvider = provider === 'sonic' || provider === 'producer' ||
+            const isVocalProvider = provider === 'sonic' ||
               (provider === 'tempcolor' && temporlorMode === 'song');
             const hasLyrics = lyricsMode !== 'none' && lyrics.trim().length > 0;
             if (isVocalProvider && !hasLyrics) {
