@@ -128,7 +128,7 @@ export default function LyricsStudio() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [topic, mood, style, length, lyrics]);
+  }, [topic, mood, style, length, lyrics, mastersResult]);
 
   // Fired once per session when user first focuses the "Your Lyrics" textarea
   const showCharLimitNotice = () => {
@@ -219,19 +219,59 @@ export default function LyricsStudio() {
     setSaving(true);
     try {
       const user = await base44.auth.me();
-      const blob = new Blob([lyrics], { type: 'text/plain' });
-      const file = new File([blob], `${topic || 'lyrics'}.txt`, { type: 'text/plain' });
+      // If a 243 Masters report exists, save the full content report alongside the lyrics
+      const isMasters = !!mastersResult;
+      let fileText = lyrics;
+      if (isMasters) {
+        const m = mastersResult;
+        const chords = (m.chord_progression || [])
+          .map(c => `${c.section}: ${c.nashville} | ${c.roman}${c.notes ? ` — ${c.notes}` : ''}`).join('\n');
+        const arr = (m.arrangement || [])
+          .map(a => `${a.section} (${a.dynamics}): ${a.instrumentation}${a.production_detail ? ` → ${a.production_detail}` : ''}`).join('\n');
+        fileText = [
+          `243 MASTERS ENGINE REPORT`,
+          `Title: ${m.title || topic || 'Untitled'}`,
+          `Key: ${m.key || '—'} · BPM: ${m.bpm || '—'}`,
+          m.masters_used?.length ? `Masters: ${m.masters_used.map(x => x.n).join(', ')}` : '',
+          '',
+          '── LYRICS ──',
+          lyrics,
+          '',
+          '── CHORD PROGRESSION ──',
+          chords,
+          '',
+          '── ARRANGEMENT ──',
+          arr,
+          '',
+          '── PRODUCTION BRIEF ──',
+          m.production_brief || '',
+        ].filter(s => s !== null).join('\n');
+      }
+      const blob = new Blob([fileText], { type: 'text/plain' });
+      const file = new File([blob], `${(mastersResult?.title || topic || 'lyrics')}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
         asset_type: 'lyric',
-        title: topic || 'Untitled Lyrics',
+        title: mastersResult?.title || topic || 'Untitled Lyrics',
         file_url,
         is_public: false,
-        metadata: { mood: mood.join(', '), style: style.join(', '), length, topic },
+        metadata: {
+          mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics,
+          ...(isMasters && {
+            masters_report: true,
+            masters_brief: mastersResult.production_brief,
+            masters_key: mastersResult.key,
+            masters_bpm: mastersResult.bpm,
+            masters_chord_progression: mastersResult.chord_progression,
+            masters_arrangement: mastersResult.arrangement,
+            masters_used: mastersResult.masters_used,
+            content_hash: mastersResult.content_hash,
+          }),
+        },
       });
-      toast.success('Saved to library!');
+      toast.success(isMasters ? '👑 Full Masters report saved to library!' : 'Saved to library!');
     } catch (err) {
       toast.error(err.message);
     }
@@ -709,7 +749,13 @@ export default function LyricsStudio() {
 
             {/* 243 Masters brief panel — chord progression, arrangement, production brief */}
             {mastersResult && (
-              <div className="mt-5">
+              <div className="mt-5 space-y-3">
+                <div className="flex items-center justify-end">
+                  <Button onClick={saveLyrics} disabled={saving || !lyrics}
+                    className="bg-amber-500 hover:bg-amber-400 text-black rounded-xl gap-1.5 text-xs font-bold h-8">
+                    <Save className="w-3.5 h-3.5" /> {saving ? 'Saving…' : 'Save Full Report'}
+                  </Button>
+                </div>
                 <MastersBriefDisplay result={mastersResult} />
               </div>
             )}
