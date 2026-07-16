@@ -26,13 +26,13 @@ export default function AITransparency() {
       <div className="max-w-3xl mx-auto space-y-10">
         <header className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-bold tracking-wider uppercase text-[#FFC98A]">
-            <ShieldCheck className="w-3.5 h-3.5" /> RIAA / IFPI Compliant
+            <ShieldCheck className="w-3.5 h-3.5" /> Music Community GenAI Labeling Program · July 2026
           </div>
           <h1 className="font-display text-4xl md:text-5xl text-white">AI Transparency</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            BASE Station labels every sound recording under the music industry's Generative-AI
-            Labeling Program (RIAA, IFPI, A2IM, WIN, IMPALA, The Recording Academy, SAG-AFTRA &
-            the Human Artistry Campaign — July 2026).
+            BASE Station voluntarily labels every sound recording in alignment with the track-level
+            GenAI labeling program introduced by the music community (IFPI, RIAA, A2IM, WIN, IMPALA,
+            The Grammys, SAG-AFTRA &amp; the Human Artistry Campaign — July 2026).
           </p>
         </header>
 
@@ -55,9 +55,14 @@ export default function AITransparency() {
             </div>
           ))}
           <p className="text-xs text-muted-foreground/70">
-            Per the industry standard, these labels apply only to generative AI used in the sound
-            recording itself. They do not currently cover AI used in lyrics, composition, music
-            videos, or cover art.
+            Per the program's guidelines, these labels apply only to generative AI used in the sound
+            recording itself — not lyrics, composition, music videos, or cover art. BASE Station goes
+            further and voluntarily scores those too via the{" "}
+            <Link to="/creative-ownership" className="text-[#FFC98A] underline underline-offset-2">Creative Ownership Score</Link>.{" "}
+            <a href="https://www.riaa.com/music-community-introduces-new-labeling-programto-distinguish-generative-ai-in-sound-recordings/"
+              target="_blank" rel="noopener noreferrer" className="text-[#FFC98A] underline underline-offset-2">
+              Official announcement
+            </a>.
           </p>
         </section>
 
@@ -70,8 +75,8 @@ export default function AITransparency() {
             <p>
               <span className="text-white font-semibold">Uploaded tracks:</span> the artist
               self-declares the label at submission, attesting to how generative AI was used in
-              the recording. This is an honesty-based disclosure required by the industry
-              standard — there is no automated "percentage of AI" measurement.
+              the recording. Like the program itself, this is a voluntary, honesty-based
+              disclosure — there is no automated "percentage of AI" measurement.
             </p>
             <p>
               <span className="text-white font-semibold">Tracks created in BASE Station studios:</span>{" "}
@@ -95,8 +100,9 @@ export default function AITransparency() {
           <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
             <p>
               We believe listeners deserve to know how the music they hear was made, and human
-              artistry deserves clear recognition. Accurate labeling also supports the industry's
-              transition to standardized AI disclosure.
+              artistry deserves clear recognition. Accurate labeling also supports the music
+              community's push for broad, harmonized adoption of GenAI disclosure across the
+              ecosystem — a program designed to evolve as technology and requirements change.
             </p>
             <p>
               If you believe a track is mislabeled, contact us through the{" "}

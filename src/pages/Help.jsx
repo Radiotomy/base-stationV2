@@ -17,7 +17,7 @@ const SECTIONS = [
     keywords: 'ownership score cos ai assisted generated label riaa ifpi disclosure participation human tier co-creator collaborator curator',
     body: (
       <>
-        <p>Every piece of content you generate gets a <strong className="text-foreground">0–100 Creative Ownership Score (COS)</strong> — a growing standard that measures how much of the creativity came from <em>you</em> versus the AI. It's built on the RIAA/IFPI GenAI disclosure method (2026).</p>
+        <p>Every piece of content you generate gets a <strong className="text-foreground">0–100 Creative Ownership Score (COS)</strong> — a growing standard that measures how much of the creativity came from <em>you</em> versus the AI. It's aligned with the music community's voluntary GenAI labeling program (RIAA, IFPI &amp; partners, July 2026).</p>
         <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
           <p className="text-emerald-300 font-bold text-sm mb-1">💚 The more you put in, the more you own</p>
           <p>Here's the honest truth: if you let the AI decide everything, most of your content will carry the <strong className="text-foreground">AI-Generated</strong> label. But lean in — write your own lyrics, craft detailed prompts, upload references, build voice personas, iterate on your work — and your content earns the <strong className="text-foreground">AI-Assisted</strong> label (score 40+). That's your creative fingerprint, on the record.</p>

@@ -19,7 +19,7 @@ export default function HomeOwnershipPromo() {
           <p className="text-white/60 text-xs mt-1 leading-relaxed">
             A growing 0–100 standard that credits the human behind the AI. Write your own lyrics, bring references,
             shape the style — and earn the <span className="text-emerald-300 font-bold">AI-Assisted</span> label
-            instead of <span className="text-blue-300 font-bold">AI-Generated</span>. Built on the RIAA/IFPI method.
+            instead of <span className="text-blue-300 font-bold">AI-Generated</span>. Aligned with the music community's new GenAI labeling program (RIAA, IFPI &amp; partners).
           </p>
         </div>
         <Link

@@ -38,8 +38,8 @@ export default function CreativeOwnership() {
           </h1>
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
             The Creative Ownership Score (COS) is a 0–100 measure of the human creative input behind every
-            piece of AI-generated content on BASE Station — built on the RIAA/IFPI GenAI disclosure standard,
-            and growing with every studio we add.
+            piece of AI-generated content on BASE Station — aligned with the music community's voluntary
+            GenAI labeling program (RIAA, IFPI &amp; partners, July 2026), and growing with every studio we add.
           </p>
           <div className="flex items-center justify-center gap-6 mt-8">
             {[15, 55, 90].map(s => <ParticipationBadge key={s} score={s} size={64} />)}
@@ -74,7 +74,7 @@ export default function CreativeOwnership() {
             <p className="text-sm font-black text-foreground">Score 0–39 · Mostly AI-driven</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               The AI did the heavy lifting with minimal direction. Nothing wrong with that — but if you rely on
-              auto-everything, this is the label most of your content will carry under the RIAA/IFPI method.
+              auto-everything, this is the label most of your content will carry under the program's guidelines.
             </p>
           </div>
         </section>
@@ -114,8 +114,18 @@ export default function CreativeOwnership() {
         </section>
 
         {/* Policy */}
-        <section className="p-6 rounded-2xl bg-muted/40 border border-border">
+        <section className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
           <p className="text-xs text-muted-foreground italic leading-relaxed text-center">"{OWNERSHIP_POLICY_TEXT}"</p>
+          <p className="text-[11px] text-muted-foreground/70 leading-relaxed text-center">
+            On July 10, 2026, IFPI, RIAA, A2IM, WIN, IMPALA, The Grammys, SAG-AFTRA and the Human Artistry Campaign
+            introduced a voluntary track-level labeling program distinguishing "AI-Generated" from "AI-Assisted"
+            sound recordings. That program currently applies to sound recordings only — BASE Station voluntarily
+            extends the same spirit of transparency to lyrics, cover art, and video through the COS.{' '}
+            <a href="https://www.riaa.com/music-community-introduces-new-labeling-programto-distinguish-generative-ai-in-sound-recordings/"
+              target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+              Read the announcement →
+            </a>
+          </p>
         </section>
 
         {/* CTA */}

@@ -136,7 +136,7 @@ export default function Home() {
             {/* Legal / transparency footer strip */}
             <div className="rounded-xl border border-black/70 bg-[#0F0C09] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
               <p className="text-[11px] text-white/50 font-semibold text-center sm:text-left">
-                Every track on BASE Station carries an industry-standard AI disclosure label (RIAA/IFPI, 2026) and a 0–100 Creative Ownership Score.
+                Every track on BASE Station carries a GenAI disclosure label aligned with the music community's voluntary labeling program (RIAA, IFPI &amp; partners, July 2026) plus a 0–100 Creative Ownership Score.
               </p>
               <div className="flex items-center gap-4 flex-shrink-0 text-[11px] font-bold">
                 <Link to="/creative-ownership" className="text-[#6EE7B7] hover:text-white transition-colors">Ownership Score</Link>
