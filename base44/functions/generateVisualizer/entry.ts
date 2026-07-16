@@ -64,6 +64,11 @@ Deno.serve(async (req) => {
       file_url: source.file_url,
       thumbnail_url: source.thumbnail_url,
       origin: source.origin === 'audius' ? 'audius' : 'creator',
+      // Creative Ownership Score — derived asset: reference + iteration + user-picked preset
+      ai_disclosure_label: 'ai_generated',
+      ai_disclosure_basis: 'Score based on: reference material upload, saved creative persona, iterative refinement.',
+      human_participation_score: 35,
+      participation_signals: { reference_material: 15, persona_used: 10, iteration: 10 },
       parent_asset_id: source.id,
       tags: ['visualizer', style, 'video'],
       metadata: {

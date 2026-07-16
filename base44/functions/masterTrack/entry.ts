@@ -78,6 +78,11 @@ Deno.serve(async (req) => {
       thumbnail_url: source.thumbnail_url,
       origin: source.origin === 'audius' ? 'audius' : 'creator',
       ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
+      // Creative Ownership Score — mastering preserves the source's creative input; inherit its score
+      ai_disclosure_label: source.ai_disclosure_label || 'ai_generated',
+      ai_disclosure_basis: source.ai_disclosure_basis || 'Score based on: reference material upload, saved creative persona, iterative refinement.',
+      human_participation_score: source.human_participation_score ?? 35,
+      participation_signals: source.participation_signals || { reference_material: 15, persona_used: 10, iteration: 10 },
       parent_asset_id: source.id,
       tags: ['mastered', style, ...(source.tags || [])],
       metadata: {

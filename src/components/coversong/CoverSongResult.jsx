@@ -10,7 +10,7 @@ import { toast } from 'sonner';
  * Displays the generated cover song(s) — Sonic returns up to 2 clips.
  * Lets the user preview, save each as a library asset, and download.
  */
-export default function CoverSongResult({ data, sourceUrl, title }) {
+export default function CoverSongResult({ data, sourceUrl, title, participation }) {
   const [saving, setSaving] = useState({}); // { [url]: bool }
   const [savedUrls, setSavedUrls] = useState(new Set());
   const autoSavedRef = useRef(false);
@@ -75,6 +75,12 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
             file_url: hostedUrl,
             thumbnail_url: clip.cover || undefined,
             origin: 'creator',
+            ...(participation && {
+              ai_disclosure_label: participation.label,
+              ai_disclosure_basis: participation.basis,
+              human_participation_score: participation.score,
+              participation_signals: participation.signals,
+            }),
             tags: ['cover-song', 'sonic', data.model_version].filter(Boolean),
             metadata: {
               task_kind: 'cover_song',
@@ -116,6 +122,12 @@ export default function CoverSongResult({ data, sourceUrl, title }) {
         file_url: clip.url,
         thumbnail_url: clip.cover || undefined,
         origin: 'creator',
+        ...(participation && {
+          ai_disclosure_label: participation.label,
+          ai_disclosure_basis: participation.basis,
+          human_participation_score: participation.score,
+          participation_signals: participation.signals,
+        }),
         tags: ['cover-song', 'sonic', data.model_version].filter(Boolean),
         metadata: {
           task_kind: 'cover_song',

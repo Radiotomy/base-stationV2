@@ -69,6 +69,11 @@ Deno.serve(async (req) => {
       thumbnail_url: source.thumbnail_url,
       origin: 'creator',
       ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
+      // Creative Ownership Score — derived asset: reference material + iteration
+      ai_disclosure_label: 'ai_generated',
+      ai_disclosure_basis: 'Score based on: reference material upload, iterative refinement.',
+      human_participation_score: 25,
+      participation_signals: { reference_material: 15, iteration: 10 },
       parent_asset_id: source.id,
       tags: ['harmony', harmonyType, 'creator'],
       metadata: {

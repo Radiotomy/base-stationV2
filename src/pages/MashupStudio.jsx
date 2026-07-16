@@ -16,6 +16,7 @@ import AddToProjectButton from '@/components/studio/AddToProjectButton';
 import CostBadge from '@/components/credits/CostBadge';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 export default function MashupStudio() {
   const params = new URLSearchParams(window.location.search);
@@ -41,6 +42,13 @@ export default function MashupStudio() {
       setJobId(null);
       // Save the completed mashup as a UserAsset so it appears in the library
       try {
+        const participation = calculateHumanParticipationScore({
+          userProvidedContent: false,
+          prompt: description,
+          styleOrTags: tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [],
+          referenceFile: true,   // 2 user-selected source tracks
+          isIteration: true,     // derived from prior works
+        });
         const asset = await base44.entities.UserAsset.create({
           asset_type: 'mashup',
           title: data.title || title || 'Mashup',
@@ -48,6 +56,10 @@ export default function MashupStudio() {
           file_url: data.audio_url,
           thumbnail_url: data.cover_image_url || undefined,
           origin: 'creator',
+          ai_disclosure_label: participation.label,
+          ai_disclosure_basis: participation.basis,
+          human_participation_score: participation.score,
+          participation_signals: participation.signals,
           tags: ['mashup', 'creator', ...(tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [])],
           metadata: {
             bpm: data.bpm || (bpm ? parseInt(bpm) : undefined),

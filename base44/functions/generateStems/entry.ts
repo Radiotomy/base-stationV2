@@ -80,6 +80,11 @@ Deno.serve(async (req) => {
         origin: source.origin || 'creator',
         // RIAA GenAI label — stem separation is non-generative, inherit source label
         ...(source.ai_label && { ai_label: source.ai_label }),
+        // Creative Ownership Score — derived asset: reference material + iteration
+        ai_disclosure_label: 'ai_generated',
+        ai_disclosure_basis: 'Score based on: reference material upload, iterative refinement.',
+        human_participation_score: 25,
+        participation_signals: { reference_material: 15, iteration: 10 },
         parent_asset_id: source.id,
         stem_type: stemType,
         tags: ['stem', stemType, ...(source.tags || [])],

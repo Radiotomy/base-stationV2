@@ -18,6 +18,7 @@ import CoverAIAssistant from '@/components/coversong/CoverAIAssistant';
 import CoverPresetPicker from '@/components/coversong/CoverPresetPicker';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 // Sonic upload-cover / extend-upload endpoints require v4.5+ to work reliably.
 // v3.5 and v4 frequently hang or fail on upload tasks. v5 / v5.5 strongly
@@ -65,6 +66,15 @@ export default function CoverSongStudio() {
   const [result, setResult] = useState(null);
 
   const modelMeta = SONIC_MODELS.find(m => m.id === model) || SONIC_MODELS[0];
+
+  // Creative Ownership Score — covers/extensions are iterations on a user-chosen source
+  const participation = calculateHumanParticipationScore({
+    userProvidedContent: customMode && !!lyrics.trim(),
+    prompt: customMode ? lyrics : aiDescription,
+    styleOrTags: [genre, mood, ...(tags ? tags.split(',') : [])].map(s => (s || '').trim()).filter(Boolean),
+    referenceFile: true,
+    isIteration: true,
+  });
   const supportsVocalGender = modelMeta.vocalGender;
 
   // ── Source loaders ────────────────────────────────────────────────────────
@@ -510,7 +520,7 @@ export default function CoverSongStudio() {
           </Button>
 
           {/* Result */}
-          {result && <CoverSongResult data={result} sourceUrl={sourceUrl} title={title} />}
+          {result && <CoverSongResult data={result} sourceUrl={sourceUrl} title={title} participation={participation} />}
         </div>
       </div>
 
