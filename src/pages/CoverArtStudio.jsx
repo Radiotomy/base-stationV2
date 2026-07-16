@@ -12,6 +12,7 @@ import ChipSelector from '@/components/music/ChipSelector';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 const GENRES = ['Hip-Hop', 'EDM', 'Pop', 'R&B', 'Rock', 'Lo-Fi', 'Jazz', 'Classical', 'Trap', 'Other'];
 const MOODS = ['Happy', 'Sad', 'Energetic', 'Chill', 'Dark', 'Uplifting', 'Romantic', 'Angry'];
@@ -106,12 +107,22 @@ export default function CoverArtStudio() {
       return;
     }
     try {
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: false,
+        prompt: activeMode === 'modest' ? customPrompt : '',
+        styleOrTags: activeMode === 'cheap' ? [genre, mood, style] : [],
+        isIteration: variations.length > 1,
+      });
       await base44.entities.UserAsset.create({
         user_id: (await base44.auth.me()).id,
         asset_type: 'coverart',
         title,
         file_url: selectedVariation,
         is_public: false,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: { genre, mood, style, prompt: customPrompt || 'auto-generated' }
       });
       toast.success('Cover art saved to library!');

@@ -22,6 +22,7 @@ import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 const MOOD_CHIPS   = ['Happy', 'Sad', 'Energetic', 'Melancholic', 'Romantic', 'Angry', 'Chill', 'Nostalgic', 'Triumphant'];
 const STYLE_CHIPS  = ['Hip-Hop', 'Pop', 'Rock', 'R&B', 'EDM', 'Indie', 'Country', 'Traditional Country', 'Red Dirt Country', 'Texas Country', 'Soul', 'Drill', 'Afrobeats', 'Lo-Fi', 'Jazz', 'Blues', 'Metal'];
@@ -253,6 +254,13 @@ export default function LyricsStudio() {
       const blob = new Blob([fileText], { type: 'text/plain' });
       const file = new File([blob], `${(mastersResult?.title || topic || 'lyrics')}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: false,
+        prompt: topic,
+        styleOrTags: [...mood, ...style],
+        personaOrTemplate: proMode || mastersMode || !!referenceArtists.trim(),
+        isIteration: versions.length > 0,
+      });
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
@@ -260,6 +268,10 @@ export default function LyricsStudio() {
         title: mastersResult?.title || topic || 'Untitled Lyrics',
         file_url,
         is_public: false,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: {
           mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics,
           ...(isMasters && {
@@ -296,6 +308,13 @@ export default function LyricsStudio() {
       const blob = new Blob([lyrics], { type: 'text/plain' });
       const file = new File([blob], `${topic || 'lyrics'}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: false,
+        prompt: topic,
+        styleOrTags: [...mood, ...style],
+        personaOrTemplate: proMode || mastersMode || !!referenceArtists.trim(),
+        isIteration: versions.length > 0,
+      });
       const asset = await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
@@ -303,6 +322,10 @@ export default function LyricsStudio() {
         title: topic || 'Untitled Lyrics',
         file_url,
         is_public: false,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: { mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics },
       });
       toast.success('🎵 Saved & exporting to Music Studio…');

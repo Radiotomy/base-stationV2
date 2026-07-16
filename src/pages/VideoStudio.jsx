@@ -15,6 +15,7 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import MusicVideoComposer from '@/components/video/MusicVideoComposer';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 const ASPECT_RATIOS = [
   { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
@@ -166,6 +167,14 @@ export default function VideoStudio() {
     setSaving(true);
     try {
       const user = await base44.auth.me();
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: false,
+        prompt,
+        styleOrTags: style ? [style] : [],
+        referenceFile: !!(referenceImageUrl || referenceAudioUrl),
+        personaOrTemplate: PROMPT_TEMPLATES.some(t => t.prompt === prompt),
+        isIteration: versions.length > 1,
+      });
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
@@ -173,6 +182,10 @@ export default function VideoStudio() {
         title: prompt.slice(0, 60) + (prompt.length > 60 ? '…' : ''),
         file_url: result.video_url,
         is_public: false,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: { prompt, duration, aspectRatio, style, provider: 'ltx' },
       });
       toast.success('Saved to library!');
