@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, ArrowLeft, BookOpen, Music, Mic2, Palette, Film, Sparkles,
-  Wand2, Coins, Zap, Globe, Volume2, Shield
+  Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import HelpSection from '@/components/help/HelpSection';
@@ -10,6 +10,32 @@ import TutorialWalkthrough from '@/components/help/TutorialWalkthrough';
 import ProTips from '@/components/help/ProTips';
 
 const SECTIONS = [
+  {
+    id: 'ownership',
+    title: 'Creative Ownership Score — get credit for YOUR creativity',
+    icon: Fingerprint,
+    keywords: 'ownership score cos ai assisted generated label riaa ifpi disclosure participation human tier co-creator collaborator curator',
+    body: (
+      <>
+        <p>Every piece of content you generate gets a <strong className="text-foreground">0–100 Creative Ownership Score (COS)</strong> — a growing standard that measures how much of the creativity came from <em>you</em> versus the AI. It's built on the RIAA/IFPI GenAI disclosure method (2026).</p>
+        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+          <p className="text-emerald-300 font-bold text-sm mb-1">💚 The more you put in, the more you own</p>
+          <p>Here's the honest truth: if you let the AI decide everything, most of your content will carry the <strong className="text-foreground">AI-Generated</strong> label. But lean in — write your own lyrics, craft detailed prompts, upload references, build voice personas, iterate on your work — and your content earns the <strong className="text-foreground">AI-Assisted</strong> label (score 40+). That's your creative fingerprint, on the record.</p>
+        </div>
+        <p><strong className="text-foreground">Ways to raise your score:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>+40</strong> — bring your own content (lyrics, script, copy)</li>
+          <li><strong>+15</strong> — write a detailed, intentional prompt (100+ chars)</li>
+          <li><strong>+15</strong> — upload reference material (audio, image, document)</li>
+          <li><strong>+10</strong> — use a saved voice persona or template</li>
+          <li><strong>+10</strong> — pick custom genres, moods, and style tags</li>
+          <li><strong>+10</strong> — iterate: remix, extend, or refine prior work</li>
+        </ul>
+        <p><strong className="text-foreground">Tiers:</strong> 🏆 Co-Creator (70–100) · 🎨 Collaborator (40–69) · 🤖 Curator (0–39)</p>
+        <p>Track your average score, tier breakdown, and creative evolution in <Link to="/creator-dashboard" className="text-purple-400 hover:underline">My Workspace → 🎖️ Ownership</Link>, or read the full <Link to="/creative-ownership" className="text-emerald-400 hover:underline">Creative Ownership onesheet →</Link></p>
+      </>
+    ),
+  },
   {
     id: 'music',
     title: 'Music Studio — generating tracks',

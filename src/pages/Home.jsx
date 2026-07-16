@@ -10,6 +10,7 @@ import HomeStatsStrip from "@/components/home/HomeStatsStrip";
 import HomeFeatureGrid from "@/components/home/HomeFeatureGrid";
 import HomePulsePanels from "@/components/home/HomePulsePanels";
 import HomeCTAPanel from "@/components/home/HomeCTAPanel";
+import HomeOwnershipPromo from "@/components/home/HomeOwnershipPromo";
 
 const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
 
@@ -60,6 +61,8 @@ export default function Home() {
             <CommunityMetrics />
 
             <HomeFeatureGrid />
+
+            <HomeOwnershipPromo />
 
             <HomePulsePanels topTracks={topTracks} />
 
@@ -133,9 +136,11 @@ export default function Home() {
             {/* Legal / transparency footer strip */}
             <div className="rounded-xl border border-black/70 bg-[#0F0C09] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
               <p className="text-[11px] text-white/50 font-semibold text-center sm:text-left">
-                Every track on BASE Station carries an industry-standard AI disclosure label (RIAA/IFPI, 2026).
+                Every track on BASE Station carries an industry-standard AI disclosure label (RIAA/IFPI, 2026) and a 0–100 Creative Ownership Score.
               </p>
               <div className="flex items-center gap-4 flex-shrink-0 text-[11px] font-bold">
+                <Link to="/creative-ownership" className="text-[#6EE7B7] hover:text-white transition-colors">Ownership Score</Link>
+                <span className="text-white/20">·</span>
                 <Link to="/transparency" className="text-[#FFC98A] hover:text-white transition-colors">AI Transparency</Link>
                 <span className="text-white/20">·</span>
                 <Link to="/terms" className="text-white/60 hover:text-white transition-colors">Terms of Use</Link>
