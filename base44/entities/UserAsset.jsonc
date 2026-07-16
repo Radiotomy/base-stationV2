@@ -81,6 +81,29 @@
       ],
       "description": "RIAA/IFPI GenAI track-level label (July 2026 standard). ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording. Applies to audio asset types only (not lyrics/cover art/video per the standard). Derived assets inherit the most AI-intensive label in their provenance chain."
     },
+    "ai_disclosure_label": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "ai_assisted"
+      ],
+      "default": "ai_generated",
+      "description": "RIAA/IFPI-style GenAI disclosure label derived from the human participation score"
+    },
+    "ai_disclosure_basis": {
+      "type": "string",
+      "description": "Human-readable explanation of why this label was assigned"
+    },
+    "human_participation_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "0\u2013100 Creative Ownership Score of human creative input"
+    },
+    "participation_signals": {
+      "type": "object",
+      "description": "Breakdown of signals and points that built the score"
+    },
     "parent_asset_id": {
       "type": "string",
       "description": "Phase 3: Source asset this was derived from (for stems, mashups, masters, harmonies, visualizers)"

@@ -19,6 +19,7 @@ import RewardFansModal from "@/components/creator/RewardFansModal";
 import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
 import SubmissionsTab from "@/components/dashboard/SubmissionsTab";
 import LiveSessionsTab from "@/components/dashboard/LiveSessionsTab";
+import OwnershipDashboard from "@/components/music/OwnershipDashboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
@@ -180,6 +181,7 @@ export default function CreatorDashboard() {
     { key: "live",      label: "🔴 Live Sessions" },
     { key: "fans",      label: "🏆 Fan Economy" },
     { key: "history",   label: "🕐 History" },
+    { key: "ownership", label: "🎖️ Ownership" },
     { key: "analytics", label: "📊 Analytics" },
   ];
 
@@ -335,6 +337,11 @@ export default function CreatorDashboard() {
       {/* Generation History Tab */}
       {activeTab === "history" && user && (
         <GenerationHistoryTab userId={user.id} />
+      )}
+
+      {/* Creative Ownership Tab */}
+      {activeTab === "ownership" && (
+        <OwnershipDashboard items={assetsByType.track} />
       )}
 
       {/* Analytics Tab */}

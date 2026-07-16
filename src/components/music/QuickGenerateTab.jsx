@@ -15,6 +15,7 @@ import { routeProvider, PROVIDER_DETAILS } from '@/utils/providerRouter';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
@@ -123,6 +124,15 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         console.warn('ID3 tagging skipped:', tagErr.message);
       }
 
+      // Creative Ownership Score — Quick mode is AI-driven (auto lyrics, auto params)
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: false,
+        prompt,
+        styleOrTags: selectedGenre ? [selectedGenre] : [],
+        personaOrTemplate: selectedPersona !== 'auto',
+        isIteration: false,
+      });
+
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
@@ -131,6 +141,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         file_url: finalUrl,
         thumbnail_url: coverImageUrl || '',
         is_public: false,
+        ai_label: participation.label,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: {
           genre: params?.genre,
           mood: params?.mood,
@@ -154,7 +169,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
-  }, [prompt, provider]);
+  }, [prompt, provider, selectedGenre, selectedPersona]);
 
   // Use a ref so onComplete always has access to the latest aiParams even when called from polling
   const aiParamsRef = React.useRef(null);
@@ -428,6 +443,13 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       // Use the SAME complete metadata payload as auto-save so lyrics, model,
       // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
       const mergedLyrics = lyricsRef.current?.trim() ? lyricsRef.current : (result?.lyrics || '');
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: false,
+        prompt,
+        styleOrTags: selectedGenre ? [selectedGenre] : [],
+        personaOrTemplate: selectedPersona !== 'auto',
+        isIteration: false,
+      });
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
@@ -436,6 +458,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         file_url: audioUrl,
         thumbnail_url: result.cover_image_url || '',
         is_public: false,
+        ai_label: participation.label,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: {
           genre: result?.genre || aiParams?.genre,
           mood: result?.mood || aiParams?.mood,

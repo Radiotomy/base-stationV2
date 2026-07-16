@@ -20,6 +20,7 @@ import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage 
 import CostBadge from '@/components/credits/CostBadge';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
+import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
@@ -175,6 +176,15 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     try {
       const user = await base44.auth.me();
 
+      // Creative Ownership Score — how much human input shaped this track
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: (lyricsMode === 'custom' || lyricsMode === 'saved') && !!extraMeta?.lyrics?.trim(),
+        prompt: extraMeta?.sound_prompt || '',
+        styleOrTags: [genre, mood].filter(Boolean),
+        personaOrTemplate: selectedPersona !== 'none' || !!mastersBrief,
+        isIteration: false,
+      });
+
       // Apply ID3 tags silently — replace raw URL with fully tagged version
       // Now embeds USLT (lyrics frame), TLEN (duration), TMOO (mood), TKEY (key) +
       // TXXX provenance frames so the file is fully self-describing in any player.
@@ -227,6 +237,11 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         file_url: finalUrl,
         thumbnail_url: coverImageUrl || '',
         is_public: false,
+        ai_label: participation.label,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: {
           genre, mood, tempo, provider,
           model: extraMeta?.model || '',
@@ -255,7 +270,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
-  }, [mood, genre, provider, tempo, duration, mastersBrief]);
+  }, [mood, genre, provider, tempo, duration, mastersBrief, lyricsMode, selectedPersona]);
 
   const onComplete = useCallback(async (data) => {
     if (savedRef.current) return; // prevent duplicate calls
@@ -458,6 +473,13 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       // Use the SAME complete metadata payload as auto-save so lyrics, model,
       // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
       const mergedLyrics = lyrics?.trim() ? lyrics : (result?.lyrics || '');
+      const participation = calculateHumanParticipationScore({
+        userProvidedContent: (lyricsMode === 'custom' || lyricsMode === 'saved') && !!lyrics?.trim(),
+        prompt: soundPrompt || '',
+        styleOrTags: [genre, mood].filter(Boolean),
+        personaOrTemplate: selectedPersona !== 'none' || !!mastersBrief,
+        isIteration: false,
+      });
       await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
@@ -466,6 +488,11 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         file_url: audioUrl,
         thumbnail_url: result.cover_image_url || '',
         is_public: false,
+        ai_label: participation.label,
+        ai_disclosure_label: participation.label,
+        ai_disclosure_basis: participation.basis,
+        human_participation_score: participation.score,
+        participation_signals: participation.signals,
         metadata: {
           genre, mood, tempo, provider,
           duration: result?.duration || duration,
