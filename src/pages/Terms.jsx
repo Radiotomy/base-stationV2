@@ -17,7 +17,7 @@ export default function Terms() {
             <FileText className="w-3.5 h-3.5" /> Legal
           </div>
           <h1 className="font-display text-4xl text-white">Terms of Use</h1>
-          <p className="text-xs text-muted-foreground">Last updated: July 12, 2026</p>
+          <p className="text-xs text-muted-foreground">Last updated: July 16, 2026</p>
         </header>
 
         <div className="merc-card rounded-2xl p-6 md:p-8 space-y-8">
@@ -43,13 +43,16 @@ export default function Terms() {
 
           <Section n={3} title="AI Content Transparency">
             <p>
-              BASE Station participates in the music industry's Generative-AI Labeling Program
-              introduced by the RIAA, IFPI, A2IM, WIN, IMPALA, The Recording Academy, SAG-AFTRA,
-              and the Human Artistry Campaign (July 2026). Under this program, every sound
-              recording on the Platform carries a track-level disclosure label:
+              On July 10, 2026, IFPI, RIAA, A2IM, WIN, IMPALA, The Grammys, SAG-AFTRA, and the
+              Human Artistry Campaign introduced a voluntary, track-level labeling program to
+              distinguish generative AI (GenAI) in sound recordings. BASE Station voluntarily
+              aligns its labeling with that program. Every sound recording on the Platform carries
+              a disclosure label:
               <span className="text-white"> AI-Generated</span>,
               <span className="text-white"> AI-Assisted</span>, or
-              <span className="text-white"> Human</span>.
+              <span className="text-white"> Human</span> (the Platform's designation for
+              recordings in which no generative AI was used; the program itself defines the two
+              GenAI labels).
             </p>
             <p>
               <span className="text-white font-semibold">3.1 Duty of accurate disclosure.</span>{" "}
@@ -62,7 +65,8 @@ export default function Terms() {
             <p>
               <span className="text-white font-semibold">3.2 Warranty.</span> By submitting
               content, you warrant that your self-declared label is accurate and made in good
-              faith in accordance with the RIAA/IFPI standard.
+              faith, consistent with the program's published guidelines. As the program itself is
+              voluntary and honesty-based, no automated "percentage of AI" measurement is applied.
             </p>
             <p>
               <span className="text-white font-semibold">3.3 Platform-applied labels.</span>{" "}
@@ -71,9 +75,11 @@ export default function Terms() {
               label in their provenance chain.
             </p>
             <p>
-              <span className="text-white font-semibold">3.4 Scope.</span> These labels apply only
-              to generative AI use in sound recordings and do not currently cover lyrics,
-              composition, music videos, or cover art.
+              <span className="text-white font-semibold">3.4 Scope.</span> Per the program's
+              guidelines, these labels apply only to generative AI use in sound recordings and do
+              not currently cover lyrics, composition, music videos, or cover art. The program is
+              designed to evolve as technology and requirements change, and the Platform may
+              update its labeling practices accordingly.
             </p>
             <p>
               <span className="text-white font-semibold">3.5 Enforcement.</span> BASE Station
@@ -86,7 +92,34 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section n={4} title="Acceptable Use">
+          <Section n={4} title="Creative Ownership Score (COS)">
+            <p>
+              In addition to the labeling program described in Section 3, the Platform assigns a
+              voluntary <span className="text-white">Creative Ownership Score</span> (0–100) to
+              content generated in BASE Station studios, reflecting recorded signals of human
+              creative input (such as user-provided lyrics, prompt depth, reference uploads,
+              saved personas, style choices, and iterative refinement). The COS extends the
+              spirit of GenAI transparency to lyrics, cover art, and video, which the labeling
+              program does not currently cover.
+            </p>
+            <p>
+              <span className="text-white font-semibold">4.1 Informational only.</span> The COS is
+              a platform-level transparency metric. It is not part of the music community's
+              labeling program, and it does not constitute a legal determination of authorship,
+              copyright ownership, or registrability of any work. You are responsible for your
+              own legal assessments regarding rights in AI-generated or AI-assisted content.
+            </p>
+            <p>
+              <span className="text-white font-semibold">4.2 Methodology changes.</span> Scoring
+              signals and thresholds may be updated over time as the labeling program and industry
+              practices evolve. Learn more on the{" "}
+              <Link to="/creative-ownership" className="text-[#FFC98A] underline underline-offset-2">
+                Creative Ownership page
+              </Link>.
+            </p>
+          </Section>
+
+          <Section n={5} title="Acceptable Use">
             <p>
               You may not upload content that is unlawful, infringing, or impersonates another
               artist's voice or likeness without authorization. You may not manipulate charts,
@@ -95,21 +128,21 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section n={5} title="Credits & Purchases">
+          <Section n={6} title="Credits & Purchases">
             <p>
               Generation credits are consumed by AI studio features. Credits are non-refundable
               except where required by law. Provider availability and credit costs may change.
             </p>
           </Section>
 
-          <Section n={6} title="Termination">
+          <Section n={7} title="Termination">
             <p>
               We may suspend or terminate accounts that violate these Terms, including violations
               of the AI Content Transparency obligations in Section 3.
             </p>
           </Section>
 
-          <Section n={7} title="Changes to These Terms">
+          <Section n={8} title="Changes to These Terms">
             <p>
               We may update these Terms from time to time. Continued use of the Platform after
               changes take effect constitutes acceptance of the revised Terms.

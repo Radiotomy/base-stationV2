@@ -1,9 +1,16 @@
-# RIAA / IFPI Generative-AI Labeling Policy — BASE Station Implementation
+# Music Community GenAI Labeling Program — BASE Station Implementation
 
 **Source:** "Music Community Introduces New Labeling Program to Distinguish Generative AI in Sound Recordings" — IFPI, RIAA, A2IM, WIN, IMPALA, The Grammys, SAG-AFTRA & Human Artistry Campaign (July 10, 2026).
 https://www.riaa.com/music-community-introduces-new-labeling-programto-distinguish-generative-ai-in-sound-recordings/
 
-## The Standard (track-level labels for SOUND RECORDINGS)
+**Nature of the program (important wording guidance):** this is a *voluntary*, track-level
+labeling program introduced by the music community, "designed to support broad adoption of
+an industry standard" — it is NOT itself an established industry standard or a certification.
+User-facing copy should say "aligned with the music community's voluntary GenAI labeling
+program (RIAA, IFPI & partners, July 2026)" — never "industry-standard", "compliant", or
+"certified". The program is designed to evolve as technology and requirements change.
+
+## The Program (voluntary track-level labels for SOUND RECORDINGS)
 
 ### 🤖 AI-Generated (`ai_generated`)
 Generative AI was used to generate the entirety or the primary portion of the creative
@@ -18,12 +25,15 @@ however, generative AI was used for some expressive elements. Humans performed t
 lead vocal and primary instruments.
 
 ### 👤 Human (`human`)
-No generative AI used in the sound recording.
+No generative AI used in the sound recording. NOTE: the program defines only the two GenAI
+labels above; `human` is BASE Station's internal designation for unlabeled recordings.
 
-### Explicit scope exclusions (per the standard)
+### Explicit scope exclusions (per the program)
 The labels apply ONLY to generative AI use in **sound recordings**. They do **not**
 currently cover generative AI used in **lyrics, composition, music videos, or cover art**.
 → BASE Station's lyrics, cover-art, video and visualizer pipelines do NOT trigger a label.
+→ BASE Station voluntarily extends transparency to those media via the Creative Ownership
+Score (0–100, `human_participation_score`) — a platform metric, separate from the program.
 
 ## BASE Station tool → label mapping
 
