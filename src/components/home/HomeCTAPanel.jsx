@@ -45,7 +45,7 @@ export default function HomeCTAPanel({ user }) {
           </h2>
           <p className="text-[#2A2620] text-xs sm:text-sm mb-5 leading-relaxed max-w-xl mx-auto font-medium">
             Base Station believes AI is a co-creator. Your creativity drives the music — AI amplifies it. Every
-            track, every vote, every transaction is on-chain and forever.
+            track carries a transparent disclosure label and Creative Ownership Score.
           </p>
           {user ? (
             <Link to="/radio">
@@ -77,7 +77,7 @@ export default function HomeCTAPanel({ user }) {
       </div>
 
       <div className="mt-5 pt-3 border-t border-black/20 text-center text-[10px] text-[#3A342E] font-semibold">
-        BaseStation &nbsp;·&nbsp; © 2026 BaseStation. Multi-Chain, Always.
+        BaseStation &nbsp;·&nbsp; © 2026 BaseStation. All Creators Welcome.
       </div>
     </div>
   );

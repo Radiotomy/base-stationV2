@@ -60,7 +60,7 @@ export default function HomeRackHero({ user }) {
               boxShadow: "0 4px 14px -2px rgba(120,60,10,0.5)",
             }}
           >
-            <span className="text-[10px] font-black tracking-[0.25em] text-[#2A1508]">MULTI-CHAIN AI MUSIC ON BASE</span>
+            <span className="text-[10px] font-black tracking-[0.25em] text-[#2A1508]">AI MUSIC · MADE BY CREATORS</span>
           </div>
 
           <h1 className="font-display text-4xl sm:text-6xl md:text-7xl leading-[0.98] mb-6 text-[#1F3A0E]">
@@ -68,7 +68,7 @@ export default function HomeRackHero({ user }) {
           </h1>
 
           <p className="text-[#2E4A16]/90 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-medium">
-            Base Station believes human, AI, and hybrid creators equally. Secure blockchain ownership, powerful
+            Base Station values human, AI, and hybrid creators equally. Transparent creative ownership, powerful
             creation tools, and a community that values your unique voice—however you create.
           </p>
         </motion.div>

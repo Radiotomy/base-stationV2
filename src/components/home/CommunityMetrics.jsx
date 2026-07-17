@@ -92,13 +92,14 @@ export default function CommunityMetrics() {
       color: 'text-yellow-400',
       bg: 'from-yellow-600/10 to-orange-600/10',
     },
-    {
-      icon: Globe,
-      label: 'Tracks On-Chain',
-      value: metrics?.registeredOnChain || 0,
-      color: 'text-amber-300',
-      bg: 'from-orange-600/10 to-amber-600/10',
-    },
+    // 'Tracks On-Chain' stat hidden for now — restore when blockchain features return:
+    // {
+    //   icon: Globe,
+    //   label: 'Tracks On-Chain',
+    //   value: metrics?.registeredOnChain || 0,
+    //   color: 'text-amber-300',
+    //   bg: 'from-orange-600/10 to-amber-600/10',
+    // },
   ];
 
   const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
@@ -120,7 +121,7 @@ export default function CommunityMetrics() {
       </div>
 
       {/* Green LCD readout chips */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {statCards.map((stat, i) => (
           <motion.div
             key={stat.label}
