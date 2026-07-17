@@ -68,8 +68,8 @@ export default function HomeRackHero({ user }) {
           </h1>
 
           <p className="text-[#2E4A16]/90 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-medium">
-            Base Station values human, AI, and hybrid creators equally. Transparent creative ownership, powerful
-            creation tools, and a community that values your unique voice—however you create.
+            Base Station values human, AI, and hybrid creators equally. Every track carries a RIAA-aligned
+            AI disclosure label and a Creative Ownership Score—transparent credit for your unique voice, however you create.
           </p>
         </motion.div>
 
