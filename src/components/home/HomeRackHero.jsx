@@ -64,7 +64,7 @@ export default function HomeRackHero({ user }) {
           </div>
 
           <h1 className="font-display text-4xl sm:text-6xl md:text-7xl leading-[0.98] mb-6 text-[#1F3A0E]">
-            Where All Creators<br />Own Their Music
+            Create Boldly.<br />Own It Transparently.
           </h1>
 
           <p className="text-[#2E4A16]/90 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-medium">
