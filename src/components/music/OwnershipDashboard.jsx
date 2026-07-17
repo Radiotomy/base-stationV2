@@ -3,6 +3,7 @@ import { ShieldCheck } from 'lucide-react';
 import { SCORE_TIERS, getTier, OWNERSHIP_POLICY_TEXT } from '@/utils/participationScore';
 import AiDisclosureBadge from '@/components/music/AiDisclosureBadge';
 import ParticipationBadge from '@/components/music/ParticipationBadge';
+import SignalBreakdownChart from '@/components/music/SignalBreakdownChart';
 
 /**
  * Creative Ownership dashboard — tier breakdown, score distribution,
@@ -37,6 +38,8 @@ export default function OwnershipDashboard({ items = [] }) {
     .sort((a, b) => new Date(a.created_date) - new Date(b.created_date))
     .map((s, idx) => ({ n: idx + 1, score: s.human_participation_score }));
 
+  const assistedCount = scored.filter(s => s.human_participation_score >= 40).length;
+
   return (
     <div className="space-y-6">
       {/* Policy statement */}
@@ -61,6 +64,27 @@ export default function OwnershipDashboard({ items = [] }) {
             <p className="text-[10px] text-muted-foreground">score {t.min}–{t.max}</p>
           </div>
         ))}
+      </div>
+
+      {/* Human vs AI split */}
+      <div className="p-5 rounded-2xl bg-card border border-border">
+        <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+          <div>
+            <p className="text-sm font-bold text-foreground">Overall Human vs AI Split</p>
+            <p className="text-[11px] text-muted-foreground">Average across all {scored.length} scored item{scored.length === 1 ? '' : 's'}</p>
+          </div>
+          <p className="text-[11px] text-muted-foreground font-semibold">
+            {assistedCount} AI-Assisted · {scored.length - assistedCount} AI-Generated
+          </p>
+        </div>
+        <div className="h-4 rounded-full overflow-hidden flex bg-muted">
+          <div className="h-full bg-emerald-500 transition-all" style={{ width: `${avg}%` }} />
+          <div className="h-full bg-blue-500/60 transition-all" style={{ width: `${100 - avg}%` }} />
+        </div>
+        <div className="flex justify-between mt-2 text-xs font-bold">
+          <span className="text-emerald-400">{avg}% Human Input</span>
+          <span className="text-blue-400">{100 - avg}% AI Contribution</span>
+        </div>
       </div>
 
       {/* Charts */}
@@ -90,6 +114,9 @@ export default function OwnershipDashboard({ items = [] }) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Signal breakdown */}
+      <SignalBreakdownChart items={scored} />
 
       {/* Recent scored items */}
       <div className="space-y-2">

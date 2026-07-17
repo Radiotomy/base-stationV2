@@ -58,4 +58,4 @@ export function getTier(score) {
 }
 
 export const OWNERSHIP_POLICY_TEXT =
-  'Every piece of AI-generated content on this platform carries an industry-standard GenAI disclosure label, aligned with RIAA/IFPI guidelines (2026). The Creative Ownership Score (0–100) reflects how much human creative input shaped each item — from the prompt depth and style customization to reference uploads and iterative refinement.';
+  "Every piece of AI-generated content on this platform carries a GenAI disclosure label aligned with the music community's voluntary labeling program (RIAA, IFPI & partners, July 2026). The Creative Ownership Score (0–100) reflects how much human creative input shaped each item — from the prompt depth and style customization to reference uploads and iterative refinement.";

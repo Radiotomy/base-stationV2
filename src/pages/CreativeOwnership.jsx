@@ -133,7 +133,7 @@ export default function CreativeOwnership() {
           <h2 className="text-2xl font-black text-foreground">See where you stand</h2>
           <p className="text-sm text-muted-foreground">Your Ownership dashboard tracks your average score, tier breakdown, and creative evolution over time.</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <Link to="/creator-dashboard">
+            <Link to="/creator-dashboard?tab=ownership">
               <Button className="rounded-xl font-bold gap-2 merc-button"><Award className="w-4 h-4" /> Open My Ownership Dashboard</Button>
             </Link>
             <Link to="/transparency">

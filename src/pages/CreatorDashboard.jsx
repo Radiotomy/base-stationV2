@@ -100,7 +100,9 @@ export default function CreatorDashboard() {
   const [user, setUser] = useState(null);
   const [tracks, setTracks] = useState([]);
   const [assets, setAssets] = useState([]);
-  const [activeTab, setActiveTab] = useState("library");
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialTab = urlParams.get("tab") || "library";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [stats, setStats] = useState(null);
   const [usageLogs, setUsageLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -341,7 +343,7 @@ export default function CreatorDashboard() {
 
       {/* Creative Ownership Tab */}
       {activeTab === "ownership" && (
-        <OwnershipDashboard items={assetsByType.track} />
+        <OwnershipDashboard items={assets} />
       )}
 
       {/* Analytics Tab */}
