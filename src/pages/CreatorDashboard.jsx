@@ -141,11 +141,6 @@ export default function CreatorDashboard() {
               <Music className="w-3.5 h-3.5" /> Studio Hub
             </Button>
           </Link>
-          <Link to="/credits">
-            <Button size="sm" variant="outline" className="rounded-lg gap-2 text-xs font-mono uppercase tracking-wider text-[#FFC98A] border-[#FF9A4D]/30 hover:bg-[#FF9A4D]/10">
-              <Zap className="w-3.5 h-3.5" /> Credits
-            </Button>
-          </Link>
           <Button onClick={() => user && loadData(user.id)} variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
             <RefreshCw className="w-3.5 h-3.5" />
           </Button>
