@@ -153,7 +153,7 @@ export default function CreatorDashboard() {
       </div>
 
       {/* XP Widget */}
-      {user && <div className="mb-6"><XPWidget userId={user.id} /></div>}
+      {user && <div className="mb-6"><XPWidget userId={user.id} collapsible /></div>}
 
       {/* Stats — circuit strip */}
       {stats && (
