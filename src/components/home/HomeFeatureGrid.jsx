@@ -17,7 +17,8 @@ const FEATURES = [
   { to: "/voice-creator", icon: Mic2, title: "Voice Creator", badge: "New" },
   { to: "/ai-studio", icon: Zap, title: "AI Tools", badge: "Pro" },
   { to: "/submit", icon: Upload, title: "Submit Your Track", badge: "Pro" },
-  { to: "/blockchain", icon: Globe, title: "Multi-Chain Registry", badge: "New" },
+  // Multi-Chain Registry hidden for now — restore when blockchain features return:
+  // { to: "/blockchain", icon: Globe, title: "Multi-Chain Registry", badge: "New" },
   { to: "/templates", icon: Zap, title: "Community Templates", badge: "New" },
   { to: "/audius-trending", icon: Headphones, title: "Audius Network", badge: "Live" },
   { to: "/stem-creator", icon: Music, title: "Stem Creator", badge: "New" },

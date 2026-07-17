@@ -177,18 +177,7 @@ const SECTIONS = [
       </>
     ),
   },
-  {
-    id: 'blockchain',
-    title: 'Blockchain registry',
-    icon: Shield,
-    keywords: 'blockchain base solana ipfs nft registry provenance',
-    body: (
-      <>
-        <p>Register finished tracks on Base (EVM) or Solana for immutable provenance. The registry stores a SHA-256 fingerprint + metadata URI (pinned to IPFS).</p>
-        <p>Use this to claim ownership of AI-assisted work before publishing publicly. <Link to="/blockchain" className="text-purple-400 hover:underline">Open Blockchain Registry →</Link></p>
-      </>
-    ),
-  },
+  // Multi-chain / blockchain registry help section hidden for now — restore when blockchain features return.
   {
     id: 'publish',
     title: 'Publishing & distribution',

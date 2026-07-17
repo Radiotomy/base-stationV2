@@ -24,12 +24,13 @@ export default function WhyBaseStation() {
       desc: 'Leverage cutting-edge AI across lyrics, music generation, cover art, and video—designed to amplify your creativity, not replace your skill.',
       color: 'from-yellow-600 to-orange-600',
     },
-    {
-      icon: Globe,
-      title: 'Multi-Chain Security',
-      desc: 'Register your tracks on Base (default) or Solana. Choose the blockchain that aligns with your values and reach global audiences with confidence.',
-      color: 'from-green-600 to-emerald-600',
-    },
+    // Multi-Chain Security card hidden for now — restore when blockchain features return:
+    // {
+    //   icon: Globe,
+    //   title: 'Multi-Chain Security',
+    //   desc: 'Register your tracks on Base (default) or Solana. Choose the blockchain that aligns with your values and reach global audiences with confidence.',
+    //   color: 'from-green-600 to-emerald-600',
+    // },
     {
       icon: Lock,
       title: 'Creator Control',

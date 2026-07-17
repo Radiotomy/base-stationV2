@@ -18,7 +18,8 @@ const NAV_ITEMS = [
   { to: "/playlists", label: "Playlists", icon: Music },
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
-  { to: "/blockchain", label: "Multi-Chain", icon: Globe },
+  // Multi-Chain nav hidden for now — restore when blockchain features return:
+  // { to: "/blockchain", label: "Multi-Chain", icon: Globe },
 ];
 
 const CREATOR_NAV = [
