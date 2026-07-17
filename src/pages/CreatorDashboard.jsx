@@ -1,11 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import {
   BarChart3, Music, Zap, TrendingUp, Eye, Heart,
-  Trash2, Image, FileText, Film,
-  Plus, ExternalLink, Clock, CheckCircle, Folder, History, RefreshCw, BarChart2
+  Image, FileText, ChevronRight, Clock, CheckCircle, Folder, History, RefreshCw,
+  FolderOpen, Layers, Upload, Radio, Trophy, Award
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
@@ -20,80 +19,10 @@ import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
 import SubmissionsTab from "@/components/dashboard/SubmissionsTab";
 import LiveSessionsTab from "@/components/dashboard/LiveSessionsTab";
 import OwnershipDashboard from "@/components/music/OwnershipDashboard";
+import CircuitStatStrip from "@/components/dashboard/circuit/CircuitStatStrip";
+import CircuitTabBar from "@/components/dashboard/circuit/CircuitTabBar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-
-const STATUS_COLOR = {
-  approved: "bg-emerald-500/20 text-emerald-400",
-  pending:  "bg-yellow-500/20 text-yellow-400",
-  rejected: "bg-destructive/20 text-destructive",
-};
-
-const ASSET_ICONS = {
-  track:    { icon: Music,    color: "from-blue-600 to-cyan-700" },
-  lyric:    { icon: FileText, color: "from-pink-600 to-rose-700" },
-  coverart: { icon: Image,    color: "from-purple-600 to-violet-700" },
-  project:  { icon: Film,     color: "from-indigo-600 to-purple-700" },
-};
-
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      className="p-5 rounded-2xl bg-card border border-border space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground font-semibold">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${color}`}>
-          <Icon className="w-4 h-4 text-white" />
-        </div>
-      </div>
-      <p className="text-2xl font-black text-foreground">{value}</p>
-    </motion.div>
-  );
-}
-
-function AssetCard({ asset, onDelete }) {
-  const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
-  const isTrack = asset.asset_type === 'track';
-  const [audioError, setAudioError] = useState(false);
-  return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="p-4 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-all group">
-      <div className="flex items-center gap-4">
-        <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${color} flex-shrink-0 flex items-center justify-center overflow-hidden`}>
-          {asset.thumbnail_url
-            ? <img src={asset.thumbnail_url} alt="" className="w-full h-full object-cover" />
-            : <Icon className="w-5 h-5 text-white/70" />}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-sm text-foreground truncate">{asset.title}</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <Badge variant="outline" className="text-xs capitalize px-1.5 py-0">{asset.asset_type}</Badge>
-            {asset.metadata?.genre && <span className="text-xs text-muted-foreground capitalize">{asset.metadata.genre}</span>}
-            {asset.metadata?.bpm && <span className="text-xs text-muted-foreground">{asset.metadata.bpm} BPM</span>}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          {asset.file_url && (
-            <a href={asset.file_url} target="_blank" rel="noopener noreferrer">
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg">
-                <ExternalLink className="w-3.5 h-3.5" />
-              </Button>
-            </a>
-          )}
-          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
-            onClick={() => onDelete(asset.id)}>
-            <Trash2 className="w-3.5 h-3.5" />
-          </Button>
-        </div>
-      </div>
-      {isTrack && asset.file_url && !audioError && (
-        <audio controls className="w-full mt-3 rounded-xl h-9" src={asset.file_url}
-          onError={() => setAudioError(true)} />
-      )}
-    </motion.div>
-  );
-}
 
 export default function CreatorDashboard() {
   const { user: authUser } = useAuth();
@@ -177,106 +106,100 @@ export default function CreatorDashboard() {
   };
 
   const TABS = [
-    { key: "library",   label: `📂 Library (${assets.length})` },
-    { key: "projects",  label: "🗂️ Projects" },
-    { key: "tracks",    label: `📤 Submissions (${tracks.length})` },
-    { key: "live",      label: "🔴 Live Sessions" },
-    { key: "fans",      label: "🏆 Fan Economy" },
-    { key: "history",   label: "🕐 History" },
-    { key: "ownership", label: "🎖️ Ownership" },
-    { key: "analytics", label: "📊 Analytics" },
+    { key: "library",   label: "Library",     icon: FolderOpen, count: assets.length },
+    { key: "projects",  label: "Projects",    icon: Layers },
+    { key: "tracks",    label: "Submissions", icon: Upload, count: tracks.length },
+    { key: "live",      label: "Live",        icon: Radio },
+    { key: "fans",      label: "Fans",        icon: Trophy },
+    { key: "history",   label: "History",     icon: History },
+    { key: "ownership", label: "Ownership",   icon: Award },
+    { key: "analytics", label: "Analytics",   icon: BarChart3 },
   ];
 
   if (loading) return (
     <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+      <div className="w-8 h-8 border-4 border-[#FF9A4D]/30 border-t-[#FF9A4D] rounded-full animate-spin" />
     </div>
   );
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
       {/* Hero */}
-      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black text-foreground mb-2">🎵 My Workspace</h1>
-          <p className="text-muted-foreground">Your tracks, assets, projects & generation history.</p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#FF9A4D] mb-1.5 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF9A4D] animate-pulse" style={{ boxShadow: "0 0 8px #FF9A4D" }} />
+            creator // workspace
+          </p>
+          <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">My Workspace</h1>
+          <p className="text-sm text-muted-foreground mt-1">Tracks · assets · projects · generation history</p>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           <CreditBalanceWidget />
           <Link to="/studios">
-            <Button className="rounded-xl gap-2 bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-sm">
-              <Music className="w-4 h-4" /> Open Studio Hub
+            <Button size="sm" className="rounded-lg gap-2 merc-button text-xs font-mono uppercase tracking-wider">
+              <Music className="w-3.5 h-3.5" /> Studio Hub
             </Button>
           </Link>
           <Link to="/credits">
-            <Button variant="outline" className="rounded-xl gap-2 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/10 text-sm">
-              <Zap className="w-4 h-4" /> Get Credits
+            <Button size="sm" variant="outline" className="rounded-lg gap-2 text-xs font-mono uppercase tracking-wider text-[#FFC98A] border-[#FF9A4D]/30 hover:bg-[#FF9A4D]/10">
+              <Zap className="w-3.5 h-3.5" /> Credits
             </Button>
           </Link>
-          <Button onClick={() => user && loadData(user.id)} variant="ghost" size="icon" className="rounded-xl">
-            <RefreshCw className="w-4 h-4" />
+          <Button onClick={() => user && loadData(user.id)} variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+            <RefreshCw className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
 
       {/* XP Widget */}
-      {user && <div className="mb-8"><XPWidget userId={user.id} /></div>}
+      {user && <div className="mb-6"><XPWidget userId={user.id} /></div>}
 
-      {/* Stats Grid */}
+      {/* Stats — circuit strip */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
-          <StatCard icon={Music}       label="Submitted"    value={stats.total_tracks}                color="bg-purple-600" />
-          <StatCard icon={CheckCircle} label="Published"    value={stats.published}                    color="bg-emerald-600" />
-          <StatCard icon={Clock}       label="Pending"      value={stats.pending}                      color="bg-yellow-600" />
-          <StatCard icon={Eye}         label="Total Plays"  value={stats.total_plays.toLocaleString()}  color="bg-orange-600" />
-          <StatCard icon={Heart}       label="Likes"        value={stats.total_likes.toLocaleString()}  color="bg-pink-600" />
-          <StatCard icon={Folder}      label="Assets"       value={stats.total_assets}                  color="bg-blue-600" />
-          <StatCard icon={Zap}         label="Generated"    value={stats.total_generations}             color="bg-cyan-600" />
-          <StatCard icon={TrendingUp}  label="Credits Used" value={stats.credits_spent}                 color="bg-amber-600" />
+        <div className="mb-6">
+          <CircuitStatStrip stats={[
+            { icon: Music,       label: "Submitted",  value: stats.total_tracks,                 accent: "#FF9A4D" },
+            { icon: CheckCircle, label: "Published",  value: stats.published,                    accent: "#34d399" },
+            { icon: Clock,       label: "Pending",    value: stats.pending,                      accent: "#fbbf24" },
+            { icon: Eye,         label: "Plays",      value: stats.total_plays.toLocaleString(), accent: "#FFC98A" },
+            { icon: Heart,       label: "Likes",      value: stats.total_likes.toLocaleString(), accent: "#fb7185" },
+            { icon: Folder,      label: "Assets",     value: stats.total_assets,                 accent: "#60a5fa" },
+            { icon: Zap,         label: "Generated",  value: stats.total_generations,            accent: "#22d3ee" },
+            { icon: TrendingUp,  label: "Credits",    value: stats.credits_spent,                accent: "#f59e0b" },
+          ]} />
         </div>
       )}
 
-      {/* Quick Jump to Studios */}
-      <div className="mb-8">
-        <Link to="/studios" className="block merc-card merc-card-hover rounded-2xl p-5 group">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center flex-shrink-0">
-                <Music className="w-6 h-6 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="font-black text-foreground text-base">Studio Hub</p>
-                <p className="text-sm text-muted-foreground truncate">All 11 creation, editing & publishing tools in one place</p>
-              </div>
-            </div>
-            <ExternalLink className="w-5 h-5 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-          </div>
-        </Link>
-      </div>
+      {/* Quick Jump to Studios — slim strip */}
+      <Link to="/studios"
+        className="mb-6 flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-border/60 bg-card/40 hover:border-[#FF9A4D]/40 transition-colors group">
+        <div className="flex items-center gap-3 min-w-0">
+          <Music className="w-4 h-4 text-[#FF9A4D] flex-shrink-0" />
+          <p className="font-mono text-xs uppercase tracking-wider text-foreground">Studio Hub</p>
+          <p className="text-xs text-muted-foreground truncate hidden sm:block">— 11 creation, editing & publishing tools</p>
+        </div>
+        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#FFC98A] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+      </Link>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-border overflow-x-auto">
-        {TABS.map(({ key, label }) => (
-          <button key={key} onClick={() => setActiveTab(key)}
-            className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition-all ${activeTab === key ? "border-purple-500 text-purple-400" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
-            {label}
-          </button>
-        ))}
+      {/* Tabs — circuit rail */}
+      <div className="mb-6">
+        <CircuitTabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
       {/* Asset Library Tab */}
       {activeTab === "library" && (
         <div>
-          <div className="flex gap-2 mb-5 flex-wrap">
+          <div className="flex gap-1.5 mb-5 flex-wrap">
             {[
-              { key: "all",      label: `All (${assets.length})` },
-              { key: "track",    label: `🎵 Tracks (${assetsByType.track.length})` },
-              { key: "lyric",    label: `📝 Lyrics (${assetsByType.lyric.length})` },
-              { key: "coverart", label: `🎨 Cover Art (${assetsByType.coverart.length})` },
-            ].map(({ key, label }) => (
+              { key: "all",      icon: Folder,   label: `All · ${assets.length}` },
+              { key: "track",    icon: Music,    label: `Tracks · ${assetsByType.track.length}` },
+              { key: "lyric",    icon: FileText, label: `Lyrics · ${assetsByType.lyric.length}` },
+              { key: "coverart", icon: Image,    label: `Cover Art · ${assetsByType.coverart.length}` },
+            ].map(({ key, icon: Icon, label }) => (
               <button key={key} onClick={() => setAssetFilter(key)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${assetFilter === key ? "bg-purple-600 text-white" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
-                {label}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-mono uppercase tracking-wider transition-all ${assetFilter === key ? "border-[#FF9A4D]/50 bg-[#FF9A4D]/10 text-[#FFC98A]" : "border-border/60 bg-card/40 text-muted-foreground hover:text-foreground"}`}>
+                <Icon className="w-3 h-3" /> {label}
               </button>
             ))}
           </div>
