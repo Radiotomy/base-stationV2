@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
-  CheckCircle, Sparkles, Keyboard, Plus, X, History, Award, Music, Crown
+  CheckCircle, Sparkles, Keyboard, Plus, X, History, Music, Crown
 } from 'lucide-react';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,7 @@ import InfoTip from '@/components/common/InfoTip';
 import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import StyleReferenceDisclaimer from '@/components/songwriting/StyleReferenceDisclaimer';
+import EngineModeSelector from '@/components/songwriting/EngineModeSelector';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
@@ -421,45 +422,11 @@ export default function LyricsStudio() {
                 <InfoTip size="sm" text="These settings control the AI lyrics engine. Pro Songwriter unlocks chart-grade rhyme craft + a writer-style auto-fill." />
               </h3>
 
-              {/* 243 Masters Toggle — premium tier */}
-              <button
-                type="button"
-                onClick={() => { setMastersMode(p => !p); if (!mastersMode) setProMode(false); }}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${mastersMode ? 'bg-gradient-to-r from-amber-500/15 to-purple-500/15 border-amber-400/50' : 'bg-muted/30 border-border hover:border-amber-400/30'}`}
-              >
-                <Crown className={`w-5 h-5 flex-shrink-0 ${mastersMode ? 'text-amber-300' : 'text-muted-foreground'}`} />
-                <div className="flex-1 text-left">
-                  <p className={`text-xs font-black ${mastersMode ? 'text-amber-200' : 'text-foreground'}`}>
-                    👑 243 Masters {mastersMode && '· ON'}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground leading-tight">
-                    Lyrics + chord progression + arrangement, derived from 243 legendary writers
-                  </p>
-                </div>
-                <div className={`w-9 h-5 rounded-full transition-all flex-shrink-0 ${mastersMode ? 'bg-amber-400' : 'bg-muted'}`}>
-                  <div className={`w-4 h-4 mt-0.5 rounded-full bg-white transition-all ${mastersMode ? 'ml-[18px]' : 'ml-0.5'}`} />
-                </div>
-              </button>
-
-              {/* Pro Songwriter Toggle */}
-              <button
-                type="button"
-                onClick={() => { setProMode(p => !p); if (!proMode) setMastersMode(false); }}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${proMode ? 'bg-gradient-to-r from-amber-500/10 to-pink-500/10 border-amber-500/40' : 'bg-muted/30 border-border hover:border-amber-500/30'}`}
-              >
-                <Award className={`w-5 h-5 flex-shrink-0 ${proMode ? 'text-amber-400' : 'text-muted-foreground'}`} />
-                <div className="flex-1 text-left">
-                  <p className={`text-xs font-black ${proMode ? 'text-amber-300' : 'text-foreground'}`}>
-                    🎼 Pro Songwriter {proMode && '· ON'}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground leading-tight">
-                    Nashville/LA-grade rhyme, prosody & narrative engine
-                  </p>
-                </div>
-                <div className={`w-9 h-5 rounded-full transition-all flex-shrink-0 ${proMode ? 'bg-amber-500' : 'bg-muted'}`}>
-                  <div className={`w-4 h-4 mt-0.5 rounded-full bg-white transition-all ${proMode ? 'ml-[18px]' : 'ml-0.5'}`} />
-                </div>
-              </button>
+              {/* Engine selector — Basic / Pro / Masters (one studio, three power levels) */}
+              <EngineModeSelector
+                mode={mastersMode ? 'masters' : proMode ? 'pro' : 'basic'}
+                onChange={(m) => { setProMode(m === 'pro'); setMastersMode(m === 'masters'); }}
+              />
 
               {/* Style-reference legal disclosure — shown whenever a reference-capable engine is on */}
               {(proMode || mastersMode) && <StyleReferenceDisclaimer />}
