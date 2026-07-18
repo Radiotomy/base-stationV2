@@ -1,0 +1,92 @@
+{
+  "name": "TransparencyFlag",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reporting creator"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "track_title": {
+      "type": "string",
+      "description": "Track that was flagged/blocked downstream"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "spotify",
+        "apple_music",
+        "youtube",
+        "amazon",
+        "tidal",
+        "deezer",
+        "distributor",
+        "other"
+      ],
+      "description": "DSP or distributor that flagged the track"
+    },
+    "cos_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "The track's Creative Ownership Score at time of flag"
+    },
+    "had_manifest": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether a Provenance Manifest / DDEX bundle was submitted with the release"
+    },
+    "description": {
+      "type": "string",
+      "description": "What happened \u2014 flag reason given, appeal outcome, etc."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "reported",
+        "investigating",
+        "resolved",
+        "escalated"
+      ],
+      "default": "reported",
+      "description": "Registry lifecycle, managed by admins"
+    }
+  },
+  "required": [
+    "user_id",
+    "track_title",
+    "platform"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

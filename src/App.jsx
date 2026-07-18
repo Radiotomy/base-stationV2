@@ -76,6 +76,7 @@ const Help = lazy(() => import('./pages/Help'));
 const Terms = lazy(() => import('./pages/Terms'));
 const AITransparency = lazy(() => import('./pages/AITransparency'));
 const CreativeOwnership = lazy(() => import('./pages/CreativeOwnership'));
+const CommunityGovernance = lazy(() => import('./pages/CommunityGovernance'));
 const FanClub = lazy(() => import('./pages/FanClub'));
 const CreatorStore = lazy(() => import('./pages/CreatorStore'));
 const SmokeTests = lazy(() => import('./pages/dev/SmokeTests'));
@@ -186,6 +187,7 @@ const AuthenticatedApp = () => {
             <Route path="/terms" element={<Terms />} />
             <Route path="/transparency" element={<AITransparency />} />
             <Route path="/creative-ownership" element={<CreativeOwnership />} />
+            <Route path="/governance" element={<CommunityGovernance />} />
             <Route path="/fanclub/:creatorId" element={<FanClub />} />
             <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
             <Route path="/dev/smoke-tests" element={<SmokeTests />} />

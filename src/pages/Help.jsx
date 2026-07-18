@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, ArrowLeft, BookOpen, Music, Mic2, Palette, Film, Sparkles,
-  Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint, Radio
+  Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint, Radio, Scale
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import HelpSection from '@/components/help/HelpSection';
@@ -50,6 +50,20 @@ const SECTIONS = [
           <p>Every scored asset also carries a <strong className="text-foreground">DDEX-style AI attribution profile</strong> — granular flags for lyrical content, composition, instrumentation, vocals, and post-production, each marked 🤖 Synthetic or 👤 Human. Open any item's <strong className="text-foreground">Provenance Manifest</strong> (the 🔒 button in your Ownership dashboard) to view the profile and hit <strong className="text-foreground">"Copy DDEX Tag Bundle"</strong> to export an XML metadata snippet you can hand to distributors or use to clear manual verification blocks.</p>
         </div>
         <p>Track your average score, tier breakdown, and creative evolution in <Link to="/creator-dashboard" className="text-purple-400 hover:underline">My Workspace → 🎖️ Ownership</Link>, or read the full <Link to="/creative-ownership" className="text-emerald-400 hover:underline">Creative Ownership onesheet →</Link></p>
+      </>
+    ),
+  },
+  {
+    id: 'governance',
+    title: 'Community Tuning Panel — govern the Living Standard',
+    icon: Scale,
+    keywords: 'governance community tuning panel proposals vote weights living standard transparency registry false flag dsp spotify block advocacy consensus ledger',
+    body: (
+      <>
+        <p>The COS isn't a proprietary rulebook — it's a <strong className="text-foreground">living standard</strong>. No single entity should hold the monopoly on defining what counts as human creative effort, so the community benchmarks and tunes the scoring logic together.</p>
+        <p><strong className="text-foreground">🗳️ COS Weight Proposals:</strong> when a new tool launches or an AI company adopts an ethically licensed training model, propose how it should be weighted (e.g. "Should a custom-trained local vocal model raise the Persona weight from +10 to +20?"). Creators vote, and adopted proposals join the public consensus ledger — the same ledger we can point to when a distributor questions how a hybrid track was scored.</p>
+        <p><strong className="text-foreground">🛡️ Transparency Registry:</strong> if a DSP or distributor falsely flags your high-COS track despite a valid Provenance Manifest, log it in the registry. Aggregated evidence from thousands of indie artists turns BASE Station into a block-clearing advocacy network, not just a toolkit.</p>
+        <p><Link to="/governance" className="text-amber-400 hover:underline">Open the Community Tuning Panel →</Link></p>
       </>
     ),
   },

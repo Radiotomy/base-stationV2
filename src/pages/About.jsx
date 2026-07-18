@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import SpacialHistoryDialog from "@/components/about/SpacialHistoryDialog";
+import CommunityBlueprint from "@/components/about/CommunityBlueprint";
 
 export default function About() {
   return (
@@ -141,8 +142,9 @@ export default function About() {
             <Link to="/creative-ownership" className="font-bold text-amber-500 hover:text-amber-400 underline underline-offset-2">
               Creative Ownership Score (0–100 COS)
             </Link>{" "}
-            directly into BASE Station. Rather than treating AI generation as an unvetted "black box,"
-            our native algorithm meticulously captures a creator's explicit intent. When you write custom
+            directly into BASE Station — not as a static proprietary ceiling, but as a living,
+            community-tuned ledger. Rather than treating AI generation as an unvetted "black box,"
+            the platform meticulously captures a creator's explicit intent. When you write custom
             lyrics, feed specific audio references, establish style constraints, and iteratively refine
             your arrangements, the platform documents those human inputs.
           </p>
@@ -154,6 +156,9 @@ export default function About() {
           </p>
         </div>
       </section>
+
+      {/* THE COMMUNITY FRAMEWORK: ADAPTIVE GOVERNANCE */}
+      <CommunityBlueprint />
 
       {/* ADVOCACY / CALL TO ACTION */}
       <footer className="text-center max-w-2xl mx-auto space-y-6 pb-8">

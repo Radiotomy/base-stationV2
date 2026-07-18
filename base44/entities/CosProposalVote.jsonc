@@ -1,0 +1,45 @@
+{
+  "name": "CosProposalVote",
+  "type": "object",
+  "properties": {
+    "proposal_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "vote": {
+      "type": "string",
+      "enum": [
+        "up",
+        "down"
+      ]
+    }
+  },
+  "required": [
+    "proposal_id",
+    "user_id",
+    "vote"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

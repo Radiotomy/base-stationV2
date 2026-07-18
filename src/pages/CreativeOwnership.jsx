@@ -31,7 +31,7 @@ export default function CreativeOwnership() {
       <div className="relative overflow-hidden pt-28 pb-14 px-6 bg-gradient-to-br from-emerald-900/30 to-black">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-5">
-            <TrendingUp className="w-3.5 h-3.5" /> A growing standard for the AI music era
+            <TrendingUp className="w-3.5 h-3.5" /> The Living Standard — tuned by the community
           </div>
           <h1 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
             Your Creativity, <span className="text-iridescent">Measured & Credited</span>
@@ -39,7 +39,8 @@ export default function CreativeOwnership() {
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
             The Creative Ownership Score (COS) is a 0–100 measure of the human creative input behind every
             piece of AI-generated content on BASE Station — aligned with the music community's voluntary
-            GenAI labeling program (RIAA, IFPI &amp; partners, July 2026), and growing with every studio we add.
+            GenAI labeling program (RIAA, IFPI &amp; partners, July 2026). It's not a static ceiling:
+            the scoring weights are an open, adaptive ledger that the community benchmarks and tunes together.
           </p>
           <div className="flex items-center justify-center gap-6 mt-8">
             {[15, 55, 90].map(s => <ParticipationBadge key={s} score={s} size={64} />)}
@@ -167,6 +168,9 @@ export default function CreativeOwnership() {
             </Link>
             <Link to="/transparency">
               <Button variant="outline" className="rounded-xl font-bold gap-2"><User className="w-4 h-4" /> AI Transparency Policy</Button>
+            </Link>
+            <Link to="/governance">
+              <Button variant="outline" className="rounded-xl font-bold gap-2"><TrendingUp className="w-4 h-4" /> Community Tuning Panel</Button>
             </Link>
           </div>
         </section>
