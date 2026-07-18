@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
 import JobNotificationBell from "@/components/notifications/JobNotificationBell";
+import NavDropdown from "@/components/layout/NavDropdown";
 
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: Home },
@@ -21,6 +22,19 @@ const NAV_ITEMS = [
   { to: "/news-hub", label: "News & Legal", icon: Newspaper },
   // Multi-Chain nav hidden for now — restore when blockchain features return:
   // { to: "/blockchain", label: "Multi-Chain", icon: Globe },
+];
+
+// Desktop grouped nav — Home stays direct, the rest collapse into two dropdowns
+const DISCOVER_NAV = [
+  { to: "/radio", label: "Radio", icon: Radio },
+  { to: "/charts", label: "Charts", icon: TrendingUp },
+  { to: "/playlists", label: "Playlists", icon: Music },
+  { to: "/news-hub", label: "News & Legal", icon: Newspaper },
+];
+
+const COMMUNITY_NAV = [
+  { to: "/challenges", label: "Challenges", icon: Zap },
+  { to: "/leaderboard", label: "Leaderboard", icon: Star },
 ];
 
 const CREATOR_NAV = [
@@ -61,26 +75,22 @@ export default function Header({ user }) {
           </span>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Nav — grouped into dropdowns to stay uncrowded */}
         <nav className="hidden lg:flex items-center gap-1">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
-            const isActive = location.pathname === to;
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
-                  isActive
-                    ? "text-[#1F3A0E] border-black shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
-                    : "text-white/60 border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40"
-                }`}
-                style={isActive ? { background: "linear-gradient(180deg, #C8EF92 0%, #A9DC66 100%)" } : undefined}
-              >
-                <Icon className="w-4 h-4" />
-                {label}
-              </Link>
-            );
-          })}
+          <Link
+            to="/"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
+              location.pathname === "/"
+                ? "text-[#1F3A0E] border-black shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
+                : "text-white/60 border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40"
+            }`}
+            style={location.pathname === "/" ? { background: "linear-gradient(180deg, #C8EF92 0%, #A9DC66 100%)" } : undefined}
+          >
+            <Home className="w-4 h-4" />
+            Home
+          </Link>
+          <NavDropdown label="Discover" icon={Globe} items={DISCOVER_NAV} currentPath={location.pathname} />
+          <NavDropdown label="Community" icon={Star} items={COMMUNITY_NAV} currentPath={location.pathname} />
           {isCreator && (
             <>
               <div className="w-px h-6 bg-black shadow-[1px_0_0_rgba(255,255,255,0.08)] mx-1" />
