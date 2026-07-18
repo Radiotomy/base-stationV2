@@ -46,6 +46,7 @@ const MasteringStudio = lazy(() => import('./pages/MasteringStudio'));
 const CoverSongStudio = lazy(() => import('./pages/CoverSongStudio'));
 const VisualizerStudio = lazy(() => import('./pages/VisualizerStudio'));
 const PromoStudio = lazy(() => import('./pages/PromoStudio'));
+const SoundFXStudio = lazy(() => import('./pages/SoundFXStudio'));
 const StudioHistory = lazy(() => import('./pages/StudioHistory'));
 const AudioRemixStudio = lazy(() => import('./pages/AudioRemixStudio'));
 const VoiceCreator = lazy(() => import('./pages/VoiceCreator'));
@@ -169,6 +170,7 @@ const AuthenticatedApp = () => {
             <Route path="/cover-song-studio" element={<CoverSongStudio />} />
             <Route path="/visualizer-studio" element={<VisualizerStudio />} />
             <Route path="/promo-studio" element={<PromoStudio />} />
+            <Route path="/sfx-studio" element={<SoundFXStudio />} />
             <Route path="/ai-studio/history" element={<StudioHistory />} />
             <Route path="/voice-creator" element={<VoiceCreator />} />
             <Route path="/my-profile" element={<MyProfile />} />

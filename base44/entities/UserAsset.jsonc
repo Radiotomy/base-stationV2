@@ -22,7 +22,8 @@
         "master",
         "harmony",
         "mashup",
-        "visualizer"
+        "visualizer",
+        "sfx"
       ],
       "description": "Type of asset"
     },

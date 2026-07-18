@@ -21,12 +21,13 @@
         "tempcolor",
         "ltx",
         "core",
-        "nextcut"
+        "nextcut",
+        "elevenlabs"
       ]
     },
     "task": {
       "type": "string",
-      "description": "e.g. generate_music, generate_lyrics, generate_video"
+      "description": "e.g. generate_music, generate_lyrics, generate_video, generate_sfx"
     },
     "credits_used": {
       "type": "number",

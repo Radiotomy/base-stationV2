@@ -12,8 +12,9 @@
  */
 
 export const PROVIDER_DETAILS = {
-  sonic:     { label: 'Sonic',    model: 'sonic-v4-5-plus', emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
-  tempcolor: { label: 'Tempolor', model: 'TemPolor v4.6',   emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
+  sonic:      { label: 'Sonic',      model: 'sonic-v4-5-plus', emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
+  tempcolor:  { label: 'Tempolor',   model: 'TemPolor v4.6',   emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
+  elevenlabs: { label: 'ElevenLabs', model: 'music_v1',        emoji: '🎧', color: 'border-violet-500 bg-violet-500/10 text-violet-300' },
 };
 
 /**

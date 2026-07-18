@@ -272,11 +272,80 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   return { task_id: itemId, provider: 'tempcolor', tempolor_mode: isInstrumental ? 'instrumental' : 'song', model: resolvedModel };
 }
 
+// ── ElevenLabs (Eleven Music) ─────────────────────────────────────────────────
+// Docs: POST https://api.elevenlabs.io/v1/music — SYNCHRONOUS: returns the MP3 bytes
+// directly (no task polling). Models: music_v1 (default) | music_v2 (48kHz output).
+// prompt ≤ 4100 chars; music_length_ms 3000–600000 (optional — model picks if omitted);
+// force_instrumental guarantees no vocals; sign_with_c2pa embeds a C2PA provenance
+// manifest in the MP3 (fits our Provenance Manifest system).
+const ELEVENLABS_API = Deno.env.get('ELEVENLABS_API');
+const ELEVEN_BASE = 'https://api.elevenlabs.io/v1';
+
+async function generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyrics, model, tempolor_mode }, base44) {
+  if (!ELEVENLABS_API) throw new Error('ELEVENLABS_API key not configured');
+  const modelId = model === 'music_v2' ? 'music_v2' : 'music_v1';
+
+  // Single natural-language prompt — style context + optional user lyrics inline
+  let prompt = sound_prompt || `A ${mood} ${genre} track`;
+  const style = [genre, mood].filter(Boolean).join(', ');
+  if (style) prompt += `. Style: ${style}.`;
+  const hasLyrics = !!(lyrics && lyrics.trim());
+  if (hasLyrics) prompt += `\n\nUse these lyrics:\n${lyrics.trim()}`;
+  prompt = prompt.slice(0, 4100);
+
+  const body = {
+    prompt,
+    model_id: modelId,
+    force_instrumental: !hasLyrics && tempolor_mode === 'instrumental',
+    sign_with_c2pa: true,
+    ...(duration && { music_length_ms: Math.min(Math.max(Math.round(duration * 1000), 3000), 600000) }),
+  };
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 120000);
+  let res;
+  try {
+    res = await fetch(`${ELEVEN_BASE}/music?output_format=mp3_44100_128`, {
+      method: 'POST',
+      headers: { 'xi-api-key': ELEVENLABS_API, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') {
+      const err = new Error('ElevenLabs music generation timed out after 120s. Try a shorter duration.');
+      err.providerStatus = 504;
+      err.providerType = 'timeout';
+      throw err;
+    }
+    throw fetchErr;
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (!res.ok) {
+    let detail = '';
+    try {
+      const j = await res.json();
+      detail = j?.detail?.message || (typeof j?.detail === 'string' ? j.detail : JSON.stringify(j.detail || j));
+    } catch { detail = ''; }
+    const err = new Error(`ElevenLabs: ${detail || `HTTP ${res.status}`}`);
+    err.providerStatus = res.status;
+    throw err;
+  }
+  const songId = res.headers.get('song-id') || null;
+  const bytes = await res.arrayBuffer();
+  const file = new File([bytes], `eleven-music-${Date.now()}.mp3`, { type: 'audio/mpeg' });
+  const { file_url } = await base44.integrations.Core.UploadFile({ file });
+  console.log('ElevenLabs music generated:', file_url, 'song-id:', songId);
+  return { audio_url: file_url, provider: 'elevenlabs', song_id: songId, model: modelId };
+}
+
 // ── Credit cost table (per provider) ─────────────────────────────────────────
 const CREDIT_COSTS = {
   sonic: 10,
   producer: 10,
   tempcolor: 10,
+  elevenlabs: 10,
 };
 
 async function checkCreditBalance(base44, user, requiredCredits) {
@@ -357,7 +426,9 @@ Deno.serve(async (req) => {
     // Call provider FIRST — before any DB writes — so gateway timeout isn't wasted on DB ops
     let providerResult;
     try {
-      if (provider === 'producer')
+      if (provider === 'elevenlabs')
+        providerResult = await generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyrics, model, tempolor_mode }, base44);
+      else if (provider === 'producer')
         providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics, model });
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
@@ -391,6 +462,7 @@ Deno.serve(async (req) => {
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
       producer: 'FUZZ-2.0',
       tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
+      elevenlabs: providerResult.model || model || 'music_v1',
     };
     const modelVersion = modelVersionMap[provider] || provider;
 

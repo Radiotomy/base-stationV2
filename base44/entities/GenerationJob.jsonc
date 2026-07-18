@@ -14,7 +14,8 @@
         "music",
         "lyrics",
         "cover_art",
-        "video"
+        "video",
+        "sfx"
       ],
       "description": "Type of generation task"
     },
@@ -27,7 +28,8 @@
         "producer",
         "tempcolor",
         "ltx",
-        "nextcut"
+        "nextcut",
+        "elevenlabs"
       ],
       "description": "Which provider handled the generation"
     },

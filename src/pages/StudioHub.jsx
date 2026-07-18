@@ -16,6 +16,7 @@ const CATEGORIES = [
       { to: "/cover-song-studio",  emoji: "🎙️", label: "Cover & Extend Studio", desc: "Cover or extend any uploaded track" },
       { to: "/lyrics-studio",      emoji: "🎤", label: "Lyrics Studio",      desc: "Write song lyrics with AI" },
       { to: "/voice-creator",      emoji: "🗣️", label: "Voice Creator",      desc: "Custom AI voices & personas" },
+      { to: "/sfx-studio",         emoji: "💥", label: "Sound FX Studio",    desc: "Text-to-SFX with ElevenLabs" },
       { to: "/ai-studio",          emoji: "✨", label: "AI Prompt Tools",    desc: "Lyric, prompt & art helpers" },
     ],
   },

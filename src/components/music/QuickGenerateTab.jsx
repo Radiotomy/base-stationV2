@@ -20,11 +20,12 @@ import { calculateHumanParticipationScore } from '@/utils/participationScore';
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
 // Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10 };
+const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
 
 const ALL_PROVIDERS = [
-  { value: 'sonic',     label: 'Sonic',    emoji: '🎵' },
-  { value: 'tempcolor', label: 'Tempolor', emoji: '🎶' },
+  { value: 'sonic',      label: 'Sonic',      emoji: '🎵' },
+  { value: 'tempcolor',  label: 'Tempolor',   emoji: '🎶' },
+  { value: 'elevenlabs', label: 'ElevenLabs', emoji: '🎧' },
 ];
 
 const QUICK_EXAMPLES = [

@@ -28,6 +28,14 @@ const SPECS = {
       'TemPolor i3':   { vocal: false, notes: 'Instrumental-only model — lyrics are ignored' },
     },
   },
+  elevenlabs: {
+    // Eleven Music: single prompt ≤ 4100 chars — lyrics ride inside the prompt,
+    // so we budget 3500 chars for lyrics leaving room for the style description.
+    default: { maxLyricsChars: 3500, structureTags: true, vocal: true, languages: 'Multilingual' },
+    models: {
+      'music_v2': { notes: 'v2 outputs 48kHz high-fidelity audio' },
+    },
+  },
 };
 
 export function getLyricsSpec(provider, model) {
