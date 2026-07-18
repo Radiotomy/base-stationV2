@@ -90,11 +90,17 @@ const SECTIONS = [
     id: 'lyrics',
     title: 'Lyrics Studio — writing lyrics',
     icon: Mic2,
-    keywords: 'lyrics writing pro songwriter rhyme scheme structure character limit length restriction',
+    keywords: 'lyrics writing pro songwriter 243 masters engine mode rhyme scheme structure character limit length restriction',
     body: (
       <>
         <p>Pick a <strong className="text-foreground">topic</strong> (one concrete concept), 1–2 moods, and a style. Hit Generate.</p>
-        <p><strong className="text-foreground">Pro Songwriter ON</strong> activates Nashville/LA-grade rhyme craft. Add a reference artist — the writer lookup auto-fills mood, style, rhyme scheme & BPM.</p>
+        <p><strong className="text-foreground">Three engine modes:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Basic</strong> — fast lyrics from topic + mood + style (2 credits).</li>
+          <li><strong>Pro Songwriter</strong> — Nashville/LA-grade rhyme craft. Add a reference writer and the lookup auto-fills mood, style, rhyme scheme &amp; BPM (2 credits).</li>
+          <li><strong>243 Masters</strong> — full production report: lyrics plus chord progressions (Nashville numbers &amp; Roman numerals), arrangement notes, and a production brief (3 credits).</li>
+        </ul>
+        <p>Reference writers are used for <strong className="text-foreground">style only, never identity</strong> — see the "Style references &amp; legal disclosures" section below.</p>
         <p><strong className="text-foreground">Rhyme schemes:</strong> Mixed is the safest hit-song default. ABAB = pop alternating, AABB = couplets, XAXA = conversational/modern, AAAA = monorhyme tension.</p>
         <p><strong className="text-foreground">Structure templates</strong> give you proven section maps per genre (Standard Pop, Hip-Hop, Red Dirt Country, EDM Drop, Neo-Soul, etc.).</p>
         <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
@@ -109,6 +115,24 @@ const SECTIONS = [
         </div>
         <p>When done, hit <strong className="text-foreground">"Send to Music Studio →"</strong> — lyrics, genre and topic auto-fill the next step.</p>
         <p className="text-xs">Shortcuts: ⌘+Enter generate · ⌘+S save · ⌘+K shortcut panel.</p>
+      </>
+    ),
+  },
+  {
+    id: 'legal',
+    title: 'Style references & legal disclosures',
+    icon: Scale,
+    keywords: 'legal style reference artist name copyright disclosure disclaimer pro songwriter 243 masters identity voice likeness terms provenance',
+    body: (
+      <>
+        <p>The Pro Songwriter and 243 Masters engines let you name a <strong className="text-foreground">reference writer or artist</strong>. Here's exactly what that does — and doesn't do:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Style, not identity</strong> — the name is converted into abstract craft descriptors only (rhyme scheme, tempo range, prosody, narrative tone, genre conventions). No lyrics, recordings, or voice of that artist are copied or simulated.</li>
+          <li><strong>Why it's lawful</strong> — copyright protects specific expression, not styles, structures, or genres. The artist's name is never placed in your output, metadata, or credits.</li>
+          <li><strong>Your responsibility</strong> — never market a song as being "by" or "in the voice of" a real artist, and carry your work's AI disclosure label through distribution.</li>
+          <li><strong>Logged provenance</strong> — your structural choices (references, BPM, rhyme scheme) are recorded as human participation in the track's Provenance Manifest and raise your Creative Ownership Score.</li>
+        </ul>
+        <p>Full policies: <Link to="/transparency" className="text-amber-400 hover:underline">AI Transparency</Link> · <Link to="/terms" className="text-amber-400 hover:underline">Terms of Use</Link> · <Link to="/creative-ownership" className="text-emerald-400 hover:underline">Creative Ownership</Link></p>
       </>
     ),
   },

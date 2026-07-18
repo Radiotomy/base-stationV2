@@ -116,6 +116,37 @@ export default function AITransparency() {
           </div>
         </section>
 
+        {/* Songwriting engines & style references */}
+        <section className="merc-card rounded-2xl p-6 space-y-4">
+          <h2 className="font-display text-2xl text-white flex items-center gap-2">
+            <Bot className="w-5 h-5 text-[#FF9A4D]" /> Songwriting engines &amp; style references
+          </h2>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              The Lyrics Studio offers three engine modes — <span className="text-white font-semibold">Basic</span>,{" "}
+              <span className="text-white font-semibold">Pro Songwriter</span>, and{" "}
+              <span className="text-white font-semibold">243 Masters</span> (lyrics plus chord
+              progressions, arrangement, and a production brief). Pro and Masters accept a
+              reference writer or artist name.
+            </p>
+            <p>
+              <span className="text-white font-semibold">Style, not identity:</span> reference
+              names are converted into abstract craft descriptors only — rhyme scheme, tempo
+              range, prosody, narrative tone, and genre conventions. No lyrics, recordings,
+              voice, or likeness of the referenced artist are copied or simulated, and the
+              artist's name never appears in your output, metadata, or credits. Users may not
+              market resulting works as being "by" or "in the voice of" a real artist (see{" "}
+              <Link to="/terms" className="text-[#FFC98A] underline underline-offset-2">Terms of Use §5</Link>).
+            </p>
+            <p>
+              <span className="text-white font-semibold">Human-in-the-loop provenance:</span>{" "}
+              your structural choices in these engines (references, BPM, rhyme scheme,
+              arrangement decisions) are logged as human participation signals in the work's
+              Provenance Manifest and Creative Ownership Score.
+            </p>
+          </div>
+        </section>
+
         {/* Why + reporting */}
         <section className="merc-card rounded-2xl p-6 space-y-4">
           <h2 className="font-display text-2xl text-white flex items-center gap-2">

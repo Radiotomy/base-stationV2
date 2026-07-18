@@ -17,7 +17,7 @@ export default function Terms() {
             <FileText className="w-3.5 h-3.5" /> Legal
           </div>
           <h1 className="font-display text-4xl text-white">Terms of Use</h1>
-          <p className="text-xs text-muted-foreground">Last updated: July 16, 2026</p>
+          <p className="text-xs text-muted-foreground">Last updated: July 18, 2026</p>
         </header>
 
         <div className="merc-card rounded-2xl p-6 md:p-8 space-y-8">
@@ -119,7 +119,30 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section n={5} title="Acceptable Use">
+          <Section n={5} title="Style References in Songwriting Studios">
+            <p>
+              The Platform's songwriting engines (including Pro Songwriter and 243 Masters) allow
+              you to name a reference writer or artist. Reference names are converted into
+              abstract craft descriptors only — rhyme scheme, tempo range, prosody, narrative
+              tone, and genre conventions. No lyrics, sound recordings, voice, or likeness of the
+              referenced artist are copied, reproduced, or simulated, and the referenced artist's
+              name is never placed in your output, metadata, or credits.
+            </p>
+            <p>
+              <span className="text-white font-semibold">5.1 Your obligations.</span> You may not
+              market, title, tag, or distribute any resulting work as being "by," "featuring," or
+              "in the voice of" a real artist, or otherwise imply endorsement or affiliation. You
+              must carry the AI disclosure label assigned to the work through distribution.
+            </p>
+            <p>
+              <span className="text-white font-semibold">5.2 Provenance logging.</span> Your
+              structural choices (references, BPM, rhyme scheme, arrangement selections) are
+              recorded as human participation signals in the work's Provenance Manifest and
+              Creative Ownership Score.
+            </p>
+          </Section>
+
+          <Section n={6} title="Acceptable Use">
             <p>
               You may not upload content that is unlawful, infringing, or impersonates another
               artist's voice or likeness without authorization. You may not manipulate charts,
@@ -128,21 +151,21 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section n={6} title="Credits & Purchases">
+          <Section n={7} title="Credits & Purchases">
             <p>
               Generation credits are consumed by AI studio features. Credits are non-refundable
               except where required by law. Provider availability and credit costs may change.
             </p>
           </Section>
 
-          <Section n={7} title="Termination">
+          <Section n={8} title="Termination">
             <p>
               We may suspend or terminate accounts that violate these Terms, including violations
               of the AI Content Transparency obligations in Section 3.
             </p>
           </Section>
 
-          <Section n={8} title="Changes to These Terms">
+          <Section n={9} title="Changes to These Terms">
             <p>
               We may update these Terms from time to time. Continued use of the Platform after
               changes take effect constitutes acceptance of the revised Terms.
