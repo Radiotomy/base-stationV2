@@ -45,6 +45,10 @@ const SECTIONS = [
           <li><strong>+10</strong> — iterate: remix, extend, or refine prior work</li>
         </ul>
         <p><strong className="text-foreground">Tiers:</strong> 🏆 Co-Creator (70–100) · 🎨 Collaborator (40–69) · 🤖 Curator (0–39)</p>
+        <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
+          <p className="text-amber-300 font-bold text-sm mb-1">🔒 Provenance Manifest &amp; DDEX export</p>
+          <p>Every scored asset also carries a <strong className="text-foreground">DDEX-style AI attribution profile</strong> — granular flags for lyrical content, composition, instrumentation, vocals, and post-production, each marked 🤖 Synthetic or 👤 Human. Open any item's <strong className="text-foreground">Provenance Manifest</strong> (the 🔒 button in your Ownership dashboard) to view the profile and hit <strong className="text-foreground">"Copy DDEX Tag Bundle"</strong> to export an XML metadata snippet you can hand to distributors or use to clear manual verification blocks.</p>
+        </div>
         <p>Track your average score, tier breakdown, and creative evolution in <Link to="/creator-dashboard" className="text-purple-400 hover:underline">My Workspace → 🎖️ Ownership</Link>, or read the full <Link to="/creative-ownership" className="text-emerald-400 hover:underline">Creative Ownership onesheet →</Link></p>
       </>
     ),

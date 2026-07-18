@@ -113,6 +113,35 @@ export default function CreativeOwnership() {
           </div>
         </section>
 
+        {/* Provenance Manifest & DDEX export */}
+        <section className="p-6 rounded-2xl bg-card border border-amber-500/20 space-y-4">
+          <h2 className="text-2xl font-black text-foreground text-center">🔒 The Provenance Manifest</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-2xl mx-auto">
+            Your score doesn't stay locked inside BASE Station. Every scored asset carries a{' '}
+            <strong className="text-foreground">DDEX-style AI attribution profile</strong> — granular flags
+            for lyrical content, composition, instrumentation, vocals, and post-production — plus an optional
+            C2PA provenance hash anchoring the COS metrics to the audio container.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-1">
+              <p className="font-bold text-foreground">Granular attribution</p>
+              <p className="text-muted-foreground leading-relaxed">Each creative layer is marked 🤖 Synthetic or 👤 Human based on your recorded telemetry — no guesswork.</p>
+            </div>
+            <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-1">
+              <p className="font-bold text-foreground">DDEX Tag Bundle export</p>
+              <p className="text-muted-foreground leading-relaxed">Copy an XML metadata snippet from any manifest to hand to distributors and downstream partner channels.</p>
+            </div>
+            <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-1">
+              <p className="font-bold text-foreground">Clear verification blocks</p>
+              <p className="text-muted-foreground leading-relaxed">Use a high-COS manifest as an authoritative credential when platforms flag AI content for manual review.</p>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground/70 text-center">
+            Open any scored item's manifest via the 🔒 button in{' '}
+            <Link to="/creator-dashboard?tab=ownership" className="text-amber-400 hover:underline">My Workspace → Ownership</Link>.
+          </p>
+        </section>
+
         {/* Policy */}
         <section className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
           <p className="text-xs text-muted-foreground italic leading-relaxed text-center">"{OWNERSHIP_POLICY_TEXT}"</p>

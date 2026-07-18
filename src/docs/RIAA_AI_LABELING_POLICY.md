@@ -58,3 +58,20 @@ label in their provenance chain: `ai_generated` > `ai_assisted` > `human`.
 - Stamped server-side at job creation in `generateMusic`; carried through
   `pollGenerationJob` / `aimusicapiWebhook` completion into job output metadata.
 - Phase 4 will embed the label into exported ID3 metadata (`editID3Tags`).
+
+## DDEX attribution & C2PA provenance (COS extension)
+
+In addition to the single track-level label, `UserAsset` carries an exportable
+granular attribution profile:
+
+- `ddex_ai_metadata` (object): boolean flags `ai_lyrical_content`, `ai_composition`,
+  `ai_instrumentation`, `ai_generated_vocals`, `ai_post_production` — derived from COS
+  telemetry via `mapTelemetryToDdex(inputs, finalScore)` in `src/utils/participationScore.js`.
+  Assets that predate this field derive a fallback profile from persisted score + signals
+  via `deriveDdexFromAsset(asset)`.
+- `c2pa_provenance_hash` (string): cryptographic manifest checksum anchoring the COS
+  metrics to the audio container.
+
+Creators view and export this profile ("Copy DDEX Tag Bundle" — an XML metadata snippet)
+from the Provenance Manifest card (`ProvenanceManifestCard`) in the Ownership dashboard.
+See `src/docs/COS_ARCHITECTURE_PROMPT.md` for the third-party builder prompt template.

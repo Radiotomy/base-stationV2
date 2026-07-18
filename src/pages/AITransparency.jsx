@@ -92,6 +92,30 @@ export default function AITransparency() {
           </div>
         </section>
 
+        {/* Provenance & DDEX attribution */}
+        <section className="merc-card rounded-2xl p-6 space-y-4">
+          <h2 className="font-display text-2xl text-white flex items-center gap-2">
+            <FileText className="w-5 h-5 text-[#FF9A4D]" /> Provenance manifests &amp; DDEX attribution
+          </h2>
+          <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+            <p>
+              Beyond the track-level label, every scored asset carries a{" "}
+              <span className="text-white font-semibold">DDEX-style AI attribution profile</span> —
+              granular flags recording whether lyrical content, composition, instrumentation, vocals,
+              and post-production were synthetic or human. An optional{" "}
+              <span className="text-white font-semibold">C2PA provenance hash</span> anchors these
+              metrics to the audio container itself.
+            </p>
+            <p>
+              Creators can export this profile as a DDEX Tag Bundle from their asset's{" "}
+              <span className="text-white font-semibold">Provenance Manifest</span> in the{" "}
+              <Link to="/creator-dashboard?tab=ownership" className="text-[#FFC98A] underline underline-offset-2">Ownership dashboard</Link>{" "}
+              — giving distributors and partner channels verifiable, machine-readable disclosure data
+              instead of a single opaque label.
+            </p>
+          </div>
+        </section>
+
         {/* Why + reporting */}
         <section className="merc-card rounded-2xl p-6 space-y-4">
           <h2 className="font-display text-2xl text-white flex items-center gap-2">
