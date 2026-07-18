@@ -139,6 +139,8 @@ export default function Home() {
                 Every track on BASE Station carries a GenAI disclosure label aligned with the music community's voluntary labeling program (RIAA, IFPI &amp; partners, July 2026) plus a 0–100 Creative Ownership Score.
               </p>
               <div className="flex items-center gap-4 flex-shrink-0 text-[11px] font-bold">
+                <Link to="/about" className="text-white/60 hover:text-white transition-colors">About</Link>
+                <span className="text-white/20">·</span>
                 <Link to="/creative-ownership" className="text-[#6EE7B7] hover:text-white transition-colors">Ownership Score</Link>
                 <span className="text-white/20">·</span>
                 <Link to="/transparency" className="text-[#FFC98A] hover:text-white transition-colors">AI Transparency</Link>
