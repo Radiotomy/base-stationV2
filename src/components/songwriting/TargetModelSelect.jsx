@@ -36,11 +36,10 @@ const OPTIONS = [
     ],
   },
   {
-    group: 'Producer (FUZZ)',
+    group: 'Producer',
     provider: 'producer',
     models: [
-      { value: 'FUZZ-2.0', desc: 'FUZZ 2.0 — flagship Producer engine. Vocals or instrumentals with a generous 5,000-character lyric budget.' },
-      { value: 'FUZZ-2.0 Pro', desc: 'FUZZ 2.0 Pro — premium FUZZ tier with the highest-fidelity output.' },
+      { value: 'Lyria 3 Pro', desc: 'Lyria 3 Pro — by Google, via the Producer engine. Suno v5-class quality in ~30 seconds, 5,000-character lyric budget. (Replaced the retired FUZZ models.)' },
     ],
   },
 ];

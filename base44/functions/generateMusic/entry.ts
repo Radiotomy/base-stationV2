@@ -460,7 +460,8 @@ Deno.serve(async (req) => {
     // Determine exact model version used per provider
     const modelVersionMap = {
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
-      producer: 'FUZZ-2.0',
+      // FUZZ-* retired upstream (Apr 2026) — Producer now runs on Google Lyria 3 Pro
+      producer: 'Lyria 3 Pro',
       tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
       elevenlabs: providerResult.model || model || 'music_v1',
     };

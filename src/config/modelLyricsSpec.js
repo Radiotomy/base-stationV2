@@ -16,11 +16,11 @@ const SPECS = {
     },
   },
   producer: {
+    // Producer API is powered by Google Lyria 3 Pro (FUZZ-* models retired upstream Apr 2026,
+    // silently aliased to Lyria 3 Pro per docs.musicapi.ai migration notice).
     default: { maxLyricsChars: 5000, structureTags: true, vocal: true, languages: 'Multilingual' },
     models: {
-      'FUZZ-2.0':     { notes: 'Flagship FUZZ engine — balanced quality across genres' },
-      'FUZZ-2.0 Pro': { notes: 'Premium FUZZ tier — highest fidelity output' },
-      'FUZZ-3-Demo':  { notes: 'Early preview of the next-generation FUZZ engine' },
+      'Lyria 3 Pro': { notes: 'By Google — Suno v5-class quality, ~30s generation' },
     },
   },
   tempcolor: {
