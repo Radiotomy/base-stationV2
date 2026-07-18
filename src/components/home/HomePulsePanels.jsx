@@ -116,8 +116,8 @@ export default function HomePulsePanels({ topTracks }) {
             </span>
           </button>
           {buzzOpen ? (
-            <div className="mt-3">
-              <ActivityFeed limit={6} />
+            <div className="mt-3 h-[330px] overflow-y-auto pr-1">
+              <ActivityFeed limit={5} />
             </div>
           ) : (
             <p className="mt-2 text-[11px] text-[#C6F27E]/50 font-semibold">

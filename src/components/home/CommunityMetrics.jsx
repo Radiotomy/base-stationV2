@@ -16,48 +16,28 @@ export default function CommunityMetrics() {
 
   const loadMetrics = async () => {
     try {
-      // Fetch real-time data (User.list is admin-only, so use UserXP as a public proxy for creator counts)
+      // Truth-in-disclosure: real counts only, no minimum floors or placeholder numbers.
+      // (User.list is admin-only, so UserXP serves as the public proxy for creator counts.)
       const [tracks, creators] = await Promise.all([
-        base44.entities.TrackSubmission.filter({}, '-created_date', 1),
-        base44.entities.UserXP.list('-created_date', 100).catch(() => []),
+        base44.entities.TrackSubmission.list('-created_date', 1000).catch(() => []),
+        base44.entities.UserXP.list('-created_date', 1000).catch(() => []),
       ]);
 
-      // Calculate metrics
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const weekAgo = new Date();
       weekAgo.setDate(weekAgo.getDate() - 7);
 
-      const tracksToday = tracks.filter(t => new Date(t.created_date) >= today).length || 0;
-      const newUsersThisWeek = creators.filter(u => new Date(u.created_date) >= weekAgo).length || 0;
-      
-      const totalTracks = await base44.entities.TrackSubmission.list('-created_date', 1)
-        .then(t => t.length)
-        .catch(() => 0);
-      
-      const registeredTracks = await base44.entities.SolanaTrackRegistry.filter({ registration_status: 'registered' }, '-registered_at', 1)
-        .then(t => t.length)
-        .catch(() => 0) +
-        await base44.entities.BaseTrackRegistry.filter({ registration_status: 'registered' }, '-registered_at', 1)
-        .then(t => t.length)
-        .catch(() => 0);
-
       setMetrics({
-        tracksToday: Math.max(5, tracksToday), // Minimum display
-        newUsersThisWeek: Math.max(12, newUsersThisWeek),
-        totalTracks: Math.max(150, totalTracks),
-        registeredOnChain: Math.max(47, registeredTracks),
+        tracksToday: tracks.filter(t => new Date(t.created_date) >= today).length,
+        newUsersThisWeek: creators.filter(u => new Date(u.created_date) >= weekAgo).length,
+        totalCreators: creators.length,
       });
       setLoading(false);
     } catch (error) {
       console.error('Failed to load metrics:', error);
-      // Fallback to placeholder metrics
-      setMetrics({
-        tracksToday: 12,
-        newUsersThisWeek: 28,
-        totalTracks: 340,
-        registeredOnChain: 89,
-      });
+      // No fabricated fallback — hide the panel rather than show untrue numbers
+      setMetrics(null);
       setLoading(false);
     }
   };
@@ -70,25 +50,27 @@ export default function CommunityMetrics() {
     );
   }
 
+  if (!metrics) return null;
+
   const statCards = [
     {
       icon: Music,
-      label: 'Tracks Created Today',
-      value: metrics?.tracksToday || 0,
+      label: 'Tracks Submitted Today',
+      value: metrics.tracksToday,
       color: 'text-amber-400',
       bg: 'from-amber-600/10 to-orange-600/10',
     },
     {
       icon: Users,
-      label: 'New Users This Week',
-      value: metrics?.newUsersThisWeek || 0,
+      label: 'New Creators This Week',
+      value: metrics.newUsersThisWeek,
       color: 'text-orange-400',
       bg: 'from-orange-600/10 to-red-600/10',
     },
     {
       icon: Zap,
       label: 'Total Creators',
-      value: metrics?.totalTracks || 0,
+      value: metrics.totalCreators,
       color: 'text-yellow-400',
       bg: 'from-yellow-600/10 to-orange-600/10',
     },
