@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
-  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle
+  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
   { to: "/playlists", label: "Playlists", icon: Music },
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
+  { to: "/news-hub", label: "News & Legal", icon: Newspaper },
   // Multi-Chain nav hidden for now — restore when blockchain features return:
   // { to: "/blockchain", label: "Multi-Chain", icon: Globe },
 ];

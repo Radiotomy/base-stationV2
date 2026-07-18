@@ -72,6 +72,7 @@ const Credits = lazy(() => import('./pages/Credits'));
 const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
 const SocialMediaAutomation = lazy(() => import('./pages/SocialMediaAutomation'));
 const WhyBaseStation = lazy(() => import('./pages/WhyBaseStation'));
+const NewsHub = lazy(() => import('./pages/NewsHub'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
 const Terms = lazy(() => import('./pages/Terms'));
@@ -118,6 +119,7 @@ const AuthenticatedApp = () => {
               <Route path="/" element={<Home />} />
               <Route path="/radio" element={<Radio />} />
               <Route path="/why-base-station" element={<WhyBaseStation />} />
+              <Route path="/news-hub" element={<NewsHub />} />
               <Route path="/about" element={<About />} />
               <Route path="/help" element={<Help />} />
               <Route path="/terms" element={<Terms />} />
@@ -184,6 +186,7 @@ const AuthenticatedApp = () => {
             <Route path="/templates" element={<CommunityTemplates />} />
             <Route path="/social-automation" element={<SocialMediaAutomation />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
+            <Route path="/news-hub" element={<NewsHub />} />
             <Route path="/about" element={<About />} />
             <Route path="/help" element={<Help />} />
             <Route path="/terms" element={<Terms />} />

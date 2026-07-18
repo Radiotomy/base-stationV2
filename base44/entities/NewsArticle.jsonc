@@ -1,0 +1,89 @@
+{
+  "name": "NewsArticle",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Headline of the news item"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Short 2-4 sentence summary of the development"
+    },
+    "content": {
+      "type": "string",
+      "description": "Longer explanation of what happened and why it matters to AI music creators"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "legal",
+        "policy",
+        "industry",
+        "technology",
+        "resources"
+      ],
+      "description": "legal = lawsuits/rulings/legislation; policy = platform/label/DSP rules; industry = business & market news; technology = new AI music tech releases; resources = guides, services, tools for creators"
+    },
+    "source_name": {
+      "type": "string",
+      "description": "Name of the publication or organization reporting this"
+    },
+    "source_url": {
+      "type": "string",
+      "description": "Link to the original source"
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Original publication date of the news"
+    },
+    "region": {
+      "type": "string",
+      "description": "Geographic scope, e.g. US, EU, UK, Global"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Pinned items show at the top of the hub"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "published",
+        "draft",
+        "archived"
+      ],
+      "default": "published"
+    }
+  },
+  "required": [
+    "title",
+    "summary",
+    "category"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
