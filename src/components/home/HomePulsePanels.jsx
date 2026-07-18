@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { TrendingUp, Music, ChevronRight } from "lucide-react";
+import { TrendingUp, Music, ChevronRight, ChevronDown } from "lucide-react";
 import ActivityFeed from "@/components/feed/ActivityFeed";
 
 const GREEN_SCREEN = {
@@ -30,6 +31,7 @@ function SideKnob() {
 }
 
 export default function HomePulsePanels({ topTracks }) {
+  const [buzzOpen, setBuzzOpen] = useState(false);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
       {/* Top Tracks — bright green LCD */}
@@ -97,13 +99,31 @@ export default function HomePulsePanels({ topTracks }) {
       <div className="relative rounded-xl border-2 border-black bg-gradient-to-b from-[#1C1712] to-[#0F0C09] p-3 sm:p-4 pl-5 pr-5 lg:pl-8 lg:pr-8 shadow-[0_12px_40px_-8px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06)]">
         <SideKnob />
         <div className="rounded-lg border-2 border-black/70 p-4 h-full" style={DARK_SCREEN}>
-          <h3
-            className="font-display text-lg text-[#C6F27E] mb-3"
-            style={{ textShadow: "0 0 10px rgba(198,242,126,0.5)" }}
+          <button
+            type="button"
+            onClick={() => setBuzzOpen(o => !o)}
+            className="w-full flex items-center justify-between gap-2"
           >
-            Community Buzz
-          </h3>
-          <ActivityFeed limit={8} />
+            <h3
+              className="font-display text-lg text-[#C6F27E]"
+              style={{ textShadow: "0 0 10px rgba(198,242,126,0.5)" }}
+            >
+              Community Buzz
+            </h3>
+            <span className="flex items-center gap-1 text-[10px] font-black text-[#C6F27E]/70 uppercase tracking-wider">
+              {buzzOpen ? "Hide" : "Show"}
+              <ChevronDown className={`w-4 h-4 transition-transform ${buzzOpen ? "rotate-180" : ""}`} />
+            </span>
+          </button>
+          {buzzOpen ? (
+            <div className="mt-3">
+              <ActivityFeed limit={6} />
+            </div>
+          ) : (
+            <p className="mt-2 text-[11px] text-[#C6F27E]/50 font-semibold">
+              Live creator activity — tap to expand.
+            </p>
+          )}
         </div>
       </div>
     </div>

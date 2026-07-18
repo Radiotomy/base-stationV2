@@ -102,25 +102,9 @@ export default function CommunityMetrics() {
     // },
   ];
 
-  const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
-
   return (
     <div className="space-y-3">
-      {/* Liquid-metal banner */}
-      <div
-        className="rounded-lg border border-black/70 py-4 px-4 text-center overflow-hidden"
-        style={{
-          backgroundImage: `linear-gradient(rgba(30,15,5,0.4), rgba(30,15,5,0.55)), url(${MERCURY_BG})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2), 0 8px 24px -6px rgba(0,0,0,0.7)",
-        }}
-      >
-        <h3 className="text-lg font-black text-white drop-shadow">🌍 Base Station Community</h3>
-        <p className="text-xs text-white/80 mt-0.5 font-semibold">Live activity across all creators</p>
-      </div>
-
-      {/* Green LCD readout chips */}
+      {/* Green LCD readout chips — compact community pulse */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {statCards.map((stat, i) => (
           <motion.div
