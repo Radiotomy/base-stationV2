@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
-  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper
+  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper, Shield
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -177,6 +177,29 @@ export default function Header({ user }) {
                           <BarChart3 className="w-4 h-4" /> Studio Dashboard
                         </Link>
                       )}
+                      <div className="my-1 border-t border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]" />
+                      <Link
+                        to="/creative-ownership"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                      >
+                        <Shield className="w-4 h-4" /> Ownership & COS
+                      </Link>
+                      <Link
+                        to="/transparency"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                      >
+                        <Globe className="w-4 h-4" /> AI Transparency
+                      </Link>
+                      <Link
+                        to="/governance"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
+                      >
+                        <Star className="w-4 h-4" /> Governance
+                      </Link>
+                      <div className="my-1 border-t border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]" />
                       <button
                         onClick={() => {
                           setDropdownOpen(false);

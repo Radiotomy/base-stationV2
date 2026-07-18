@@ -1,5 +1,6 @@
 import { useLocation, Link } from "react-router-dom";
 import { ChevronRight, Home } from "lucide-react";
+import StudioSwitcher from "@/components/layout/StudioSwitcher";
 
 const ROUTE_NAMES = {
   "/": "Home",
@@ -38,8 +39,8 @@ export default function Breadcrumbs() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 border-b border-white/5">
-      <div className="flex items-center gap-2 text-sm">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 border-b border-white/5 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2 text-sm flex-wrap">
         {breadcrumbs.map((crumb, i) => (
           <div key={crumb.path} className="flex items-center gap-2">
             {i > 0 && <ChevronRight className="w-4 h-4 text-white/40" />}
@@ -56,6 +57,7 @@ export default function Breadcrumbs() {
           </div>
         ))}
       </div>
+      <StudioSwitcher currentPath={path} />
     </div>
   );
 }

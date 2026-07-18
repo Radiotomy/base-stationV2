@@ -7,6 +7,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AuthGate from '@/components/auth/AuthGate';
+import AdminGate from '@/components/auth/AdminGate';
 import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
 import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -195,10 +196,10 @@ const AuthenticatedApp = () => {
             <Route path="/governance" element={<CommunityGovernance />} />
             <Route path="/fanclub/:creatorId" element={<FanClub />} />
             <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
-            <Route path="/dev/smoke-tests" element={<SmokeTests />} />
-            <Route path="/dev/error-log" element={<ErrorLogViewer />} />
-            <Route path="/dev/live-regression" element={<LiveRegression />} />
-            <Route path="/dev/live-multiclient" element={<LiveMulticlient />} />
+            <Route path="/dev/smoke-tests" element={<AdminGate><SmokeTests /></AdminGate>} />
+            <Route path="/dev/error-log" element={<AdminGate><ErrorLogViewer /></AdminGate>} />
+            <Route path="/dev/live-regression" element={<AdminGate><LiveRegression /></AdminGate>} />
+            <Route path="/dev/live-multiclient" element={<AdminGate><LiveMulticlient /></AdminGate>} />
           </Route>
           <Route path="/admin" element={<AdminDashboard />}>
             <Route index element={<AdminOverview />} />
