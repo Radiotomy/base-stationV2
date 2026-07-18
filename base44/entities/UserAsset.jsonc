@@ -104,6 +104,36 @@
       "type": "object",
       "description": "Breakdown of signals and points that built the score"
     },
+    "ddex_ai_metadata": {
+      "type": "object",
+      "description": "DDEX-style granular AI attribution profile derived from COS telemetry, exportable for downstream partner channels",
+      "properties": {
+        "ai_lyrical_content": {
+          "type": "boolean",
+          "description": "True if text/lyrics were generated via LLM without human script input"
+        },
+        "ai_composition": {
+          "type": "boolean",
+          "description": "True if baseline chord progressions or melodies were auto-generated"
+        },
+        "ai_instrumentation": {
+          "type": "boolean",
+          "description": "True if backing stems or instruments were synthesised purely from text prompts"
+        },
+        "ai_generated_vocals": {
+          "type": "boolean",
+          "description": "True if synthetic vocal profiles or cloned voice identities were utilized"
+        },
+        "ai_post_production": {
+          "type": "boolean",
+          "description": "True if mastering or balance engineers were automated utilities"
+        }
+      }
+    },
+    "c2pa_provenance_hash": {
+      "type": "string",
+      "description": "Cryptographic manifest checksum anchoring the COS metrics to the audio container"
+    },
     "parent_asset_id": {
       "type": "string",
       "description": "Phase 3: Source asset this was derived from (for stems, mashups, masters, harmonies, visualizers)"

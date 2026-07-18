@@ -30,6 +30,36 @@ export function calculateHumanParticipationScore(inputs = {}) {
     signals,
     label: score >= 40 ? 'ai_assisted' : 'ai_generated',
     basis: buildBasisText(signals),
+    ddex: mapTelemetryToDdex(inputs, score),
+  };
+}
+
+// DDEX mapping — converts raw COS telemetry inputs into industry-accepted
+// granular AI attribution attributes for downstream partner export.
+export function mapTelemetryToDdex(inputs = {}, finalScore = 0) {
+  return {
+    ai_lyrical_content: !inputs.userProvidedContent,
+    ai_composition: finalScore < 50 && !inputs.humanInstrumentPerformance,
+    ai_instrumentation: !inputs.referenceFile && !inputs.humanInstrumentPerformance,
+    ai_generated_vocals: !!inputs.personaOrTemplate && !!inputs.hasSyntheticVocals,
+    ai_post_production: !!inputs.isAutomatedMaster,
+  };
+}
+
+// Fallback derivation for already-stored assets that predate ddex_ai_metadata:
+// reconstructs the attribution profile from persisted score + signals.
+export function deriveDdexFromAsset(asset = {}) {
+  if (asset.ddex_ai_metadata && Object.keys(asset.ddex_ai_metadata).length > 0) {
+    return asset.ddex_ai_metadata;
+  }
+  const s = asset.participation_signals || {};
+  const score = asset.human_participation_score ?? 0;
+  return {
+    ai_lyrical_content: !s.user_content,
+    ai_composition: score < 50,
+    ai_instrumentation: !s.reference_material,
+    ai_generated_vocals: !!s.persona_used,
+    ai_post_production: asset.asset_type === 'master',
   };
 }
 

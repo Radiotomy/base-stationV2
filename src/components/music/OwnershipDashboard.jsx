@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from 'recharts';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, FileKey2 } from 'lucide-react';
+import ProvenanceManifestCard from '@/components/music/ProvenanceManifestCard';
 import { SCORE_TIERS, getTier, OWNERSHIP_POLICY_TEXT } from '@/utils/participationScore';
 import AiDisclosureBadge from '@/components/music/AiDisclosureBadge';
 import ParticipationBadge from '@/components/music/ParticipationBadge';
@@ -10,6 +12,7 @@ import SignalBreakdownChart from '@/components/music/SignalBreakdownChart';
  * and creative evolution over time for scored items.
  */
 export default function OwnershipDashboard({ items = [] }) {
+  const [manifestId, setManifestId] = useState(null);
   const scored = items.filter(i => i.human_participation_score != null);
 
   if (scored.length === 0) {
@@ -120,15 +123,32 @@ export default function OwnershipDashboard({ items = [] }) {
 
       {/* Recent scored items */}
       <div className="space-y-2">
-        <p className="text-sm font-bold text-foreground">Scored Items</p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-foreground">Scored Items</p>
+          <p className="text-[10px] text-muted-foreground">Click 🔒 to view an item's Provenance Manifest</p>
+        </div>
         {scored.slice(0, 20).map(item => (
-          <div key={item.id} className="p-3 rounded-xl bg-card border border-border flex items-center gap-3">
-            <ParticipationBadge item={item} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate">{item.title}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{item.ai_disclosure_basis}</p>
+          <div key={item.id}>
+            <div className="p-3 rounded-xl bg-card border border-border flex items-center gap-3">
+              <ParticipationBadge item={item} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground truncate">{item.title}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{item.ai_disclosure_basis}</p>
+              </div>
+              <AiDisclosureBadge item={item} />
+              <button
+                onClick={() => setManifestId(manifestId === item.id ? null : item.id)}
+                title="Cryptographic Provenance Manifest"
+                className={`p-2 rounded-lg border transition-colors ${manifestId === item.id ? 'border-amber-500/40 text-amber-400 bg-amber-500/10' : 'border-border text-muted-foreground hover:text-amber-400'}`}
+              >
+                <FileKey2 className="w-4 h-4" />
+              </button>
             </div>
-            <AiDisclosureBadge item={item} />
+            {manifestId === item.id && (
+              <div className="mt-2 mb-3 pl-2 sm:pl-8">
+                <ProvenanceManifestCard asset={item} />
+              </div>
+            )}
           </div>
         ))}
       </div>
