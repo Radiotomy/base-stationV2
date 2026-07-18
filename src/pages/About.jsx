@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import SpacialHistoryDialog from "@/components/about/SpacialHistoryDialog";
 
 export default function About() {
   return (
@@ -52,6 +53,7 @@ export default function About() {
             unprecedented creative floodgates, yet legacy distribution networks and streaming platforms are
             reacting with blunt-force algorithmic bans and mass rejections out of fear of automated spam.
           </p>
+          <SpacialHistoryDialog />
         </div>
 
         {/* TECH SPEC SIDEBAR */}
