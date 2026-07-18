@@ -20,6 +20,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
+import StyleReferenceDisclaimer from '@/components/songwriting/StyleReferenceDisclaimer';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
@@ -459,6 +460,9 @@ export default function LyricsStudio() {
                   <div className={`w-4 h-4 mt-0.5 rounded-full bg-white transition-all ${proMode ? 'ml-[18px]' : 'ml-0.5'}`} />
                 </div>
               </button>
+
+              {/* Style-reference legal disclosure — shown whenever a reference-capable engine is on */}
+              {(proMode || mastersMode) && <StyleReferenceDisclaimer />}
 
               {/* Pro-mode fields */}
               {proMode && (
