@@ -60,6 +60,20 @@ export default function CreativeOwnership() {
           </p>
         </section>
 
+        {/* Human-first stance */}
+        <section className="p-6 rounded-2xl bg-card border border-amber-500/20 space-y-3">
+          <h2 className="text-2xl font-black text-foreground text-center">A hit factory we don't condone</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-2xl mx-auto">
+            We provide some of the best AI music tools in the industry — and we're always pushing to make
+            them better. Left on autopilot, they're capable of operating as a fully automated hit factory.
+            <strong className="text-foreground"> That's not what BASE Station is for.</strong> We push for
+            the most human interaction and participation possible: your ideas, your words, your references,
+            your refinements. When reliance falls on the tools instead of the creator's brain and creative
+            process, the output is ranked exactly as such — through the COS, GenAI disclosure labels, and
+            the provenance methods below. Innovation and human participation always outrank automation here.
+          </p>
+        </section>
+
         {/* Two labels */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
