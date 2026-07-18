@@ -80,6 +80,51 @@ export default function About() {
         </div>
       </section>
 
+      {/* THE MONETIZATION BRIDGE: METADATA & STREAMADS */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 border-t border-slate-800/80 pt-12">
+        <div className="merc-card rounded-xl p-6 flex flex-col justify-between relative overflow-hidden order-last md:order-first">
+          <div className="absolute -top-10 -left-10 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl" />
+          <div>
+            <h3 className="text-xs uppercase tracking-widest text-amber-500 font-bold mb-4 font-mono">Tracking Heritage</h3>
+            <ul className="space-y-4 text-xs text-slate-400">
+              <li>
+                <strong className="text-slate-200 block mb-1">The StreamAds Era:</strong>
+                Engineered real-time server-side ad insertion (SSAI) and automated campaign fulfillment for thousands of independent audio networks.
+              </li>
+              <li>
+                <strong className="text-slate-200 block mb-1">The Content Ledger:</strong>
+                Transitioning from tracking monetized audio impressions to tracking verifiable creative signals (COS) to validate human intent.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="md:col-span-2 space-y-6 text-slate-300 text-base leading-relaxed">
+          <h2 className="text-2xl font-semibold text-slate-100 tracking-tight">
+            The Evolution of Media Measurement: From Ad Insertion to AI Provenance
+          </h2>
+          <p>
+            True democratization requires a secure commercial backbone. Our work didn't stop at building the
+            audio stream; we pioneered the systems that allowed digital broadcasters to monetize them. Through
+            the development of early ad automation technology like <em>StreamAds</em>, we introduced dynamic,
+            real-time audio ad insertion that allowed indie stations to survive and scale.
+          </p>
+          <p>
+            By merging our core automation with <strong className="text-slate-100">Ando Media</strong> and
+            expanding within the <strong className="text-slate-100">Triton Digital</strong> ecosystem, we helped
+            build the definitive global standard for online radio audience measurement, programmatic tracking,
+            and server-side distribution analytics. We proved that to build a credible industry, you must have
+            transparent data frameworks that both buyers and regulatory authorities can completely rely on.
+          </p>
+          <p>
+            At BASE Station, we are executing the exact same playbook. The current challenge for AI creators
+            isn't just generating content—it is tracking and authenticating it. By turning our decades of
+            telemetry, metadata management, and distribution auditing expertise toward the generative landscape,
+            we ensure that your creative data serves as an immutable certificate of origin.
+          </p>
+        </div>
+      </section>
+
       {/* THE SOLUTION: CREATIVE OWNERSHIP SCORE */}
       <section className="border border-amber-500/10 merc-card rounded-xl p-8 mb-16">
         <div className="max-w-3xl">
