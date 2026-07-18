@@ -37,6 +37,10 @@ export default function InlineMediaPlayer({ url, title = 'track', poster = null 
     const el = ref.current;
     if (!el) return;
     if (el.paused) {
+      // Exclusive playback: stop every other audio/video on the page first
+      document.querySelectorAll('audio, video').forEach((other) => {
+        if (other !== el && !other.paused) other.pause();
+      });
       el.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
     } else {
       el.pause();

@@ -57,6 +57,9 @@ export default function StudioAudioPlayer({
     const onTime = () => setCurrentTime(audio.currentTime);
     const onMeta = () => setDuration(audio.duration);
     const onEnd = () => setIsPlaying(false);
+    // Sync UI when this audio is paused/played externally (e.g. another player starting)
+    const onPauseEvt = () => setIsPlaying(false);
+    const onPlayEvt = () => setIsPlaying(true);
     const onWait = () => setBuffering(true);
     const onPlaying = () => setBuffering(false);
     const onErr = () => { setError(true); setIsPlaying(false); };
@@ -64,6 +67,8 @@ export default function StudioAudioPlayer({
     audio.addEventListener('timeupdate', onTime);
     audio.addEventListener('loadedmetadata', onMeta);
     audio.addEventListener('ended', onEnd);
+    audio.addEventListener('pause', onPauseEvt);
+    audio.addEventListener('play', onPlayEvt);
     audio.addEventListener('waiting', onWait);
     audio.addEventListener('playing', onPlaying);
     audio.addEventListener('canplay', onPlaying);
@@ -73,6 +78,8 @@ export default function StudioAudioPlayer({
       audio.removeEventListener('timeupdate', onTime);
       audio.removeEventListener('loadedmetadata', onMeta);
       audio.removeEventListener('ended', onEnd);
+      audio.removeEventListener('pause', onPauseEvt);
+      audio.removeEventListener('play', onPlayEvt);
       audio.removeEventListener('waiting', onWait);
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('canplay', onPlaying);
@@ -97,6 +104,10 @@ export default function StudioAudioPlayer({
       audioRef.current.pause();
       setIsPlaying(false);
     } else {
+      // Exclusive playback: stop every other audio/video on the page first
+      document.querySelectorAll('audio, video').forEach((el) => {
+        if (el !== audioRef.current && !el.paused) el.pause();
+      });
       audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setError(true));
     }
   }, [isPlaying, error]);
