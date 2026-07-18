@@ -35,6 +35,14 @@ const OPTIONS = [
       { value: 'music_v2', desc: 'Eleven Music v2 — by ElevenLabs. Latest version with highest-fidelity 48kHz output.' },
     ],
   },
+  {
+    group: 'Producer (FUZZ)',
+    provider: 'producer',
+    models: [
+      { value: 'FUZZ-2.0', desc: 'FUZZ 2.0 — flagship Producer engine. Vocals or instrumentals with a generous 5,000-character lyric budget.' },
+      { value: 'FUZZ-2.0 Pro', desc: 'FUZZ 2.0 Pro — premium FUZZ tier with the highest-fidelity output.' },
+    ],
+  },
 ];
 
 /** Pick the music gen model these lyrics will target — value = "provider|model". */
@@ -74,7 +82,7 @@ export default function TargetModelSelect({ value, onChange }) {
           </TooltipProvider>
         </SelectContent>
       </Select>
-      <p className="text-[10px] text-muted-foreground">Lyric budget capped at {max.toLocaleString()} characters for this model.</p>
+      <p className="text-[10px] text-muted-foreground">Lyric budget capped at {max.toLocaleString()} characters for this model. ✨ More models coming soon.</p>
     </div>
   );
 }

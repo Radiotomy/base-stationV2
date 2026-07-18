@@ -25,12 +25,13 @@ import { calculateHumanParticipationScore } from '@/utils/participationScore';
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
 // Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
+const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10, producer: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
   { value: 'tempcolor',  label: 'Tempolor',   desc: 'Song & instrumental modes + Lyria 3 Pro', color: 'border-amber-500 bg-amber-500/10' },
   { value: 'elevenlabs', label: 'ElevenLabs', desc: 'Eleven Music — instant results, C2PA-signed', color: 'border-violet-500 bg-violet-500/10' },
+  { value: 'producer',   label: 'Producer (FUZZ)', desc: 'FUZZ 2.0 engine — vocals & instrumentals', color: 'border-emerald-500 bg-emerald-500/10' },
 ];
 
 const SONIC_MODELS = [
@@ -66,6 +67,15 @@ const ELEVEN_MODELS = [
   { value: 'music_v2', label: 'Eleven Music v2', desc: 'Latest — highest fidelity 48kHz output' },
 ];
 
+// Producer (aimusicapi) — FUZZ model family. Backend accepts the full validated catalog.
+const PRODUCER_MODELS = [
+  { value: 'FUZZ-2.0',      label: 'FUZZ 2.0',      desc: '⭐ Flagship — best all-round quality' },
+  { value: 'FUZZ-2.0 Pro',  label: 'FUZZ 2.0 Pro',  desc: 'Premium tier — highest fidelity' },
+  { value: 'FUZZ-2.0 Raw',  label: 'FUZZ 2.0 Raw',  desc: 'Unpolished, raw character output' },
+  { value: 'FUZZ-3-Demo',   label: 'FUZZ 3 Demo',   desc: 'Early preview of the next generation' },
+  { value: 'FUZZ-1.1 Pro',  label: 'FUZZ 1.1 Pro',  desc: 'Previous generation — fast & reliable' },
+];
+
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
 const MOOD_CHIPS = ['Energetic', 'Chill', 'Dark', 'Happy', 'Sad', 'Uplifting', 'Aggressive', 'Romantic', 'Melancholic'];
 const DURATIONS = [15, 30, 60, 90, 120];
@@ -92,6 +102,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
   const [elevenModel, setElevenModel] = useState('music_v1');
+  const [producerModel, setProducerModel] = useState('FUZZ-2.0');
   const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)
   const [genre, setGenre] = useState(initialGenre || 'Hip-Hop');
   const [mood, setMood] = useState('Energetic');
@@ -313,7 +324,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         vocal_timbre: data.vocal_timbre || '',
         sound_prompt: soundPrompt || '',
         content_hash: data.content_hash || null,
-        model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : 'FUZZ-2.0'),
+        model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : producerModel),
       });
       // Reflect provider-returned lyrics into UI so user can see them
       if (mergedLyrics && !lyrics?.trim()) {
@@ -323,7 +334,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       }
       toast.success('✅ Auto-saved to library with full metadata!');
     }
-  }, [mood, genre, provider, saveTrackToLibrary, lyrics, soundPrompt, duration, sonicModel, temporlorModel]);
+  }, [mood, genre, provider, saveTrackToLibrary, lyrics, soundPrompt, duration, sonicModel, temporlorModel, elevenModel, producerModel]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -367,7 +378,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   };
 
   // Current model per provider — drives lyric char budgets + compatibility checks
-  const activeModel = provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : 'FUZZ-2.0';
+  const activeModel = provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : producerModel;
   const activeLyricsMax = getLyricsSpec(provider, activeModel).maxLyricsChars;
 
   const runMastersEngine = async () => {
@@ -438,6 +449,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         ...(provider === 'sonic' && { model: sonicModel }),
         ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
         ...(provider === 'elevenlabs' && { model: elevenModel }),
+        ...(provider === 'producer' && { model: producerModel }),
       });
 
       if (res.data?.audio_url || res.data?.output_url) {
@@ -507,7 +519,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           duration: result?.duration || duration,
           bpm: result?.bpm,
           key: result?.key,
-          model: result?.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : ''),
+          model: result?.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : producerModel),
           ai_assisted: true,
           sound_prompt: soundPrompt || '',
           lyrics: mergedLyrics,
@@ -542,7 +554,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       {/* Provider */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Provider</p>
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {PROVIDERS.map(p => (
             <button key={p.value} onClick={() => setProvider(p.value)}
               className={`p-3 rounded-xl border text-left transition-all ${provider === p.value ? p.color : 'border-border bg-card hover:border-border/80'}`}>
@@ -551,6 +563,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             </button>
           ))}
         </div>
+        <p className="text-[10px] text-muted-foreground mt-2">✨ More AI music models coming soon.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -655,6 +668,22 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                 ))}
               </div>
               <p className="text-[10px] text-muted-foreground mt-1.5">⚡ Synchronous — your track returns in one step, C2PA provenance-signed.</p>
+            </div>
+          )}
+
+          {provider === 'producer' && (
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model Version</p>
+              <div className="grid grid-cols-1 gap-1.5">
+                {PRODUCER_MODELS.map(m => (
+                  <button key={m.value} onClick={() => setProducerModel(m.value)}
+                    className={`px-2.5 py-2 rounded-lg border text-left transition-all ${producerModel === m.value ? 'border-emerald-500 bg-emerald-500/10' : 'border-border bg-card'}`}>
+                    <p className="text-xs font-bold text-foreground">{m.label}</p>
+                    <p className="text-xs text-muted-foreground">{m.desc}</p>
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">🎛️ FUZZ family — add lyrics for vocals, or leave empty for an instrumental.</p>
             </div>
           )}
 

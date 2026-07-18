@@ -26,6 +26,11 @@ const FEATURES = [
   { to: "/vocal-harmonizer", icon: Mic2, title: "Vocal Harmonizer", badge: "Pro" },
   { to: "/mastering-studio", icon: Star, title: "AI Mastering", badge: "Pro" },
   { to: "/visualizer-studio", icon: Film, title: "Visualizer Studio", badge: "Live" },
+  { to: "/cover-song-studio", icon: Music, title: "Cover & Extend", badge: "Pro" },
+  { to: "/sfx-studio", icon: Zap, title: "Sound FX Studio", badge: "New" },
+  { to: "/audio-remix-studio", icon: Headphones, title: "Audio Remix", badge: "Pro" },
+  { to: "/promo-studio", icon: Star, title: "Promo Package", badge: "New" },
+  { to: "/id3-studio", icon: Music, title: "ID3 Tag Editor", badge: "New" },
   { to: "/ai-studio/history", icon: Zap, title: "Studio History", badge: "New" },
 ];
 

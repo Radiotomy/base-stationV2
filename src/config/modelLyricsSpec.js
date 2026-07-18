@@ -17,6 +17,11 @@ const SPECS = {
   },
   producer: {
     default: { maxLyricsChars: 5000, structureTags: true, vocal: true, languages: 'Multilingual' },
+    models: {
+      'FUZZ-2.0':     { notes: 'Flagship FUZZ engine — balanced quality across genres' },
+      'FUZZ-2.0 Pro': { notes: 'Premium FUZZ tier — highest fidelity output' },
+      'FUZZ-3-Demo':  { notes: 'Early preview of the next-generation FUZZ engine' },
+    },
   },
   tempcolor: {
     default: { maxLyricsChars: 3000, structureTags: true, vocal: true, languages: 'Multilingual' },
