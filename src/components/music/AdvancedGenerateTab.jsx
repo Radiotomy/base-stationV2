@@ -25,13 +25,12 @@ import { calculateHumanParticipationScore } from '@/utils/participationScore';
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
 // Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10, producer: 10 };
+const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
-  { value: 'tempcolor',  label: 'Tempolor',   desc: 'Song & instrumental modes + Lyria 3 Pro', color: 'border-amber-500 bg-amber-500/10' },
+  { value: 'tempcolor',  label: 'Tempolor',   desc: 'Song & instrumental modes + Google Lyria 3 Pro', color: 'border-amber-500 bg-amber-500/10' },
   { value: 'elevenlabs', label: 'ElevenLabs', desc: 'Eleven Music — instant results, C2PA-signed', color: 'border-violet-500 bg-violet-500/10' },
-  { value: 'producer',   label: 'Producer', desc: 'Google Lyria 3 Pro — studio-grade in ~30s', color: 'border-emerald-500 bg-emerald-500/10' },
 ];
 
 const SONIC_MODELS = [
@@ -543,7 +542,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       {/* Provider */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Provider</p>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {PROVIDERS.map(p => (
             <button key={p.value} onClick={() => setProvider(p.value)}
               className={`p-3 rounded-xl border text-left transition-all ${provider === p.value ? p.color : 'border-border bg-card hover:border-border/80'}`}>
@@ -660,16 +659,6 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             </div>
           )}
 
-          {provider === 'producer' && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model</p>
-              <div className="px-2.5 py-2 rounded-lg border border-emerald-500 bg-emerald-500/10">
-                <p className="text-xs font-bold text-foreground">Lyria 3 Pro</p>
-                <p className="text-xs text-muted-foreground">By Google — Suno v5-class quality, ~30s generation</p>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">🎛️ Legacy FUZZ models were retired upstream (Apr 2026) — Producer now runs on Google Lyria 3 Pro. Add lyrics for vocals, leave empty for an instrumental.</p>
-            </div>
-          )}
 
           {/* Voice Persona */}
           {voicePersonas.length > 0 && (

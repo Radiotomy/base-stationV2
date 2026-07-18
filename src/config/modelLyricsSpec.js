@@ -16,12 +16,8 @@ const SPECS = {
     },
   },
   producer: {
-    // Producer API is powered by Google Lyria 3 Pro (FUZZ-* models retired upstream Apr 2026,
-    // silently aliased to Lyria 3 Pro per docs.musicapi.ai migration notice).
+    // Not exposed in the UI — Lyria models are offered to users via the Tempolor provider.
     default: { maxLyricsChars: 5000, structureTags: true, vocal: true, languages: 'Multilingual' },
-    models: {
-      'Lyria 3 Pro': { notes: 'By Google — Suno v5-class quality, ~30s generation' },
-    },
   },
   tempcolor: {
     default: { maxLyricsChars: 3000, structureTags: true, vocal: true, languages: 'Multilingual' },

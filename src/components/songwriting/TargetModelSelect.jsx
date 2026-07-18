@@ -35,13 +35,6 @@ const OPTIONS = [
       { value: 'music_v2', desc: 'Eleven Music v2 — by ElevenLabs. Latest version with highest-fidelity 48kHz output.' },
     ],
   },
-  {
-    group: 'Producer',
-    provider: 'producer',
-    models: [
-      { value: 'Lyria 3 Pro', desc: 'Lyria 3 Pro — by Google, via the Producer engine. Suno v5-class quality in ~30 seconds, 5,000-character lyric budget. (Replaced the retired FUZZ models.)' },
-    ],
-  },
 ];
 
 /** Pick the music gen model these lyrics will target — value = "provider|model". */
