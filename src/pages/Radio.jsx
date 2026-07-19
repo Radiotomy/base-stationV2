@@ -63,6 +63,8 @@ export default function Radio() {
   const fallbackRef = useRef(null);   // plain element for CORS-blocked streams (Audius CDN etc.)
   const activeElRef = useRef(null);
   const playSeqRef = useRef(0);
+  const loadSeqRef = useRef(0);      // discard stale/duplicate queue loads (e.g. double mount)
+  const userNavigatedRef = useRef(false); // only autoplay after a real user action
   const [eqActive, setEqActive] = useState(true);
   const { setBandGain, analyserL, analyserR } = useAudioProcessor(audioRef);
 
@@ -133,7 +135,8 @@ export default function Radio() {
   }, [volume, muted]);
 
   // Load queue when channel changes
-  const loadQueue = useCallback(async (ch) => {
+  const loadQueue = useCallback(async (ch, { autoplay = true } = {}) => {
+    const loadSeq = ++loadSeqRef.current;
     setLoadingQueue(true);
     setQueue([]);
     setQueueIndex(0);
@@ -148,6 +151,7 @@ export default function Radio() {
         genre: ch.genre || undefined,
         limit: 15,
       });
+      if (loadSeq !== loadSeqRef.current) return; // a newer load superseded this one
       const q = res.data?.queue || [];
       setQueue(q);
       setLoadingQueue(false);
@@ -155,18 +159,20 @@ export default function Radio() {
         // Pick a random starting track so each visit mixes Audius + community uploads
         const startIdx = Math.floor(Math.random() * q.length);
         setQueueIndex(startIdx);
-        playTrack(q[startIdx]);
+        if (autoplay) playTrack(q[startIdx]);
       } else {
         toast.info("No tracks available for this channel yet — try another channel or submit a track.");
       }
     } catch (e) {
+      if (loadSeq !== loadSeqRef.current) return;
       setLoadingQueue(false);
       toast.error("Couldn't load channel: " + e.message);
     }
   }, []);
 
   useEffect(() => {
-    loadQueue(activeChannel);
+    // No autoplay on initial page load — playback starts on the user's first action
+    loadQueue(activeChannel, { autoplay: userNavigatedRef.current });
   }, [activeChannel]);
 
   const playTrack = async (track) => {
@@ -221,6 +227,7 @@ export default function Radio() {
   };
 
   const switchChannel = (ch) => {
+    userNavigatedRef.current = true;
     setActiveChannel(ch);
   };
 
