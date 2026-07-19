@@ -77,6 +77,7 @@ const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
 const SocialMediaAutomation = lazy(() => import('./pages/SocialMediaAutomation'));
 const WhyBaseStation = lazy(() => import('./pages/WhyBaseStation'));
 const NewsHub = lazy(() => import('./pages/NewsHub'));
+const DocsHub = lazy(() => import('./pages/DocsHub'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
 const Terms = lazy(() => import('./pages/Terms'));
@@ -169,6 +170,8 @@ const AuthenticatedApp = () => {
             <Route path="/social-automation" element={<SocialMediaAutomation />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
             <Route path="/news-hub" element={<NewsHub />} />
+            <Route path="/docs" element={<DocsHub />} />
+            <Route path="/developers" element={<Navigate to="/docs" replace />} />
             <Route path="/about" element={<About />} />
             <Route path="/help" element={<Help />} />
             <Route path="/terms" element={<Terms />} />
