@@ -185,18 +185,47 @@ export default function Radio() {
     loadQueue(activeChannel, { autoplay: userNavigatedRef.current });
   }, [activeChannel]);
 
+  const proxiedUrlsRef = useRef({}); // original audio_url -> CORS-friendly proxied copy
+
   const playTrack = async (track) => {
     if (!track?.audio_url) return;
     const seq = ++playSeqRef.current;
-    const useEQ = await probeCors(track.audio_url);
+    let url = track.audio_url;
+    let useEQ = await probeCors(url);
     if (seq !== playSeqRef.current) return; // user skipped while probing
+    // Community / generated tracks on CORS-blocked hosts: pull a copy through
+    // our audio proxy so the EQ + real VU analysis chain works for them too.
+    // Audius catalog tracks stay direct-streamed from their CDN.
+    if (!useEQ && track.source !== 'audius') {
+      const cached = proxiedUrlsRef.current[track.audio_url];
+      if (cached) {
+        url = cached;
+        useEQ = true;
+      } else {
+        try {
+          const res = await base44.functions.invoke('proxyAudioAsset', {
+            source_url: track.audio_url,
+            filename: `${(track.track_title || 'track').replace(/[^\w\- ]/g, '')}.mp3`,
+          });
+          if (seq !== playSeqRef.current) return;
+          if (res.data?.file_url) {
+            proxiedUrlsRef.current[track.audio_url] = res.data.file_url;
+            url = res.data.file_url;
+            useEQ = true;
+          }
+        } catch {
+          // proxy unavailable — fall back to direct playback without EQ
+          if (seq !== playSeqRef.current) return;
+        }
+      }
+    }
     const el = useEQ ? audioRef.current : fallbackRef.current;
     const other = useEQ ? fallbackRef.current : audioRef.current;
     if (!el) return;
     if (other) { other.pause(); other.removeAttribute('src'); }
     activeElRef.current = el;
     setEqActive(useEQ);
-    el.src = track.audio_url;
+    el.src = url;
     el.play().catch(() => setIsPlaying(false));
     setIsPlaying(true);
   };
