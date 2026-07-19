@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Users, Search, Shield, Music, Image as ImageIcon, FileText, Zap, Coins, ChevronRight, Mail, Calendar, X, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import UserDetailPanel from "@/components/admin/UserDetailPanel";
+import BetaRequestsPanel from "@/components/admin/BetaRequestsPanel";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -74,6 +75,9 @@ export default function AdminUsers() {
           <Stat label="Assets" value={totals.assets} />
         </div>
       </div>
+
+      {/* Pending beta access requests */}
+      <BetaRequestsPanel />
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-5 flex-wrap">

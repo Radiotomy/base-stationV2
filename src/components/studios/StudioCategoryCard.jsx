@@ -21,15 +21,23 @@ export default function StudioCategoryCard({ title, subtitle, icon: Icon, accent
       </div>
 
       <div className="space-y-2">
-        {studios.map(({ to, label, desc, emoji }) => (
+        {studios.map(({ to, label, desc, emoji, beta }) => (
           <Link
             key={to}
             to={to}
+            title={beta ? "Beta — requires admin approval to access" : undefined}
             className="group flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/15 transition-all"
           >
             <span className="text-xl flex-shrink-0">{emoji}</span>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm text-foreground truncate">{label}</p>
+              <p className="font-bold text-sm text-foreground truncate">
+                {label}
+                {beta && (
+                  <span className="ml-1.5 text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 align-middle">
+                    Beta
+                  </span>
+                )}
+              </p>
               <p className="text-xs text-muted-foreground truncate">{desc}</p>
             </div>
             <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all flex-shrink-0" />

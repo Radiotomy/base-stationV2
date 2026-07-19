@@ -6,6 +6,11 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the user has finished the 3-step onboarding tour"
+    },
+    "beta_access": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin-granted access to beta studios (Video Studio, Live Studio)"
     }
   },
   "required": []

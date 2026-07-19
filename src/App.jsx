@@ -7,6 +7,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminGate from '@/components/auth/AdminGate';
+import BetaGate from '@/components/auth/BetaGate';
 import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
 import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
@@ -135,9 +136,9 @@ const AuthenticatedApp = () => {
             <Route path="/lyrics-studio" element={<LyricsStudio />} />
             <Route path="/music-studio" element={<MusicStudio />} />
             <Route path="/cover-art-studio" element={<CoverArtStudio />} />
-            <Route path="/video-studio" element={<VideoStudio />} />
+            <Route path="/video-studio" element={<BetaGate feature="Video Studio"><VideoStudio /></BetaGate>} />
             <Route path="/asset-gallery" element={<AssetGallery />} />
-            <Route path="/live-studio" element={<LiveStudio />} />
+            <Route path="/live-studio" element={<BetaGate feature="Live Studio"><LiveStudio /></BetaGate>} />
             <Route path="/live-manager" element={<LiveManager />} />
             <Route path="/live-watch" element={<LiveWatch />} />
             <Route path="/live-summary" element={<LiveSummary />} />

@@ -41,7 +41,7 @@ const CATEGORIES = [
     accent: "bg-gradient-to-br from-pink-600 to-rose-600",
     studios: [
       { to: "/cover-art-studio",  emoji: "🎨", label: "Cover Art Studio",  desc: "AI album & track art" },
-      { to: "/video-studio",      emoji: "🎬", label: "Video Studio",      desc: "Music videos & b-roll" },
+      { to: "/video-studio",      emoji: "🎬", label: "Video Studio",      desc: "Music videos & b-roll", beta: true },
       { to: "/visualizer-studio", emoji: "🌈", label: "Visualizer Studio", desc: "Audio-reactive visuals" },
     ],
   },
@@ -51,7 +51,7 @@ const CATEGORIES = [
     icon: Radio,
     accent: "bg-gradient-to-br from-red-600 to-orange-600",
     studios: [
-      { to: "/live-studio",   emoji: "🔴", label: "Live Studio",   desc: "Go live with synced playback & 3D venues" },
+      { to: "/live-studio",   emoji: "🔴", label: "Live Studio",   desc: "Go live with synced playback & 3D venues", beta: true },
       { to: "/live-manager",  emoji: "🗂️", label: "Live Manager",  desc: "Manage sessions, venues & moderation" },
     ],
   },
