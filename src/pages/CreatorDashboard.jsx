@@ -127,7 +127,7 @@ export default function CreatorDashboard() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12">
       {/* Hero */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>

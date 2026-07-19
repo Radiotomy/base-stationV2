@@ -256,6 +256,23 @@ export default function Header({ user }) {
             style={{ background: "linear-gradient(180deg, #1A1410 0%, #0F0C09 100%)" }}
           >
             <div className="max-w-7xl mx-auto px-4 py-3 space-y-1">
+              {/* Search + Help — otherwise unreachable on small phones */}
+              <button
+                onClick={() => { setMobileOpen(false); window.dispatchEvent(new Event('bs:open-search')); }}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-white/70 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
+              >
+                <Search className="w-4 h-4" />
+                Search
+              </button>
+              <Link
+                to="/help"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-semibold text-white/70 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
+              >
+                <HelpCircle className="w-4 h-4" />
+                Help
+              </Link>
+              <div className="my-2 border-t border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]" />
               {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
                 <Link
                   key={to}

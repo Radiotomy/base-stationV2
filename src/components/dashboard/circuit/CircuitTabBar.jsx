@@ -6,7 +6,7 @@
  */
 export default function CircuitTabBar({ tabs = [], activeTab, onChange }) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+    <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {tabs.map(({ key, label, icon: Icon, count, tip }) => {
         const active = activeTab === key;
         return (
@@ -14,7 +14,7 @@ export default function CircuitTabBar({ tabs = [], activeTab, onChange }) {
             key={key}
             title={tip}
             onClick={() => onChange(key)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 min-h-[42px] rounded-lg border text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
               active
                 ? "border-[#FF9A4D]/50 bg-[#FF9A4D]/10 text-[#FFC98A]"
                 : "border-border/60 bg-card/40 text-muted-foreground hover:text-foreground hover:border-border"

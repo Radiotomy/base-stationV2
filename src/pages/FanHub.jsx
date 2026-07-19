@@ -62,7 +62,7 @@ export default function FanHub() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-12">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-12">
       {/* Hero */}
       <div className="mb-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#FF9A4D] mb-1.5 flex items-center gap-2">
