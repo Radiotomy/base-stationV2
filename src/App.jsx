@@ -77,7 +77,7 @@ const Credits = lazy(() => import('./pages/Credits'));
 const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
 const SocialMediaAutomation = lazy(() => import('./pages/SocialMediaAutomation'));
 const WhyBaseStation = lazy(() => import('./pages/WhyBaseStation'));
-const NewsHub = lazy(() => import('./pages/NewsHub'));
+const AIMusicLegalNews = lazy(() => import('./pages/AIMusicLegalNews'));
 const DocsHub = lazy(() => import('./pages/DocsHub'));
 const About = lazy(() => import('./pages/About'));
 const Help = lazy(() => import('./pages/Help'));
@@ -176,7 +176,7 @@ const AuthenticatedApp = () => {
             <Route path="/templates" element={<CommunityTemplates />} />
             <Route path="/social-automation" element={<SocialMediaAutomation />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
-            <Route path="/news-hub" element={<NewsHub />} />
+            <Route path="/news-hub" element={<AIMusicLegalNews />} />
             <Route path="/docs" element={<DocsHub />} />
             <Route path="/developers" element={<Navigate to="/docs" replace />} />
             <Route path="/about" element={<About />} />

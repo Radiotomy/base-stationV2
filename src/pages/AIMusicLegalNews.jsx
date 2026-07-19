@@ -13,7 +13,7 @@ const CATEGORIES = [
   { value: 'resources', label: '🧰 Resources' },
 ];
 
-export default function NewsHub() {
+export default function AIMusicLegalNews() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState('all');
