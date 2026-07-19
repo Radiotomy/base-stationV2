@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Music, Radio, ArrowRight, Check, X } from 'lucide-react';
+import { Sparkles, Music, Radio, Shield, ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -30,6 +30,14 @@ const STEPS = [
     gradient: 'from-emerald-600 to-teal-600',
     visual: '📡',
     cta: { label: 'Submit a Track', to: '/submit' },
+  },
+  {
+    title: 'Built on Integrity 🛡️',
+    description: 'Every track carries a Creative Ownership Score (COS) and a transparent AI disclosure label, so your work stays verifiable, protected, and legally sound.',
+    icon: Shield,
+    gradient: 'from-amber-600 to-orange-600',
+    visual: '⚖️',
+    cta: { label: 'Learn about COS', to: '/creative-ownership' },
   },
 ];
 
