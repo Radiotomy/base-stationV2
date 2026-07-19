@@ -138,6 +138,40 @@ Deno.serve(async (req) => {
         }
       }
 
+      // 2.5 COS / DDEX provenance — fetched server-side from the source asset
+      let cos = null;
+      try {
+        let src = null;
+        if (track.asset_id) {
+          const rows = await base44.asServiceRole.entities.UserAsset.filter({ id: track.asset_id });
+          src = rows[0] || null;
+        }
+        if (!src && track.artist_id) {
+          const rows = await base44.asServiceRole.entities.UserAsset.filter(
+            { user_id: track.artist_id, title: track.title }, '-created_date', 1
+          );
+          src = rows[0] || null;
+        }
+        if (src) {
+          const sig = src.participation_signals || {};
+          const score = src.human_participation_score ?? 0;
+          cos = {
+            human_participation_score: score,
+            ai_disclosure_label: src.ai_disclosure_label || src.ai_label || 'ai_generated',
+            ddex_ai_metadata: (src.ddex_ai_metadata && Object.keys(src.ddex_ai_metadata).length > 0)
+              ? src.ddex_ai_metadata
+              : {
+                  ai_lyrical_content: !sig.user_content,
+                  ai_composition: score < 50,
+                  ai_instrumentation: !sig.reference_material,
+                  ai_generated_vocals: !!sig.persona_used,
+                  ai_post_production: src.asset_type === 'master',
+                },
+            c2pa_provenance_hash: src.c2pa_provenance_hash || null,
+          };
+        }
+      } catch (_) { cos = null; }
+
       // 3. Build NFT-style metadata JSON (ERC-721 / Metaplex compatible shape)
       const metadataJson = {
         name: track.title,
@@ -153,6 +187,10 @@ Deno.serve(async (req) => {
           { trait_type: 'Fingerprint (SHA-256)', value: track.fingerprint_hash || '' },
           { trait_type: 'Registered Via', value: 'Base Station' },
           { trait_type: 'Registered At', value: new Date().toISOString() },
+          ...(cos ? [
+            { trait_type: 'Human Participation Score', value: cos.human_participation_score },
+            { trait_type: 'AI Disclosure Label', value: cos.ai_disclosure_label },
+          ] : []),
         ],
         properties: {
           artist_id: track.artist_id || null,
@@ -160,6 +198,12 @@ Deno.serve(async (req) => {
           cover_cid: cover?.cid || null,
           fingerprint_hash: track.fingerprint_hash || null,
           blockchain: track.blockchain || null,
+          ...(cos ? {
+            human_participation_score: cos.human_participation_score,
+            ai_disclosure_label: cos.ai_disclosure_label,
+            ddex_ai_metadata: cos.ddex_ai_metadata,
+            c2pa_provenance_hash: cos.c2pa_provenance_hash,
+          } : {}),
         },
       };
 

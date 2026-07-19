@@ -44,6 +44,19 @@ Deno.serve(async (req) => {
       coverArt = cov[0];
     }
 
+    // COS / DDEX provenance travels with the publish payload
+    const sig = asset.participation_signals || {};
+    const cosScore = asset.human_participation_score ?? 0;
+    const ddexMeta = (asset.ddex_ai_metadata && Object.keys(asset.ddex_ai_metadata).length > 0)
+      ? asset.ddex_ai_metadata
+      : {
+          ai_lyrical_content: !sig.user_content,
+          ai_composition: cosScore < 50,
+          ai_instrumentation: !sig.reference_material,
+          ai_generated_vocals: !!sig.persona_used,
+          ai_post_production: asset.asset_type === 'master',
+        };
+
     // Call audiusClient via service-role
     const publishRes = await base44.asServiceRole.functions.invoke('audiusClient', {
       action: 'publishTrack',
@@ -57,6 +70,9 @@ Deno.serve(async (req) => {
         bpm: asset.metadata?.bpm,
         tags: asset.tags || [],
         stems,
+        human_participation_score: cosScore,
+        ai_disclosure_label: asset.ai_disclosure_label || asset.ai_label || 'ai_generated',
+        ddex_ai_metadata: ddexMeta,
         ...metadata,
       },
     });

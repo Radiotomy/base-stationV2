@@ -71,6 +71,15 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden — you do not own this registration' }, { status: 403 });
     }
 
+    // COS / DDEX provenance lookup — best-effort match on owner + track title
+    let cosAsset = null;
+    try {
+      const matches = await base44.asServiceRole.entities.UserAsset.filter(
+        { user_id: reg.artist_id, title: reg.track_title }, '-created_date', 1
+      );
+      cosAsset = matches[0] || null;
+    } catch (_) { cosAsset = null; }
+
     // ---- Build the PDF ----
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -169,6 +178,42 @@ Deno.serve(async (req) => {
     if (reg.fingerprint_hash) drawRow('Fingerprint (SHA-256)', reg.fingerprint_hash);
     drawRow('Status', reg.registration_status || 'pending');
     drawRow('Registered At', reg.registered_at ? new Date(reg.registered_at).toUTCString() : (reg.created_date ? new Date(reg.created_date).toUTCString() : '—'));
+
+    // ---- Creative Ownership & AI Disclosure (COS + DDEX) ----
+    if (cosAsset) {
+      const sig = cosAsset.participation_signals || {};
+      const cosScore = cosAsset.human_participation_score ?? 0;
+      const ddex = (cosAsset.ddex_ai_metadata && Object.keys(cosAsset.ddex_ai_metadata).length > 0)
+        ? cosAsset.ddex_ai_metadata
+        : {
+            ai_lyrical_content: !sig.user_content,
+            ai_composition: cosScore < 50,
+            ai_instrumentation: !sig.reference_material,
+            ai_generated_vocals: !!sig.persona_used,
+            ai_post_production: cosAsset.asset_type === 'master',
+          };
+
+      if (y > doc.internal.pageSize.getHeight() - 340) { doc.addPage(); y = margin; }
+      y += 10;
+      doc.setDrawColor(220, 220, 220);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 25;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(...accent);
+      doc.text('Creative Ownership & AI Disclosure', margin, y);
+      y += 22;
+
+      drawRow('Ownership Score', `${cosScore} / 100 human participation`);
+      drawRow('Disclosure Label', String(cosAsset.ai_disclosure_label || cosAsset.ai_label || reg.ai_label || 'ai_generated').replace(/_/g, '-').toUpperCase());
+      drawRow('Lyrical Content', ddex.ai_lyrical_content ? 'AI-Generated' : 'Human');
+      drawRow('Composition', ddex.ai_composition ? 'AI-Generated' : 'Human');
+      drawRow('Instrumentation', ddex.ai_instrumentation ? 'AI-Generated' : 'Human');
+      drawRow('Vocals', ddex.ai_generated_vocals ? 'AI-Generated' : 'Human');
+      drawRow('Post-Production', ddex.ai_post_production ? 'AI-Generated' : 'Human');
+      if (cosAsset.c2pa_provenance_hash) drawRow('C2PA Hash', cosAsset.c2pa_provenance_hash);
+    }
 
     // Footer
     const pageHeight = doc.internal.pageSize.getHeight();
