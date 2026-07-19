@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Play, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import AudiusLicenseBadge from '@/components/audius/AudiusLicenseBadge';
 
 export default function AudiusTrackCard({ track }) {
   const artwork = track.artwork?.['480x480'] || track.artwork?.['150x150'];
@@ -24,8 +25,9 @@ export default function AudiusTrackCard({ track }) {
           <User className="w-3 h-3" />
           {track.user?.name || track.user?.handle || 'Unknown'}
         </Link>
-        <div className="flex items-center gap-2 mt-1">
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
           {track.genre && <Badge variant="outline" className="text-xs px-1.5 py-0">{track.genre}</Badge>}
+          <AudiusLicenseBadge licensing={track.licensing} size="sm" />
           {track.play_count != null && (
             <span className="text-xs text-muted-foreground">{track.play_count.toLocaleString()} plays</span>
           )}

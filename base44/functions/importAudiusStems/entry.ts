@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { getLicenseStatus } from '../../shared/audiusLicense.ts';
 
 const APP_NAME = 'BaseStation';
 const DEFAULT_NODE = 'https://discoveryprovider.audius.co';
@@ -44,6 +45,15 @@ Deno.serve(async (req) => {
     const track = await fetchTrack(node, trackId);
     if (!track) return Response.json({ error: 'Audius track not found' }, { status: 404 });
 
+    // === LEGAL GATE: only Creative Commons / artist-flagged open-remix tracks may be imported ===
+    const licensing = getLicenseStatus(track);
+    if (!licensing.is_open) {
+      return Response.json({
+        error: 'This track is All Rights Reserved on Audius. Only Creative Commons or artist-approved open-remix tracks can be imported for sampling, stems or studio use.',
+        licensing,
+      }, { status: 403 });
+    }
+
     const artistName = track.user?.name || track.user?.handle || 'Unknown Artist';
     const artwork = track.artwork?.['1000x1000']
                  || track.artwork?.['480x480']
@@ -73,7 +83,9 @@ Deno.serve(async (req) => {
       tags_text: track.tags || null,
       isrc: track.isrc || null,
       iswc: track.iswc || null,
-      license: track.license || null,
+      license: licensing.license,
+      license_open: licensing.is_open,
+      license_basis: licensing.reason,
       provider: 'audius',
       ai_assisted: false,
     };

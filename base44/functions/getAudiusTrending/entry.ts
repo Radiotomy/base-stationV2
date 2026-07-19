@@ -1,3 +1,5 @@
+import { annotateTracks } from '../../shared/audiusLicense.ts';
+
 const MANAGED_GATEWAY = 'https://api.audius.co/v1';
 const DEFAULT_DISCOVERY = 'https://discoveryprovider.audius.co';
 const APP_NAME = 'BaseStation';
@@ -27,7 +29,7 @@ Deno.serve(async (req) => {
     if (genre) url.searchParams.set('genre', genre);
     const res = await fetch(url.toString(), { headers });
     const json = await res.json();
-    return Response.json({ data: json?.data || [] });
+    return Response.json({ data: annotateTracks(json?.data || []) });
   } catch (error) {
     return Response.json({ error: error.message, data: [] }, { status: 500 });
   }

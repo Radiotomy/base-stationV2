@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { annotateTrack, annotateTracks } from '../../shared/audiusLicense.ts';
 
 /**
  * Unified Audius / OpenAudio Protocol client wrapper.
@@ -71,16 +72,16 @@ Deno.serve(async (req) => {
       // === READ-ONLY (public) ===
       case 'getTrending': {
         const data = await audiusGet('/tracks/trending', { genre: payload.genre, time: payload.time || 'week' });
-        return Response.json({ data: data?.data || [] });
+        return Response.json({ data: annotateTracks(data?.data || []) });
       }
       case 'search': {
         const data = await audiusGet('/tracks/search', { query: payload.query, limit: payload.limit || 20 });
-        return Response.json({ data: data?.data || [] });
+        return Response.json({ data: annotateTracks(data?.data || []) });
       }
       case 'getTrack': {
         if (!payload.trackId) throw new Error('trackId required');
         const data = await audiusGet(`/tracks/${payload.trackId}`);
-        return Response.json({ data: data?.data || null });
+        return Response.json({ data: annotateTrack(data?.data || null) });
       }
       case 'getArtist': {
         if (!payload.userId) throw new Error('userId required');
@@ -107,7 +108,7 @@ Deno.serve(async (req) => {
           audiusGet(`/users/${payload.userId}`).catch(() => ({ data: null })),
         ]);
         return Response.json({
-          data: { profile: profile?.data, tracks: tracks?.data || [] }
+          data: { profile: profile?.data, tracks: annotateTracks(tracks?.data || []) }
         });
       }
 

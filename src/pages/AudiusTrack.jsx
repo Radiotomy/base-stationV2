@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { ArrowLeft, Headphones, Play, Download, ExternalLink, User } from 'lucide-react';
+import { ArrowLeft, Headphones, Download, ExternalLink, User, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import AudiusLicenseBadge from '@/components/audius/AudiusLicenseBadge';
+import AudiusStreamPlayer from '@/components/audius/AudiusStreamPlayer';
 
 export default function AudiusTrack() {
   const { id } = useParams();
@@ -49,7 +51,8 @@ export default function AudiusTrack() {
   );
 
   const artwork = track.artwork?.['1000x1000'] || track.artwork?.['480x480'];
-  const streamUrl = `https://discoveryprovider.audius.co/v1/tracks/${id}/stream?app_name=BaseStation`;
+  // Compliance guardrail: without explicit open licensing, treat as All Rights Reserved
+  const licensing = track.licensing || { is_open: false, license: track.license || 'All Rights Reserved' };
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,7 +70,10 @@ export default function AudiusTrack() {
             </div>
           )}
           <div className="flex-1 min-w-0 flex flex-col">
-            <Badge className="bg-emerald-500/20 text-emerald-300 border-0 mb-2 w-fit">Audius</Badge>
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-0 w-fit">Audius</Badge>
+              <AudiusLicenseBadge licensing={licensing} />
+            </div>
             <h1 className="text-3xl md:text-4xl font-black text-foreground mb-2">{track.title}</h1>
             {track.user && (
               <Link to={`/audius-artist/${track.user.id}`} className="flex items-center gap-2 text-muted-foreground hover:text-emerald-400 mb-3">
@@ -81,12 +87,21 @@ export default function AudiusTrack() {
               {track.play_count != null && <span className="text-xs text-muted-foreground">{track.play_count.toLocaleString()} plays</span>}
             </div>
 
-            <audio controls src={streamUrl} className="w-full rounded-xl mb-3" />
+            <AudiusStreamPlayer trackId={id} isStreamable={track.is_streamable !== false} permalink={track.permalink} />
 
             <div className="flex flex-wrap gap-2 mt-auto">
-              <Button onClick={handleImport} disabled={importing} className="rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-500">
-                <Download className="w-4 h-4" /> {importing ? 'Importing…' : 'Import to Library'}
-              </Button>
+              {licensing.is_open ? (
+                <Button onClick={handleImport} disabled={importing} className="rounded-xl gap-2 bg-emerald-600 hover:bg-emerald-500">
+                  <Download className="w-4 h-4" /> {importing ? 'Importing…' : 'Import to Library'}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
+                  <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">
+                    All Rights Reserved — import, sampling and stems are disabled. Only Creative Commons or artist-approved open-remix tracks can be pulled into the studio.
+                  </p>
+                </div>
+              )}
               {track.permalink && (
                 <a href={`https://audius.co${track.permalink}`} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="rounded-xl gap-2">

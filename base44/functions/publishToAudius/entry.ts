@@ -73,22 +73,49 @@ Deno.serve(async (req) => {
           ai_post_production: asset.asset_type === 'master',
         };
 
+    // === COMPLIANCE-ENRICHED EXPORT PACKAGE ===
+    // COS metrics, C2PA provenance hash, and DDEX AI-attribution descriptors
+    // travel natively in the track description + tags so the release is
+    // self-authenticating on Audius.
+    const disclosureLabel = asset.ai_disclosure_label || asset.ai_label || 'ai_generated';
+    const c2paHash = asset.c2pa_provenance_hash || asset.metadata?.c2pa_provenance_hash || null;
+    const ddexDescriptors = Object.entries(ddexMeta)
+      .filter(([, v]) => v === true)
+      .map(([k]) => k);
+    const complianceFooter = [
+      '─── PROVENANCE & AI DISCLOSURE (BASE Station) ───',
+      `Creative Ownership Score (COS): ${cosScore}/100`,
+      `AI Disclosure Label (RIAA/IFPI GenAI standard): ${disclosureLabel === 'ai_assisted' ? 'AI-Assisted' : disclosureLabel === 'human' ? 'Human' : 'AI-Generated'}`,
+      `DDEX AI Attribution: ${ddexDescriptors.length > 0 ? ddexDescriptors.join(', ') : 'none declared'}`,
+      c2paHash ? `C2PA Provenance Hash: ${c2paHash}` : null,
+      'Full provenance manifest available via BASE Station.',
+    ].filter(Boolean).join('\n');
+    const enrichedDescription = [asset.description || '', complianceFooter].filter(Boolean).join('\n\n');
+    const complianceTags = [
+      ...(asset.tags || []),
+      `cos-${Math.round(cosScore)}`,
+      disclosureLabel.replace(/_/g, '-'),
+      ...ddexDescriptors.map((d) => `ddex-${d.replace(/_/g, '-')}`),
+      ...(c2paHash ? ['c2pa-signed'] : []),
+    ];
+
     // Call audiusClient via service-role
     const publishRes = await base44.asServiceRole.functions.invoke('audiusClient', {
       action: 'publishTrack',
       payload: {
         title: asset.title,
-        description: asset.description || '',
+        description: enrichedDescription,
         file_url: publishFileUrl,
         cover_url: coverArt?.file_url || asset.thumbnail_url,
         genre: asset.metadata?.genre,
         mood: asset.metadata?.mood,
         bpm: asset.metadata?.bpm,
-        tags: asset.tags || [],
+        tags: complianceTags,
         stems,
         human_participation_score: cosScore,
-        ai_disclosure_label: asset.ai_disclosure_label || asset.ai_label || 'ai_generated',
+        ai_disclosure_label: disclosureLabel,
         ddex_ai_metadata: ddexMeta,
+        c2pa_provenance_hash: c2paHash,
         ...metadata,
       },
     });
