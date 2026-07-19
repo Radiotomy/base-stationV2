@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
   LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper, Shield, Search,
-  MessagesSquare, Scale
+  MessagesSquare, Scale, Heart
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { to: "/playlists", label: "Playlists", icon: Music },
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
+  { to: "/fan-hub", label: "My Fan Hub", icon: Heart },
   { to: "/forum", label: "Forum", icon: MessagesSquare },
   { to: "/news-hub", label: "News & Legal", icon: Newspaper },
   { to: "/transparency", label: "AI Transparency", icon: Shield },
@@ -36,6 +37,7 @@ const DISCOVER_NAV = [
 ];
 
 const COMMUNITY_NAV = [
+  { to: "/fan-hub", label: "My Fan Hub", icon: Heart },
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
   { to: "/forum", label: "Forum", icon: MessagesSquare },

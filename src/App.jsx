@@ -57,6 +57,7 @@ const StudioHistory = lazy(() => import('./pages/StudioHistory'));
 const AudioRemixStudio = lazy(() => import('./pages/AudioRemixStudio'));
 const VoiceCreator = lazy(() => import('./pages/VoiceCreator'));
 const MyProfile = lazy(() => import('./pages/MyProfile'));
+const FanHub = lazy(() => import('./pages/FanHub'));
 const SubmitTrack = lazy(() => import('./pages/SubmitTrack'));
 const ArtistProfile = lazy(() => import('./pages/ArtistProfile'));
 const ID3TagStudio = lazy(() => import('./pages/ID3TagStudio'));
@@ -164,6 +165,7 @@ const AuthenticatedApp = () => {
             <Route path="/ai-studio/history" element={<StudioHistory />} />
             <Route path="/voice-creator" element={<VoiceCreator />} />
             <Route path="/my-profile" element={<MyProfile />} />
+            <Route path="/fan-hub" element={<FanHub />} />
             <Route path="/submit" element={<SubmitTrack />} />
             <Route path="/artist/:id" element={<ArtistProfile />} />
             <Route path="/solana" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />

@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { Link } from 'react-router-dom';
 import { Activity } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 /**
  * Phase 5 — Shows the current fan's recent FanActions (their support history).
+ * Optional creatorMap ({ creator_id: display_name }) renders names + profile links.
  */
-export default function MyCreatorActions({ userId }) {
+export default function MyCreatorActions({ userId, creatorMap = {} }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,13 @@ export default function MyCreatorActions({ userId }) {
           {rows.map(r => (
             <div key={r.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 text-xs">
               <Badge variant="outline" className="text-[10px] capitalize px-1.5 py-0">{labelFor[r.action_type] || r.action_type}</Badge>
-              <span className="text-muted-foreground truncate flex-1">creator: {r.creator_id?.slice(0, 8)}…</span>
+              {creatorMap[r.creator_id] ? (
+                <Link to={`/artist/${r.creator_id}`} className="text-muted-foreground hover:text-[#FFC98A] truncate flex-1">
+                  {creatorMap[r.creator_id]}
+                </Link>
+              ) : (
+                <span className="text-muted-foreground truncate flex-1">creator: {r.creator_id?.slice(0, 8)}…</span>
+              )}
               {r.value != null && <span className="text-foreground font-bold">{r.value}</span>}
             </div>
           ))}
