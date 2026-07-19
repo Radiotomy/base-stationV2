@@ -71,6 +71,21 @@ export default function ManifestSection() {
       </div>
 
       <div className="space-y-3">
+        <h4 className="text-sm font-semibold text-foreground">Data integrity & storage</h4>
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+          The manifest is served <span className="text-foreground font-medium">live</span> from the platform's
+          provenance ledger so scores and attribution always reflect the asset's current state. Permanence comes
+          from a second layer: when an asset is registered on-chain, its full provenance bundle (audio, cover art,
+          and metadata JSON including the COS metrics and DDEX flags) is pinned to
+          <span className="text-foreground font-medium"> IPFS via Pinata</span>. IPFS content addressing makes the
+          registered snapshot immutable — any change produces a different CID — and the resulting
+          <code className="text-[#FFC98A] text-xs"> ipfs://</code> metadata URI plus the provenance hash are anchored
+          in the Base or Solana registry record. The pinning pipeline enforces strict source-URL validation (SSRF
+          protection) and keeps all storage credentials server-side.
+        </p>
+      </div>
+
+      <div className="space-y-3">
         <h4 className="text-sm font-semibold text-foreground">Verification</h4>
         <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
           The <code className="text-[#FFC98A] text-xs">c2pa_provenance_hash</code> is a SHA-256 checksum anchoring the COS

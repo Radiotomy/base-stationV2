@@ -1,5 +1,6 @@
 import { Shield, Fingerprint, Scale } from 'lucide-react';
 import CodeBlock from '../CodeBlock';
+import SecurityTrustCallout from '../SecurityTrustCallout';
 
 const PILLARS = [
   {
@@ -58,6 +59,8 @@ export default function OverviewSection() {
           <li><span className="text-foreground font-medium">ID3v2 embedding</span> — TXXX and WXXX frames written into the MP3 container so provenance travels with the file itself.</li>
         </ol>
       </div>
+
+      <SecurityTrustCallout />
 
       <div className="space-y-3">
         <h2 className="text-xl font-display text-foreground">Base URL & authentication</h2>
