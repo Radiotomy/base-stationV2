@@ -26,7 +26,7 @@ export default function OpenInStudioMenu({ asset, size = 'sm', label = 'Open in 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size={size} className="rounded-lg gap-1.5 text-xs">
+        <Button variant="outline" size={size} title="Send this asset to another studio — split stems, remix, harmonize, master or visualize it" className="rounded-lg gap-1.5 text-xs">
           <Sparkles className="w-3 h-3" /> {label}
           <ChevronDown className="w-3 h-3 opacity-70" />
         </Button>

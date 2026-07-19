@@ -1,16 +1,18 @@
 /**
  * Circuit-styled tab rail — slim modules with an LED indicator dot
  * and mono uppercase labels.
- * Props: tabs = [{ key, label, icon: LucideIcon, count? }], activeTab, onChange
+ * Props: tabs = [{ key, label, icon: LucideIcon, count?, tip? }], activeTab, onChange
+ * tip shows as a native hover balloon explaining what the tab contains.
  */
 export default function CircuitTabBar({ tabs = [], activeTab, onChange }) {
   return (
     <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-      {tabs.map(({ key, label, icon: Icon, count }) => {
+      {tabs.map(({ key, label, icon: Icon, count, tip }) => {
         const active = activeTab === key;
         return (
           <button
             key={key}
+            title={tip}
             onClick={() => onChange(key)}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-lg border text-xs font-mono uppercase tracking-wider whitespace-nowrap transition-all flex-shrink-0 ${
               active

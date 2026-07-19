@@ -107,15 +107,15 @@ export default function CreatorDashboard() {
   };
 
   const TABS = [
-    { key: "library",   label: "Library",     icon: FolderOpen, count: assets.length },
-    { key: "projects",  label: "Projects",    icon: Layers },
-    { key: "tracks",    label: "Submissions", icon: Upload, count: tracks.length },
-    { key: "live",      label: "Live",        icon: Radio },
-    { key: "fans",      label: "Fans",        icon: Trophy },
-    { key: "history",   label: "History",     icon: History },
-    { key: "ownership", label: "Ownership",   icon: Award },
-    { key: "proof",     label: "Proof",       icon: ShieldCheck },
-    { key: "analytics", label: "Analytics",   icon: BarChart3 },
+    { key: "library",   label: "Library",     icon: FolderOpen, count: assets.length, tip: "All your generated tracks, lyrics and cover art — play, download or open them in any studio" },
+    { key: "projects",  label: "Projects",    icon: Layers,     tip: "Group related assets into projects to organize bigger releases" },
+    { key: "tracks",    label: "Submissions", icon: Upload, count: tracks.length, tip: "Tracks you've submitted to the community charts and radio, with their approval status" },
+    { key: "live",      label: "Live",        icon: Radio,      tip: "Your live streaming sessions — past shows and stats" },
+    { key: "fans",      label: "Fans",        icon: Trophy,     tip: "Fan economy — collectibles, fan club tiers, rewards and your top supporters" },
+    { key: "history",   label: "History",     icon: History,    tip: "Every AI generation you've run, with status and credits used" },
+    { key: "ownership", label: "Ownership",   icon: Award,      tip: "Creative Ownership Scores — how much human input went into each creation" },
+    { key: "proof",     label: "Proof",       icon: ShieldCheck, tip: "Permanent, tamper-proof ownership records and downloadable certificates for your tracks" },
+    { key: "analytics", label: "Analytics",   icon: BarChart3,  tip: "Usage trends — generations, credits and provider breakdowns over time" },
   ];
 
   if (loading) return (
@@ -156,14 +156,14 @@ export default function CreatorDashboard() {
       {stats && (
         <div className="mb-6">
           <CircuitStatStrip stats={[
-            { icon: Music,       label: "Submitted",  value: stats.total_tracks,                 accent: "#FF9A4D" },
-            { icon: CheckCircle, label: "Published",  value: stats.published,                    accent: "#34d399" },
-            { icon: Clock,       label: "Pending",    value: stats.pending,                      accent: "#fbbf24" },
-            { icon: Eye,         label: "Plays",      value: stats.total_plays.toLocaleString(), accent: "#FFC98A" },
-            { icon: Heart,       label: "Likes",      value: stats.total_likes.toLocaleString(), accent: "#fb7185" },
-            { icon: Folder,      label: "Assets",     value: stats.total_assets,                 accent: "#60a5fa" },
-            { icon: Zap,         label: "Generated",  value: stats.total_generations,            accent: "#22d3ee" },
-            { icon: TrendingUp,  label: "Credits",    value: stats.credits_spent,                accent: "#f59e0b" },
+            { icon: Music,       label: "Submitted",  value: stats.total_tracks,                 accent: "#FF9A4D", tip: "Tracks you've submitted to the community" },
+            { icon: CheckCircle, label: "Published",  value: stats.published,                    accent: "#34d399", tip: "Submissions approved and live on charts & radio" },
+            { icon: Clock,       label: "Pending",    value: stats.pending,                      accent: "#fbbf24", tip: "Submissions awaiting review" },
+            { icon: Eye,         label: "Plays",      value: stats.total_plays.toLocaleString(), accent: "#FFC98A", tip: "Total plays across all your published tracks" },
+            { icon: Heart,       label: "Likes",      value: stats.total_likes.toLocaleString(), accent: "#fb7185", tip: "Total likes from listeners" },
+            { icon: Folder,      label: "Assets",     value: stats.total_assets,                 accent: "#60a5fa", tip: "Everything in your library — tracks, lyrics, art & more" },
+            { icon: Zap,         label: "Generated",  value: stats.total_generations,            accent: "#22d3ee", tip: "Successful AI generations you've run" },
+            { icon: TrendingUp,  label: "Credits",    value: stats.credits_spent,                accent: "#f59e0b", tip: "Total credits spent on AI generations" },
           ]} />
         </div>
       )}
@@ -268,7 +268,7 @@ export default function CreatorDashboard() {
 
       {/* Proof of Ownership Tab */}
       {activeTab === "proof" && user && (
-        <ProofOfOwnershipTab userId={user.id} />
+        <ProofOfOwnershipTab userId={user.id} user={user} assets={assets} />
       )}
 
       {/* Analytics Tab */}

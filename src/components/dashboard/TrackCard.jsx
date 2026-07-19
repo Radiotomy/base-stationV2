@@ -113,10 +113,11 @@ export default function TrackCard({ asset, onDelete }) {
         {/* Expand + delete */}
         <div className="flex items-center gap-1 flex-shrink-0">
           <button onClick={() => setExpanded(p => !p)}
+            title={expanded ? 'Hide details' : 'Show details — metadata, prompt & lyrics'}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
             <ChevronDown className={`w-4 h-4 transition-transform ${expanded ? 'rotate-180' : ''}`} />
           </button>
-          <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
+          <Button size="icon" variant="ghost" title="Delete this asset permanently" className="h-8 w-8 rounded-lg text-destructive hover:bg-destructive/10"
             onClick={() => onDelete(asset.id)}>
             <Trash2 className="w-3.5 h-3.5" />
           </Button>
@@ -151,7 +152,7 @@ export default function TrackCard({ asset, onDelete }) {
               variant="outline"
             />
           )}
-          <Link to={`/mastering-studio?assetId=${asset.id}`} className="flex-1">
+          <Link to={`/mastering-studio?assetId=${asset.id}`} className="flex-1" title="Polish this track with AI mastering — EQ, loudness & clarity">
             <Button size="sm" className="w-full rounded-lg gap-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white font-bold">
               <Sparkles className="w-3 h-3" /> Master Track
             </Button>
