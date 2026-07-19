@@ -28,8 +28,17 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { clip_id, provider = 'sonic', format = 'wav' } = await req.json();
+    const { clip_id, provider = 'sonic', format = 'wav', asset_id } = await req.json();
     if (!clip_id) return Response.json({ error: 'clip_id required' }, { status: 400 });
+
+    // Embed COS provenance ID3 tags into an mp3 download (best-effort, ID3 is mp3-only)
+    const embedProvenance = async (mp3Url) => {
+      if (!asset_id || !mp3Url) return null;
+      try {
+        const res = await base44.functions.invoke('editID3Tags', { audio_url: mp3Url, asset_id });
+        return res?.data?.download_url || res?.download_url || null;
+      } catch (_) { return null; }
+    };
 
     if (provider === 'sonic') {
       const res = await fetch(`${AI_BASE}/sonic/wav`, {
@@ -80,7 +89,9 @@ Deno.serve(async (req) => {
           const wav_url = clip?.wav_url || null;
           const audio_url = clip?.audio_url || null;
           if (!wav_url && !audio_url) continue;
-          return Response.json({ wav_url, audio_url });
+          // Provenance tagging applies to the mp3 stream (WAV has no ID3v2 container)
+          const tagged_url = format === 'mp3' ? await embedProvenance(audio_url) : null;
+          return Response.json({ wav_url, audio_url, tagged_url, provenance_embedded: !!tagged_url });
         }
         if (st === 'FAILED') {
           return Response.json({

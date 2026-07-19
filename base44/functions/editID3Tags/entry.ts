@@ -25,8 +25,44 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { audio_url, tags = {}, cover_image_url } = await req.json();
+    const { audio_url, tags = {}, cover_image_url, asset_id } = await req.json();
     if (!audio_url) return Response.json({ error: 'Missing audio_url' }, { status: 400 });
+
+    // ── COS provenance auto-injection ──────────────────────────────────────
+    // When asset_id is provided, pull the asset's COS/DDEX provenance and embed
+    // it as TXXX frames + a WXXX PROVENANCE_MANIFEST link to the public ledger.
+    let provenanceEmbedded = false;
+    if (asset_id) {
+      try {
+        const rows = await base44.asServiceRole.entities.UserAsset.filter({ id: asset_id });
+        const src = rows[0];
+        if (src && (src.user_id === user.id || user.role === 'admin')) {
+          const sig = src.participation_signals || {};
+          const score = src.human_participation_score ?? 0;
+          const ddex = (src.ddex_ai_metadata && Object.keys(src.ddex_ai_metadata).length > 0)
+            ? src.ddex_ai_metadata
+            : {
+                ai_lyrical_content: !sig.user_content,
+                ai_composition: score < 50,
+                ai_instrumentation: !sig.reference_material,
+                ai_generated_vocals: !!sig.persona_used,
+                ai_post_production: src.asset_type === 'master',
+              };
+          tags.txxx = {
+            BASE_STATION_COS: String(score),
+            AI_DISCLOSURE_LABEL: src.ai_disclosure_label || src.ai_label || 'ai_generated',
+            DDEX_AI_PROFILE: JSON.stringify(ddex),
+            ...(src.c2pa_provenance_hash ? { C2PA_HASH: src.c2pa_provenance_hash } : {}),
+            ...(tags.txxx || {}),
+          };
+          tags.wxxx = {
+            PROVENANCE_MANIFEST: `https://base44.app/api/apps/${Deno.env.get('BASE44_APP_ID')}/functions/getCosManifest?assetId=${asset_id}`,
+            ...(tags.wxxx || {}),
+          };
+          provenanceEmbedded = true;
+        }
+      } catch (_) { /* non-fatal — tag without provenance */ }
+    }
 
     // Fetch the audio file (URL validated against internal/loopback targets)
     const audioRes = await fetch(assertSafeUrl(audio_url));
@@ -73,6 +109,14 @@ Deno.serve(async (req) => {
       for (const [key, value] of Object.entries(tags.txxx)) {
         if (!value) continue;
         frameData = concatArrays(frameData, buildTXXXFrame(key, String(value)));
+      }
+    }
+
+    // Add WXXX (user-defined URL) frames — e.g. PROVENANCE_MANIFEST
+    if (tags.wxxx && typeof tags.wxxx === 'object') {
+      for (const [key, value] of Object.entries(tags.wxxx)) {
+        if (!value) continue;
+        frameData = concatArrays(frameData, buildWXXXFrame(key, String(value)));
       }
     }
 
@@ -143,6 +187,8 @@ Deno.serve(async (req) => {
       sylt_embedded: Array.isArray(tags.aligned_lyrics) && tags.aligned_lyrics.length > 0,
       cover_embedded: !!cover_image_url,
       txxx_count: tags.txxx ? Object.values(tags.txxx).filter(Boolean).length : 0,
+      wxxx_count: tags.wxxx ? Object.values(tags.wxxx).filter(Boolean).length : 0,
+      provenance_embedded: provenanceEmbedded,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
@@ -201,6 +247,28 @@ function buildTXXXFrame(description, value) {
   frame[offset++] = 0x03; // UTF-8
   frame.set(descBytes, offset); offset += descBytes.length;
   frame.set(valueBytes, offset);
+  return frame;
+}
+
+// Helper: Build WXXX (user-defined URL) frame
+// Layout: [encoding:1][description+\0 (per encoding)][URL as latin-1 bytes]
+function buildWXXXFrame(description, url) {
+  const descBytes = new TextEncoder().encode(description + '\x00');
+  // URL portion is always ISO-8859-1 per spec — URLs are ASCII-safe
+  const urlBytes = new Uint8Array([...url].map(c => c.charCodeAt(0) & 0xFF));
+  const frameSize = 1 + descBytes.length + urlBytes.length;
+  const sizeBytes = synchsafeInt(frameSize);
+
+  const frame = new Uint8Array(10 + frameSize);
+  frame.set(new TextEncoder().encode('WXXX'), 0);
+  frame.set(sizeBytes, 4);
+  frame[8] = 0x00;
+  frame[9] = 0x00;
+
+  let offset = 10;
+  frame[offset++] = 0x03; // UTF-8 for description
+  frame.set(descBytes, offset); offset += descBytes.length;
+  frame.set(urlBytes, offset);
   return frame;
 }
 

@@ -44,6 +44,22 @@ Deno.serve(async (req) => {
       coverArt = cov[0];
     }
 
+    // Embed COS provenance ID3 frames into the audio buffer before publishing
+    // (mp3 only — ID3v2 is not valid inside WAV containers). Non-fatal on failure.
+    let publishFileUrl = asset.file_url;
+    let provenanceEmbedded = false;
+    if (/\.mp3(\?|#|$)/i.test(asset.file_url)) {
+      try {
+        const tagRes = await base44.functions.invoke('editID3Tags', {
+          audio_url: asset.file_url,
+          asset_id: assetId,
+          tags: { title: asset.title, artist: user.full_name || 'BASE Station Artist' },
+        });
+        const taggedUrl = tagRes?.data?.download_url || tagRes?.download_url;
+        if (taggedUrl) { publishFileUrl = taggedUrl; provenanceEmbedded = true; }
+      } catch (_) { /* publish the original file */ }
+    }
+
     // COS / DDEX provenance travels with the publish payload
     const sig = asset.participation_signals || {};
     const cosScore = asset.human_participation_score ?? 0;
@@ -63,7 +79,7 @@ Deno.serve(async (req) => {
       payload: {
         title: asset.title,
         description: asset.description || '',
-        file_url: asset.file_url,
+        file_url: publishFileUrl,
         cover_url: coverArt?.file_url || asset.thumbnail_url,
         genre: asset.metadata?.genre,
         mood: asset.metadata?.mood,
@@ -95,6 +111,7 @@ Deno.serve(async (req) => {
         asset_id: assetId,
         audius_track_id: audiusTrackId,
         status,
+        provenance_embedded: provenanceEmbedded,
       }
     });
   } catch (error) {
