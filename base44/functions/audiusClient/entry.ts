@@ -83,6 +83,12 @@ Deno.serve(async (req) => {
         const data = await audiusGet(`/tracks/${payload.trackId}`);
         return Response.json({ data: annotateTrack(data?.data || null) });
       }
+      case 'resolveHandle': {
+        if (!payload.handle) throw new Error('handle required');
+        const handle = String(payload.handle).replace(/^@/, '');
+        const data = await audiusGet(`/users/handle/${encodeURIComponent(handle)}`);
+        return Response.json({ data: data?.data || null });
+      }
       case 'getArtist': {
         if (!payload.userId) throw new Error('userId required');
         const data = await audiusGet(`/users/${payload.userId}`);
