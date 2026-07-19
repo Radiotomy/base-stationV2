@@ -1,0 +1,88 @@
+{
+  "name": "MarketingContent",
+  "type": "object",
+  "properties": {
+    "content_type": {
+      "type": "string",
+      "enum": [
+        "social_post",
+        "press_release",
+        "promotion"
+      ],
+      "description": "Kind of marketing material"
+    },
+    "title": {
+      "type": "string",
+      "description": "Internal title / headline"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "twitter",
+        "instagram",
+        "tiktok",
+        "linkedin",
+        "facebook",
+        "reddit",
+        "press",
+        "email",
+        "other"
+      ],
+      "description": "Target channel"
+    },
+    "body": {
+      "type": "string",
+      "description": "The post caption, press release text, or promo copy"
+    },
+    "hashtags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Generated or attached visual"
+    },
+    "campaign": {
+      "type": "string",
+      "description": "Optional campaign name to group content"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "ready",
+        "published"
+      ],
+      "default": "draft"
+    }
+  },
+  "required": [
+    "content_type",
+    "title",
+    "body"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
