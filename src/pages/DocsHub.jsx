@@ -6,6 +6,7 @@ import CosCalculateSection from '@/components/docs/sections/CosCalculateSection'
 import DdexExportSection from '@/components/docs/sections/DdexExportSection';
 import ManifestSection from '@/components/docs/sections/ManifestSection';
 import Id3ComplianceSection from '@/components/docs/sections/Id3ComplianceSection';
+import OnChainRegistrationSection from '@/components/docs/sections/OnChainRegistrationSection';
 
 const SECTION_COMPONENTS = {
   'overview': OverviewSection,
@@ -13,6 +14,7 @@ const SECTION_COMPONENTS = {
   'ddex-export': DdexExportSection,
   'provenance-manifest': ManifestSection,
   'id3-compliance': Id3ComplianceSection,
+  'onchain-registration': OnChainRegistrationSection,
 };
 
 export default function DocsHub() {

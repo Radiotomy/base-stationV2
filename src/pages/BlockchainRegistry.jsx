@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DownloadCertificateButton from "@/components/blockchain/DownloadCertificateButton";
 import RegistrationStatusBadge from "@/components/blockchain/RegistrationStatusBadge";
+import RegistrationProcessSteps from "@/components/blockchain/RegistrationProcessSteps";
 
 export default function BlockchainRegistry() {
   const [user, setUser] = useState(null);
@@ -70,6 +71,8 @@ export default function BlockchainRegistry() {
           </div>
         ) : (
           <>
+            <RegistrationProcessSteps />
+
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
               <div className="p-5 rounded-2xl bg-card border border-border text-center">

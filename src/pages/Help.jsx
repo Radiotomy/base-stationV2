@@ -232,7 +232,26 @@ const SECTIONS = [
       </>
     ),
   },
-  // Multi-chain / blockchain registry help section hidden for now — restore when blockchain features return.
+  {
+    id: 'registration',
+    title: 'On-chain registration — prove your ownership, free',
+    icon: Shield,
+    keywords: 'blockchain base register registration provenance ipfs anchor fingerprint certificate basescan gas wallet crypto free on-chain proof',
+    body: (
+      <>
+        <p>One click permanently anchors your track's provenance on the <strong className="text-foreground">Base blockchain</strong> — no wallet, no crypto, no gas fees. Base Station's platform wallet signs and pays for every registration.</p>
+        <p><strong className="text-foreground">What happens when you hit Register:</strong></p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Manifest built</strong> — your Creative Ownership Score, DDEX AI-attribution flags, and track metadata are compiled and fingerprinted (SHA-256).</li>
+          <li><strong>Pinned to IPFS</strong> — the manifest gets a permanent, content-addressed home anyone can verify.</li>
+          <li><strong>Anchored on Base</strong> — the fingerprint and IPFS link are written to the blockchain in ~20 seconds.</li>
+          <li><strong>Certificate issued</strong> — download it, view the record on BaseScan, and export DDEX/ID3 metadata for distributors.</li>
+        </ul>
+        <p>Because it starts at creation — every prompt, reference upload, and iteration is logged as human participation — your registration proves not just <em>that</em> you made the track, but <em>how much of it</em> was yours.</p>
+        <p>Manage everything in the <Link to="/blockchain" className="text-blue-400 hover:underline">Blockchain Registry →</Link></p>
+      </>
+    ),
+  },
   {
     id: 'publish',
     title: 'Publishing & distribution',
