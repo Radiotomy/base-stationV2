@@ -11,9 +11,9 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
 import EQPanel from "@/components/radio/EQPanel";
-import VUMeter from "@/components/radio/VUMeter";
-import RackUnit from "@/components/radio/RackUnit";
-import ChannelSelector from "@/components/radio/ChannelSelector";
+import RoundVUGauge from "@/components/radio/RoundVUGauge";
+import ChannelChipRow from "@/components/radio/ChannelChipRow";
+import AccordionBar from "@/components/radio/AccordionBar";
 import TransportKnob from "@/components/radio/TransportKnob";
 import useAudioProcessor from "@/hooks/useAudioProcessor";
 import AILabelBadge from "@/components/common/AILabelBadge";
@@ -45,6 +45,15 @@ const SCREEN_BG = {
 const GREEN_GLOW = { textShadow: "0 0 8px rgba(198,242,126,0.55)" };
 const MONO_LCD = { fontFamily: "'VT323', monospace" };
 
+// Boombox chassis screw
+function Screw() {
+  return (
+    <span className="relative inline-block w-2.5 h-2.5 rounded-full bg-gradient-to-br from-[#3A322A] to-[#0E0B08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] flex-shrink-0">
+      <span className="absolute inset-0 flex items-center justify-center text-[6px] text-black/70 leading-none">✕</span>
+    </span>
+  );
+}
+
 export default function Radio() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [channels, setChannels] = useState(DEFAULT_CHANNELS);
@@ -56,7 +65,8 @@ export default function Radio() {
   const [volume, setVolume] = useState([45]);
   const [muted, setMuted] = useState(false);
   const [showQueue, setShowQueue] = useState(false);
-  const [showEQ, setShowEQ] = useState(false); // mobile-only collapse; desktop always shows
+  const [showEQ, setShowEQ] = useState(false);
+  const [showChannels, setShowChannels] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);      // CORS-enabled element wired to EQ + VU meters
@@ -233,99 +243,79 @@ export default function Radio() {
 
   return (
     <div className="min-h-screen pt-16 pb-12 px-2 sm:px-4">
-      <div className="max-w-5xl mx-auto space-y-5">
+      <div className="max-w-5xl mx-auto space-y-3">
 
-        {/* ═══════════ DISPLAY UNIT (1U) ═══════════ */}
-        <RackUnit title="Display Unit (1U)">
-          {/* Dot-matrix phosphor screen */}
-          <motion.div key={activeChannel.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="rounded-xl border-2 border-black/80 p-4 sm:p-6 shadow-[inset_0_4px_24px_rgba(0,0,0,0.9),0_0_20px_rgba(198,242,126,0.06)]"
-            style={SCREEN_BG}>
-            {/* Screen header row */}
-            <div className="flex items-center justify-between text-[#C6F27E]/80 text-lg sm:text-2xl tracking-[0.2em] uppercase mb-3 sm:mb-4"
-              style={{ ...MONO_LCD, ...GREEN_GLOW }}>
-              <span>Track</span><span className="text-[#FF9A4D]">▸</span>
-              <span>Artist</span><span className="text-[#FF9A4D]">▸</span>
-              <span>Freq</span>
-            </div>
-            <div className="h-px bg-[#C6F27E]/20 mb-4" />
-            {/* Channel name */}
-            <div className="flex items-center justify-center gap-3 sm:gap-5">
-              <span className="text-4xl sm:text-6xl leading-none flex-shrink-0 drop-shadow-[0_0_10px_rgba(255,179,71,0.5)]">{activeChannel.emoji}</span>
-              <h1 className="text-5xl sm:text-7xl md:text-8xl text-[#C6F27E] leading-none tracking-tight"
-                style={{ ...MONO_LCD, textShadow: "0 0 16px rgba(198,242,126,0.6), 0 0 40px rgba(198,242,126,0.25)" }}>
-                {activeChannel.name}
-              </h1>
-            </div>
-            <p className="mt-3 sm:mt-4 text-center text-[#E4FCA8]/90 text-sm sm:text-lg" style={{ ...MONO_LCD, ...GREEN_GLOW }}>
-              {activeChannel.description}
-            </p>
-          </motion.div>
+        {/* ═══════════ BOOMBOX FACEPLATE ═══════════ */}
+        <div className="relative rounded-xl border border-black/80 bg-gradient-to-b from-[#221B14] via-[#191410] to-[#14100C] shadow-[0_12px_40px_-8px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden">
+          {/* Brushed silver metal top edge */}
+          <div className="h-3 w-full flex items-center justify-between px-3"
+            style={{ background: "linear-gradient(180deg, #D4D8DC 0%, #A8ACB0 45%, #8E9296 75%, #B4B8BC 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 2px rgba(0,0,0,0.4)" }} />
 
-          {/* Now Playing readout + ON AIR lamp */}
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-            <div className="rounded-lg border border-black/80 px-4 py-3 min-h-[64px] flex items-center gap-3 shadow-[inset_0_2px_12px_rgba(0,0,0,0.85)]" style={SCREEN_BG}>
-              <AnimatePresence mode="wait">
-                {nowPlaying ? (
-                  <motion.div key={nowPlaying.track_title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="flex items-center gap-3 min-w-0 flex-1">
-                    {nowPlaying.cover_image_url ? (
-                      <img src={nowPlaying.cover_image_url} alt="" className="w-10 h-10 rounded object-cover border border-[#C6F27E]/30 flex-shrink-0" />
-                    ) : (
-                      <div className="w-10 h-10 rounded bg-black/50 border border-[#C6F27E]/20 flex items-center justify-center flex-shrink-0">
-                        <Music className="w-4 h-4 text-[#C6F27E]/40" />
+          <div className="p-3 sm:p-4">
+            {/* Corner screws + unit label */}
+            <div className="flex items-center gap-3 mb-3">
+              <Screw />
+              <span className="h-px flex-none w-4 bg-[#FF9A4D]/50" />
+              <span className="text-[10px] sm:text-xs font-mono font-bold tracking-[0.25em] uppercase text-[#D9CBB8] whitespace-nowrap">BASE Station Radio</span>
+              <span className="h-px flex-1 bg-[#FF9A4D]/50" />
+              <span className="text-xs font-black text-[#FF9A4D] tracking-wide whitespace-nowrap hidden sm:inline">BASE Station</span>
+              <Screw />
+            </div>
+
+            {/* Faceplate: LCD | transport | VU gauges */}
+            <div className="grid grid-cols-1 md:grid-cols-[minmax(220px,1fr)_auto_auto] gap-3 md:gap-5 items-stretch">
+
+              {/* LEFT — square phosphor LCD */}
+              <motion.div key={activeChannel.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                className="rounded-lg border-2 border-black/80 p-3 shadow-[inset_0_4px_24px_rgba(0,0,0,0.9),0_0_20px_rgba(198,242,126,0.06)] flex flex-col justify-between min-h-[120px]"
+                style={SCREEN_BG}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl leading-none drop-shadow-[0_0_8px_rgba(255,179,71,0.5)]">{activeChannel.emoji}</span>
+                  <span className="text-2xl sm:text-3xl text-[#C6F27E] leading-none tracking-tight truncate"
+                    style={{ ...MONO_LCD, textShadow: "0 0 14px rgba(198,242,126,0.6)" }}>
+                    {activeChannel.name}
+                  </span>
+                </div>
+                <AnimatePresence mode="wait">
+                  {nowPlaying ? (
+                    <motion.div key={nowPlaying.track_title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className="flex items-center gap-2.5 min-w-0 mt-2">
+                      {nowPlaying.cover_image_url ? (
+                        <img src={nowPlaying.cover_image_url} alt="" className="w-9 h-9 rounded object-cover border border-[#C6F27E]/30 flex-shrink-0" />
+                      ) : (
+                        <div className="w-9 h-9 rounded bg-black/50 border border-[#C6F27E]/20 flex items-center justify-center flex-shrink-0">
+                          <Music className="w-4 h-4 text-[#C6F27E]/40" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[#C6F27E] text-base sm:text-lg leading-tight truncate" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{nowPlaying.track_title}</p>
+                        <p className="text-[#A8C97E]/80 text-sm truncate" style={MONO_LCD}>{nowPlaying.artist_name}</p>
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[#C6F27E] text-base sm:text-xl leading-tight truncate" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{nowPlaying.track_title}</p>
-                      <p className="text-[#A8C97E]/80 text-sm sm:text-base truncate" style={MONO_LCD}>{nowPlaying.artist_name}</p>
-                    </div>
-                    <AILabelBadge label={nowPlaying.ai_label} size="xs" className="flex-shrink-0" />
-                    {nowPlaying.source && (
-                      <Badge className={`hidden sm:inline-flex text-xs border flex-shrink-0 ${SOURCE_BADGE[nowPlaying.source]?.cls || ""}`}>
-                        {SOURCE_BADGE[nowPlaying.source]?.label || nowPlaying.source}
-                      </Badge>
-                    )}
-                  </motion.div>
-                ) : (
-                  <motion.p key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="text-[#A8C97E]/50 text-base" style={MONO_LCD}>
-                    {loadingQueue ? "SCANNING FREQUENCIES…" : "NO SIGNAL"}
-                  </motion.p>
-                )}
-              </AnimatePresence>
-            </div>
-            <div className="rounded-lg border border-black/80 bg-gradient-to-b from-[#1C1712] to-[#0E0B08] px-5 py-3 flex flex-col items-center justify-center gap-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-              <div className="flex items-center gap-2">
-                <span className="relative flex items-center justify-center">
-                  {isPlaying && <span className="absolute w-3 h-3 rounded-full bg-[#FF4D6D] animate-ping opacity-60" />}
-                  <span className={`relative w-2.5 h-2.5 rounded-full ${isPlaying ? "bg-[#FF4D6D] shadow-[0_0_10px_#FF4D6D]" : "bg-[#5A2230]"}`} />
-                </span>
-                <span className={`text-xs font-mono font-bold tracking-widest ${isPlaying ? "text-[#FF8095]" : "text-white/40"}`}>ON AIR</span>
-                <span className="w-2 h-2 rounded-full bg-white/15" />
-              </div>
-              <span className="text-white/70 text-[11px] font-mono tracking-[0.2em] uppercase whitespace-nowrap">Base Station Radio</span>
-            </div>
-          </div>
-        </RackUnit>
+                    </motion.div>
+                  ) : (
+                    <motion.p key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                      className="text-[#A8C97E]/50 text-base mt-2" style={MONO_LCD}>
+                      {loadingQueue ? "SCANNING FREQUENCIES…" : "NO SIGNAL"}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  {nowPlaying && <AILabelBadge label={nowPlaying.ai_label} size="xs" className="flex-shrink-0" />}
+                  {nowPlaying?.source && (
+                    <Badge className={`text-[10px] border flex-shrink-0 ${SOURCE_BADGE[nowPlaying.source]?.cls || ""}`}>
+                      {SOURCE_BADGE[nowPlaying.source]?.label || nowPlaying.source}
+                    </Badge>
+                  )}
+                  {queue.length > 0 && (
+                    <span className="text-[#A8C97E]/50 text-xs ml-auto font-mono tabular-nums">{queueIndex + 1}/{queue.length}</span>
+                  )}
+                </div>
+              </motion.div>
 
-        {/* ═══════════ TRANSPORT UNIT (2U) ═══════════ */}
-        <RackUnit title="Transport Unit (2U)" badge="BASE Station" badgeColor="amber">
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-5 lg:pl-6">
-
-            {/* Channel selector */}
-            <ChannelSelector
-              channels={channels}
-              activeChannel={activeChannel}
-              isPlaying={isPlaying}
-              onSelect={switchChannel}
-            />
-
-            {/* Transport controls */}
-            <div className="space-y-4">
-              {/* Knob row */}
-              <div className="flex items-start justify-between flex-wrap gap-4">
-                <div className="flex items-start gap-5 sm:gap-7">
+              {/* CENTER — transport knobs + timecode + scrubber */}
+              <div className="flex flex-col items-center justify-between gap-2.5 min-w-[240px]">
+                <div className="flex items-center gap-4 sm:gap-5">
+                  <TransportKnob icon={SkipBack} label="Prev" onClick={skipPrev} disabled={queue.length < 2} />
                   <TransportKnob
                     icon={loadingQueue ? Loader2 : isPlaying ? Pause : Play}
                     spinning={loadingQueue}
@@ -333,212 +323,161 @@ export default function Radio() {
                     onClick={togglePlay}
                     disabled={loadingQueue || queue.length === 0} />
                   <TransportKnob icon={SkipForward} label="Next" onClick={skipNext} disabled={queue.length < 2} />
-                  <TransportKnob icon={SkipBack} label="Previous" onClick={skipPrev} disabled={queue.length < 2} />
                 </div>
-                <div className="flex flex-col items-center gap-2">
-                  <button onClick={() => setShowQueue(p => !p)} aria-label="Toggle queue"
-                    className={`rounded-full px-4 py-1.5 border transition-colors flex items-center gap-2
-                      ${showQueue ? "bg-[#1B2410] border-[#C6F27E]/50 text-[#C6F27E]" : "bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80"}`}>
-                    <ListMusic className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold tracking-wider uppercase">Queue</span>
-                  </button>
-                  <button onClick={() => loadQueue(activeChannel)} aria-label="Reload channel"
-                    className="rounded-full px-4 py-1.5 border bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80 transition-colors flex items-center gap-2">
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold tracking-wider uppercase">Reload</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Timecode LCD */}
-              <div className="rounded-lg border-2 border-black/80 px-4 py-2 flex items-center justify-between shadow-[inset_0_3px_16px_rgba(0,0,0,0.9)]" style={SCREEN_BG}>
-                <span className="text-3xl sm:text-4xl text-[#C6F27E]" style={{ ...MONO_LCD, ...GREEN_GLOW }}>
-                  {fmtTime(currentTime)}<span className="animate-pulse">|</span>
-                </span>
-                <span className="text-3xl sm:text-4xl text-[#C6F27E]/80" style={{ ...MONO_LCD, ...GREEN_GLOW }}>
-                  {fmtTime(duration)}
-                </span>
-              </div>
-
-              {/* Status + scrubber strip */}
-              <div className="rounded-lg border border-black/70 bg-[#0F0C09] px-4 py-3 space-y-2.5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.7)]">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isPlaying ? "bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" : "bg-white/30"}`} />
-                  <span className="text-white/70 text-sm font-medium flex-1">
-                    {loadingQueue ? "Loading…" : isPlaying ? "Streaming" : nowPlaying ? "Paused" : "No tracks"}
-                  </span>
-                  {nowPlaying?.source && (
-                    <Badge className={`text-xs border flex-shrink-0 ${SOURCE_BADGE[nowPlaying.source]?.cls || ""}`}>
-                      {SOURCE_BADGE[nowPlaying.source]?.label || nowPlaying.source}
-                    </Badge>
-                  )}
+                <div className="w-full rounded-md border border-black/80 px-3 py-1 flex items-center justify-center gap-2 shadow-[inset_0_3px_16px_rgba(0,0,0,0.9)]" style={SCREEN_BG}>
+                  <span className="text-xl text-[#C6F27E]" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{fmtTime(currentTime)}</span>
+                  <span className="text-xl text-[#C6F27E]/50" style={MONO_LCD}>|</span>
+                  <span className="text-xl text-[#C6F27E]/80" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{fmtTime(duration)}</span>
                 </div>
                 <Slider
                   value={[duration ? (currentTime / duration) * 100 : 0]}
                   onValueChange={handleSeek}
                   max={100} step={0.1} disabled={!duration}
-                  className="cursor-pointer" aria-label="Track progress" />
-                <div className="flex items-center justify-between text-[11px] font-mono text-white/40 tabular-nums">
-                  <span>{fmtTime(currentTime)}</span>
-                  {queue.length > 0 && <span>{queueIndex + 1} / {queue.length}</span>}
-                  <span>{fmtTime(duration)}</span>
-                </div>
-              </div>
-
-              {/* Volume */}
-              <div className="relative pt-2">
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-wider uppercase text-white/60 bg-[#1C1712] border border-white/10 rounded-full px-3 py-0.5">Volume</span>
-                <div className="flex items-center gap-3 rounded-lg border border-black/70 bg-[#0F0C09] px-4 py-3 shadow-[inset_0_2px_8px_rgba(0,0,0,0.7)]">
+                  className="cursor-pointer w-full" aria-label="Track progress" />
+                <div className="w-full flex items-center gap-2">
                   <button onClick={() => setMuted(!muted)} aria-label={muted ? "Unmute" : "Mute"}
-                    className="w-9 h-9 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors flex-shrink-0">
-                    {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                    className="w-8 h-8 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors flex-shrink-0">
+                    {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                   </button>
                   <Slider value={volume} onValueChange={setVolume} max={100} step={1} className="cursor-pointer flex-1" aria-label="Volume" />
+                  <button onClick={() => setShowQueue(p => !p)} aria-label="Toggle queue"
+                    className={`rounded-full p-2 border transition-colors flex-shrink-0
+                      ${showQueue ? "bg-[#1B2410] border-[#C6F27E]/50 text-[#C6F27E]" : "bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80"}`}>
+                    <ListMusic className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => loadQueue(activeChannel)} aria-label="Reload channel"
+                    className="rounded-full p-2 border bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80 transition-colors flex-shrink-0">
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
                 </div>
+              </div>
+
+              {/* RIGHT — twin round analog VU gauges */}
+              <div className="flex md:flex-col lg:flex-row items-center justify-center gap-3 md:gap-2 lg:gap-3">
+                <RoundVUGauge analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
+                <RoundVUGauge analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Queue Panel */}
-          <AnimatePresence>
-            {showQueue && queue.length > 0 && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-                className="mt-4 rounded-lg border border-black/70 overflow-hidden" style={SCREEN_BG}>
-                <div className="p-3 border-b border-[#C6F27E]/15 flex items-center justify-between gap-2">
-                  <p className="text-[#C6F27E]/80 text-xs font-mono font-semibold uppercase tracking-wider truncate">Up Next — {queue.length} tracks</p>
-                  <div className="hidden sm:flex gap-2 text-xs text-[#A8C97E]/50 font-mono">
-                    <span>{queue.filter(t => t.source === 'audius').length} Audius</span>
-                    <span>·</span>
-                    <span>{queue.filter(t => t.source === 'community').length} Community</span>
-                  </div>
+        {/* ═══════════ CHANNEL PRESET CHIP ROW ═══════════ */}
+        <ChannelChipRow
+          channels={channels}
+          activeChannel={activeChannel}
+          isPlaying={isPlaying}
+          onSelect={switchChannel}
+        />
+
+        {/* Queue Panel */}
+        <AnimatePresence>
+          {showQueue && queue.length > 0 && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+              className="rounded-lg border border-black/70 overflow-hidden" style={SCREEN_BG}>
+              <div className="p-3 border-b border-[#C6F27E]/15 flex items-center justify-between gap-2">
+                <p className="text-[#C6F27E]/80 text-xs font-mono font-semibold uppercase tracking-wider truncate">Up Next — {queue.length} tracks</p>
+                <div className="hidden sm:flex gap-2 text-xs text-[#A8C97E]/50 font-mono">
+                  <span>{queue.filter(t => t.source === 'audius').length} Audius</span>
+                  <span>·</span>
+                  <span>{queue.filter(t => t.source === 'community').length} Community</span>
                 </div>
-                <div className="max-h-72 sm:max-h-56 overflow-y-auto overscroll-contain">
-                  {queue.map((t, i) => (
-                    <button key={i} onClick={() => { setQueueIndex(i); playTrack(t); }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${i === queueIndex ? "bg-[#C6F27E]/10" : "hover:bg-[#C6F27E]/5 active:bg-[#C6F27E]/10"}`}>
-                      <span className="text-[#A8C97E]/40 text-xs font-mono w-5 flex-shrink-0 text-center">{i + 1}</span>
-                      {t.cover_image_url ? (
-                        <img src={t.cover_image_url} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-9 h-9 rounded bg-black/40 flex items-center justify-center flex-shrink-0">
-                          <Music className="w-3.5 h-3.5 text-[#C6F27E]/30" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-xs font-semibold truncate ${i === queueIndex ? "text-[#E4FCA8]" : "text-[#A8C97E]"}`}>{t.track_title}</p>
-                        <p className="text-xs text-[#A8C97E]/40 truncate">{t.artist_name}</p>
+              </div>
+              <div className="max-h-72 sm:max-h-56 overflow-y-auto overscroll-contain">
+                {queue.map((t, i) => (
+                  <button key={i} onClick={() => { setQueueIndex(i); playTrack(t); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${i === queueIndex ? "bg-[#C6F27E]/10" : "hover:bg-[#C6F27E]/5 active:bg-[#C6F27E]/10"}`}>
+                    <span className="text-[#A8C97E]/40 text-xs font-mono w-5 flex-shrink-0 text-center">{i + 1}</span>
+                    {t.cover_image_url ? (
+                      <img src={t.cover_image_url} alt="" className="w-9 h-9 rounded object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-9 h-9 rounded bg-black/40 flex items-center justify-center flex-shrink-0">
+                        <Music className="w-3.5 h-3.5 text-[#C6F27E]/30" />
                       </div>
-                      <AILabelBadge label={t.ai_label} size="xs" className="flex-shrink-0" />
-                      <Badge className={`text-xs border flex-shrink-0 ${SOURCE_BADGE[t.source]?.cls || "bg-white/10 text-white/50"}`}>
-                        {SOURCE_BADGE[t.source]?.label || t.source || "?"}
-                      </Badge>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </RackUnit>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs font-semibold truncate ${i === queueIndex ? "text-[#E4FCA8]" : "text-[#A8C97E]"}`}>{t.track_title}</p>
+                      <p className="text-xs text-[#A8C97E]/40 truncate">{t.artist_name}</p>
+                    </div>
+                    <AILabelBadge label={t.ai_label} size="xs" className="flex-shrink-0" />
+                    <Badge className={`text-xs border flex-shrink-0 ${SOURCE_BADGE[t.source]?.cls || "bg-white/10 text-white/50"}`}>
+                      {SOURCE_BADGE[t.source]?.label || t.source || "?"}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* ═══════════ METER UNIT (1U) ═══════════ */}
-        <RackUnit title="Meter Unit (1U)" badge="COMMS" badgeColor="green">
-          {/* Mobile: VU pair + collapsible EQ */}
-          <div className="md:hidden space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
-                <p className="text-center text-white/70 text-xs font-semibold">Left</p>
-              </div>
-              <div className="space-y-1.5">
-                <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
-                <p className="text-center text-white/70 text-xs font-semibold">Right</p>
-              </div>
-            </div>
-            <button onClick={() => setShowEQ(p => !p)}
-              className="w-full rounded-lg border border-white/10 bg-[#1C1712] px-4 py-2.5 text-xs font-bold tracking-widest uppercase text-white/70 flex items-center justify-between active:bg-white/5">
-              <span>5-Band EQ</span>
-              <span className="text-white/40 text-[10px]">{showEQ ? 'Hide ▲' : 'Show ▼'}</span>
+        {/* ═══════════ 5-BAND EQ ACCORDION ═══════════ */}
+        <AccordionBar title="5-Band EQ" open={showEQ} onToggle={() => setShowEQ(p => !p)}
+          right={<span className="text-[10px] font-mono text-[#C6F27E]/60 hidden sm:inline">60 · 250 · 1k · 4k · 12k</span>}>
+          <EQPanel setBandGain={setBandGain} />
+        </AccordionBar>
+
+        {/* ═══════════ ALL CHANNELS ACCORDION ═══════════ */}
+        <AccordionBar title="All Channels" open={showChannels} onToggle={() => setShowChannels(p => !p)}
+          right={<span className="text-[10px] font-mono text-white/40 hidden sm:inline">Audius + Community</span>}>
+          <div className="flex justify-end mb-3">
+            <button onClick={() => setShowBuilder(true)} className="merc-button-dark rounded-full px-4 h-8 text-xs font-bold inline-flex items-center gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Build Mix
             </button>
-            <AnimatePresence>
-              {showEQ && (
-                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                  className="overflow-hidden">
-                  <EQPanel setBandGain={setBandGain} />
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
-
-          {/* Desktop: VU L / VU R / EQ */}
-          <div className="hidden md:grid grid-cols-[1fr_1fr_1.2fr] gap-4 items-start">
-            <div className="space-y-2">
-              <VUMeter analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
-              <p className="text-center text-white/70 text-sm font-semibold">Left</p>
-            </div>
-            <div className="space-y-2">
-              <VUMeter analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
-              <p className="text-center text-white/70 text-sm font-semibold">Right</p>
-            </div>
-            <EQPanel setBandGain={setBandGain} />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+            {channels.map((ch) => {
+              const isActive = activeChannel.id === ch.id || activeChannel.slug === ch.slug;
+              return (
+                <motion.button key={ch.id || ch.slug} onClick={() => switchChannel(ch)}
+                  whileTap={{ scale: 0.97 }}
+                  className={`p-3 rounded-lg text-left transition-all border
+                    ${isActive
+                      ? "bg-[#1B2410] border-[#FF9A4D]/60 shadow-[0_0_12px_rgba(255,154,77,0.2)]"
+                      : "bg-[#131A0C] border-[#C6F27E]/15 hover:border-[#C6F27E]/40"}`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xl">{ch.emoji || "🎵"}</span>
+                    {isActive && (
+                      <Badge className="text-xs border-0 bg-[#C6F27E]/20 text-[#C6F27E]">
+                        {isPlaying ? "▶" : "•"}
+                      </Badge>
+                    )}
+                  </div>
+                  <h3 className={`font-bold text-sm mb-0.5 leading-tight ${isActive ? "text-[#E4FCA8]" : "text-[#A8C97E]"}`}>{ch.name}</h3>
+                  <p className="text-xs text-white/40 line-clamp-2 hidden md:block">{ch.description}</p>
+                </motion.button>
+              );
+            })}
           </div>
+        </AccordionBar>
 
-          {/* Brushed metal CTA strip */}
-          <div className="mt-5 rounded-lg border border-black/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
-            style={{ background: "linear-gradient(180deg, #C9CDD1 0%, #A8ACB0 30%, #8E9296 55%, #B4B8BC 80%, #D4D8DC 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.5)" }}>
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 border border-black/50" style={SCREEN_BG}>
-                <RadioIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#C6F27E]" style={{ filter: "drop-shadow(0 0 4px rgba(198,242,126,0.6))" }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[#14100C] font-black text-sm sm:text-base">Get your track on BASE Station Radio</p>
-                <p className="text-[#3A342E] text-xs sm:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
-              </div>
+        {/* ═══════════ BRUSHED METAL CTA STRIP + ON AIR ═══════════ */}
+        <div className="rounded-lg border border-black/60 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+          style={{ background: "linear-gradient(180deg, #C9CDD1 0%, #A8ACB0 30%, #8E9296 55%, #B4B8BC 80%, #D4D8DC 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7), inset 0 -1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.5)" }}>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 border border-black/50" style={SCREEN_BG}>
+              <RadioIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#C6F27E]" style={{ filter: "drop-shadow(0 0 4px rgba(198,242,126,0.6))" }} />
             </div>
-            <Link to="/submit" className="w-full sm:w-auto flex-shrink-0">
-              <button className="w-full sm:w-auto rounded-full px-5 h-10 text-xs font-black inline-flex items-center justify-center gap-1.5 text-[#14100C] transition-transform active:scale-95"
+            <div className="flex-1 min-w-0">
+              <p className="text-[#14100C] font-black text-sm sm:text-base">Get your track on BASE Station Radio</p>
+              <p className="text-[#3A342E] text-xs sm:text-sm">Upload a track you made — anywhere — and we'll mix it in with Audius hits across our channels.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* ON AIR lamp */}
+            <div className="flex items-center gap-2 rounded-full border border-black/40 bg-[#14100C] px-3 py-1.5">
+              <span className="relative flex items-center justify-center">
+                {isPlaying && <span className="absolute w-3 h-3 rounded-full bg-[#FF4D6D] animate-ping opacity-60" />}
+                <span className={`relative w-2.5 h-2.5 rounded-full ${isPlaying ? "bg-[#FF4D6D] shadow-[0_0_10px_#FF4D6D]" : "bg-[#5A2230]"}`} />
+              </span>
+              <span className={`text-[10px] font-mono font-bold tracking-widest ${isPlaying ? "text-[#FF8095]" : "text-white/40"}`}>ON AIR</span>
+            </div>
+            <Link to="/submit">
+              <button className="rounded-full px-5 h-10 text-xs font-black inline-flex items-center justify-center gap-1.5 text-[#14100C] transition-transform active:scale-95"
                 style={{ background: "linear-gradient(135deg, #FFC26E 0%, #FF9A4D 50%, #FF6B4A 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 12px rgba(255,140,60,0.5)" }}>
                 <Upload className="w-3.5 h-3.5" /> Upload Track
               </button>
             </Link>
           </div>
-
-          {/* All Channels */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-              <h2 className="font-display text-xl md:text-2xl text-white">All Channels</h2>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <p className="text-xs text-white/50 hidden sm:block">Powered by Audius + Community</p>
-                <button onClick={() => setShowBuilder(true)} className="merc-button-dark rounded-full px-4 h-9 text-xs font-bold inline-flex items-center gap-1.5">
-                  <Plus className="w-3.5 h-3.5" /> Build Mix
-                </button>
-              </div>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory md:grid md:grid-cols-3 md:overflow-visible lg:grid-cols-4 md:gap-3 scrollbar-hide">
-              {channels.map((ch) => {
-                const isActive = activeChannel.id === ch.id || activeChannel.slug === ch.slug;
-                return (
-                  <motion.button key={ch.id || ch.slug} onClick={() => switchChannel(ch)}
-                    whileTap={{ scale: 0.97 }}
-                    className={`snap-start flex-shrink-0 w-44 md:w-auto p-4 rounded-lg text-left transition-all border
-                      ${isActive
-                        ? "bg-[#1B2410] border-[#FF9A4D]/60 shadow-[0_0_12px_rgba(255,154,77,0.2)]"
-                        : "bg-[#131A0C] border-[#C6F27E]/15 hover:border-[#C6F27E]/40"}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{ch.emoji || "🎵"}</span>
-                      {isActive && (
-                        <Badge className="text-xs border-0 bg-[#C6F27E]/20 text-[#C6F27E]">
-                          {isPlaying ? "▶" : "•"}
-                        </Badge>
-                      )}
-                    </div>
-                    <h3 className={`font-bold text-sm mb-1 leading-tight ${isActive ? "text-[#E4FCA8]" : "text-[#A8C97E]"}`}>{ch.name}</h3>
-                    <p className="text-xs text-white/40 line-clamp-2 hidden md:block">{ch.description}</p>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        </RackUnit>
+        </div>
       </div>
 
       <audio ref={audioRef} onEnded={handleTrackEnd} onError={handleAudioError} crossOrigin="anonymous" />
