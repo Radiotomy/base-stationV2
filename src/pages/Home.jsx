@@ -149,6 +149,10 @@ export default function Home() {
                 <Link to="/transparency" className="text-[#FFC98A] hover:text-white transition-colors">AI Transparency</Link>
                 <span className="text-white/20">·</span>
                 <Link to="/terms" className="text-white/60 hover:text-white transition-colors">Terms of Use</Link>
+                <span className="text-white/20">·</span>
+                <Link to="/docs" className="text-white/60 hover:text-white transition-colors">Docs</Link>
+                <span className="text-white/20">·</span>
+                <a href="mailto:contact@basestation.live" className="text-[#FF9A4D] hover:text-white transition-colors">Contact</a>
               </div>
             </div>
 
