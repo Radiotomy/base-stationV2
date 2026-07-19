@@ -2,11 +2,10 @@ import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import AuthGate from '@/components/auth/AuthGate';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import AdminGate from '@/components/auth/AdminGate';
 import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
 import Header from '@/components/layout/Header';
@@ -16,6 +15,10 @@ import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 import MobileLayout from './components/layout/MobileLayout';
 
 // Pages — lazy-loaded so each route only downloads its own code (big mobile perf win)
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Home = lazy(() => import('./pages/Home.jsx'));
 const Playlists = lazy(() => import('./pages/Playlists'));
 const PlaylistDetail = lazy(() => import('./pages/PlaylistDetail'));
@@ -94,9 +97,9 @@ const PageLoader = () => (
 );
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
+  const { isLoadingPublicSettings, user } = useAuth();
 
-  if (isLoadingPublicSettings || isLoadingAuth) {
+  if (isLoadingPublicSettings) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
         <div className="text-center">
@@ -107,39 +110,17 @@ const AuthenticatedApp = () => {
     );
   }
 
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Logged-out visitors can browse the landing + info pages;
-      // everything else shows the branded sign-in gate.
-      return (
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route element={<MobileLayout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/radio" element={<Radio />} />
-              <Route path="/why-base-station" element={<WhyBaseStation />} />
-              <Route path="/news-hub" element={<NewsHub />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/help" element={<Help />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/transparency" element={<AITransparency />} />
-              <Route path="/creative-ownership" element={<CreativeOwnership />} />
-            </Route>
-            <Route path="*" element={<AuthGate />} />
-          </Routes>
-        </Suspense>
-      );
-    }
-  }
-
   return (
     <>
       {user && <Header user={user} />}
       {user && <Breadcrumbs />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route element={<MobileLayout />}>
             <Route path="/" element={<Home />} />
             <Route path="/playlists" element={<Playlists />} />
@@ -212,6 +193,7 @@ const AuthenticatedApp = () => {
             <Route path="ai-integrations" element={<AdminAIIntegrations />} />
             <Route path="solana" element={<AdminSolana />} />
             <Route path="blockchain-wallets" element={<AdminBlockchainWallets />} />
+          </Route>
           </Route>
           <Route path="*" element={<PageNotFound />} />
         </Routes>
