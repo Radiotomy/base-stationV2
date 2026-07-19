@@ -112,6 +112,29 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = body.action || 'register';
 
+    // ── wallet_check ── admin-only, safe diagnostic (never reveals the key) ─
+    if (action === 'wallet_check') {
+      if (user.role !== 'admin') return Response.json({ error: 'Forbidden' }, { status: 403 });
+      const raw = Deno.env.get('PLATFORM_WALLET_PRIVATE_KEY') || '';
+      const k = raw.trim().replace(/^["']|["']$/g, '');
+      const pk = normalizePk(raw);
+      let address = null;
+      if (pk) {
+        try { address = new ethers.Wallet(pk).address; } catch (_) { /* ignore */ }
+      }
+      return Response.json({
+        set: raw.length > 0,
+        valid: !!address,
+        address,
+        hints: address ? null : {
+          length: k.length,
+          starts_with_0x: k.startsWith('0x'),
+          word_count: k.split(/\s+/).length,
+          hex_only: /^(0x)?[0-9a-fA-F]+$/.test(k),
+        },
+      });
+    }
+
     // ── register ── platform wallet pays & signs, artist needs nothing ─────
     if (action === 'register') {
       const t = body.track || {};
