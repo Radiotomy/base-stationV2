@@ -83,6 +83,12 @@ export default function BaseRegistryRow({ record, onChanged }) {
           >
             {busy === "confirm" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />} Confirm
           </Button>
+          <Button
+            size="sm" variant="outline" className="h-8 rounded-lg gap-1.5" disabled={!!busy}
+            onClick={() => run("anchor", { action: "admin_retry_anchor" }, "Anchored on Base")}
+          >
+            {busy === "anchor" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Retry anchor
+          </Button>
           {!record.metadata_uri && (
             <Button
               size="sm" variant="outline" className="h-8 rounded-lg gap-1.5" disabled={!!busy}
