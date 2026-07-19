@@ -1,0 +1,51 @@
+{
+  "name": "ForumReply",
+  "type": "object",
+  "properties": {
+    "thread_id": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "member_id": {
+      "type": "string",
+      "description": "ForumMember id of the author"
+    },
+    "author_source": {
+      "type": "string",
+      "enum": [
+        "guest",
+        "member"
+      ],
+      "default": "guest"
+    }
+  },
+  "required": [
+    "thread_id",
+    "body",
+    "author_name",
+    "member_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

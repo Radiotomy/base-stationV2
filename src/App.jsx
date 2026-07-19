@@ -89,6 +89,8 @@ const CreatorStore = lazy(() => import('./pages/CreatorStore'));
 const SmokeTests = lazy(() => import('./pages/dev/SmokeTests'));
 const ErrorLogViewer = lazy(() => import('./pages/dev/ErrorLogViewer'));
 const LiveRegression = lazy(() => import('./pages/dev/LiveRegression'));
+const Forum = lazy(() => import('./pages/Forum'));
+const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
 
 const PageLoader = () => (
@@ -121,6 +123,9 @@ const AuthenticatedApp = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          {/* Public community forum — open to guests, no BASE Station account required */}
+          <Route path="/forum" element={<Forum />} />
+          <Route path="/forum/:id" element={<ForumThread />} />
           <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route element={<MobileLayout />}>
             <Route path="/" element={<Home />} />

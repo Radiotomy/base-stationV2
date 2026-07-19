@@ -1,0 +1,74 @@
+{
+  "name": "ForumThread",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "legal",
+        "cos",
+        "ai_policy",
+        "general"
+      ],
+      "default": "general",
+      "description": "legal = legal & terms discussion; cos = Creative Ownership Score & methods; ai_policy = AI music generative policy; general = everything else"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "member_id": {
+      "type": "string",
+      "description": "ForumMember id of the author"
+    },
+    "author_source": {
+      "type": "string",
+      "enum": [
+        "guest",
+        "member"
+      ],
+      "default": "guest"
+    },
+    "reply_count": {
+      "type": "number",
+      "default": 0
+    },
+    "is_pinned": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_locked": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "title",
+    "body",
+    "author_name",
+    "member_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
