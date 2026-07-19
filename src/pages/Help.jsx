@@ -248,7 +248,7 @@ const SECTIONS = [
           <li><strong>Certificate issued</strong> — download it, view the record on BaseScan, and export DDEX/ID3 metadata for distributors.</li>
         </ul>
         <p>Because it starts at creation — every prompt, reference upload, and iteration is logged as human participation — your registration proves not just <em>that</em> you made the track, but <em>how much of it</em> was yours.</p>
-        <p>Manage everything in the <Link to="/blockchain" className="text-blue-400 hover:underline">Blockchain Registry →</Link></p>
+        <p>See all your records and certificates in <Link to="/creator-dashboard?tab=proof" className="text-blue-400 hover:underline">My Workspace → 🛡️ Proof of Ownership</Link></p>
       </>
     ),
   },

@@ -58,7 +58,6 @@ const MyProfile = lazy(() => import('./pages/MyProfile'));
 const SubmitTrack = lazy(() => import('./pages/SubmitTrack'));
 const ArtistProfile = lazy(() => import('./pages/ArtistProfile'));
 const SolanaRegistry = lazy(() => import('./pages/SolanaRegistry'));
-const BlockchainRegistry = lazy(() => import('./pages/BlockchainRegistry'));
 const ID3TagStudio = lazy(() => import('./pages/ID3TagStudio'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
@@ -162,7 +161,7 @@ const AuthenticatedApp = () => {
             <Route path="/submit" element={<SubmitTrack />} />
             <Route path="/artist/:id" element={<ArtistProfile />} />
             <Route path="/solana" element={<SolanaRegistry />} />
-            <Route path="/blockchain" element={<BlockchainRegistry />} />
+            <Route path="/blockchain" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
             <Route path="/id3-studio" element={<ID3TagStudio />} />
             <Route path="/creator-dashboard" element={<CreatorDashboard />} />
             <Route path="/credits" element={<Credits />} />

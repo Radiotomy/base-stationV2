@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart3, Music, Zap, TrendingUp, Eye, Heart,
   Image, FileText, ChevronRight, Clock, CheckCircle, Folder, History, RefreshCw,
-  FolderOpen, Layers, Upload, Radio, Trophy, Award
+  FolderOpen, Layers, Upload, Radio, Trophy, Award, ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
@@ -19,6 +19,7 @@ import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
 import SubmissionsTab from "@/components/dashboard/SubmissionsTab";
 import LiveSessionsTab from "@/components/dashboard/LiveSessionsTab";
 import OwnershipDashboard from "@/components/music/OwnershipDashboard";
+import ProofOfOwnershipTab from "@/components/dashboard/ProofOfOwnershipTab";
 import CircuitStatStrip from "@/components/dashboard/circuit/CircuitStatStrip";
 import CircuitTabBar from "@/components/dashboard/circuit/CircuitTabBar";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ export default function CreatorDashboard() {
     { key: "fans",      label: "Fans",        icon: Trophy },
     { key: "history",   label: "History",     icon: History },
     { key: "ownership", label: "Ownership",   icon: Award },
+    { key: "proof",     label: "Proof",       icon: ShieldCheck },
     { key: "analytics", label: "Analytics",   icon: BarChart3 },
   ];
 
@@ -262,6 +264,11 @@ export default function CreatorDashboard() {
       {/* Creative Ownership Tab */}
       {activeTab === "ownership" && (
         <OwnershipDashboard items={assets} />
+      )}
+
+      {/* Proof of Ownership Tab */}
+      {activeTab === "proof" && user && (
+        <ProofOfOwnershipTab userId={user.id} />
       )}
 
       {/* Analytics Tab */}
