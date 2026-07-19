@@ -70,13 +70,14 @@ export default function EQPanel({ setBandGain }) {
               if (p) applyPreset(p);
             }}
             aria-label="EQ preset"
+            title="Choose an EQ preset — instantly shapes the sound"
             className="min-w-0 max-w-[130px] rounded-md bg-black/40 border border-white/15 text-[10px] font-bold tracking-wide text-[#FFC98A] px-2 py-1 outline-none hover:border-white/30 cursor-pointer">
             {activePreset === null && <option value="__custom" disabled>Custom</option>}
             {PRESETS.map((p) => (
               <option key={p.name} value={p.name} className="bg-[#14100C] text-white">{p.name}</option>
             ))}
           </select>
-          <button onClick={reset} aria-label="Reset to flat"
+          <button onClick={reset} aria-label="Reset to flat" title="Reset all bands to flat (0 dB)"
             className="flex items-center gap-1 text-[10px] text-white/50 hover:text-white px-1.5 py-1 rounded-md hover:bg-white/5 transition-colors flex-shrink-0">
             <RotateCcw className="w-3 h-3" />
           </button>
@@ -110,6 +111,7 @@ export default function EQPanel({ setBandGain }) {
                   width: "112px",
                 }}
                 aria-label={`${band.label} Hz`}
+                title={`${band.label} band — drag up to boost, down to cut (±12 dB)`}
               />
             </div>
 

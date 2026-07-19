@@ -1,12 +1,14 @@
 import { motion, AnimatePresence } from "framer-motion";
+import RadioTip from "@/components/radio/RadioTip";
 
 /**
  * Slim rack accordion bar — collapsed hardware strip that expands
  * to reveal a panel (EQ, All Channels) on the Boombox layout.
  */
-export default function AccordionBar({ title, open, onToggle, right = null, children }) {
+export default function AccordionBar({ title, open, onToggle, right = null, tip, children }) {
   return (
     <div className="rounded-lg border border-black/80 bg-gradient-to-b from-[#1C1712] to-[#0F0C09] overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_6px_16px_rgba(0,0,0,0.5)]">
+      <RadioTip tip={tip || (open ? `Hide ${title}` : `Show ${title}`)}>
       <button onClick={onToggle}
         className="w-full flex items-center justify-between gap-3 px-4 py-2.5 active:bg-white/5">
         <span className="flex items-center gap-2.5">
@@ -18,6 +20,7 @@ export default function AccordionBar({ title, open, onToggle, right = null, chil
           <span className="text-white/40 text-[10px] font-bold">{open ? "▲" : "▼"}</span>
         </span>
       </button>
+      </RadioTip>
       <AnimatePresence>
         {open && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}

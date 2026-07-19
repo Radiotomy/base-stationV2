@@ -15,6 +15,7 @@ import RoundVUGauge from "@/components/radio/RoundVUGauge";
 import ChannelChipRow from "@/components/radio/ChannelChipRow";
 import AccordionBar from "@/components/radio/AccordionBar";
 import TransportKnob from "@/components/radio/TransportKnob";
+import RadioTip from "@/components/radio/RadioTip";
 import useAudioProcessor from "@/hooks/useAudioProcessor";
 import AILabelBadge from "@/components/common/AILabelBadge";
 
@@ -344,47 +345,66 @@ export default function Radio() {
               {/* CENTER — transport knobs + timecode + scrubber */}
               <div className="flex flex-col items-center justify-between gap-2.5 min-w-[240px]">
                 <div className="flex items-center gap-4 sm:gap-5">
-                  <TransportKnob icon={SkipBack} label="Prev" onClick={skipPrev} disabled={queue.length < 2} />
+                  <TransportKnob icon={SkipBack} label="Prev" tip="Go back to the previous track" onClick={skipPrev} disabled={queue.length < 2} />
                   <TransportKnob
                     icon={loadingQueue ? Loader2 : isPlaying ? Pause : Play}
                     spinning={loadingQueue}
                     label="Play/Pause" primary
+                    tip={loadingQueue ? "Tuning in…" : isPlaying ? "Pause the radio" : "Start playing this channel"}
                     onClick={togglePlay}
                     disabled={loadingQueue || queue.length === 0} />
-                  <TransportKnob icon={SkipForward} label="Next" onClick={skipNext} disabled={queue.length < 2} />
+                  <TransportKnob icon={SkipForward} label="Next" tip="Skip to the next track in the queue" onClick={skipNext} disabled={queue.length < 2} />
                 </div>
                 <div className="w-full rounded-md border border-black/80 px-3 py-1 flex items-center justify-center gap-2 shadow-[inset_0_3px_16px_rgba(0,0,0,0.9)]" style={SCREEN_BG}>
                   <span className="text-xl text-[#C6F27E]" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{fmtTime(currentTime)}</span>
                   <span className="text-xl text-[#C6F27E]/50" style={MONO_LCD}>|</span>
                   <span className="text-xl text-[#C6F27E]/80" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{fmtTime(duration)}</span>
                 </div>
-                <Slider
-                  value={[duration ? (currentTime / duration) * 100 : 0]}
-                  onValueChange={handleSeek}
-                  max={100} step={0.1} disabled={!duration}
-                  className="cursor-pointer w-full" aria-label="Track progress" />
+                <RadioTip tip="Seek — drag to jump to any point in the track">
+                  <span className="w-full block">
+                    <Slider
+                      value={[duration ? (currentTime / duration) * 100 : 0]}
+                      onValueChange={handleSeek}
+                      max={100} step={0.1} disabled={!duration}
+                      className="cursor-pointer w-full" aria-label="Track progress" />
+                  </span>
+                </RadioTip>
                 <div className="w-full flex items-center gap-2">
-                  <button onClick={() => setMuted(!muted)} aria-label={muted ? "Unmute" : "Mute"}
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors flex-shrink-0">
-                    {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                  </button>
-                  <Slider value={volume} onValueChange={setVolume} max={100} step={1} className="cursor-pointer flex-1" aria-label="Volume" />
-                  <button onClick={() => setShowQueue(p => !p)} aria-label="Toggle queue"
-                    className={`rounded-full p-2 border transition-colors flex-shrink-0
-                      ${showQueue ? "bg-[#1B2410] border-[#C6F27E]/50 text-[#C6F27E]" : "bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80"}`}>
-                    <ListMusic className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => loadQueue(activeChannel)} aria-label="Reload channel"
-                    className="rounded-full p-2 border bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80 transition-colors flex-shrink-0">
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </button>
+                  <RadioTip tip={muted ? "Unmute the radio" : "Mute the radio"}>
+                    <button onClick={() => setMuted(!muted)} aria-label={muted ? "Unmute" : "Mute"}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-white/60 hover:text-white active:bg-white/10 transition-colors flex-shrink-0">
+                      {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
+                  </RadioTip>
+                  <RadioTip tip="Volume — drag to adjust loudness">
+                    <span className="flex-1 block">
+                      <Slider value={volume} onValueChange={setVolume} max={100} step={1} className="cursor-pointer w-full" aria-label="Volume" />
+                    </span>
+                  </RadioTip>
+                  <RadioTip tip={showQueue ? "Hide the Up Next queue" : "Show the Up Next queue"}>
+                    <button onClick={() => setShowQueue(p => !p)} aria-label="Toggle queue"
+                      className={`rounded-full p-2 border transition-colors flex-shrink-0
+                        ${showQueue ? "bg-[#1B2410] border-[#C6F27E]/50 text-[#C6F27E]" : "bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80"}`}>
+                      <ListMusic className="w-3.5 h-3.5" />
+                    </button>
+                  </RadioTip>
+                  <RadioTip tip="Rescan — load a fresh mix for this channel">
+                    <button onClick={() => loadQueue(activeChannel)} aria-label="Reload channel"
+                      className="rounded-full p-2 border bg-[#1C1712] border-white/10 text-white/50 hover:text-white/80 transition-colors flex-shrink-0">
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                  </RadioTip>
                 </div>
               </div>
 
               {/* RIGHT — twin round analog VU gauges */}
               <div className="flex md:flex-col lg:flex-row items-center justify-center gap-3 md:gap-2 lg:gap-3">
-                <RoundVUGauge analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
-                <RoundVUGauge analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} />
+                <RadioTip tip={eqActive ? "Left channel VU meter — live audio level" : "Left channel VU meter"}>
+                  <span><RoundVUGauge analyserRef={analyserL} label="L" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} /></span>
+                </RadioTip>
+                <RadioTip tip={eqActive ? "Right channel VU meter — live audio level" : "Right channel VU meter"}>
+                  <span><RoundVUGauge analyserRef={analyserR} label="R" isActive={isPlaying && eqActive} simulate={isPlaying && !eqActive} /></span>
+                </RadioTip>
               </div>
             </div>
           </div>
@@ -414,6 +434,7 @@ export default function Radio() {
               <div className="max-h-72 sm:max-h-56 overflow-y-auto overscroll-contain">
                 {queue.map((t, i) => (
                   <button key={i} onClick={() => { setQueueIndex(i); playTrack(t); }}
+                    title={`Play "${t.track_title}" by ${t.artist_name}`}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${i === queueIndex ? "bg-[#C6F27E]/10" : "hover:bg-[#C6F27E]/5 active:bg-[#C6F27E]/10"}`}>
                     <span className="text-[#A8C97E]/40 text-xs font-mono w-5 flex-shrink-0 text-center">{i + 1}</span>
                     {t.cover_image_url ? (
@@ -439,24 +460,27 @@ export default function Radio() {
         </AnimatePresence>
 
         {/* ═══════════ 5-BAND EQ ACCORDION ═══════════ */}
-        <AccordionBar title="5-Band EQ" open={showEQ} onToggle={() => setShowEQ(p => !p)}
+        <AccordionBar title="5-Band EQ" tip="Open the 5-band equalizer to shape the sound" open={showEQ} onToggle={() => setShowEQ(p => !p)}
           right={<span className="text-[10px] font-mono text-[#C6F27E]/60 hidden sm:inline">60 · 250 · 1k · 4k · 12k</span>}>
           <EQPanel setBandGain={setBandGain} />
         </AccordionBar>
 
         {/* ═══════════ ALL CHANNELS ACCORDION ═══════════ */}
-        <AccordionBar title="All Channels" open={showChannels} onToggle={() => setShowChannels(p => !p)}
+        <AccordionBar title="All Channels" tip="Browse every radio channel with full descriptions" open={showChannels} onToggle={() => setShowChannels(p => !p)}
           right={<span className="text-[10px] font-mono text-white/40 hidden sm:inline">Audius + Community</span>}>
           <div className="flex justify-end mb-3">
-            <button onClick={() => setShowBuilder(true)} className="merc-button-dark rounded-full px-4 h-8 text-xs font-bold inline-flex items-center gap-1.5">
-              <Plus className="w-3.5 h-3.5" /> Build Mix
-            </button>
+            <RadioTip tip="Build a custom radio mix and save it as a playlist">
+              <button onClick={() => setShowBuilder(true)} className="merc-button-dark rounded-full px-4 h-8 text-xs font-bold inline-flex items-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Build Mix
+              </button>
+            </RadioTip>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
             {channels.map((ch) => {
               const isActive = activeChannel.id === ch.id || activeChannel.slug === ch.slug;
               return (
                 <motion.button key={ch.id || ch.slug} onClick={() => switchChannel(ch)}
+                  title={isActive ? `Tuned to ${ch.name}` : `Tune to ${ch.name}${ch.description ? ` — ${ch.description}` : ""}`}
                   whileTap={{ scale: 0.97 }}
                   className={`p-3 rounded-lg text-left transition-all border
                     ${isActive
@@ -492,7 +516,8 @@ export default function Radio() {
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* ON AIR lamp */}
-            <div className="flex items-center gap-2 rounded-full border border-black/40 bg-[#14100C] px-3 py-1.5">
+            <div className="flex items-center gap-2 rounded-full border border-black/40 bg-[#14100C] px-3 py-1.5"
+              title={isPlaying ? "ON AIR — the radio is broadcasting" : "Off air — press play to start broadcasting"}>
               <span className="relative flex items-center justify-center">
                 {isPlaying && <span className="absolute w-3 h-3 rounded-full bg-[#FF4D6D] animate-ping opacity-60" />}
                 <span className={`relative w-2.5 h-2.5 rounded-full ${isPlaying ? "bg-[#FF4D6D] shadow-[0_0_10px_#FF4D6D]" : "bg-[#5A2230]"}`} />
@@ -500,7 +525,8 @@ export default function Radio() {
               <span className={`text-[10px] font-mono font-bold tracking-widest ${isPlaying ? "text-[#FF8095]" : "text-white/40"}`}>ON AIR</span>
             </div>
             <Link to="/submit">
-              <button className="rounded-full px-5 h-10 text-xs font-black inline-flex items-center justify-center gap-1.5 text-[#14100C] transition-transform active:scale-95"
+              <button title="Submit your own track to get it played on BASE Station Radio"
+                className="rounded-full px-5 h-10 text-xs font-black inline-flex items-center justify-center gap-1.5 text-[#14100C] transition-transform active:scale-95"
                 style={{ background: "linear-gradient(135deg, #FFC26E 0%, #FF9A4D 50%, #FF6B4A 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 4px 12px rgba(255,140,60,0.5)" }}>
                 <Upload className="w-3.5 h-3.5" /> Upload Track
               </button>

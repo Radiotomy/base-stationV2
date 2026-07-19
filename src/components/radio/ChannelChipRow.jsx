@@ -1,3 +1,5 @@
+import RadioTip from "@/components/radio/RadioTip";
+
 /**
  * Horizontal scrolling row of backlit lime-green channel preset chips
  * with signal-strength bars — Boombox faceplate preset strip.
@@ -20,7 +22,9 @@ export default function ChannelChipRow({ channels, activeChannel, isPlaying, onS
       {channels.map((ch) => {
         const isActive = activeChannel.id === ch.id || activeChannel.slug === ch.slug;
         return (
-          <button key={ch.id || ch.slug} onClick={() => onSelect(ch)}
+          <RadioTip key={ch.id || ch.slug} side="bottom"
+            tip={isActive ? `Tuned to ${ch.name}` : ch.description || `Tune to ${ch.name}`}>
+          <button onClick={() => onSelect(ch)}
             className={`snap-start flex-shrink-0 flex items-center gap-2 rounded-full pl-3 pr-3.5 py-2 border transition-all
               ${isActive
                 ? "bg-[#1B2410] border-[#FF9A4D]/70 shadow-[0_0_10px_rgba(255,154,77,0.25),inset_0_0_12px_rgba(198,242,126,0.08)]"
@@ -32,6 +36,7 @@ export default function ChannelChipRow({ channels, activeChannel, isPlaying, onS
             </span>
             <SignalBars active={isActive} playing={isPlaying} />
           </button>
+          </RadioTip>
         );
       })}
     </div>
