@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import AILabelSelector from "@/components/submit/AILabelSelector";
+import LinkSourceCheck from "@/components/submit/LinkSourceCheck";
+import UploadAnalysisCheck from "@/components/submit/UploadAnalysisCheck";
 
 const BASE_GENRES = [
   "hip-hop", "trap", "drill", "edm", "house", "deep house", "future bass", "dubstep",
@@ -73,6 +75,8 @@ export default function SubmitTrack() {
   const [customToolInput, setCustomToolInput] = useState("");
   const [selectedTools, setSelectedTools] = useState([]);
   const [aiLabel, setAiLabel] = useState("ai_generated");
+  const [linkCheck, setLinkCheck] = useState(null);
+  const [aiAnalysis, setAiAnalysis] = useState(null);
 
   const [form, setForm] = useState({
     title: "", description: "", track_url: "", cover_image_url: "",
@@ -158,6 +162,7 @@ export default function SubmitTrack() {
     e.preventDefault();
     if (!form.title || !form.track_url) { toast.error("Title and track source are required"); return; }
     if (!user) { toast.error("You must be signed in to submit"); return; }
+    if (sourceMode === "url" && !linkCheck?.verified) { toast.error("Please verify your external link — only links from verifiable sources are accepted"); return; }
     setSubmitting(true);
 
     const tagsArr = form.tags ? form.tags.split(",").map(t => t.trim()).filter(Boolean) : [];
@@ -168,6 +173,10 @@ export default function SubmitTrack() {
       bpm: form.bpm ? parseInt(form.bpm) : undefined,
       ai_tools_used: selectedTools.join(", "),
       ai_label: aiLabel,
+      source_check: sourceMode === "url"
+        ? linkCheck
+        : { verified: true, source_name: sourceMode === "library" ? "Base Station Library" : "Direct Upload", method: sourceMode },
+      ai_analysis: aiAnalysis || undefined,
       artist_id: user.id,
       artist_name: user.full_name,
       artist_email: user.email,
@@ -242,6 +251,8 @@ export default function SubmitTrack() {
                 setSelectedTools([]);
                 setAiLabel("ai_generated");
                 setSelectedAsset(null);
+                setLinkCheck(null);
+                setAiAnalysis(null);
                 setForm({ title: "", description: "", track_url: "", cover_image_url: "", genre: "", tags: "", lyrics: "", bpm: "" });
               }} variant="outline" className="rounded-full px-8">Submit Another</Button>
               <Link to="/challenges">
@@ -347,7 +358,7 @@ export default function SubmitTrack() {
               {/* Source Mode Selector */}
               <div className="grid grid-cols-3 gap-2">
                 {SOURCE_MODES.map(({ key, label, desc }) => (
-                  <button key={key} type="button" onClick={() => { setSourceMode(key); setSelectedAsset(null); update("track_url", ""); }}
+                  <button key={key} type="button" onClick={() => { setSourceMode(key); setSelectedAsset(null); update("track_url", ""); setLinkCheck(null); setAiAnalysis(null); }}
                     className={`p-3 rounded-xl border text-left transition-all ${
                       sourceMode === key ? "border-emerald-500 bg-emerald-500/10" : "border-border hover:border-emerald-500/40"
                     }`}>
@@ -360,8 +371,9 @@ export default function SubmitTrack() {
               {/* URL Mode */}
               {sourceMode === "url" && (
                 <div className="space-y-2">
-                  <Input value={form.track_url} onChange={e => update("track_url", e.target.value)}
-                    placeholder="https://soundcloud.com/your-track" className="rounded-xl" />
+                  <Input value={form.track_url} onChange={e => { update("track_url", e.target.value); setLinkCheck(null); }}
+                    placeholder="https://suno.com/song/… or https://youtube.com/…" className="rounded-xl" />
+                  <LinkSourceCheck url={form.track_url} result={linkCheck} onResult={setLinkCheck} />
                 </div>
               )}
 
@@ -372,7 +384,7 @@ export default function SubmitTrack() {
                     <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
                       <FileAudio className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                       <p className="text-sm text-emerald-300 truncate flex-1">Track uploaded successfully</p>
-                      <button type="button" onClick={() => update("track_url", "")} className="text-muted-foreground hover:text-foreground">
+                      <button type="button" onClick={() => { update("track_url", ""); setAiAnalysis(null); }} className="text-muted-foreground hover:text-foreground">
                         <X className="w-4 h-4" />
                       </button>
                     </div>
@@ -385,6 +397,9 @@ export default function SubmitTrack() {
                         : <><Upload className="w-8 h-8 text-muted-foreground" /><span className="text-sm text-muted-foreground">Click to upload audio file</span><span className="text-xs text-muted-foreground/60">MP3, WAV, FLAC, AAC</span></>}
                       <input type="file" accept="audio/*" className="hidden" onChange={e => e.target.files[0] && handleUploadTrack(e.target.files[0])} disabled={uploadingTrack} />
                     </label>
+                  )}
+                  {form.track_url && (
+                    <UploadAnalysisCheck fileUrl={form.track_url} declaredLabel={aiLabel} declaredTools={selectedTools} result={aiAnalysis} onResult={setAiAnalysis} />
                   )}
                 </div>
               )}

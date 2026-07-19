@@ -53,6 +53,14 @@
       ],
       "description": "RIAA/IFPI GenAI track-level label (July 2026 standard), self-declared by the artist at submission. ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording."
     },
+    "source_check": {
+      "type": "object",
+      "description": "External link source verification result \u2014 verified flag, source_name (Suno, YouTube, etc.), method, checked_at, reason if failed"
+    },
+    "ai_analysis": {
+      "type": "object",
+      "description": "Heuristic AI-involvement audio analysis for uploaded files \u2014 ai_likelihood 0-100, verdict, indicators, label_consistency vs the declared ai_label, summary"
+    },
     "tags": {
       "type": "array",
       "items": {
