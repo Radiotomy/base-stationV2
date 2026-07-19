@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import EmptyStateTeacher from '@/components/common/EmptyStateTeacher';
 
 const JOB_ICONS = { music: Music, lyrics: FileText, cover_art: Image, video: Film };
 const JOB_COLORS = {
@@ -197,10 +198,20 @@ export default function GenerationHistoryTab({ userId }) {
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-12 border border-dashed border-border rounded-2xl">
-          <Clock className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
-          <p className="text-muted-foreground text-sm">No generation history yet</p>
-        </div>
+        jobs.length === 0 ? (
+          <EmptyStateTeacher
+            emoji="🕘"
+            title="Your generation history lives here"
+            description="Every AI generation you run — music, lyrics, art, video — is logged here with its provider, credits used, and a one-click re-generate."
+            actionLabel="Generate Something"
+            actionTo="/studios"
+          />
+        ) : (
+          <div className="text-center py-12 border border-dashed border-border rounded-2xl">
+            <Clock className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
+            <p className="text-muted-foreground text-sm">Nothing matches this filter</p>
+          </div>
+        )
       ) : (
         <div className="space-y-2">
           {filtered.map(job => <JobRow key={job.id} job={job} onDelete={deleteJob} />)}

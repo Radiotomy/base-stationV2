@@ -21,7 +21,7 @@ const STEPS = [
     icon: Music,
     gradient: 'from-blue-600 to-cyan-600',
     visual: '🎨',
-    cta: { label: 'Try AI Studio', to: '/ai-studio' },
+    cta: { label: 'Try Music Studio', to: '/music-studio' },
   },
   {
     title: 'Get on the radio',
@@ -60,6 +60,8 @@ export default function OnboardingModal() {
   const finish = async () => {
     localStorage.setItem(STORAGE_KEY, '1');
     setOpen(false);
+    // Hand off to the guided spotlight tour
+    window.dispatchEvent(new Event('bs:onboarding-finished'));
     try { await base44.auth.updateMe({ onboarding_complete: true }); } catch {}
   };
 

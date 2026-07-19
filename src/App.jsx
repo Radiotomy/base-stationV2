@@ -12,6 +12,8 @@ import AIHelpAssistant from '@/components/assistant/AIHelpAssistant';
 import Header from '@/components/layout/Header';
 import Breadcrumbs from '@/components/layout/Breadcrumbs';
 import OnboardingModal from '@/components/onboarding/OnboardingModal';
+import GuidedTour from '@/components/onboarding/GuidedTour';
+import GlobalSearch from '@/components/search/GlobalSearch';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 import MobileLayout from './components/layout/MobileLayout';
 
@@ -29,7 +31,6 @@ const FeaturedArtists = lazy(() => import('./pages/FeaturedArtists'));
 const Challenges = lazy(() => import('./pages/Challenges'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Badges = lazy(() => import('./pages/Badges'));
-const AIStudio = lazy(() => import('./pages/AIStudio'));
 const StudioHub = lazy(() => import('./pages/StudioHub'));
 const LyricsStudio = lazy(() => import('./pages/LyricsStudio'));
 const MusicStudio = lazy(() => import('./pages/MusicStudio'));
@@ -132,7 +133,7 @@ const AuthenticatedApp = () => {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/badges" element={<Badges />} />
             <Route path="/studios" element={<StudioHub />} />
-            <Route path="/ai-studio" element={<AIStudio />} />
+            <Route path="/ai-studio" element={<Navigate to="/lyrics-studio" replace />} />
             <Route path="/lyrics-studio" element={<LyricsStudio />} />
             <Route path="/music-studio" element={<MusicStudio />} />
             <Route path="/cover-art-studio" element={<CoverArtStudio />} />
@@ -202,6 +203,8 @@ const AuthenticatedApp = () => {
       </Suspense>
       <AIHelpAssistant />
       {user && <OnboardingModal />}
+      {user && <GuidedTour />}
+      {user && <GlobalSearch />}
       {user && <PWAInstallPrompt />}
     </>
   );

@@ -7,6 +7,11 @@
       "default": false,
       "description": "Whether the user has finished the 3-step onboarding tour"
     },
+    "tour_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has finished the first-run guided spotlight tour"
+    },
     "beta_access": {
       "type": "boolean",
       "default": false,

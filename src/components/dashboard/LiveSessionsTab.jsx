@@ -5,6 +5,7 @@ import { Radio, BarChart3, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PublishSessionToAudiusButton from '@/components/livemanager/PublishSessionToAudiusButton';
+import EmptyStateTeacher from '@/components/common/EmptyStateTeacher';
 
 function formatDuration(s) {
   if (!s) return '—';
@@ -27,11 +28,13 @@ export default function LiveSessionsTab({ userId }) {
   if (loading) return <p className="text-muted-foreground text-center py-12">Loading your sessions…</p>;
 
   if (sessions.length === 0) return (
-    <div className="text-center py-12 border border-dashed border-border rounded-2xl">
-      <Radio className="w-8 h-8 mx-auto mb-2 text-muted-foreground opacity-30" />
-      <p className="text-muted-foreground text-sm">No completed live sessions yet.</p>
-      <Link to="/live-studio" className="text-purple-400 text-xs hover:text-purple-300 mt-2 block">Go Live →</Link>
-    </div>
+    <EmptyStateTeacher
+      emoji="📡"
+      title="Your live session archive"
+      description="After you go live, each completed session lands here with viewer stats, a summary, and one-click publishing to Audius."
+      actionLabel="Go Live"
+      actionTo="/live-studio"
+    />
   );
 
   return (

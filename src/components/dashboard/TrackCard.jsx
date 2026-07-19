@@ -10,6 +10,7 @@ import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 import AILabelBadge from '@/components/common/AILabelBadge';
 import WavDownloadButton from '@/components/music/WavDownloadButton';
+import NextStepNudge from '@/components/dashboard/NextStepNudge';
 
 const ASSET_ICONS = {
   track:    { icon: Music,    color: 'from-blue-600 to-cyan-700' },
@@ -123,6 +124,9 @@ export default function TrackCard({ asset, onDelete }) {
           </Button>
         </div>
       </div>
+
+      {/* "What should I do next?" nudge */}
+      <NextStepNudge asset={asset} />
 
       {/* Studio audio player (tracks only) */}
       {isTrack && asset.file_url && !audioError && (

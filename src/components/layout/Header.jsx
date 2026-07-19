@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
-  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper, Shield
+  LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper, Shield, Search
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -38,9 +38,9 @@ const COMMUNITY_NAV = [
 ];
 
 const CREATOR_NAV = [
-  { to: "/studios", label: "Studios", icon: Music },
-  { to: "/creator-dashboard", label: "My Workspace", icon: BarChart3 },
-  { to: "/submit", label: "Submit Track", icon: Upload },
+  { to: "/studios", label: "Studios", icon: Music, tour: "studios" },
+  { to: "/creator-dashboard", label: "My Workspace", icon: BarChart3, tour: "workspace" },
+  { to: "/submit", label: "Submit Track", icon: Upload, tour: "submit" },
 ];
 
 export default function Header({ user }) {
@@ -94,12 +94,13 @@ export default function Header({ user }) {
           {isCreator && (
             <>
               <div className="w-px h-6 bg-black shadow-[1px_0_0_rgba(255,255,255,0.08)] mx-1" />
-              {CREATOR_NAV.slice(0, 2).map(({ to, label, icon: Icon }) => {
+              {CREATOR_NAV.slice(0, 2).map(({ to, label, icon: Icon, tour }) => {
                 const isActive = location.pathname === to;
                 return (
                   <Link
                     key={to}
                     to={to}
+                    data-tour={tour}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
                       isActive
                         ? "text-[#1F3A0E] border-black shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]"
@@ -118,8 +119,17 @@ export default function Header({ user }) {
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.dispatchEvent(new Event('bs:open-search'))}
+            title="Search anything — studios, pages, your assets (Ctrl+K / ⌘K)"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold text-white/60 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
+          >
+            <Search className="w-4 h-4" />
+            <span className="hidden xl:inline font-mono text-[10px] text-white/40">⌘K</span>
+          </button>
           <Link
             to="/help"
+            data-tour="help"
             title="Help & How-To"
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-bold text-white/60 border border-black/60 bg-gradient-to-b from-[#28211A] to-[#171310] shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] hover:text-[#FF9A4D] hover:border-[#FF9A4D]/40 transition-all"
           >
