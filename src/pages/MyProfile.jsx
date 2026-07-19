@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import MyCreatorActions from "@/components/fan/MyCreatorActions";
+import ProfileModeChooser from "@/components/profile/ProfileModeChooser";
+import FanProfileView from "@/components/profile/FanProfileView";
 
 const BASE_GENRES = [
   "hip-hop", "trap", "drill", "afrobeats", "afro-trap",
@@ -75,7 +77,8 @@ export default function MyProfile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [mode, setMode] = useState("view"); // "view" | "edit" | "setup"
+  const [mode, setMode] = useState("view"); // "view" | "edit" | "setup" | "choose" | "fan"
+  const [choosing, setChoosing] = useState(false);
   const [selectedTools, setSelectedTools] = useState([]);
   const [customToolInput, setCustomToolInput] = useState("");
   const [customGenreInput, setCustomGenreInput] = useState("");
@@ -125,7 +128,8 @@ export default function MyProfile() {
       } else {
         // First time — pre-fill from auth user
         setForm(f => ({ ...f, display_name: u.full_name || "" }));
-        setMode("setup");
+        // Fans don't need an artist profile — honor their saved choice
+        setMode(u.profile_choice === "fan" ? "fan" : "choose");
       }
       setLoading(false);
     };
@@ -213,6 +217,24 @@ export default function MyProfile() {
       <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
     </div>
   );
+
+  // ─── FAN / CREATOR CHOICE ────────────────────────────────────────────────────
+  if (mode === "choose") {
+    const handleChoice = async (choice) => {
+      if (choice === "creator") { setMode("setup"); return; }
+      setChoosing(true);
+      try {
+        await base44.auth.updateMe({ profile_choice: "fan" });
+      } catch { /* non-fatal — fan view still works this session */ }
+      setChoosing(false);
+      setMode("fan");
+    };
+    return <ProfileModeChooser onChoose={handleChoice} busy={choosing} />;
+  }
+
+  if (mode === "fan") {
+    return <FanProfileView user={user} onBecomeCreator={() => setMode("setup")} />;
+  }
 
   // ─── SETUP / EDIT FORM ───────────────────────────────────────────────────────
   if (mode === "setup" || mode === "edit") {
