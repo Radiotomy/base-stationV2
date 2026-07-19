@@ -9,6 +9,7 @@ import WalletStatCard from '@/components/admin/blockchain/WalletStatCard';
 import ChainBreakdownTable from '@/components/admin/blockchain/ChainBreakdownTable';
 import RecentTransactionsList from '@/components/admin/blockchain/RecentTransactionsList';
 import AuditReportsPanel from '@/components/admin/blockchain/AuditReportsPanel';
+import BaseRegistryPanel from '@/components/admin/blockchain/BaseRegistryPanel';
 
 export default function AdminBlockchainWallets() {
   const [data, setData] = useState(null);
@@ -99,6 +100,10 @@ export default function AdminBlockchainWallets() {
               <p className="text-xs text-muted-foreground mt-2">
                 Set <code>BASE_PLATFORM_WALLET_ADDRESS</code>, <code>SOLANA_PLATFORM_WALLET_ADDRESS</code>, <code>POLYGON_PLATFORM_WALLET_ADDRESS</code>, <code>STREAMR_PLATFORM_WALLET_ADDRESS</code> in secrets. Private keys are never displayed.
               </p>
+            </section>
+
+            <section>
+              <BaseRegistryPanel />
             </section>
 
             <section>
