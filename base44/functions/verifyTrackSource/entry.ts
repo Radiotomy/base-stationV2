@@ -57,34 +57,57 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Confirm the link actually resolves at the real source (follows redirects,
-      // then re-checks the FINAL domain so shorteners can't smuggle in another host)
+      // Confirm the link actually resolves at the real source. Redirects are
+      // followed MANUALLY so every intermediate hop is validated against the
+      // whitelist before it is fetched — a shortener on an allowed domain can't
+      // bounce this server to an internal/unlisted address (SSRF protection).
+      // Some sources bounce automated requests to a consent/login page of the same
+      // company (e.g. YouTube -> google.com consent) — treat those as the original source.
+      const INTERSTITIALS = ["google.com", "facebook.com"];
+      const isInterstitialHost = (hn) => {
+        const h = String(hn || "").toLowerCase().replace(/^www\./, "");
+        return INTERSTITIALS.some(d => h === d || h.endsWith("." + d));
+      };
+      const MAX_REDIRECTS = 5;
       let status = 0;
       let finalHost = parsed.hostname;
       try {
-        const controller = new AbortController();
-        const t = setTimeout(() => controller.abort(), 10000);
-        const res = await fetch(url, {
-          method: "GET",
-          redirect: "follow",
-          signal: controller.signal,
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; BaseStationVerifier/1.0)" },
-        });
-        clearTimeout(t);
-        status = res.status;
-        finalHost = new URL(res.url).hostname;
-        try { await res.body?.cancel(); } catch { /* ignore */ }
+        let current = url;
+        for (let hop = 0; ; hop++) {
+          const cu = new URL(current);
+          if (cu.protocol !== "https:") {
+            return Response.json({ verified: false, reason: "Link redirects to a non-https address" });
+          }
+          if (!matchSource(cu.hostname) && !isInterstitialHost(cu.hostname)) {
+            return Response.json({ verified: false, reason: `Link redirects away from a verified source (ends at ${cu.hostname})` });
+          }
+          const controller = new AbortController();
+          const t = setTimeout(() => controller.abort(), 10000);
+          const res = await fetch(current, {
+            method: "GET",
+            redirect: "manual",
+            signal: controller.signal,
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; BaseStationVerifier/1.0)" },
+          });
+          clearTimeout(t);
+          try { await res.body?.cancel(); } catch { /* ignore */ }
+          const loc = (res.status >= 300 && res.status < 400) ? res.headers.get("location") : null;
+          if (loc) {
+            if (hop >= MAX_REDIRECTS) {
+              return Response.json({ verified: false, reason: "Too many redirects" });
+            }
+            current = new URL(loc, current).toString();
+            continue;
+          }
+          status = res.status;
+          finalHost = cu.hostname;
+          break;
+        }
       } catch {
         return Response.json({ verified: false, source_name: sourceName, reason: "The link could not be reached — it may be dead or private" });
       }
 
-      // Some sources bounce automated requests to a consent/login page of the same
-      // company (e.g. YouTube -> google.com consent) — treat those as the original source.
-      const INTERSTITIALS = ["google.com", "facebook.com"];
-      const isInterstitial = INTERSTITIALS.some(d => {
-        const h = finalHost.toLowerCase().replace(/^www\./, "");
-        return h === d || h.endsWith("." + d);
-      });
+      const isInterstitial = isInterstitialHost(finalHost);
       const finalSource = matchSource(finalHost) || (isInterstitial ? sourceName : null);
       if (!finalSource) {
         return Response.json({ verified: false, reason: `Link redirects away from a verified source (ends at ${finalHost})` });

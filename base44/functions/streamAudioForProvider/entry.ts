@@ -39,7 +39,9 @@ Deno.serve(async (req) => {
     let host;
     try { host = new URL(target).hostname; }
     catch { return new Response('Bad url', { status: 400 }); }
-    const allowed = /(^|\.)base44\.(app|com)$/.test(host) || host.includes('preview-sandbox') || host === 'media.base44.com';
+    // Strict suffix match on Base44-owned domains only — no substring checks,
+    // so lookalike hosts (e.g. preview-sandbox-attacker.com) are rejected.
+    const allowed = /(^|\.)base44\.(app|com|dev)$/.test(host);
     if (!allowed) return new Response('Forbidden host', { status: 403 });
 
     // HEAD: probe upstream with a tiny GET (Base44 file API 404s on HEAD), then return headers.
