@@ -147,6 +147,18 @@ export default function Header({ user }) {
           </Link>
           {user && <JobNotificationBell />}
           {user && <CreditBalanceWidget />}
+          {!user && (
+            <Link
+              to="/login"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-black text-[#2A1508] border border-black/70 transition-transform active:scale-95"
+              style={{
+                background: "linear-gradient(135deg, #FFC26E 0%, #FF9A4D 50%, #FF6B4A 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.6), 0 3px 10px rgba(255,140,60,0.45)",
+              }}
+            >
+              <User className="w-4 h-4" /> Sign In
+            </Link>
+          )}
           {user && (
             <div className="relative">
               <button

@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -103,6 +103,8 @@ const PageLoader = () => (
 
 const AuthenticatedApp = () => {
   const { isLoadingPublicSettings, user } = useAuth();
+  const location = useLocation();
+  const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password"].includes(location.pathname);
 
   if (isLoadingPublicSettings) {
     return (
@@ -117,8 +119,8 @@ const AuthenticatedApp = () => {
 
   return (
     <>
-      {user && <Header user={user} />}
-      {user && <Breadcrumbs />}
+      {!isAuthPage && <Header user={user} />}
+      {!isAuthPage && <Breadcrumbs />}
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -128,8 +130,8 @@ const AuthenticatedApp = () => {
           {/* Public community forum — open to guests, no BASE Station account required */}
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/:id" element={<ForumThread />} />
-          <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route element={<MobileLayout />}>
+            {/* ── Public pages — browsable without an account ── */}
             <Route path="/" element={<Home />} />
             <Route path="/playlists" element={<Playlists />} />
             <Route path="/playlists/:id" element={<PlaylistDetail />} />
@@ -139,43 +141,13 @@ const AuthenticatedApp = () => {
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/badges" element={<Badges />} />
-            <Route path="/studios" element={<StudioHub />} />
-            <Route path="/ai-studio" element={<Navigate to="/lyrics-studio" replace />} />
-            <Route path="/lyrics-studio" element={<LyricsStudio />} />
-            <Route path="/music-studio" element={<MusicStudio />} />
-            <Route path="/cover-art-studio" element={<CoverArtStudio />} />
-            <Route path="/video-studio" element={<BetaGate feature="Video Studio"><VideoStudio /></BetaGate>} />
-            <Route path="/asset-gallery" element={<AssetGallery />} />
-            <Route path="/live-studio" element={<BetaGate feature="Live Studio"><LiveStudio /></BetaGate>} />
-            <Route path="/live-manager" element={<LiveManager />} />
-            <Route path="/live-watch" element={<LiveWatch />} />
-            <Route path="/live-summary" element={<LiveSummary />} />
             <Route path="/audius-trending" element={<AudiusTrending />} />
             <Route path="/audius-search" element={<AudiusSearch />} />
             <Route path="/audius-artist/:id" element={<AudiusArtist />} />
             <Route path="/audius-track/:id" element={<AudiusTrack />} />
-            <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
-            <Route path="/stem-creator" element={<StemCreatorStudio />} />
-            <Route path="/mashup-studio" element={<MashupStudio />} />
-            <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
-            <Route path="/mastering-studio" element={<MasteringStudio />} />
-            <Route path="/cover-song-studio" element={<CoverSongStudio />} />
-            <Route path="/visualizer-studio" element={<VisualizerStudio />} />
-            <Route path="/promo-studio" element={<PromoStudio />} />
-            <Route path="/sfx-studio" element={<SoundFXStudio />} />
-            <Route path="/ai-studio/history" element={<StudioHistory />} />
-            <Route path="/voice-creator" element={<VoiceCreator />} />
-            <Route path="/my-profile" element={<MyProfile />} />
-            <Route path="/fan-hub" element={<FanHub />} />
-            <Route path="/submit" element={<SubmitTrack />} />
             <Route path="/artist/:id" element={<ArtistProfile />} />
-            <Route path="/solana" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
-            <Route path="/blockchain" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
-            <Route path="/id3-studio" element={<ID3TagStudio />} />
-            <Route path="/creator-dashboard" element={<CreatorDashboard />} />
-            <Route path="/credits" element={<Credits />} />
-            <Route path="/templates" element={<CommunityTemplates />} />
-            <Route path="/social-automation" element={<SocialMediaAutomation />} />
+            <Route path="/fanclub/:creatorId" element={<FanClub />} />
+            <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
             <Route path="/news-hub" element={<AIMusicLegalNews />} />
             <Route path="/docs" element={<DocsHub />} />
@@ -186,13 +158,48 @@ const AuthenticatedApp = () => {
             <Route path="/transparency" element={<AITransparency />} />
             <Route path="/creative-ownership" element={<CreativeOwnership />} />
             <Route path="/governance" element={<CommunityGovernance />} />
-            <Route path="/fanclub/:creatorId" element={<FanClub />} />
-            <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
-            <Route path="/dev/smoke-tests" element={<AdminGate><SmokeTests /></AdminGate>} />
-            <Route path="/dev/error-log" element={<AdminGate><ErrorLogViewer /></AdminGate>} />
-            <Route path="/dev/live-regression" element={<AdminGate><LiveRegression /></AdminGate>} />
-            <Route path="/dev/live-multiclient" element={<AdminGate><LiveMulticlient /></AdminGate>} />
+
+            {/* ── Secure pages — studios, workspace, profile (login required) ── */}
+            <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+              <Route path="/studios" element={<StudioHub />} />
+              <Route path="/ai-studio" element={<Navigate to="/lyrics-studio" replace />} />
+              <Route path="/lyrics-studio" element={<LyricsStudio />} />
+              <Route path="/music-studio" element={<MusicStudio />} />
+              <Route path="/cover-art-studio" element={<CoverArtStudio />} />
+              <Route path="/video-studio" element={<BetaGate feature="Video Studio"><VideoStudio /></BetaGate>} />
+              <Route path="/asset-gallery" element={<AssetGallery />} />
+              <Route path="/live-studio" element={<BetaGate feature="Live Studio"><LiveStudio /></BetaGate>} />
+              <Route path="/live-manager" element={<LiveManager />} />
+              <Route path="/live-watch" element={<LiveWatch />} />
+              <Route path="/live-summary" element={<LiveSummary />} />
+              <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
+              <Route path="/stem-creator" element={<StemCreatorStudio />} />
+              <Route path="/mashup-studio" element={<MashupStudio />} />
+              <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
+              <Route path="/mastering-studio" element={<MasteringStudio />} />
+              <Route path="/cover-song-studio" element={<CoverSongStudio />} />
+              <Route path="/visualizer-studio" element={<VisualizerStudio />} />
+              <Route path="/promo-studio" element={<PromoStudio />} />
+              <Route path="/sfx-studio" element={<SoundFXStudio />} />
+              <Route path="/ai-studio/history" element={<StudioHistory />} />
+              <Route path="/voice-creator" element={<VoiceCreator />} />
+              <Route path="/my-profile" element={<MyProfile />} />
+              <Route path="/fan-hub" element={<FanHub />} />
+              <Route path="/submit" element={<SubmitTrack />} />
+              <Route path="/solana" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
+              <Route path="/blockchain" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
+              <Route path="/id3-studio" element={<ID3TagStudio />} />
+              <Route path="/creator-dashboard" element={<CreatorDashboard />} />
+              <Route path="/credits" element={<Credits />} />
+              <Route path="/templates" element={<CommunityTemplates />} />
+              <Route path="/social-automation" element={<SocialMediaAutomation />} />
+              <Route path="/dev/smoke-tests" element={<AdminGate><SmokeTests /></AdminGate>} />
+              <Route path="/dev/error-log" element={<AdminGate><ErrorLogViewer /></AdminGate>} />
+              <Route path="/dev/live-regression" element={<AdminGate><LiveRegression /></AdminGate>} />
+              <Route path="/dev/live-multiclient" element={<AdminGate><LiveMulticlient /></AdminGate>} />
+            </Route>
           </Route>
+          <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route path="/admin" element={<AdminDashboard />}>
             <Route index element={<AdminOverview />} />
             <Route path="users" element={<AdminUsers />} />
