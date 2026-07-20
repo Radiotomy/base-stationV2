@@ -82,7 +82,8 @@ Deno.serve(async (req) => {
           if (exC.length === 0) {
             const cArr = await base44.asServiceRole.entities.Collectible.filter({ id: reward.collectible_id });
             const coll = cArr[0];
-            if (coll && coll.origin !== 'loudly') {
+            // Ownership check — only the collectible's own creator may award it
+            if (coll && coll.creator_id === user.id && coll.origin !== 'loudly') {
               const serial = (coll.claimed_count || 0) + 1;
               await base44.asServiceRole.entities.CollectibleClaim.create({
                 collectible_id: reward.collectible_id,

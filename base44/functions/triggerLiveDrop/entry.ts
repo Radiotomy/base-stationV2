@@ -25,6 +25,8 @@ Deno.serve(async (req) => {
     const cArr = await base44.asServiceRole.entities.Collectible.filter({ id: collectibleId });
     const c = cArr[0];
     if (!c || !c.is_active) return Response.json({ error: 'Collectible not available' }, { status: 400 });
+    // Ownership check — only the collectible's own creator may drop it
+    if (c.creator_id !== user.id) return Response.json({ error: 'Forbidden: you do not own this collectible' }, { status: 403 });
     if (c.origin === 'loudly') return Response.json({ error: 'Loudly-origin not droppable' }, { status: 403 });
 
     const dropEvent = {
