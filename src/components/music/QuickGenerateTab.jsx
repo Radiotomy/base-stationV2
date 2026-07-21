@@ -372,6 +372,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
 
       const musicParams = {
         provider: effectiveProvider,
+        title: aiDecision.title,
         duration: aiDecision.duration,
         genre: aiDecision.genre,
         mood: aiDecision.mood,

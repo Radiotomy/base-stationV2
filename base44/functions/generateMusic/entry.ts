@@ -52,7 +52,7 @@ const SONIC_LIMITS = {
   'sonic-v5-5':     { prompt: 5000, tags: 1000 },
 };
 
-async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id }) {
+async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id, title: userTitle }) {
   // Ensure a vocal-capable model is used
   const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
   const safeModel = (!model || LEGACY_MODELS.includes(model)) ? 'sonic-v4-5' : model;
@@ -60,7 +60,7 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
 
   // Per-spec field truncation
   const tags = [genre, mood].filter(Boolean).join(', ').slice(0, limits.tags);
-  const title = `${mood} ${genre} Track`.slice(0, 80);
+  const title = (userTitle || `${mood} ${genre} Track`).slice(0, 80);
 
   let body;
   if (lyrics && lyrics.trim().length > 0) {
@@ -142,13 +142,13 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
 // Retired task_types (HTTP 410): cover_music, extend_music, replace_music, swap_*, music_variation
 const PRODUCER_VALID_MV = ['FUZZ-3-Demo','FUZZ-2.0','FUZZ-2.0 Pro','FUZZ-2.0 Raw','FUZZ-1.1 Pro','FUZZ-1.1','FUZZ-1.0 Pro','FUZZ-1.0','FUZZ-0.8'];
 
-async function generateWithProducer({ genre, mood, sound_prompt, lyrics, model }) {
+async function generateWithProducer({ genre, mood, sound_prompt, lyrics, model, title: userTitle }) {
   const mv = (model && PRODUCER_VALID_MV.includes(model)) ? model : 'FUZZ-2.0';
   const body = {
     task_type: 'create_music',
     sound: (sound_prompt || `${mood} ${genre} music`).slice(0, 2000),
     mv,
-    title: `${mood} ${genre}`.slice(0, 80),
+    title: (userTitle || `${mood} ${genre}`).slice(0, 80),
     ...(lyrics && { lyrics: String(lyrics).slice(0, 5000), make_instrumental: false }),
     ...(!lyrics && { make_instrumental: true }),
   };
@@ -390,7 +390,7 @@ Deno.serve(async (req) => {
 
     let { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
           tempo, sound_prompt, lyrics, model, tempolor_mode, routing_reason,
-          voice_id, cover_audio_url, voice_persona_id } = await req.json();
+          voice_id, cover_audio_url, voice_persona_id, title } = await req.json();
 
     // Resolve a cloned Sonic voice persona (VoicePersona with provider='sonic')
     let sonicPersonaId = null;
@@ -429,11 +429,11 @@ Deno.serve(async (req) => {
       if (provider === 'elevenlabs')
         providerResult = await generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyrics, model, tempolor_mode }, base44);
       else if (provider === 'producer')
-        providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics, model });
+        providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics, model, title });
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
       else // default: sonic
-        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics, sonic_persona_id: sonicPersonaId });
+        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics, sonic_persona_id: sonicPersonaId, title });
     } catch (providerErr) {
       // Map aimusicapi HTTP codes to actionable client responses per spec:
       // 400 validation_error · 401 unauthorized · 402/403 insufficient_credits/forbidden ·
@@ -542,6 +542,7 @@ Deno.serve(async (req) => {
       ai_label: 'ai_generated',
       input_data: {
         duration, mood, genre, tempo, sound_prompt,
+        title: title || '',
         lyrics: lyrics || '',
         model: modelVersion,
         credit_cost: cost,
