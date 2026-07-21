@@ -495,6 +495,14 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
 
   return (
     <div className="space-y-6">
+      {/* 100% AI disclosure notice */}
+      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-200/90">
+          <span className="font-bold text-amber-300">100% AI-Generated:</span> Quick Generate lets the AI decide everything — lyrics, composition, and sound. Tracks made here are guaranteed fully AI-created, and are automatically rated and labeled <span className="font-semibold">AI-Generated</span> and treated as such across the platform.
+        </p>
+      </div>
+
       {/* Provider — Auto-Routed with manual override */}
       <div>
         <div className="flex items-center justify-between mb-2">
