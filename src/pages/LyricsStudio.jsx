@@ -379,7 +379,7 @@ export default function LyricsStudio() {
         </Link>
         <div className="flex-1" />
         <button onClick={() => setShowShortcuts(p => !p)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-pink-500/30">
+          className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border hover:border-pink-500/30">
           <Keyboard className="w-3.5 h-3.5" /> Shortcuts ⌘K
         </button>
       </div>
@@ -724,7 +724,7 @@ export default function LyricsStudio() {
               <Textarea ref={textareaRef} value={lyrics} onChange={e => setLyrics(e.target.value)}
                 onFocus={showCharLimitNotice}
                 placeholder={`Your lyrics will appear here after generation.\n\nTip: Use ⌘+Enter to generate, ⌘+S to save.`}
-                className="w-full h-96 rounded-xl font-mono text-sm resize-none" />
+                className="w-full h-72 sm:h-96 rounded-xl font-mono text-sm resize-none" />
 
               {/* Live per-model compatibility check against the selected target model */}
               <LyricsCompatibilityCheck lyrics={debouncedLyrics} provider={tmProvider} model={tmModel} mode="song" />

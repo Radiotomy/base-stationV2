@@ -451,6 +451,53 @@ html .hover\:text-indigo-400:hover {
 }
 
 /* =====================================================
+   MOBILE-FIRST STUDIO OPTIMIZATION (≤640px)
+   Adapts every studio page (Music, Lyrics, Mastering,
+   Cover Art, Video, SFX, Mashup, Stems, Visualizer, …)
+   for iPhone/Android without touching desktop rendering.
+   Desktop (>640px) is completely unaffected.
+   ===================================================== */
+@media (max-width: 640px) {
+  html, body {
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Oversized hero typography scales to phone widths */
+  html .text-5xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+  html .text-4xl { font-size: 1.625rem !important; line-height: 2.1rem !important; }
+
+  /* Desktop gutters tighten to phone-friendly spacing */
+  html .px-6 { padding-left: 1rem !important; padding-right: 1rem !important; }
+  html .p-6 { padding: 1rem !important; }
+  html .py-10 { padding-top: 1.5rem !important; padding-bottom: 1.5rem !important; }
+  html .py-8 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+  html .gap-8 { gap: 1.25rem !important; }
+
+  /* iOS Safari auto-zooms on focus when inputs are <16px — prevent it */
+  input, textarea, select { font-size: 16px !important; }
+
+  /* Media and players never overflow the viewport */
+  audio, video, img, canvas, svg { max-width: 100%; }
+  audio { width: 100%; }
+
+  /* Comfortable Android/iOS touch targets on compact controls */
+  html button.h-8 { min-height: 2.25rem; }
+  html button.h-9 { min-height: 2.5rem; }
+
+  /* Chip / tab rows scroll horizontally instead of breaking layout */
+  html .flex.flex-wrap.gap-1\.5 > button,
+  html .flex.flex-wrap.gap-2 > button {
+    touch-action: manipulation;
+  }
+
+  /* Respect notch / home-indicator safe areas */
+  .fixed.top-0 { padding-top: env(safe-area-inset-top); }
+  .min-h-screen { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* =====================================================
    MOBILE PERFORMANCE MODE
    backdrop-filter blur, fixed background attachment and
    infinite gradient animations are extremely expensive
