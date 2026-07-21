@@ -17,7 +17,7 @@ const SECTIONS = [
     keywords: 'about team founder bryan payne spacial audio sam broadcaster history mission provenance webcasting radio',
     body: (
       <>
-        <p>BASE Station is built by the team that helped independent creators through the last big technology shift. In the early 2000s, our founder <strong className="text-foreground">Bryan Payne</strong> (former CEO of Spacial Audio) along with partner and CTO <strong className="text-foreground">Louis Louw</strong> launched <em>SAM Broadcaster</em> — software that democratized internet radio and gave thousands of webcasters the automated logging and reporting tools they needed to broadcast legally.</p>
+        <p>BASE Station is built by the team that helped independent creators through the last big technology shift. In the early 2000s, our founder <strong className="text-foreground">Bryan Payne</strong> (former CEO of Spacial Audio) along with then partner and CTO <strong className="text-foreground">Louis Louw</strong> launched <em>SAM Broadcaster</em> — software that democratized internet radio and gave thousands of webcasters the automated logging and reporting tools they needed to broadcast legally.</p>
         <p>Today, generative AI presents the same crossroads: enormous creative potential, met with blunt algorithmic bans from legacy platforms. Our answer is the same as it was then — don't ban the technology, bring <strong className="text-foreground">transparency and provenance</strong> to it. That's why every track here carries a Creative Ownership Score and a GenAI disclosure label.</p>
         <p><Link to="/about" className="text-amber-400 hover:underline">Read the full About page →</Link></p>
       </>
