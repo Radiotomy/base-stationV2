@@ -459,9 +459,12 @@ html .hover\:text-indigo-400:hover {
    ===================================================== */
 @media (max-width: 640px) {
   html, body {
-    overflow-x: hidden;
-    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
+  }
+  /* clip (not hidden) — prevents sideways overflow WITHOUT creating a
+     scroll container, so vertical page scrolling keeps working */
+  body {
+    overflow-x: clip;
   }
 
   /* Oversized hero typography scales to phone widths */
