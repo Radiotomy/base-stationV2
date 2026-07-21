@@ -467,6 +467,34 @@ html .hover\:text-indigo-400:hover {
     overflow-x: clip;
   }
 
+  /* Vertical swipes must scroll the page no matter where the finger lands.
+     Root + all common touch-capturing elements explicitly allow vertical
+     panning. Horizontal gestures (audio seek, waveform scrub) still work. */
+  html, body {
+    touch-action: pan-y pinch-zoom;
+  }
+  a, button, img, svg, canvas, audio, video,
+  [role="tab"], [role="button"], .cursor-pointer {
+    touch-action: pan-y !important;
+  }
+  /* Sliders, knobs and drag handles legitimately need full touch control */
+  [role="slider"],
+  [data-radix-slider-thumb],
+  [data-rbd-drag-handle-draggable-id],
+  [data-knob] {
+    touch-action: none !important;
+  }
+  /* Inner scroll areas (chat windows, lists) keep native scrolling but never
+     trap the page when they reach their end */
+  .overflow-y-auto, .overflow-auto, textarea {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+  /* Horizontal chip/tab strips keep sideways swiping AND vertical page scroll */
+  .overflow-x-auto {
+    touch-action: pan-x pan-y;
+  }
+
   /* Oversized hero typography scales to phone widths */
   html .text-5xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
   html .text-4xl { font-size: 1.625rem !important; line-height: 2.1rem !important; }
