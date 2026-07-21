@@ -10,6 +10,7 @@
 //
 // Credits: 10 (Sonic generation)
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
@@ -48,7 +49,8 @@ const PINATA_BASE = 'https://api.pinata.cloud';
 const PINATA_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
 
 async function pinFileFromUrl(fileUrl, name) {
-  const fileRes = await fetch(fileUrl);
+  // SSRF guard — block loopback/private/IP-literal targets before fetching
+  const fileRes = await fetch(assertSafeUrl(fileUrl));
   if (!fileRes.ok) throw new Error(`Failed to fetch source file (HTTP ${fileRes.status})`);
   const blob = await fileRes.blob();
   const form = new FormData();
