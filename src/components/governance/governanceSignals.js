@@ -2,12 +2,12 @@
 // Weights mirror src/utils/participationScore.js — the governance board
 // proposes changes to these baselines.
 export const COS_SIGNALS = [
-  { key: 'own_content',      label: 'Bring your own content',   weight: 40 },
-  { key: 'detailed_prompt',  label: 'Detailed prompt (100+ chars)', weight: 15 },
-  { key: 'reference_upload', label: 'Reference material upload', weight: 15 },
-  { key: 'persona_preset',   label: 'Saved persona / template',  weight: 10 },
-  { key: 'style_selection',  label: 'Custom genre / mood / style', weight: 10 },
-  { key: 'iteration',        label: 'Iteration & refinement',    weight: 10 },
+  { key: 'own_content',      label: 'Bring your own content',   weight: 35 },
+  { key: 'detailed_prompt',  label: 'Prompt depth (7–18 pts, graded) + musical direction (+6)', weight: 18 },
+  { key: 'reference_upload', label: 'Reference material upload', weight: 12 },
+  { key: 'persona_preset',   label: 'Saved persona / template',  weight: 9 },
+  { key: 'style_selection',  label: 'Custom genre / mood / style (up to 10)', weight: 10 },
+  { key: 'iteration',        label: 'Iteration & refinement (+12 human performance)', weight: 8 },
   { key: 'new_signal',       label: '✨ Propose a new signal',   weight: 0 },
 ];
 

@@ -1,13 +1,17 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 const SIGNAL_LABELS = {
-  user_content:       'Own content (+40)',
-  detailed_prompt:    'Detailed prompt (+15)',
-  reference_material: 'Reference material (+15)',
-  persona_used:       'Persona / template (+10)',
-  custom_style:       'Custom style / tags (+10)',
-  iteration:          'Iteration (+10)',
-  basic_prompt:       'Basic prompt (+8)',
+  user_content:        'Own content (+35)',
+  deep_prompt:         'Deep prompt 200+ (+18)',
+  detailed_prompt:     'Detailed prompt (+14)',
+  reference_material:  'Reference material (+12)',
+  human_performance:   'Human performance (+12)',
+  custom_style:        'Custom style / tags (+6)',
+  rich_style:          'Rich style palette (+4)',
+  musical_specificity: 'Musical direction (+6)',
+  persona_used:        'Persona / template (+9)',
+  iteration:           'Iteration (+8)',
+  basic_prompt:        'Basic prompt (+7)',
 };
 
 /**

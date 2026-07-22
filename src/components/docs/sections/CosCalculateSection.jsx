@@ -20,16 +20,26 @@ Content-Type: application/json
 
 const RESPONSE = `{
   "asset_id": "ua_9f83bd21",
+  "cos_engine": "2.0",
   "human_participation_score": 72,
+  "telemetry_confidence": 89,
   "ai_disclosure_label": "ai_assisted",
   "ai_disclosure_basis": "Original lyrics, custom persona and 4 refinement passes indicate substantial human creative direction.",
   "participation_signals": {
-    "own_content":      { "points": 30, "granted": true  },
-    "detailed_prompt":  { "points": 15, "granted": true  },
-    "reference_upload": { "points": 15, "granted": false },
-    "persona_preset":   { "points": 10, "granted": true  },
-    "style_selection":  { "points": 7,  "granted": true  },
-    "iteration":        { "points": 10, "granted": true  }
+    "user_content":        { "points": 35, "granted": true  },
+    "deep_prompt":         { "points": 18, "granted": true  },
+    "musical_specificity": { "points": 6,  "granted": false },
+    "reference_material":  { "points": 12, "granted": false },
+    "persona_used":        { "points": 9,  "granted": true  },
+    "custom_style":        { "points": 6,  "granted": true  },
+    "iteration":           { "points": 8,  "granted": true  }
+  },
+  "dimensions": {
+    "content_authorship": { "points": 35, "max": 35, "pct": 100 },
+    "creative_direction": { "points": 18, "max": 45, "pct": 40 },
+    "sonic_identity":     { "points": 6,  "max": 22, "pct": 27 },
+    "vocal_identity":     { "points": 9,  "max": 9,  "pct": 100 },
+    "craft_refinement":   { "points": 8,  "max": 20, "pct": 40 }
   },
   "calculated_at": "2026-07-19T15:26:04Z"
 }`;

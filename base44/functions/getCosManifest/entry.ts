@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { deriveDimensions, COS_ENGINE_VERSION } from '../../shared/cosEngine.ts';
 
 /**
  * COS Public Verification Ledger — partner/B2B endpoint.
@@ -42,7 +43,8 @@ Deno.serve(async (req) => {
         };
 
     return Response.json({
-      manifest_version: '1.0',
+      manifest_version: '2.0',
+      cos_engine: COS_ENGINE_VERSION,
       asset_id: asset.id,
       title: asset.title || 'Untitled',
       asset_type: asset.asset_type,
@@ -52,6 +54,7 @@ Deno.serve(async (req) => {
       ai_disclosure_label: asset.ai_disclosure_label || asset.ai_label || 'ai_generated',
       ai_disclosure_basis: asset.ai_disclosure_basis || null,
       participation_signals: s,
+      dimensions: deriveDimensions(s),
       ddex_ai_metadata: ddex,
       c2pa_provenance_hash: asset.c2pa_provenance_hash || null,
       base_mark: asset.metadata?.base_mark ? {
