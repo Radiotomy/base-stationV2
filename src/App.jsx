@@ -95,6 +95,7 @@ const LiveRegression = lazy(() => import('./pages/dev/LiveRegression'));
 const Forum = lazy(() => import('./pages/Forum'));
 const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
+const VerifyMark = lazy(() => import('./pages/VerifyMark'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -149,6 +150,7 @@ const AuthenticatedApp = () => {
             <Route path="/artist/:id" element={<ArtistProfile />} />
             <Route path="/fanclub/:creatorId" element={<FanClub />} />
             <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
+            <Route path="/verify" element={<VerifyMark />} />
             <Route path="/why-base-station" element={<WhyBaseStation />} />
             <Route path="/news-hub" element={<AIMusicLegalNews />} />
             <Route path="/docs" element={<DocsHub />} />
