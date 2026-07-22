@@ -50,7 +50,7 @@ export default function BaseMarkSection() {
       <section className="space-y-3">
         <h2 className="font-display text-lg">Limitations (v1)</h2>
         <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-          <li>Embedding requires 16-bit or 24-bit PCM WAV files (use the WAV download for your track).</li>
+          <li>Embedding accepts 16-bit or 24-bit PCM WAV files and FLAC (decoded to 16-bit PCM WAV before marking).</li>
           <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — the studio decodes them to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the mark and lowers detection confidence.</li>
           <li>Heavy lossy re-compression, pitch-shifting or time-stretching can weaken or break detection.</li>
           <li>Audio shorter than ~2 seconds cannot carry a full payload.</li>

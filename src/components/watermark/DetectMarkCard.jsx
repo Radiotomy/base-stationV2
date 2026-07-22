@@ -38,7 +38,7 @@ export default function DetectMarkCard() {
         <h2 className="font-display text-lg">Scan for a BASE Mark</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Upload any audio file — WAV, MP3, OGG, or M4A/MP4 — a remix, stem cut, or sample, and we scan the
+        Upload any audio file — WAV, FLAC, MP3, OGG, or M4A/MP4 — a remix, stem cut, or sample, and we scan the
         waveform for an embedded BASE Mark. If found, we trace it back to the original track in our registry.
         Note: heavy compression (low-bitrate MP3) can weaken the mark.
       </p>

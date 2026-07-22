@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { embedMark, payloadFromId, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
+import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -20,7 +21,9 @@ Deno.serve(async (req) => {
 
     const dl = await fetch(url);
     if (!dl.ok) return Response.json({ error: 'Could not download the audio file' }, { status: 502 });
-    const bytes = new Uint8Array(await dl.arrayBuffer());
+    let bytes = new Uint8Array(await dl.arrayBuffer());
+
+    if (isFlac(bytes)) bytes = decodeFlacToWav(bytes);
 
     const payloadHex = payloadFromId(assetId || url);
     const marked = embedMark(bytes, payloadHex);

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { embedMark, parseWav, payloadFromId, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
+import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
 
 // Automation handler: auto-embeds a BASE Mark into newly created WAV audio assets.
 Deno.serve(async (req) => {
@@ -28,11 +29,18 @@ Deno.serve(async (req) => {
 
     const dl = await fetch(url);
     if (!dl.ok) return Response.json({ skipped: true, reason: 'Could not download audio' });
-    const bytes = new Uint8Array(await dl.arrayBuffer());
+    let bytes = new Uint8Array(await dl.arrayBuffer());
 
+    if (isFlac(bytes)) {
+      try {
+        bytes = decodeFlacToWav(bytes);
+      } catch (e) {
+        return Response.json({ skipped: true, reason: 'FLAC decode failed: ' + e.message });
+      }
+    }
     const wav = parseWav(bytes);
     if (!wav || wav.audioFormat !== 1 || (wav.bitsPerSample !== 16 && wav.bitsPerSample !== 24)) {
-      return Response.json({ skipped: true, reason: 'Not a PCM WAV — auto-marking applies to WAV masters only' });
+      return Response.json({ skipped: true, reason: 'Not a PCM WAV or FLAC — auto-marking applies to WAV/FLAC masters only' });
     }
 
     const payloadHex = payloadFromId(entityId);
