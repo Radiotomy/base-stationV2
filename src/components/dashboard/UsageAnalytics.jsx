@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Zap, Music, FileText, Image, Film, TrendingUp, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { providerLabel } from '@/utils/providerRouter';
 
 const PROVIDER_COLORS = {
   sonic:     '#06b6d4',
@@ -138,7 +139,7 @@ export default function UsageAnalytics({ userId }) {
               const pct = totalCredits > 0 ? Math.round((credits / totalCredits) * 100) : 0;
               return (
                 <div key={provider} className="flex items-center gap-3">
-                  <span className="text-xs font-semibold text-muted-foreground capitalize w-16 flex-shrink-0">{provider}</span>
+                  <span className="text-xs font-semibold text-muted-foreground w-16 flex-shrink-0">{providerLabel(provider)}</span>
                   <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: PROVIDER_COLORS[provider] || '#6b7280' }} />
                   </div>

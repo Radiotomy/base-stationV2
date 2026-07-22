@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import EmptyStateTeacher from '@/components/common/EmptyStateTeacher';
+import { providerLabel } from '@/utils/providerRouter';
 
 const JOB_ICONS = { music: Music, lyrics: FileText, cover_art: Image, video: Film };
 const JOB_COLORS = {
@@ -68,7 +69,7 @@ function JobRow({ job, onDelete }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <p className="font-bold text-sm text-foreground capitalize">{job.job_type} Generation</p>
-            <Badge variant="outline" className="text-xs capitalize">{job.provider}</Badge>
+            <Badge variant="outline" className="text-xs">{providerLabel(job.provider)}</Badge>
             {modelVersion && (
               <Badge className="text-xs bg-purple-500/10 text-purple-300 border-purple-500/20 flex items-center gap-1">
                 <Shield className="w-2.5 h-2.5" /> {modelVersion}
@@ -112,7 +113,7 @@ function JobRow({ job, onDelete }) {
       {(modelVersion || job.output_metadata?.content_hash) && (
         <div className="mt-2.5 pt-2.5 border-t border-border/50 flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           <Shield className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-          {modelVersion && <span>Made with <span className="font-semibold text-foreground">{job.provider} {modelVersion}</span></span>}
+          {modelVersion && <span>Made with <span className="font-semibold text-foreground">{providerLabel(job.provider)} {modelVersion}</span></span>}
           {createdAt && <span>on {createdAt}</span>}
           {job.output_metadata?.content_hash && (
             <span className="font-mono opacity-50 truncate max-w-[120px]" title={job.output_metadata.content_hash}>

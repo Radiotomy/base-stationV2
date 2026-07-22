@@ -17,6 +17,12 @@ export const PROVIDER_DETAILS = {
   elevenlabs: { label: 'ElevenLabs', model: 'music_v1',        emoji: '🎧', color: 'border-violet-500 bg-violet-500/10 text-violet-300' },
 };
 
+// Human-readable provider name for any provider key (covers legacy internal ids)
+const EXTRA_LABELS = { producer: 'Producer', nuro: 'Nuro', core: 'Core (AI)', ltx: 'LTX Video' };
+export function providerLabel(key) {
+  return PROVIDER_DETAILS[key]?.label || EXTRA_LABELS[key] || key;
+}
+
 /**
  * Returns { provider, model, reason, fallbackChain }
  *
