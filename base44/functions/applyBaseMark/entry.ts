@@ -32,17 +32,23 @@ Deno.serve(async (req) => {
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
     if (asset) {
-      await base44.entities.UserAsset.update(assetId, {
+      // Make the MARKED file canonical in whichever slot the source audio lived
+      const usedWavSlot = !!asset.metadata?.wav_url;
+      const updates = {
         metadata: {
           ...(asset.metadata || {}),
+          ...(usedWavSlot ? { wav_url: file_url } : {}),
           base_mark: {
             version: BASE_MARK_VERSION,
             payload_hex: payloadHex,
             marked_file_url: file_url,
+            original_file_url: url,
             embedded_at: new Date().toISOString(),
           },
         },
-      });
+      };
+      if (!usedWavSlot) updates.file_url = file_url;
+      await base44.entities.UserAsset.update(assetId, updates);
     }
 
     return Response.json({ ok: true, payload_hex: payloadHex, marked_file_url: file_url, version: BASE_MARK_VERSION });

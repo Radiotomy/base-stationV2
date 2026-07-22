@@ -49,18 +49,27 @@ Deno.serve(async (req) => {
     const file = new File([marked], 'basemark.wav', { type: 'audio/wav' });
     const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file });
 
-    await base44.asServiceRole.entities.UserAsset.update(entityId, {
+    // Re-fetch for freshest state (persistExternalMedia may have run in parallel),
+    // then make the MARKED file the canonical audio in whichever slot the source lived.
+    const fresh = await base44.asServiceRole.entities.UserAsset.get(entityId).catch(() => null);
+    const meta = (fresh?.metadata || data.metadata || {});
+    const usedWavSlot = !!meta.wav_url;
+    const updates = {
       metadata: {
-        ...(data.metadata || {}),
+        ...meta,
+        ...(usedWavSlot ? { wav_url: file_url } : {}),
         base_mark: {
           version: BASE_MARK_VERSION,
           payload_hex: payloadHex,
           marked_file_url: file_url,
+          original_file_url: url,
           embedded_at: new Date().toISOString(),
           auto: true,
         },
       },
-    });
+    };
+    if (!usedWavSlot) updates.file_url = file_url;
+    await base44.asServiceRole.entities.UserAsset.update(entityId, updates);
 
     return Response.json({ ok: true, asset_id: entityId, payload_hex: payloadHex, marked_file_url: file_url });
   } catch (error) {

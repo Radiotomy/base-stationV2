@@ -36,13 +36,25 @@ const sha256Hex = async (str) => {
 // Fingerprint + IPFS pin + pending registry & tx-log records
 async function prepareRecord(base44, user, body) {
   const t = body.track || {};
-  const fingerprint = await sha256Hex(JSON.stringify({
-    title: t.title,
-    artist: user.full_name,
-    url: t.track_url,
-    genre: t.genre || '',
-    timestamp: new Date().toISOString(),
-  }));
+  // Content fingerprint: SHA-256 of the actual audio bytes so the on-chain anchor
+  // is verifiable against the file itself. Falls back to a metadata hash only if
+  // the audio can't be downloaded.
+  let fingerprint;
+  try {
+    const dl = await fetch(t.track_url);
+    if (!dl.ok) throw new Error('download failed');
+    const buf = await dl.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    fingerprint = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch (_) {
+    fingerprint = await sha256Hex(JSON.stringify({
+      title: t.title,
+      artist: user.full_name,
+      url: t.track_url,
+      genre: t.genre || '',
+      timestamp: new Date().toISOString(),
+    }));
+  }
 
   let pin = null;
   let pinError = null;

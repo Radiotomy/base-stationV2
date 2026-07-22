@@ -54,6 +54,11 @@ Deno.serve(async (req) => {
       participation_signals: s,
       ddex_ai_metadata: ddex,
       c2pa_provenance_hash: asset.c2pa_provenance_hash || null,
+      base_mark: asset.metadata?.base_mark ? {
+        version: asset.metadata.base_mark.version || '1.0',
+        payload_hex: asset.metadata.base_mark.payload_hex,
+        embedded_at: asset.metadata.base_mark.embedded_at || null,
+      } : null,
       labeling_standard: 'RIAA/IFPI voluntary GenAI labeling program (July 2026)',
       issued_at: new Date().toISOString(),
     });

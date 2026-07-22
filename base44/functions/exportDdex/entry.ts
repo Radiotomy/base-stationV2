@@ -58,7 +58,7 @@ ${attrLines}
   </AiAttributionProfile>
   <ParticipationSignals>
 ${signalLines}
-  </ParticipationSignals>${asset.c2pa_provenance_hash ? `\n  <C2paProvenanceHash>${xmlEscape(asset.c2pa_provenance_hash)}</C2paProvenanceHash>` : ''}
+  </ParticipationSignals>${asset.c2pa_provenance_hash ? `\n  <C2paProvenanceHash>${xmlEscape(asset.c2pa_provenance_hash)}</C2paProvenanceHash>` : ''}${asset.metadata?.base_mark?.payload_hex ? `\n  <BaseMarkWatermark version="${xmlEscape(asset.metadata.base_mark.version || '1.0')}">${xmlEscape(asset.metadata.base_mark.payload_hex)}</BaseMarkWatermark>` : ''}
   <LabelingStandard>RIAA/IFPI voluntary GenAI labeling program (July 2026)</LabelingStandard>
 </DdexAiDisclosure>`;
 

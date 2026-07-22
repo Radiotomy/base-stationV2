@@ -53,6 +53,10 @@ Deno.serve(async (req) => {
             AI_DISCLOSURE_LABEL: src.ai_disclosure_label || src.ai_label || 'ai_generated',
             DDEX_AI_PROFILE: JSON.stringify(ddex),
             ...(src.c2pa_provenance_hash ? { C2PA_HASH: src.c2pa_provenance_hash } : {}),
+            ...(src.metadata?.base_mark?.payload_hex ? {
+              BASE_MARK_PAYLOAD: src.metadata.base_mark.payload_hex,
+              BASE_MARK_VERSION: src.metadata.base_mark.version || '1.0',
+            } : {}),
             ...(tags.txxx || {}),
           };
           tags.wxxx = {
