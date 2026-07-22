@@ -31,7 +31,7 @@ function SideKnob() {
 }
 
 export default function HomePulsePanels({ topTracks }) {
-  const [buzzOpen, setBuzzOpen] = useState(false);
+  const [buzzOpen, setBuzzOpen] = useState(true);
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
       {/* Top Tracks — bright green LCD */}
