@@ -96,6 +96,7 @@ const Forum = lazy(() => import('./pages/Forum'));
 const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
 const VerifyMark = lazy(() => import('./pages/VerifyMark'));
+const RightsPortal = lazy(() => import('./pages/RightsPortal'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -194,6 +195,7 @@ const AuthenticatedApp = () => {
               <Route path="/id3-studio" element={<ID3TagStudio />} />
               <Route path="/base-mark" element={<BaseMarkStudio />} />
               <Route path="/creator-dashboard" element={<CreatorDashboard />} />
+              <Route path="/rights" element={<RightsPortal />} />
               <Route path="/credits" element={<Credits />} />
               <Route path="/templates" element={<CommunityTemplates />} />
               <Route path="/social-automation" element={<SocialMediaAutomation />} />
