@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { ClipboardPaste, Upload, Sparkles, Lightbulb, ChevronsDown, PenLine } from 'lucide-react';
 import { toast } from 'sonner';
+import VoiceDictation from '@/components/songwriting/VoiceDictation';
 
 /**
  * Manual Writer power tools — for writers who want to write it themselves.
@@ -97,6 +98,14 @@ export default function ManualWriterPanel({ lyrics, setLyrics, pushVersion }) {
         </Button>
         <input ref={fileRef} type="file" accept=".txt,.md,text/plain" onChange={importTxt} className="hidden" />
       </div>
+
+      {/* Voice dictation — sing/speak lyrics, structure & notes */}
+      <VoiceDictation
+        onTranscript={(text) => {
+          if (lyrics.trim()) pushVersion();
+          setLyrics(lyrics.trim() ? `${lyrics.replace(/\s+$/, '')}\n\n${text}` : text);
+        }}
+      />
 
       {/* Live counts */}
       <div className="flex gap-3 text-[11px] text-muted-foreground font-semibold">

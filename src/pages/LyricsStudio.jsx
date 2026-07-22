@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
-  CheckCircle, Sparkles, Keyboard, Plus, X, History, Music, Crown, ClipboardPaste
+  CheckCircle, Sparkles, Keyboard, Plus, X, History, Music, Crown, ClipboardPaste, ChevronDown
 } from 'lucide-react';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import { useNavigate } from 'react-router-dom';
@@ -81,9 +81,11 @@ export default function LyricsStudio() {
   const [style, setStyle] = useState(['Hip-Hop']);
   const [length, setLength] = useState('Medium (32 bars)');
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
-  const [proMode, setProMode] = useState(false);
-  const [mastersMode, setMastersMode] = useState(false);
-  const [manualMode, setManualMode] = useState(false);
+  // Power setting — restore the last mode the user had loaded (defaults to Manual Writer)
+  const [initialMode] = useState(() => localStorage.getItem('lyricsStudioMode') || 'manual');
+  const [proMode, setProMode] = useState(initialMode === 'pro');
+  const [mastersMode, setMastersMode] = useState(initialMode === 'masters');
+  const [manualMode, setManualMode] = useState(initialMode === 'manual');
   const [mastersResult, setMastersResult] = useState(null);
   const [referenceArtists, setReferenceArtists] = useState('');
   const [proBpm, setProBpm] = useState('');
@@ -95,6 +97,7 @@ export default function LyricsStudio() {
   const [saving, setSaving] = useState(false);
   const [versions, setVersions] = useState([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [showRedDirtInfo, setShowRedDirtInfo] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [lookingUpWriter, setLookingUpWriter] = useState(false);
@@ -427,7 +430,7 @@ export default function LyricsStudio() {
               {/* Engine selector — Basic / Pro / Masters (one studio, three power levels) */}
               <EngineModeSelector
                 mode={manualMode ? 'manual' : mastersMode ? 'masters' : proMode ? 'pro' : 'basic'}
-                onChange={(m) => { setManualMode(m === 'manual'); setProMode(m === 'pro'); setMastersMode(m === 'masters'); }}
+                onChange={(m) => { localStorage.setItem('lyricsStudioMode', m); setManualMode(m === 'manual'); setProMode(m === 'pro'); setMastersMode(m === 'masters'); }}
               />
 
               {/* Manual Writer power tools — paste/import + basic AI assist */}
@@ -629,8 +632,15 @@ export default function LyricsStudio() {
 
             {/* Structure Templates */}
             <div className="bg-card rounded-2xl border border-border p-5 space-y-2">
-              <h3 className="font-black text-foreground text-sm flex items-center gap-2 mb-3"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
-              {STRUCTURE_TEMPLATES.map(t => {
+              <button type="button" onClick={() => setShowTemplates(p => !p)}
+                className="w-full flex items-center justify-between gap-2">
+                <h3 className="font-black text-foreground text-sm flex items-center gap-2"><Sparkles className="w-4 h-4 text-pink-400" /> Structure Templates</h3>
+                <span className="text-xs text-muted-foreground flex items-center gap-1 font-semibold">
+                  {showTemplates ? 'Hide' : 'Show'}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
+                </span>
+              </button>
+              {showTemplates && STRUCTURE_TEMPLATES.map(t => {
                 const isRedDirt = t.genre === 'Red Dirt';
                 return (
                   <div key={t.label}>
