@@ -13,6 +13,7 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import ChipSelector from '@/components/music/ChipSelector';
+import ModelFamilySelect from '@/components/music/ModelFamilySelect';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import SaveMastersReportButton from '@/components/songwriting/SaveMastersReportButton';
 import { Crown } from 'lucide-react';
@@ -30,41 +31,63 @@ const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
-  { value: 'tempcolor',  label: 'Tempolor',   desc: 'Song & instrumental modes + Google Lyria 3 Pro', color: 'border-amber-500 bg-amber-500/10' },
+  { value: 'tempcolor',  label: 'Tempolor',   desc: 'TemPolor, Lyria, Mureka & MiniMax models', color: 'border-amber-500 bg-amber-500/10' },
   { value: 'elevenlabs', label: 'ElevenLabs', desc: 'Eleven Music — instant results, C2PA-signed', color: 'border-violet-500 bg-violet-500/10' },
 ];
 
-const SONIC_MODELS = [
-  { value: 'sonic-v3-5', label: 'v3.5', desc: 'Legacy' },
-  { value: 'sonic-v4', label: 'v4', desc: 'Improved quality' },
-  { value: 'sonic-v4-5', label: 'v4.5', desc: 'Enhanced vocals' },
-  { value: 'sonic-v4-5-all', label: 'v4.5 All', desc: 'Fast variant' },
-  { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality' },
-  { value: 'sonic-v5', label: 'v5', desc: 'Latest' },
-  { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
+// AI model catalog — grouped by PUBLIC model family, versions revealed on select/hover.
+// Tempolor is the API provider behind TemPolor, Lyria, Mureka and MiniMax, but publicly
+// each is treated as its own model family.
+const SONIC_FAMILIES = [
+  { name: 'Suno', maker: 'Suno AI', versions: [
+    { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
+    { value: 'sonic-v5', label: 'v5', desc: 'Latest' },
+    { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality' },
+    { value: 'sonic-v4-5-all', label: 'v4.5 All', desc: 'Fast variant' },
+    { value: 'sonic-v4-5', label: 'v4.5', desc: 'Enhanced vocals' },
+    { value: 'sonic-v4', label: 'v4', desc: 'Improved quality' },
+    { value: 'sonic-v3-5', label: 'v3.5', desc: 'Legacy' },
+  ]},
 ];
 
-// Tempolor model catalog — audited from platform.tempolor.com/docs (Model and Pricing).
-// Each entry's desc classifies the model's specialty so users can pick the right tool.
-const TEMPOLOR_SONG_MODELS = [
-  { value: 'TemPolor v4.6', label: 'TemPolor v4.6', desc: '⭐ Flagship — best all-round, 5 min, 30+ languages' },
-  { value: 'TemPolor v3.5', label: 'TemPolor v3.5', desc: 'Natural, lifelike vocals — 4.5 min, EN/ZH/JA/Cantonese' },
-  { value: 'Lyria 3 Pro', label: 'Lyria 3 Pro', desc: 'By Google — polished vocals, 3 min, multilingual' },
-  { value: 'Mureka V9', label: 'Mureka V9', desc: 'Richest arrangements — 5.5 min, 10+ languages' },
-  { value: 'MiniMax 2.6', label: 'MiniMax 2.6', desc: 'Premium vocals — longest tracks (6 min)' },
+// Tempolor catalog — audited from platform.tempolor.com/docs (Model and Pricing).
+const TEMPOLOR_SONG_FAMILIES = [
+  { name: 'TemPolor', maker: 'TemPolor', versions: [
+    { value: 'TemPolor v4.6', label: 'v4.6', desc: '⭐ Flagship — best all-round, 5 min, 30+ languages' },
+    { value: 'TemPolor v3.5', label: 'v3.5', desc: 'Natural, lifelike vocals — 4.5 min, EN/ZH/JA/Cantonese' },
+  ]},
+  { name: 'Lyria', maker: 'Google DeepMind', versions: [
+    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Polished vocals, 3 min, multilingual' },
+  ]},
+  { name: 'Mureka', maker: 'Kunlun Tech', versions: [
+    { value: 'Mureka V9', label: 'V9', desc: 'Richest arrangements — 5.5 min, 10+ languages' },
+  ]},
+  { name: 'MiniMax', maker: 'MiniMax', versions: [
+    { value: 'MiniMax 2.6', label: '2.6', desc: 'Premium vocals — longest tracks (6 min)' },
+  ]},
 ];
-const TEMPOLOR_INSTRUMENTAL_MODELS = [
-  { value: 'TemPolor i3.5', label: 'TemPolor i3.5', desc: '⭐ Flagship instrumental — 4.5 min, precise duration control' },
-  { value: 'TemPolor i3', label: 'TemPolor i3', desc: 'Fastest (<3s) & most cost-effective — 2 min' },
-  { value: 'Lyria 3 Pro', label: 'Lyria 3 Pro', desc: 'By Google — clean instrumentals, 3 min' },
-  { value: 'Mureka V9', label: 'Mureka V9', desc: 'Rich, layered arrangements — 4.5 min' },
-  { value: 'MiniMax 2.6', label: 'MiniMax 2.6', desc: 'Premium — longest instrumentals (6 min)' },
+const TEMPOLOR_INSTRUMENTAL_FAMILIES = [
+  { name: 'TemPolor', maker: 'TemPolor', versions: [
+    { value: 'TemPolor i3.5', label: 'i3.5', desc: '⭐ Flagship instrumental — 4.5 min, precise duration control' },
+    { value: 'TemPolor i3', label: 'i3', desc: 'Fastest (<3s) & most cost-effective — 2 min' },
+  ]},
+  { name: 'Lyria', maker: 'Google DeepMind', versions: [
+    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Clean instrumentals, 3 min' },
+  ]},
+  { name: 'Mureka', maker: 'Kunlun Tech', versions: [
+    { value: 'Mureka V9', label: 'V9', desc: 'Rich, layered arrangements — 4.5 min' },
+  ]},
+  { name: 'MiniMax', maker: 'MiniMax', versions: [
+    { value: 'MiniMax 2.6', label: '2.6', desc: 'Premium — longest instrumentals (6 min)' },
+  ]},
 ];
 
 // ElevenLabs Eleven Music — synchronous generation (no polling), C2PA-signed output.
-const ELEVEN_MODELS = [
-  { value: 'music_v1', label: 'Eleven Music v1', desc: '⭐ Flagship — vocals or instrumental, up to 10 min' },
-  { value: 'music_v2', label: 'Eleven Music v2', desc: 'Latest — highest fidelity 48kHz output' },
+const ELEVEN_FAMILIES = [
+  { name: 'Eleven Music', maker: 'ElevenLabs', versions: [
+    { value: 'music_v1', label: 'v1', desc: '⭐ Flagship — vocals or instrumental, up to 10 min' },
+    { value: 'music_v2', label: 'v2', desc: 'Latest — highest fidelity 48kHz output' },
+  ]},
 ];
 
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
@@ -608,16 +631,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           {/* Model-specific controls */}
           {provider === 'sonic' && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model Version</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {SONIC_MODELS.map(m => (
-                  <button key={m.value} onClick={() => setSonicModel(m.value)}
-                    className={`px-2.5 py-2 rounded-lg border text-left transition-all ${sonicModel === m.value ? 'border-cyan-500 bg-cyan-500/10' : 'border-border bg-card'}`}>
-                    <p className="text-xs font-bold text-foreground">{m.label}</p>
-                    <p className="text-xs text-muted-foreground">{m.desc}</p>
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">AI Model</p>
+              <ModelFamilySelect families={SONIC_FAMILIES} value={sonicModel} onSelect={setSonicModel}
+                accentClass="border-cyan-500 bg-cyan-500/10" />
             </div>
           )}
 
@@ -632,30 +648,21 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {(temporlorMode === 'instrumental' ? TEMPOLOR_INSTRUMENTAL_MODELS : TEMPOLOR_SONG_MODELS).map(m => (
-                  <button key={m.value} onClick={() => setTemporlorModel(m.value)}
-                    className={`px-2.5 py-2 rounded-lg border text-left transition-all ${temporlorModel === m.value ? 'border-amber-500 bg-amber-500/10' : 'border-border bg-card'}`}>
-                    <p className="text-xs font-bold text-foreground">{m.label}</p>
-                    <p className="text-xs text-muted-foreground">{m.desc}</p>
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase">AI Model</p>
+              <ModelFamilySelect
+                families={temporlorMode === 'instrumental' ? TEMPOLOR_INSTRUMENTAL_FAMILIES : TEMPOLOR_SONG_FAMILIES}
+                value={temporlorModel}
+                onSelect={setTemporlorModel}
+                accentClass="border-amber-500 bg-amber-500/10"
+              />
             </div>
           )}
 
           {provider === 'elevenlabs' && (
             <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model Version</p>
-              <div className="grid grid-cols-1 gap-1.5">
-                {ELEVEN_MODELS.map(m => (
-                  <button key={m.value} onClick={() => setElevenModel(m.value)}
-                    className={`px-2.5 py-2 rounded-lg border text-left transition-all ${elevenModel === m.value ? 'border-violet-500 bg-violet-500/10' : 'border-border bg-card'}`}>
-                    <p className="text-xs font-bold text-foreground">{m.label}</p>
-                    <p className="text-xs text-muted-foreground">{m.desc}</p>
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">AI Model</p>
+              <ModelFamilySelect families={ELEVEN_FAMILIES} value={elevenModel} onSelect={setElevenModel}
+                accentClass="border-violet-500 bg-violet-500/10" />
               <p className="text-[10px] text-muted-foreground mt-1.5">⚡ Synchronous — your track returns in one step, C2PA provenance-signed.</p>
             </div>
           )}
