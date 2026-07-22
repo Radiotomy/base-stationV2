@@ -20,6 +20,10 @@ export default function BaseMarkStudio() {
           <Link to="/docs?section=base-mark" className="inline-flex items-center gap-1.5 text-sm text-[#FFC98A] hover:underline">
             <BookOpen className="w-4 h-4" /> Read the BASE Mark documentation
           </Link>
+          <p className="text-xs text-muted-foreground max-w-xl mx-auto">
+            BASE Mark is a V1 technology under active development — we're continuously testing, refining
+            and growing its robustness. Detection confidence may vary with heavy compression or processing.
+          </p>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           <EmbedMarkCard />

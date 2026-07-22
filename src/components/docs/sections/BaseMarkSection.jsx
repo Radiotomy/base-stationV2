@@ -20,6 +20,13 @@ export default function BaseMarkSection() {
         </p>
       </div>
 
+      <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Status: V1 — active development.</strong> BASE Mark is a first-generation
+        technology that we are continuously testing, developing and growing. Robustness figures below are estimates
+        from internal testing and will improve as the engine evolves; future versions may adopt learned
+        (neural) watermarking approaches from the research this system is inspired by.
+      </div>
+
       <img
         src="https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/e8eee4828_generated_image.png"
         alt="Audio waveform with an inaudible embedded watermark layer"

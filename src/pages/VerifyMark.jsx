@@ -77,6 +77,9 @@ export default function VerifyMark() {
           Want your own tracks protected? Every WAV master saved on BASE Station is marked automatically.{' '}
           <Link to="/docs" className="text-[#FFC98A] underline underline-offset-2">Read how BASE Mark works</Link>
         </p>
+        <p className="text-center text-[11px] text-muted-foreground/70">
+          BASE Mark is V1 technology under active development — a clean scan is not proof a file was never marked.
+        </p>
       </div>
     </div>
   );
