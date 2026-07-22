@@ -7,7 +7,10 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { amount, job_id, provider, description } = await req.json();
-    if (!amount) return Response.json({ error: 'Missing amount' }, { status: 400 });
+    const amt = Number(amount);
+    if (!Number.isFinite(amt) || amt <= 0 || amt > 10000) {
+      return Response.json({ error: 'amount must be a positive number' }, { status: 400 });
+    }
 
     // Get or create user credit record
     let credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -23,14 +26,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const newBalance = creditRecord.balance - amount;
+    const newBalance = creditRecord.balance - amt;
     if (newBalance < 0) return Response.json({ error: 'Insufficient credits' }, { status: 400 });
 
     // Update credit balance
     await base44.asServiceRole.entities.UserCredit.update(creditRecord.id, {
       balance: newBalance,
-      lifetime_spent: (creditRecord.lifetime_spent || 0) + amount,
-      monthly_used: (creditRecord.monthly_used || 0) + amount
+      lifetime_spent: (creditRecord.lifetime_spent || 0) + amt,
+      monthly_used: (creditRecord.monthly_used || 0) + amt
     });
 
     // Log transaction
@@ -38,7 +41,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       user_email: user.email,
       transaction_type: 'generation',
-      amount: -amount,
+      amount: -amt,
       balance_before: creditRecord.balance,
       balance_after: newBalance,
       related_job_id: job_id,
