@@ -46,7 +46,7 @@ export default function VerifyMark() {
         <div className="text-center space-y-3">
           <h1 className="font-display text-3xl text-iridescent">Verify a BASE Mark</h1>
           <p className="text-muted-foreground text-sm">
-            Free, no account needed. Drop in any audio file — WAV, MP3, OGG, or M4A — and we scan its
+            Free, no account needed. Drop in any audio file — WAV, MP3, OGG, M4A, WebM, or FLAC — and we scan its
             waveform for a BASE Mark, the inaudible provenance signature embedded in tracks made on BASE Station.
           </p>
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
@@ -74,8 +74,9 @@ export default function VerifyMark() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          Want your own tracks protected? Every WAV master saved on BASE Station is marked automatically.{' '}
-          <Link to="/docs" className="text-[#FFC98A] underline underline-offset-2">Read how BASE Mark works</Link>
+          Want your own tracks protected? Every audio master (WAV or FLAC) saved on BASE Station is marked
+          automatically, and the payload is threaded through its Provenance Manifest, DDEX bundle, and on-chain record.{' '}
+          <Link to="/docs?section=base-mark" className="text-[#FFC98A] underline underline-offset-2">Read how BASE Mark works</Link>
         </p>
         <p className="text-center text-[11px] text-muted-foreground/70">
           BASE Mark V1 is live today, and V2 — a neural watermark built to survive heavy compression and
