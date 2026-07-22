@@ -13,6 +13,7 @@ import ProjectsTab from "@/components/dashboard/ProjectsTab";
 import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
 import UsageAnalytics from "@/components/dashboard/UsageAnalytics";
 import TrackCard from "@/components/dashboard/TrackCard";
+import WorkspaceSwitcher from "@/components/dashboard/WorkspaceSwitcher";
 import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPanel";
 import RewardFansModal from "@/components/creator/RewardFansModal";
 import TopFansAnalytics from "@/components/creator/TopFansAnalytics";
@@ -38,6 +39,8 @@ export default function CreatorDashboard() {
   const [usageLogs, setUsageLogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assetFilter, setAssetFilter] = useState("all");
+  const [workspaces, setWorkspaces] = useState([]);
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState(() => localStorage.getItem("bs_active_workspace") || "all");
   const navigate = useNavigate();
 
   const loadData = useCallback(async (userId) => {
@@ -52,6 +55,10 @@ export default function CreatorDashboard() {
     const logs = await base44.entities.APIUsageLog
       .filter({ user_id: userId }, "-created_date", 200)
       .catch(() => []);
+    const ws = await base44.entities.Workspace
+      .filter({ user_id: userId }, "-created_date", 50)
+      .catch(() => []);
+    setWorkspaces(ws);
 
     setTracks(userTracks);
     setAssets(userAssets);
@@ -100,11 +107,26 @@ export default function CreatorDashboard() {
     toast.success("Asset deleted");
   };
 
+  const selectWorkspace = (id) => {
+    setActiveWorkspaceId(id);
+    localStorage.setItem("bs_active_workspace", id);
+  };
+
+  const assignToWorkspace = async (assetId, workspaceId) => {
+    await base44.entities.UserAsset.update(assetId, { workspace_id: workspaceId });
+    setAssets(prev => prev.map(a => a.id === assetId ? { ...a, workspace_id: workspaceId } : a));
+    toast.success(workspaceId ? "Moved to workspace" : "Removed from workspace");
+  };
+
+  const wsAssets = activeWorkspaceId === "all"
+    ? assets
+    : assets.filter(a => a.workspace_id === activeWorkspaceId);
+
   const assetsByType = {
-    all:      assets,
-    track:    assets.filter(a => a.asset_type === "track"),
-    lyric:    assets.filter(a => a.asset_type === "lyric"),
-    coverart: assets.filter(a => a.asset_type === "coverart"),
+    all:      wsAssets,
+    track:    wsAssets.filter(a => a.asset_type === "track"),
+    lyric:    wsAssets.filter(a => a.asset_type === "lyric"),
+    coverart: wsAssets.filter(a => a.asset_type === "coverart"),
   };
 
   const TABS = [
@@ -189,9 +211,19 @@ export default function CreatorDashboard() {
       {/* Asset Library Tab */}
       {activeTab === "library" && (
         <div>
-          <div className="flex gap-1.5 mb-5 flex-wrap">
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            {user && (
+              <WorkspaceSwitcher
+                userId={user.id}
+                workspaces={workspaces}
+                activeId={activeWorkspaceId}
+                onSelect={selectWorkspace}
+                onWorkspacesChange={setWorkspaces}
+              />
+            )}
+            <div className="flex gap-1.5 flex-wrap">
             {[
-              { key: "all",      icon: Folder,   label: `All · ${assets.length}` },
+              { key: "all",      icon: Folder,   label: `All · ${wsAssets.length}` },
               { key: "track",    icon: Music,    label: `Tracks · ${assetsByType.track.length}` },
               { key: "lyric",    icon: FileText, label: `Lyrics · ${assetsByType.lyric.length}` },
               { key: "coverart", icon: Image,    label: `Cover Art · ${assetsByType.coverart.length}` },
@@ -201,6 +233,7 @@ export default function CreatorDashboard() {
                 <Icon className="w-3 h-3" /> {label}
               </button>
             ))}
+            </div>
           </div>
           {(assetsByType[assetFilter] || []).length === 0 ? (
             <div className="text-center py-12 border border-dashed border-border rounded-2xl">
@@ -211,7 +244,8 @@ export default function CreatorDashboard() {
           ) : (
             <div className="space-y-3">
               {(assetsByType[assetFilter] || []).map(asset => (
-                <TrackCard key={asset.id} asset={asset} onDelete={deleteAsset} />
+                <TrackCard key={asset.id} asset={asset} onDelete={deleteAsset}
+                  workspaces={workspaces} onAssignWorkspace={assignToWorkspace} />
               ))}
             </div>
           )}

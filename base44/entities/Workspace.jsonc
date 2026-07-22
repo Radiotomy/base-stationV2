@@ -1,0 +1,67 @@
+{
+  "name": "Workspace",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner of the workspace"
+    },
+    "name": {
+      "type": "string",
+      "description": "Workspace name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Optional description"
+    },
+    "emoji": {
+      "type": "string",
+      "description": "Optional emoji icon shown in the switcher"
+    }
+  },
+  "required": [
+    "user_id",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

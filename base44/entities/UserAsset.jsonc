@@ -63,6 +63,10 @@
       "type": "string",
       "description": "ID of related track submission if applicable"
     },
+    "workspace_id": {
+      "type": "string",
+      "description": "Optional Workspace id this asset belongs to (empty = unassigned / All)"
+    },
     "origin": {
       "type": "string",
       "enum": [
@@ -162,7 +166,9 @@
   ],
   "rls": {
     "create": {
-      "data.user_id": "{{user.id}}"
+      "user_condition": {
+        "role": "admin"
+      }
     },
     "read": {
       "$or": [
@@ -189,16 +195,9 @@
       ]
     },
     "delete": {
-      "$or": [
-        {
-          "data.user_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "role": "admin"
+      }
     }
   }
 }

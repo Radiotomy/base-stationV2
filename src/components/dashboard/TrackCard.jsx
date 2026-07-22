@@ -11,6 +11,7 @@ import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 import AILabelBadge from '@/components/common/AILabelBadge';
 import WavDownloadButton from '@/components/music/WavDownloadButton';
 import NextStepNudge from '@/components/dashboard/NextStepNudge';
+import WorkspaceAssignMenu from '@/components/dashboard/WorkspaceAssignMenu';
 
 const ASSET_ICONS = {
   track:    { icon: Music,    color: 'from-blue-600 to-cyan-700' },
@@ -60,7 +61,7 @@ function DownloadButton({ url, label, ext, title }) {
   );
 }
 
-export default function TrackCard({ asset, onDelete }) {
+export default function TrackCard({ asset, onDelete, workspaces, onAssignWorkspace }) {
   const [expanded, setExpanded] = useState(false);
   const [audioError, setAudioError] = useState(false);
   const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
@@ -113,6 +114,9 @@ export default function TrackCard({ asset, onDelete }) {
 
         {/* Expand + delete */}
         <div className="flex items-center gap-1 flex-shrink-0">
+          {onAssignWorkspace && (
+            <WorkspaceAssignMenu asset={asset} workspaces={workspaces} onAssign={onAssignWorkspace} />
+          )}
           <button onClick={() => setExpanded(p => !p)}
             title={expanded ? 'Hide details' : 'Show details — metadata, prompt & lyrics'}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
