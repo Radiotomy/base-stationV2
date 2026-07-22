@@ -42,8 +42,10 @@ Deno.serve(async (req) => {
     const attrLines = Object.entries(ddex)
       .map(([k, v]) => `    <AiAttribute name="${xmlEscape(k)}">${!!v}</AiAttribute>`)
       .join('\n');
-    const signalLines = Object.entries(s)
-      .map(([k, v]) => `    <Signal name="${xmlEscape(k)}" points="${xmlEscape(v)}"/>`)
+    // Signal presence only — per-signal point values are engine-internal
+    // and are never exposed through partner exports.
+    const signalLines = Object.keys(s)
+      .map((k) => `    <Signal name="${xmlEscape(k)}"/>`)
       .join('\n');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>

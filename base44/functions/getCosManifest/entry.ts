@@ -53,8 +53,12 @@ Deno.serve(async (req) => {
       human_participation_score: score,
       ai_disclosure_label: asset.ai_disclosure_label || asset.ai_label || 'ai_generated',
       ai_disclosure_basis: asset.ai_disclosure_basis || null,
-      participation_signals: s,
-      dimensions: deriveDimensions(s),
+      // Signal PRESENCE only — per-signal point values are engine-internal
+      // and are never exposed through partner endpoints.
+      participation_signals: Object.fromEntries(Object.keys(s).map((k) => [k, true])),
+      dimensions: Object.fromEntries(
+        Object.entries(deriveDimensions(s)).map(([dim, d]) => [dim, { label: d.label, pct: d.pct }])
+      ),
       ddex_ai_metadata: ddex,
       c2pa_provenance_hash: asset.c2pa_provenance_hash || null,
       base_mark: asset.metadata?.base_mark ? {

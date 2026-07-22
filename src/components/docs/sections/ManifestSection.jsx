@@ -15,17 +15,17 @@ const RESPONSE = `{
   "ai_disclosure_label": "ai_assisted",
   "ai_label": "ai_assisted",
   "participation_signals": {
-    "user_content":  { "points": 35, "granted": true  },
-    "deep_prompt":   { "points": 18, "granted": true  },
-    "persona_used":  { "points": 9,  "granted": true  },
-    "iteration":     { "points": 8,  "granted": true  }
+    "user_content": true,
+    "deep_prompt":  true,
+    "persona_used": true,
+    "iteration":    true
   },
   "dimensions": {
-    "content_authorship": { "points": 35, "max": 35, "pct": 100 },
-    "creative_direction": { "points": 18, "max": 45, "pct": 40  },
-    "sonic_identity":     { "points": 0,  "max": 22, "pct": 0   },
-    "vocal_identity":     { "points": 9,  "max": 9,  "pct": 100 },
-    "craft_refinement":   { "points": 8,  "max": 20, "pct": 40  }
+    "content_authorship": { "label": "Content Authorship",  "pct": 100 },
+    "creative_direction": { "label": "Creative Direction",  "pct": 40  },
+    "sonic_identity":     { "label": "Sonic Identity",      "pct": 0   },
+    "vocal_identity":     { "label": "Vocal Identity",      "pct": 100 },
+    "craft_refinement":   { "label": "Craft & Refinement",  "pct": 40  }
   },
   "ddex_ai_metadata": {
     "ai_lyrical_content": false,
@@ -56,9 +56,11 @@ export default function ManifestSection() {
         <h1 className="text-3xl font-display text-foreground mb-4">Provenance Manifest</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
           Retrieves the complete, verifiable Provenance Manifest for an asset — the canonical record joining the COS
-          score, signal breakdown, the COS Engine 2.0 five-dimension roll-up (Content Authorship, Creative Direction,
+          score, observed signal set, the COS Engine 2.0 five-dimension roll-up (Content Authorship, Creative Direction,
           Sonic Identity, Vocal Identity, Craft &amp; Refinement), DDEX AI attribution flags, cryptographic hash, and
-          derivation chain. This is the URL
+          derivation chain. Signals are reported as <span className="text-foreground font-medium">presence only</span> and
+          dimensions as percentages — per-signal point values are engine-internal and never exposed through partner
+          endpoints. This is the URL
           embedded in the asset's ID3v2 <code className="text-[#FFC98A] text-xs">WXXX</code> frame.
         </p>
       </div>
