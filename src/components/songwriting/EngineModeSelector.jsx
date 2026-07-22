@@ -1,6 +1,16 @@
-import { Zap, Award, Crown } from 'lucide-react';
+import { Zap, Award, Crown, PenLine } from 'lucide-react';
 
 const MODES = [
+  {
+    key: 'manual',
+    icon: PenLine,
+    label: 'Manual Writer',
+    desc: 'Write it yourself — paste from anywhere, basic AI assist',
+    cost: 'free',
+    activeClass: 'border-emerald-500 bg-emerald-500/10',
+    iconActive: 'text-emerald-400',
+    labelActive: 'text-emerald-300',
+  },
   {
     key: 'basic',
     icon: Zap,

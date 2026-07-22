@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mic2, Zap, Copy, Download, RefreshCw, Save, ArrowLeft,
-  CheckCircle, Sparkles, Keyboard, Plus, X, History, Music, Crown
+  CheckCircle, Sparkles, Keyboard, Plus, X, History, Music, Crown, ClipboardPaste
 } from 'lucide-react';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import StyleReferenceDisclaimer from '@/components/songwriting/StyleReferenceDisclaimer';
 import EngineModeSelector from '@/components/songwriting/EngineModeSelector';
+import ManualWriterPanel from '@/components/songwriting/ManualWriterPanel';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
@@ -82,6 +83,7 @@ export default function LyricsStudio() {
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
   const [proMode, setProMode] = useState(false);
   const [mastersMode, setMastersMode] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
   const [mastersResult, setMastersResult] = useState(null);
   const [referenceArtists, setReferenceArtists] = useState('');
   const [proBpm, setProBpm] = useState('');
@@ -257,7 +259,7 @@ export default function LyricsStudio() {
       const file = new File([blob], `${(mastersResult?.title || topic || 'lyrics')}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const participation = calculateHumanParticipationScore({
-        userProvidedContent: false,
+        userProvidedContent: manualMode && !!lyrics.trim(),
         prompt: topic,
         styleOrTags: [...mood, ...style],
         personaOrTemplate: proMode || mastersMode || !!referenceArtists.trim(),
@@ -311,7 +313,7 @@ export default function LyricsStudio() {
       const file = new File([blob], `${topic || 'lyrics'}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       const participation = calculateHumanParticipationScore({
-        userProvidedContent: false,
+        userProvidedContent: manualMode && !!lyrics.trim(),
         prompt: topic,
         styleOrTags: [...mood, ...style],
         personaOrTemplate: proMode || mastersMode || !!referenceArtists.trim(),
@@ -424,9 +426,18 @@ export default function LyricsStudio() {
 
               {/* Engine selector — Basic / Pro / Masters (one studio, three power levels) */}
               <EngineModeSelector
-                mode={mastersMode ? 'masters' : proMode ? 'pro' : 'basic'}
-                onChange={(m) => { setProMode(m === 'pro'); setMastersMode(m === 'masters'); }}
+                mode={manualMode ? 'manual' : mastersMode ? 'masters' : proMode ? 'pro' : 'basic'}
+                onChange={(m) => { setManualMode(m === 'manual'); setProMode(m === 'pro'); setMastersMode(m === 'masters'); }}
               />
+
+              {/* Manual Writer power tools — paste/import + basic AI assist */}
+              {manualMode && (
+                <ManualWriterPanel
+                  lyrics={lyrics}
+                  setLyrics={setLyrics}
+                  pushVersion={() => setVersions(v => [{ text: lyrics, timestamp: Date.now() }, ...v].slice(0, 5))}
+                />
+              )}
 
               {/* Style-reference legal disclosure — shown whenever a reference-capable engine is on */}
               {(proMode || mastersMode) && <StyleReferenceDisclaimer />}
@@ -519,6 +530,7 @@ export default function LyricsStudio() {
               {/* Target music model — caps lyric budget per model */}
               <TargetModelSelect value={targetModel} onChange={setTargetModel} />
 
+              {!manualMode && (<>
               {/* Topic */}
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
@@ -612,6 +624,7 @@ export default function LyricsStudio() {
                 {loading ? 'Generating…' : mastersMode ? 'Run Masters Engine (⌘↵)' : 'Generate  (⌘↵)'}
                 <CostBadge cost={mastersMode ? 3 : 2} size="sm" />
               </Button>
+              </>)}
             </div>
 
             {/* Structure Templates */}
@@ -701,6 +714,20 @@ export default function LyricsStudio() {
               <div className="flex items-center justify-between">
                 <h3 className="font-black text-foreground">Your Lyrics</h3>
                 <div className="flex gap-2">
+                  {manualMode && (
+                    <Button size="sm" variant="outline"
+                      onClick={async () => {
+                        try {
+                          const t = await navigator.clipboard.readText();
+                          if (!t) { toast.error('Clipboard is empty'); return; }
+                          setLyrics(prev => prev.trim() ? `${prev.replace(/\s+$/, '')}\n\n${t}` : t);
+                          toast.success('Pasted!');
+                        } catch { toast.error('Clipboard blocked — use ⌘V / long-press paste in the editor'); }
+                      }}
+                      className="rounded-xl h-8 gap-1.5 text-xs">
+                      <ClipboardPaste className="w-3.5 h-3.5" /> Paste
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(lyrics); toast.success('Copied!'); }}
                     disabled={!lyrics} className="rounded-xl h-8 gap-1.5 text-xs">
                     <Copy className="w-3.5 h-3.5" /> Copy
@@ -723,16 +750,20 @@ export default function LyricsStudio() {
 
               <Textarea ref={textareaRef} value={lyrics} onChange={e => setLyrics(e.target.value)}
                 onFocus={showCharLimitNotice}
-                placeholder={`Your lyrics will appear here after generation.\n\nTip: Use ⌘+Enter to generate, ⌘+S to save.`}
+                placeholder={manualMode
+                  ? `Write your lyrics here — or paste them in from Notes, Docs, or any app.\n\nUse the Structure Templates to drop in a song skeleton, and the Manual Writer Tools for rhyme ideas or a light polish.\n\nTip: ⌘+S saves to your library.`
+                  : `Your lyrics will appear here after generation.\n\nTip: Use ⌘+Enter to generate, ⌘+S to save.`}
                 className="w-full h-72 sm:h-96 rounded-xl font-mono text-sm resize-none" />
 
               {/* Live per-model compatibility check against the selected target model */}
               <LyricsCompatibilityCheck lyrics={debouncedLyrics} provider={tmProvider} model={tmModel} mode="song" />
 
               <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" onClick={generate} disabled={loading || !topic} className="rounded-xl gap-1.5 text-sm">
-                  <RefreshCw className="w-4 h-4" /> Regenerate
-                </Button>
+                {!manualMode && (
+                  <Button variant="outline" onClick={generate} disabled={loading || !topic} className="rounded-xl gap-1.5 text-sm">
+                    <RefreshCw className="w-4 h-4" /> Regenerate
+                  </Button>
+                )}
                 <Button onClick={saveLyrics} disabled={saving || !lyrics}
                   className="bg-pink-600 hover:bg-pink-500 rounded-xl gap-1.5 text-sm font-bold">
                   <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save (⌘S)'}
