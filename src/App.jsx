@@ -61,6 +61,7 @@ const FanHub = lazy(() => import('./pages/FanHub'));
 const SubmitTrack = lazy(() => import('./pages/SubmitTrack'));
 const ArtistProfile = lazy(() => import('./pages/ArtistProfile'));
 const ID3TagStudio = lazy(() => import('./pages/ID3TagStudio'));
+const BaseMarkStudio = lazy(() => import('./pages/BaseMarkStudio'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
 const AdminTracks = lazy(() => import('./pages/admin/AdminTracks'));
@@ -189,6 +190,7 @@ const AuthenticatedApp = () => {
               <Route path="/solana" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
               <Route path="/blockchain" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
               <Route path="/id3-studio" element={<ID3TagStudio />} />
+              <Route path="/base-mark" element={<BaseMarkStudio />} />
               <Route path="/creator-dashboard" element={<CreatorDashboard />} />
               <Route path="/credits" element={<Credits />} />
               <Route path="/templates" element={<CommunityTemplates />} />

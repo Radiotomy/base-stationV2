@@ -7,6 +7,7 @@ import DdexExportSection from '@/components/docs/sections/DdexExportSection';
 import ManifestSection from '@/components/docs/sections/ManifestSection';
 import Id3ComplianceSection from '@/components/docs/sections/Id3ComplianceSection';
 import OnChainRegistrationSection from '@/components/docs/sections/OnChainRegistrationSection';
+import BaseMarkSection from '@/components/docs/sections/BaseMarkSection';
 
 const SECTION_COMPONENTS = {
   'overview': OverviewSection,
@@ -15,6 +16,7 @@ const SECTION_COMPONENTS = {
   'provenance-manifest': ManifestSection,
   'id3-compliance': Id3ComplianceSection,
   'onchain-registration': OnChainRegistrationSection,
+  'base-mark': BaseMarkSection,
 };
 
 export default function DocsHub() {
