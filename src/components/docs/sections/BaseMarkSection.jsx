@@ -31,7 +31,7 @@ export default function BaseMarkSection() {
       <section className="space-y-3">
         <h2 className="font-display text-lg">API Endpoints</h2>
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 text-sm">
-          <p><code className="text-[#FFC98A]">POST applyBaseMark</code> — <span className="text-muted-foreground">body: <code>{'{ assetId }'}</code> or <code>{'{ fileUrl }'}</code>. Embeds the mark into a 16-bit PCM WAV, uploads the marked file, and records the payload in the asset's provenance metadata. Returns <code>{'{ payload_hex, marked_file_url }'}</code>.</span></p>
+          <p><code className="text-[#FFC98A]">POST applyBaseMark</code> — <span className="text-muted-foreground">body: <code>{'{ assetId }'}</code> or <code>{'{ fileUrl }'}</code>. Embeds the mark into a 16-bit or 24-bit PCM WAV, uploads the marked file, and records the payload in the asset's provenance metadata. Returns <code>{'{ payload_hex, marked_file_url }'}</code>.</span></p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 text-sm">
           <p><code className="text-[#FFC98A]">POST detectBaseMark</code> — <span className="text-muted-foreground">body: <code>{'{ fileUrl }'}</code>. Scans a WAV for a BASE Mark. Returns <code>{'{ detected, payload_hex, pilot_score, mean_strength, agreement, matches[] }'}</code> where <code>matches</code> lists registry tracks whose payload matches.</span></p>
@@ -50,7 +50,7 @@ export default function BaseMarkSection() {
       <section className="space-y-3">
         <h2 className="font-display text-lg">Limitations (v1)</h2>
         <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-          <li>Embedding and detection require 16-bit PCM WAV files (use the WAV download for your track).</li>
+          <li>Embedding and detection require 16-bit or 24-bit PCM WAV files (use the WAV download for your track).</li>
           <li>Heavy lossy re-compression, pitch-shifting or time-stretching can weaken or break detection.</li>
           <li>Audio shorter than ~2 seconds cannot carry a full payload.</li>
           <li>Like all watermarks, it is a deterrent and forensic tool — not unbreakable DRM.</li>

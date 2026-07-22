@@ -41,7 +41,7 @@ export default function EmbedMarkCard() {
       <p className="text-sm text-muted-foreground">
         Pick a track from your library. We embed an inaudible 32-bit watermark directly into the audio
         waveform — it survives cutting, sampling and remixing, even if all metadata is stripped.
-        Requires WAV audio (16-bit PCM).
+        Requires WAV audio (16-bit or 24-bit PCM).
       </p>
       <Select value={selected} onValueChange={setSelected}>
         <SelectTrigger><SelectValue placeholder="Choose a library track…" /></SelectTrigger>

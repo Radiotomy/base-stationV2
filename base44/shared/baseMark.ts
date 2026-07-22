@@ -58,7 +58,7 @@ function payloadBits(hex) {
   return bits;
 }
 
-// Minimal RIFF/WAVE parser (PCM 16-bit)
+// Minimal RIFF/WAVE parser (PCM 16/24-bit)
 export function parseWav(bytes) {
   if (bytes.length < 44) return null;
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -86,34 +86,53 @@ export function parseWav(bytes) {
 }
 
 function assertSupported(wav) {
-  if (!wav) throw new Error('Not a valid WAV file. BASE Mark v1 works on 16-bit PCM WAV audio — download the WAV version of your track first.');
-  if (wav.audioFormat !== 1 || wav.bitsPerSample !== 16) {
-    throw new Error('Only 16-bit PCM WAV audio is supported by BASE Mark v1.');
+  if (!wav) throw new Error('Not a valid WAV file. BASE Mark works on 16-bit or 24-bit PCM WAV audio — download the WAV version of your track first.');
+  if (wav.audioFormat !== 1 || (wav.bitsPerSample !== 16 && wav.bitsPerSample !== 24)) {
+    throw new Error('Only 16-bit and 24-bit PCM WAV audio are supported by BASE Mark.');
   }
+}
+
+// Depth-agnostic little-endian signed PCM sample access
+function readSample(dv, off, bps) {
+  if (bps === 2) return dv.getInt16(off, true);
+  let v = dv.getUint8(off) | (dv.getUint8(off + 1) << 8) | (dv.getUint8(off + 2) << 16);
+  if (v & 0x800000) v -= 0x1000000;
+  return v;
+}
+function writeSample(dv, off, v, bps) {
+  if (bps === 2) { dv.setInt16(off, v, true); return; }
+  dv.setUint8(off, v & 0xff);
+  dv.setUint8(off + 1, (v >> 8) & 0xff);
+  dv.setUint8(off + 2, (v >> 16) & 0xff);
 }
 
 // Mono (channel-averaged) float samples for detection
 function monoSamples(bytes, wav) {
   const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const ch = wav.channels;
-  const frames = Math.floor(wav.dataLen / (2 * ch));
+  const bps = wav.bitsPerSample / 8;
+  const frames = Math.floor(wav.dataLen / (bps * ch));
   const out = new Float32Array(frames);
   for (let n = 0; n < frames; n++) {
     let acc = 0;
-    for (let c = 0; c < ch; c++) acc += dv.getInt16(wav.dataOffset + (n * ch + c) * 2, true);
+    for (let c = 0; c < ch; c++) acc += readSample(dv, wav.dataOffset + (n * ch + c) * bps, bps);
     out[n] = acc / ch;
   }
   return out;
 }
 
-// Embed payloadHex into a 16-bit PCM WAV. Returns new Uint8Array.
+// Embed payloadHex into a 16-bit or 24-bit PCM WAV. Returns new Uint8Array.
 export function embedMark(bytes, payloadHex) {
   const wav = parseWav(bytes);
   assertSupported(wav);
   const out = bytes.slice();
   const dv = new DataView(out.buffer, out.byteOffset, out.byteLength);
   const ch = wav.channels;
-  const frames = Math.floor(wav.dataLen / (2 * ch));
+  const bps = wav.bitsPerSample / 8;
+  const maxV = bps === 2 ? 32767 : 8388607;
+  const minV = -maxV - 1;
+  const minAlpha = MIN_ALPHA * (bps === 3 ? 256 : 1);
+  const frames = Math.floor(wav.dataLen / (bps * ch));
   const blocks = Math.floor(frames / BLOCK);
   if (blocks < 2) throw new Error('Audio is too short to watermark (about 2 seconds minimum).');
   const bits = payloadBits(payloadHex);
@@ -125,18 +144,18 @@ export function embedMark(bytes, payloadHex) {
       // local RMS (channel 0) for perceptual scaling
       let sumSq = 0;
       for (let i = 0; i < CHIP_LEN; i++) {
-        const s = dv.getInt16(wav.dataOffset + (segStart + i) * 2 * ch, true);
+        const s = readSample(dv, wav.dataOffset + (segStart + i) * bps * ch, bps);
         sumSq += s * s;
       }
       const rms = Math.sqrt(sumSq / CHIP_LEN);
-      const alpha = Math.max(MIN_ALPHA, rms * ALPHA);
+      const alpha = Math.max(minAlpha, rms * ALPHA);
       for (let i = 0; i < CHIP_LEN; i++) {
         const add = Math.round(sign * chips[i] * alpha);
         for (let c = 0; c < ch; c++) {
-          const off = wav.dataOffset + ((segStart + i) * ch + c) * 2;
-          let v = dv.getInt16(off, true) + add;
-          if (v > 32767) v = 32767; else if (v < -32768) v = -32768;
-          dv.setInt16(off, v, true);
+          const off = wav.dataOffset + ((segStart + i) * ch + c) * bps;
+          let v = readSample(dv, off, bps) + add;
+          if (v > maxV) v = maxV; else if (v < minV) v = minV;
+          writeSample(dv, off, v, bps);
         }
       }
     }
