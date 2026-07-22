@@ -147,6 +147,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         ai_disclosure_basis: participation.basis,
         human_participation_score: participation.score,
         participation_signals: participation.signals,
+        ddex_ai_metadata: participation.ddex,
         metadata: {
           genre: params?.genre,
           mood: params?.mood,
@@ -465,6 +466,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         ai_disclosure_basis: participation.basis,
         human_participation_score: participation.score,
         participation_signals: participation.signals,
+        ddex_ai_metadata: participation.ddex,
         metadata: {
           genre: result?.genre || aiParams?.genre,
           mood: result?.mood || aiParams?.mood,

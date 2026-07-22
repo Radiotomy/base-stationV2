@@ -274,6 +274,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         ai_disclosure_basis: participation.basis,
         human_participation_score: participation.score,
         participation_signals: participation.signals,
+        ddex_ai_metadata: participation.ddex,
         metadata: {
           genre, mood, tempo, provider,
           model: extraMeta?.model || '',
@@ -526,6 +527,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         ai_disclosure_basis: participation.basis,
         human_participation_score: participation.score,
         participation_signals: participation.signals,
+        ddex_ai_metadata: participation.ddex,
         metadata: {
           genre, mood, tempo, provider,
           duration: result?.duration || duration,
