@@ -2,17 +2,27 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { ScanSearch, Loader2, ShieldCheck, ShieldX } from 'lucide-react';
+import { fileToPcmWav } from '@/utils/decodeCompressedAudio';
 
 export default function DetectMarkCard() {
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [phase, setPhase] = useState('');
 
   const scan = async () => {
     setBusy(true); setError(''); setResult(null);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setPhase('Decoding audio…');
+      let wavFile;
+      try {
+        wavFile = await fileToPcmWav(file);
+      } catch {
+        throw new Error('Could not decode this audio file. Supported formats: WAV, MP3, OGG, M4A/MP4 (AAC), WebM, FLAC.');
+      }
+      setPhase('Scanning waveform…');
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: wavFile });
       const res = await base44.functions.invoke('detectBaseMark', { fileUrl: file_url });
       setResult(res.data);
     } catch (e) {
@@ -28,17 +38,18 @@ export default function DetectMarkCard() {
         <h2 className="font-display text-lg">Scan for a BASE Mark</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Upload any WAV file — a remix, stem cut, or sample — and we scan the waveform for an embedded
-        BASE Mark. If found, we trace it back to the original track in our registry.
+        Upload any audio file — WAV, MP3, OGG, or M4A/MP4 — a remix, stem cut, or sample, and we scan the
+        waveform for an embedded BASE Mark. If found, we trace it back to the original track in our registry.
+        Note: heavy compression (low-bitrate MP3) can weaken the mark.
       </p>
       <input
-        type="file" accept=".wav,audio/wav,audio/x-wav"
+        type="file" accept=".wav,.mp3,.ogg,.oga,.m4a,.mp4,.aac,.webm,.flac,audio/*"
         onChange={(e) => setFile(e.target.files?.[0] || null)}
         className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-2 file:text-foreground"
       />
       <Button onClick={scan} disabled={!file || busy} className="merc-button w-full">
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanSearch className="w-4 h-4" />}
-        {busy ? 'Scanning waveform…' : 'Scan File'}
+        {busy ? phase : 'Scan File'}
       </Button>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {result && (
