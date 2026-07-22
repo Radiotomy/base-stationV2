@@ -39,7 +39,7 @@ const PROVIDERS = [
 // Tempolor is the API provider behind TemPolor, Lyria, Mureka and MiniMax, but publicly
 // each is treated as its own model family.
 const SONIC_FAMILIES = [
-  { name: 'Suno', maker: 'Suno AI', versions: [
+  { name: 'Sonic', maker: 'Sonic AI', versions: [
     { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
     { value: 'sonic-v5', label: 'v5', desc: 'Latest' },
     { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality' },

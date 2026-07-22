@@ -12,7 +12,7 @@ import InfoTip from '@/components/common/InfoTip';
 // but publicly each is its own model — so they're listed as separate families.
 const FAMILIES = [
   {
-    name: 'Suno', maker: 'Suno AI', provider: 'sonic',
+    name: 'Sonic', maker: 'Sonic AI', provider: 'sonic',
     versions: [
       { value: 'sonic-v5-5', label: 'v5.5', desc: 'Flagship — best overall quality, richest vocals, 2 variations per run.' },
       { value: 'sonic-v5', label: 'v5', desc: 'Latest generation — improved coherence and vocal realism.' },
