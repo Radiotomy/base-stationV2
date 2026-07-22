@@ -21,10 +21,17 @@ export default function BaseMarkSection() {
       </div>
 
       <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-4 text-sm text-muted-foreground">
-        <strong className="text-foreground">Status: V1 — active development.</strong> BASE Mark is a first-generation
+        <strong className="text-foreground">Status: V1 — live and active development.</strong> BASE Mark is a first-generation
         technology that we are continuously testing, developing and growing. Robustness figures below are estimates
-        from internal testing and will improve as the engine evolves; future versions may adopt learned
-        (neural) watermarking approaches from the research this system is inspired by.
+        from internal testing and will improve as the engine evolves.
+      </div>
+
+      <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Next version: V2 — Neural Watermarking (in development).</strong>{' '}
+        We are building a learned, neural-network watermark — the same class of technology as Meta's AudioSeal —
+        trained to survive aggressive lossy compression, pitch-shifting and time-stretching. Our GPU inference
+        infrastructure is already connected and readiness-tested; V2 ships when the model clears our internal
+        robustness benchmarks. V1 marks remain fully traceable after the upgrade.
       </div>
 
       <img
