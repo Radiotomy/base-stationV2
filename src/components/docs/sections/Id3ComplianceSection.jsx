@@ -7,7 +7,9 @@ TXXX (User-defined text frames)
 ├─ COS_SCORE              → "72"
 ├─ AI_DISCLOSURE_LABEL    → "ai_assisted"
 ├─ DDEX_AI_METADATA       → '{"ai_lyrical_content":false,...}'
-└─ C2PA_PROVENANCE_HASH   → "sha256:7c1e4a9b0d…"
+├─ C2PA_PROVENANCE_HASH   → "sha256:7c1e4a9b0d…"
+├─ BASE_MARK_PAYLOAD      → "dff13efe"
+└─ BASE_MARK_VERSION      → "1.0"
 
 WXXX (User-defined URL frame)
 └─ PROVENANCE_MANIFEST    → https://basestation.live/api/v1/cos/manifest/{asset_id}`;
@@ -52,6 +54,8 @@ export default function Id3ComplianceSection() {
           { name: 'AI_DISCLOSURE_LABEL', type: 'TXXX', required: true, description: 'RIAA/IFPI-style label: "ai_generated" or "ai_assisted".' },
           { name: 'DDEX_AI_METADATA', type: 'TXXX', required: true, description: 'JSON-serialized DDEX AI attribution flags.' },
           { name: 'C2PA_PROVENANCE_HASH', type: 'TXXX', required: false, description: 'SHA-256 checksum anchoring the manifest to this file.' },
+          { name: 'BASE_MARK_PAYLOAD', type: 'TXXX', required: false, description: 'Hex payload of the BASE Mark acoustic watermark embedded in this asset\u2019s audio waveform.' },
+          { name: 'BASE_MARK_VERSION', type: 'TXXX', required: false, description: 'BASE Mark engine version used for embedding.' },
         ]}
       />
 
@@ -67,7 +71,8 @@ export default function Id3ComplianceSection() {
         <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
           <li><span className="text-foreground font-medium">Downloads</span> — frames are written when a creator downloads an MP3 from any studio.</li>
           <li><span className="text-foreground font-medium">Audius publishing</span> — the tagged file is what gets uploaded, so provenance persists on the network.</li>
-          <li><span className="text-foreground font-medium">MP3 only</span> — ID3v2 is not valid inside WAV containers; WAV exports rely on the manifest URL instead.</li>
+          <li><span className="text-foreground font-medium">MP3 only</span> — ID3v2 is not valid inside WAV containers; WAV exports rely on the manifest URL and the in-waveform BASE Mark instead.</li>
+          <li><span className="text-foreground font-medium">Cross-referenced with the watermark</span> — the same BASE Mark payload written into the TXXX frames is acoustically embedded in the waveform, so even if these frames are stripped, the file can be traced back to this record.</li>
         </ul>
         <p className="text-sm text-muted-foreground max-w-2xl">
           Injection is best-effort and non-blocking: if tagging ever fails, the original file is still delivered and

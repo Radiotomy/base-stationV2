@@ -26,6 +26,11 @@ const RESPONSE = `{
     "ai_post_production": true
   },
   "c2pa_provenance_hash": "sha256:7c1e4a9b0d…",
+  "base_mark": {
+    "version": "1.0",
+    "payload_hex": "dff13efe",
+    "embedded_at": "2026-07-19T15:24:31Z"
+  },
   "provenance_chain": [
     { "parent_asset_id": null, "operation": "generate" },
     { "parent_asset_id": "ua_9f83bd21", "operation": "master" }
@@ -91,7 +96,11 @@ export default function ManifestSection() {
           The <code className="text-[#FFC98A] text-xs">c2pa_provenance_hash</code> is a SHA-256 checksum anchoring the COS
           metrics to the audio container. To verify an audio file, recompute the checksum over the manifest payload and
           compare it with the hash stored in the file's embedded <code className="text-[#FFC98A] text-xs">TXXX</code> frames —
-          see the <span className="text-foreground font-medium">ID3v2 Compliance</span> section.
+          see the <span className="text-foreground font-medium">ID3v2 Compliance</span> section. The{' '}
+          <code className="text-[#FFC98A] text-xs">base_mark</code> object carries the payload of the acoustic
+          watermark embedded in the asset's audio waveform: scanning the file with the BASE Mark detector
+          should recover the same <code className="text-[#FFC98A] text-xs">payload_hex</code>, proving the audio
+          and this manifest belong together even when all metadata has been stripped.
         </p>
       </div>
 

@@ -7,22 +7,27 @@ const PIPELINE = [
       'As a creator generates and iterates in the studios, the orchestration layer records participation signals — own lyrics (+40), detailed prompts (+15), reference uploads (+15), personas (+10), style selections (+10), iteration (+10) — building the 0–100 Creative Ownership Score.',
   },
   {
-    step: '2. Manifest Compilation',
+    step: '2. BASE Mark Watermarking',
     detail:
-      'On registration, the asset metadata, COS/HPS scores, participation-signal breakdown, and DDEX AI-attribution flags are compiled into a Provenance Manifest JSON. A SHA-256 fingerprint of the normalized track metadata is computed.',
+      'Before registration, the asset has already been acoustically watermarked on save — the marked file is the canonical audio, so the identifier being anchored on-chain is physically embedded in the waveform being registered.',
   },
   {
-    step: '3. IPFS Pinning',
+    step: '3. Content Fingerprint + Manifest Compilation',
+    detail:
+      'On registration, a SHA-256 fingerprint of the actual audio bytes (the marked file) is computed — verifiable against the file itself. The asset metadata, COS/HPS scores, participation-signal breakdown, BASE Mark payload, and DDEX AI-attribution flags are compiled into a Provenance Manifest JSON.',
+  },
+  {
+    step: '4. IPFS Pinning',
     detail:
       'The manifest is pinned to IPFS via Pinata, producing a permanent, content-addressed metadata_uri (ipfs://…) and a public gateway URL for verification.',
   },
   {
-    step: '4. On-Chain Anchoring',
+    step: '5. On-Chain Anchoring',
     detail:
       'The platform wallet signs a transaction embedding the fingerprint hash and IPFS URI, broadcast to Base mainnet. Gas is platform-paid — the artist needs no wallet or crypto. Failed anchors are queued and retried automatically.',
   },
   {
-    step: '5. Registry Finalization',
+    step: '6. Registry Finalization',
     detail:
       'The registry record is updated with transaction_hash, wallet_address, metadata_uri, and status=registered. Certificates, BaseScan links, DDEX bundles, and ID3v2 tags become available for distribution workflows.',
   },
@@ -56,16 +61,17 @@ export default function OnChainRegistrationSection() {
       <div className="rounded-xl border border-border bg-card p-5">
         <p className="font-bold text-foreground text-sm mb-2">On-chain record contents</p>
         <pre className="text-xs text-muted-foreground bg-secondary/40 rounded-lg p-4 overflow-x-auto font-mono leading-relaxed">{`{
-  "fingerprint_hash": "sha256(normalized track metadata)",
+  "fingerprint_hash": "sha256(audio file bytes)",   // content hash of the marked audio
   "metadata_uri": "ipfs://Qm…",           // full Provenance Manifest
   "network": "base-mainnet",
   "wallet_address": "0x…",                 // platform registrar wallet
   "transaction_hash": "0x…"                // verify on basescan.org
 }`}</pre>
         <p className="text-xs text-muted-foreground mt-3">
-          Verification: recompute the SHA-256 fingerprint from the track metadata, fetch the manifest
+          Verification: recompute the SHA-256 hash over the audio file's raw bytes, fetch the manifest
           from the IPFS gateway, and compare both against the values embedded in the Base transaction's
-          calldata. Any mutation of the underlying metadata breaks the fingerprint match.
+          calldata. Any mutation of the audio content breaks the fingerprint match — and the BASE Mark
+          watermark inside the same file provides a second, independent link back to the registry.
         </p>
       </div>
 

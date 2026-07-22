@@ -55,8 +55,10 @@ export default function OverviewSection() {
         </p>
         <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
           <li><span className="text-foreground font-medium">COS calculation</span> — the score, disclosure label (<code className="text-[#FFC98A] text-xs">ai_generated</code> / <code className="text-[#FFC98A] text-xs">ai_assisted</code>), and signal breakdown.</li>
-          <li><span className="text-foreground font-medium">DDEX AI attribution bundle</span> — granular boolean flags (lyrics, composition, instrumentation, vocals, post-production) exportable to partner channels.</li>
-          <li><span className="text-foreground font-medium">ID3v2 embedding</span> — TXXX and WXXX frames written into the MP3 container so provenance travels with the file itself.</li>
+          <li><span className="text-foreground font-medium">BASE Mark watermarking</span> — an inaudible acoustic watermark is automatically embedded on save; the marked file becomes the canonical audio used by every downstream step.</li>
+          <li><span className="text-foreground font-medium">DDEX AI attribution bundle</span> — granular boolean flags (lyrics, composition, instrumentation, vocals, post-production) plus the watermark payload, exportable to partner channels.</li>
+          <li><span className="text-foreground font-medium">ID3v2 embedding</span> — TXXX and WXXX frames (including the BASE Mark payload) written into the MP3 container so provenance travels with the file itself.</li>
+          <li><span className="text-foreground font-medium">On-chain anchoring</span> — a SHA-256 content hash of the marked audio bytes is registered on Base mainnet, verifiable against the file itself.</li>
         </ol>
       </div>
 
