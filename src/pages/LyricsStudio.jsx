@@ -261,7 +261,7 @@ export default function LyricsStudio() {
       const blob = new Blob([fileText], { type: 'text/plain' });
       const file = new File([blob], `${(mastersResult?.title || topic || 'lyrics')}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const participation = calculateHumanParticipationScore({
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: manualMode && !!lyrics.trim(),
         prompt: topic,
         styleOrTags: [...mood, ...style],
@@ -315,7 +315,7 @@ export default function LyricsStudio() {
       const blob = new Blob([lyrics], { type: 'text/plain' });
       const file = new File([blob], `${topic || 'lyrics'}.txt`, { type: 'text/plain' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const participation = calculateHumanParticipationScore({
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: manualMode && !!lyrics.trim(),
         prompt: topic,
         styleOrTags: [...mood, ...style],

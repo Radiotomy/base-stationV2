@@ -209,7 +209,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       const user = await base44.auth.me();
 
       // Creative Ownership Score — how much human input shaped this track
-      const participation = calculateHumanParticipationScore({
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: (lyricsMode === 'custom' || lyricsMode === 'saved') && !!extraMeta?.lyrics?.trim(),
         prompt: extraMeta?.sound_prompt || '',
         styleOrTags: [genre, mood].filter(Boolean),
@@ -507,7 +507,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       // Use the SAME complete metadata payload as auto-save so lyrics, model,
       // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
       const mergedLyrics = lyrics?.trim() ? lyrics : (result?.lyrics || '');
-      const participation = calculateHumanParticipationScore({
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: (lyricsMode === 'custom' || lyricsMode === 'saved') && !!lyrics?.trim(),
         prompt: soundPrompt || '',
         styleOrTags: [genre, mood].filter(Boolean),

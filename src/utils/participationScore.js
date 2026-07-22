@@ -1,21 +1,19 @@
 // ─────────────────────────────────────────────────────────────────
-// COS ENGINE 2.0 — Creative Ownership Score (0–100)
-// Granular, dimension-based human-participation scoring.
+// COS ENGINE 2.0 — client interface
 //
-// Every point is traceable to a named signal, every signal rolls up
-// into one of five creative dimensions aligned with the DDEX AI
-// attribution categories, and a confidence metric records how much
-// of the creative process was actually observed by telemetry.
-//
-// Backward compatible: same function signature, same flat
-// participation_signals map (superset of v1 keys), same label
-// threshold, same DDEX output shape.
+// Score CALCULATION is performed server-side by the authoritative
+// COS engine (backend `calculateCos` function). This module keeps:
+//   • the community-published signal registry (governance-tuned
+//     baseline weights, publicly debated on /governance)
+//   • display helpers (tiers, dimension roll-ups over STORED data)
+// The scoring heuristics themselves never ship to the browser.
 // ─────────────────────────────────────────────────────────────────
+import { base44 } from '@/api/base44Client';
 
 export const COS_ENGINE_VERSION = '2.0';
 
-// Signal registry — single source of truth for points, labels and
-// the dimension each signal belongs to.
+// Signal registry — community-published baseline weights and labels,
+// used for DISPLAY of stored scores. The authoritative copy lives server-side.
 export const SIGNAL_REGISTRY = {
   user_content:        { points: 35, dimension: 'content_authorship', label: 'Own content (lyrics, melody, recording)' },
   deep_prompt:         { points: 18, dimension: 'creative_direction', label: 'Deep creative prompt (200+ chars)' },
@@ -38,67 +36,20 @@ export const DIMENSIONS = {
   craft_refinement:   { label: 'Craft & Refinement',  ddex: 'ai_post_production',  desc: 'Iteration passes, performances and hands-on production work' },
 };
 
-// Musical-direction vocabulary — a prompt that speaks the language of
-// music (structure, tempo, key, arrangement) shows real creative intent.
-const MUSICAL_TERMS = /\b(bpm|tempo|key of|major|minor|verse|chorus|bridge|hook|intro|outro|drop|breakdown|arrangement|time signature|[0-9]{2,3}\s?bpm|4\/4|3\/4|6\/8|crescendo|staccato|legato|syncopat|chord|progression|melody|harmony|bassline|drum pattern|hi-?hat|snare|kick|reverb|delay|sidechain)\b/i;
-
-// Telemetry fields the engine can observe — confidence = how many were reported.
-const TELEMETRY_FIELDS = [
-  'prompt', 'userProvidedContent', 'styleOrTags', 'referenceFile',
-  'personaOrTemplate', 'isIteration', 'humanInstrumentPerformance',
-  'hasSyntheticVocals', 'isAutomatedMaster',
-];
-
-export function calculateHumanParticipationScore(inputs = {}) {
-  const signals = {};
-  const grant = (key) => { signals[key] = SIGNAL_REGISTRY[key].points; };
-
-  // ── Content authorship ──
-  if (inputs.userProvidedContent) grant('user_content');
-
-  // ── Creative direction: graded prompt depth + musical specificity ──
-  const prompt = inputs.prompt || '';
-  if (prompt.length >= 200) grant('deep_prompt');
-  else if (prompt.length >= 100) grant('detailed_prompt');
-  else if (prompt.length >= 40) grant('basic_prompt');
-  if (prompt && (prompt.match(MUSICAL_TERMS) || []).length > 0 && prompt.length >= 40) {
-    grant('musical_specificity');
-  }
-
-  // ── Sonic identity ──
-  const tagCount = Array.isArray(inputs.styleOrTags) ? inputs.styleOrTags.length : (inputs.styleOrTags ? 1 : 0);
-  if (tagCount > 0) grant('custom_style');
-  if (tagCount >= 3) grant('rich_style');
-  if (inputs.referenceFile) grant('reference_material');
-
-  // ── Vocal identity ──
-  if (inputs.personaOrTemplate) grant('persona_used');
-
-  // ── Craft & refinement ──
-  if (inputs.isIteration) grant('iteration');
-  if (inputs.humanInstrumentPerformance) grant('human_performance');
-
-  const raw = Object.values(signals).reduce((a, b) => a + b, 0);
-  const score = Math.min(100, raw);
-
-  const dimensions = deriveDimensions(signals);
-  const observed = TELEMETRY_FIELDS.filter((f) => inputs[f] !== undefined).length;
-  const confidence = Math.round((observed / TELEMETRY_FIELDS.length) * 100);
-
-  return {
-    engine: COS_ENGINE_VERSION,
-    score,
-    signals,
-    dimensions,
-    confidence, // % of creative-process telemetry actually observed
-    label: score >= 40 ? 'ai_assisted' : 'ai_generated',
-    basis: buildBasisText(signals, confidence),
-    ddex: mapTelemetryToDdex(inputs, score),
-  };
+/**
+ * Authoritative Creative Ownership Score — computed on BASE Station's servers.
+ * Sends raw creative-process telemetry to the backend COS engine and returns
+ * { engine, score, signals, dimensions, confidence, label, basis, ddex }.
+ * NOTE: async — callers must await.
+ */
+export async function calculateHumanParticipationScore(inputs = {}) {
+  const res = await base44.functions.invoke('calculateCos', inputs);
+  return res.data;
 }
 
 // Roll a flat signal map (stored on any asset, v1 or v2) up into the
 // five creative dimensions — each 0–100% of that dimension's ceiling.
+// Display-only: operates on already-stored data.
 export function deriveDimensions(signals = {}) {
   const totals = {};
   const maxes = {};
@@ -118,19 +69,6 @@ export function deriveDimensions(signals = {}) {
   return out;
 }
 
-// DDEX mapping — dimension-aware granular AI attribution for partner export.
-export function mapTelemetryToDdex(inputs = {}, finalScore = 0) {
-  const prompt = inputs.prompt || '';
-  const strongDirection = prompt.length >= 100 || (prompt.length >= 40 && MUSICAL_TERMS.test(prompt));
-  return {
-    ai_lyrical_content: !inputs.userProvidedContent,
-    ai_composition: !strongDirection && !inputs.humanInstrumentPerformance && finalScore < 50,
-    ai_instrumentation: !inputs.referenceFile && !inputs.humanInstrumentPerformance,
-    ai_generated_vocals: !!inputs.hasSyntheticVocals || (!!inputs.personaOrTemplate && inputs.hasSyntheticVocals !== false),
-    ai_post_production: !!inputs.isAutomatedMaster,
-  };
-}
-
 // Fallback derivation for already-stored assets that predate ddex_ai_metadata:
 // reconstructs the attribution profile from persisted score + signals.
 export function deriveDdexFromAsset(asset = {}) {
@@ -146,15 +84,6 @@ export function deriveDdexFromAsset(asset = {}) {
     ai_generated_vocals: !!s.persona_used,
     ai_post_production: asset.asset_type === 'master',
   };
-}
-
-function buildBasisText(signals, confidence) {
-  const parts = Object.keys(signals)
-    .map((k) => SIGNAL_REGISTRY[k]?.label?.toLowerCase())
-    .filter(Boolean);
-  if (!parts.length) return 'Fully AI-generated with minimal human direction.';
-  const coverage = confidence >= 78 ? ' Full-process telemetry recorded.' : '';
-  return `Score based on: ${parts.join(', ')}.${coverage}`;
 }
 
 export const SCORE_TIERS = [

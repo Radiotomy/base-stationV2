@@ -42,7 +42,7 @@ export default function MashupStudio() {
       setJobId(null);
       // Save the completed mashup as a UserAsset so it appears in the library
       try {
-        const participation = calculateHumanParticipationScore({
+        const participation = await calculateHumanParticipationScore({
           userProvidedContent: false,
           prompt: description,
           styleOrTags: tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [],

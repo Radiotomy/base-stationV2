@@ -67,14 +67,9 @@ export default function CoverSongStudio() {
 
   const modelMeta = SONIC_MODELS.find(m => m.id === model) || SONIC_MODELS[0];
 
-  // Creative Ownership Score — covers/extensions are iterations on a user-chosen source
-  const participation = calculateHumanParticipationScore({
-    userProvidedContent: customMode && !!lyrics.trim(),
-    prompt: customMode ? lyrics : aiDescription,
-    styleOrTags: [genre, mood, ...(tags ? tags.split(',') : [])].map(s => (s || '').trim()).filter(Boolean),
-    referenceFile: true,
-    isIteration: true,
-  });
+  // Creative Ownership Score — computed by the authoritative server-side engine
+  // when generation starts (see runGenerate); null until then.
+  const [participation, setParticipation] = useState(null);
   const supportsVocalGender = modelMeta.vocalGender;
 
   // ── Source loaders ────────────────────────────────────────────────────────
@@ -159,6 +154,15 @@ export default function CoverSongStudio() {
 
     setGenerating(true);
     setResult(null);
+    // Kick off the authoritative COS calculation in parallel with the job —
+    // covers/extensions are iterations on a user-chosen source.
+    calculateHumanParticipationScore({
+      userProvidedContent: customMode && !!lyrics.trim(),
+      prompt: customMode ? lyrics : aiDescription,
+      styleOrTags: [genre, mood, ...(tags ? tags.split(',') : [])].map(s => (s || '').trim()).filter(Boolean),
+      referenceFile: true,
+      isIteration: true,
+    }).then(setParticipation).catch(() => setParticipation(null));
     try {
       const fn = taskKind === 'extend' ? 'extendUploadedMusic' : 'generateCoverSong';
       const payload = {

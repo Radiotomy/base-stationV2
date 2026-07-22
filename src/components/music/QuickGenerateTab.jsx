@@ -126,7 +126,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       }
 
       // Creative Ownership Score — Quick mode is AI-driven (auto lyrics, auto params)
-      const participation = calculateHumanParticipationScore({
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: false,
         prompt,
         styleOrTags: selectedGenre ? [selectedGenre] : [],
@@ -446,7 +446,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       // Use the SAME complete metadata payload as auto-save so lyrics, model,
       // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
       const mergedLyrics = lyricsRef.current?.trim() ? lyricsRef.current : (result?.lyrics || '');
-      const participation = calculateHumanParticipationScore({
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: false,
         prompt,
         styleOrTags: selectedGenre ? [selectedGenre] : [],
