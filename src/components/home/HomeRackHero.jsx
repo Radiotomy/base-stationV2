@@ -69,7 +69,8 @@ export default function HomeRackHero({ user }) {
 
           <p className="text-[#2E4A16]/90 text-xs sm:text-sm max-w-xl mx-auto leading-relaxed font-medium">
             Base Station values human, AI, and hybrid creators equally. Every track carries a RIAA-aligned
-            AI disclosure label and a Creative Ownership Score—transparent credit for your unique voice, however you create.
+            AI disclosure label, a Creative Ownership Score, and an inaudible BASE Mark watermark sealed into
+            the audio itself—transparent, traceable credit for your unique voice, however you create.
           </p>
         </motion.div>
 

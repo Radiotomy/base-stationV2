@@ -34,6 +34,14 @@ export default function HumanFirstManifesto() {
           the <span className="text-emerald-300 font-bold">AI-Assisted</span> label and the recognition that
           comes with it. Maximum human interaction isn't just encouraged — it's rewarded.
         </p>
+        <p>
+          Your ownership doesn't stop at a label. Every audio master saved here is sealed with the{' '}
+          <span className="text-[#FFC98A] font-bold">BASE Mark</span> — our own inaudible watermark woven
+          into the waveform itself. Strip the metadata, re-encode the file, cut a two-second sample —
+          the mark survives, and it points straight back to you, your score, and your provenance record.
+          Combined with cryptographic manifests and on-chain anchoring, your human creative input isn't
+          just measured — <span className="text-white/90 font-bold">it's permanently, provably yours.</span>
+        </p>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
