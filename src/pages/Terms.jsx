@@ -17,7 +17,7 @@ export default function Terms() {
             <FileText className="w-3.5 h-3.5" /> Legal
           </div>
           <h1 className="font-display text-4xl text-white">Terms of Use</h1>
-          <p className="text-xs text-muted-foreground">Last updated: July 19, 2026</p>
+          <p className="text-xs text-muted-foreground">Last updated: July 22, 2026</p>
         </header>
 
         <div className="merc-card rounded-2xl p-6 md:p-8 space-y-8">
@@ -63,10 +63,17 @@ export default function Terms() {
               expressive elements. "Human" means no generative AI was used in the recording.
             </p>
             <p>
-              <span className="text-white font-semibold">3.2 Warranty.</span> By submitting
-              content, you warrant that your self-declared label is accurate and made in good
-              faith, consistent with the program's published guidelines. As the program itself is
-              voluntary and honesty-based, no automated "percentage of AI" measurement is applied.
+              <span className="text-white font-semibold">3.2 Warranty of Attribution.</span> By
+              submitting content or generating content in Platform studios, you warrant and
+              represent that (a) your self-declared AI disclosure label is accurate and made in
+              good faith, consistent with the program's published guidelines; (b) any
+              creative-process information you supply that feeds a label or Creative Ownership
+              Score (such as claims of original lyrics, human performance, or reference material
+              you own) is truthful; and (c) you — not BASE Station — bear sole legal
+              responsibility for the accuracy of these attributions toward distributors, digital
+              service providers, collecting societies, and any other third party. As the program
+              itself is voluntary and honesty-based, no automated "percentage of AI" measurement
+              is applied. This Warranty of Attribution survives termination of your account.
             </p>
             <p>
               <span className="text-white font-semibold">3.3 Platform-applied labels.</span>{" "}
@@ -82,9 +89,12 @@ export default function Terms() {
               update its labeling practices accordingly.
             </p>
             <p>
-              <span className="text-white font-semibold">3.5 Enforcement.</span> BASE Station
-              provides the tools for disclosure but is not liable for the accuracy of a user's
-              self-declaration. Misrepresenting AI usage may result in re-labeling, content
+              <span className="text-white font-semibold">3.5 Disclosure, not certification.</span>{" "}
+              BASE Station provides the tools for <span className="text-white">disclosure</span>.
+              Labels, scores, manifests, and watermarks are transparency records of declared and
+              observed creative process — they are not certifications, verifications, or
+              guarantees by BASE Station of how any work was made, and BASE Station is not liable
+              for the accuracy of a user's self-declaration. Misrepresenting AI usage may result in re-labeling, content
               removal, or account suspension. Learn more on our{" "}
               <Link to="/transparency" className="text-[#FFC98A] underline underline-offset-2">
                 AI Transparency page
@@ -151,7 +161,7 @@ export default function Terms() {
             </p>
           </Section>
 
-          <Section n={7} title="Acceptable Use">
+          <Section n={7} title="Acceptable Use & Platform Technology Protection">
             <p>
               You may not upload content that is unlawful, infringing, or impersonates another
               artist's voice or likeness without authorization. You may not manipulate charts,
@@ -159,6 +169,26 @@ export default function Terms() {
               users' content without permission. You may not attempt to probe, scan, disrupt, or
               gain unauthorized access to the Platform, its infrastructure, or other users'
               accounts, or use automated means to scrape or bulk-download Platform content.
+            </p>
+            <p>
+              <span className="text-white font-semibold">7.1 Proprietary technology.</span> The
+              Platform — including the BASE Mark acoustic watermarking system, the Creative
+              Ownership Score engine, detection and verification services, and all related
+              algorithms, parameters, and keys — is the proprietary technology and trade secret of
+              BASE Station. Except for the limited right to use the Platform as offered, no
+              license to this technology is granted. You may not reverse engineer, decompile,
+              probe, benchmark for circumvention, or otherwise attempt to derive the embedding,
+              detection, or scoring mechanics of any Platform system.
+            </p>
+            <p>
+              <span className="text-white font-semibold">7.2 Anti-circumvention & provenance
+              integrity.</span> The BASE Mark functions as a technological protection measure, and
+              the mark, disclosure labels, manifests, and provenance metadata constitute copyright
+              management information within the meaning of 17 U.S.C. §§ 1201–1202 and equivalent
+              laws. You may not remove, alter, obscure, or falsify a BASE Mark, disclosure label,
+              or provenance record on any work, or distribute a work knowing such information has
+              been removed or falsified. Violations may result in immediate termination and
+              referral for legal action.
             </p>
           </Section>
 
@@ -299,7 +329,7 @@ export default function Terms() {
             <p>
               We may suspend or terminate accounts that violate these Terms, including violations
               of the AI Content Transparency obligations in Section 3, at any time and without
-              prior notice. Sections 2, 12–16, and 18 survive termination.
+              prior notice. Sections 2, 3.2, 7.1–7.2, 12–16, and 18 survive termination.
             </p>
           </Section>
 
