@@ -33,7 +33,10 @@ Deno.serve(async (req) => {
       }));
     }
 
-    return Response.json({ ...result, matches });
+    // Never expose internal detector diagnostics (alignment offset, pilot
+    // correlation thresholds) — creator-facing fields only.
+    const { pilot_score: _p, sample_offset: _o, ...safe } = result;
+    return Response.json({ ...safe, matches });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

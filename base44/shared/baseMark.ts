@@ -19,7 +19,14 @@ const SEGS = BITS + 1;          // pilot + payload
 export const BLOCK = SEGS * CHIP_LEN; // 33792 samples (~0.77s @ 44.1kHz)
 const ALPHA = 0.06;             // watermark strength relative to local RMS
 const MIN_ALPHA = 30;           // floor in int16 units so silence still carries signal
-const SEED_BASE = 0x0BA5E441;   // platform chip seed
+// Platform chip seed — overridable via the BASE_MARK_SEED secret (8 hex chars) so it
+// can be rotated without a code change. WARNING: rotating the seed makes previously
+// marked files undetectable with the new seed; only rotate deliberately.
+const SEED_BASE = (() => {
+  const env = (typeof Deno !== 'undefined' && Deno.env.get('BASE_MARK_SEED')) || '';
+  const v = parseInt(env, 16);
+  return Number.isFinite(v) && v > 0 ? (v >>> 0) : 0x0BA5E441;
+})();
 
 function mulberry32(a) {
   return function () {

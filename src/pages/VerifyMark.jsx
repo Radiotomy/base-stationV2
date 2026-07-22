@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { ScanSearch, Loader2, Lock, FileAudio } from 'lucide-react';
-import { decodeFileToMono, detectMarkInSamples } from '@/utils/baseMarkDetector';
+import { fileToVerifySnippetB64 } from '@/utils/verifyAudioClip';
 import PublicScanResult from '@/components/watermark/PublicScanResult';
 
 export default function VerifyMark() {
@@ -11,30 +11,23 @@ export default function VerifyMark() {
   const [busy, setBusy] = useState(false);
   const [phase, setPhase] = useState('');
   const [result, setResult] = useState(null);
-  const [matches, setMatches] = useState(null);
   const [error, setError] = useState('');
 
   const scan = async () => {
-    setBusy(true); setError(''); setResult(null); setMatches(null);
+    setBusy(true); setError(''); setResult(null);
     try {
-      setPhase('Decoding audio…');
-      let samples;
+      setPhase('Preparing audio…');
+      let b64;
       try {
-        samples = await decodeFileToMono(file);
+        b64 = await fileToVerifySnippetB64(file);
       } catch {
         throw new Error('Could not decode this audio file. Supported: WAV, MP3, OGG, M4A/MP4, WebM, FLAC.');
       }
-      setPhase('Scanning waveform…');
-      // Let the UI paint the phase label before the CPU-heavy scan
-      await new Promise((r) => setTimeout(r, 50));
-      const res = detectMarkInSamples(samples);
-      setResult(res);
-      if (res.detected && res.payload_hex) {
-        const lookup = await base44.functions.invoke('lookupBaseMark', { payloadHex: res.payload_hex });
-        setMatches(lookup.data?.matches || []);
-      }
+      setPhase('Verifying…');
+      const res = await base44.functions.invoke('verifyBaseMark', { fileB64: b64 });
+      setResult(res.data);
     } catch (e) {
-      setError(e.message);
+      setError(e.response?.data?.error || e.message);
     }
     setBusy(false);
     setPhase('');
@@ -50,7 +43,7 @@ export default function VerifyMark() {
             waveform for a BASE Mark, the inaudible provenance signature embedded in tracks made on BASE Station.
           </p>
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="w-3 h-3" /> Scanning runs entirely in your browser — your file is never uploaded.
+            <Lock className="w-3 h-3" /> Only a short audio snippet is analyzed on our secure servers — it is processed in memory and never stored.
           </p>
         </div>
 
@@ -62,7 +55,7 @@ export default function VerifyMark() {
             <input
               type="file" accept=".wav,.mp3,.ogg,.oga,.m4a,.mp4,.aac,.webm,.flac,audio/*"
               className="hidden"
-              onChange={(e) => { setFile(e.target.files?.[0] || null); setResult(null); setMatches(null); setError(''); }}
+              onChange={(e) => { setFile(e.target.files?.[0] || null); setResult(null); setError(''); }}
             />
           </label>
           <Button onClick={scan} disabled={!file || busy} className="merc-button w-full">
@@ -70,7 +63,7 @@ export default function VerifyMark() {
             {busy ? phase : 'Scan File'}
           </Button>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <PublicScanResult result={result} matches={matches} />
+          <PublicScanResult result={result} matches={result?.matches ?? null} />
         </div>
 
         <p className="text-center text-xs text-muted-foreground">

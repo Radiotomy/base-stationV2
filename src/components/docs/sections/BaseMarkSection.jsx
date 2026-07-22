@@ -57,10 +57,10 @@ export default function BaseMarkSection() {
       <section className="space-y-3">
         <h2 className="font-display text-lg">How it works</h2>
         <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
-          <li><strong className="text-foreground">Payload:</strong> a 32-bit identifier derived from the track's asset ID (FNV-1a hash), registered in the track's provenance metadata, COS Manifest, DDEX bundle, and ID3 frames.</li>
-          <li><strong className="text-foreground">Embedding:</strong> the audio is divided into repeating ~0.77s blocks of 33 segments (1 pilot + 32 payload bits). Each segment carries one bit via a pseudo-random ±1 chip sequence added at roughly −24 dB below the local RMS, so it is inaudible and scales with the music's own loudness (psychoacoustic masking).</li>
-          <li><strong className="text-foreground">Localization:</strong> the full payload repeats every block. Any surviving contiguous chunk of about 2 seconds — a sampled loop, a cut stem, a remix layer — still carries the complete identifier.</li>
-          <li><strong className="text-foreground">Detection (blind):</strong> no original file is needed. Block alignment is recovered by scanning every sample offset for the pilot signal (survives arbitrary cuts), then each payload bit is majority-voted across all blocks.</li>
+          <li><strong className="text-foreground">Payload:</strong> a unique 32-bit identifier derived from the track's asset record, registered in the track's provenance metadata, COS Manifest, DDEX bundle, and ID3 frames.</li>
+          <li><strong className="text-foreground">Embedding:</strong> a proprietary spread-spectrum process shapes an inaudible signature directly into the waveform, scaled to the music's own loudness (psychoacoustic masking) so it never colors the mix. The exact embedding parameters are confidential and executed exclusively in BASE Station's secure server environment.</li>
+          <li><strong className="text-foreground">Localization:</strong> the identifier repeats continuously through the file. Any surviving contiguous chunk of a few seconds — a sampled loop, a cut stem, a remix layer — still carries the complete identifier.</li>
+          <li><strong className="text-foreground">Detection (blind):</strong> no original file is needed. Detection runs as a secure black-box service that reports the outcome without disclosing internal alignment or confidence mechanics.</li>
           <li><strong className="text-foreground">Tracing:</strong> a detected payload is matched against the BASE Station asset registry to identify the original track, artist and Creative Ownership Score.</li>
         </ul>
       </section>
@@ -74,7 +74,7 @@ export default function BaseMarkSection() {
           <p><code className="text-[#FFC98A]">POST applyBaseMark</code> — <span className="text-muted-foreground">body: <code>{'{ assetId }'}</code> or <code>{'{ fileUrl }'}</code>. Embeds the mark into a 16/24-bit PCM WAV or FLAC master, uploads the marked file, promotes it to the asset's canonical audio, and records the payload in the provenance metadata. Returns <code>{'{ payload_hex, marked_file_url }'}</code>.</span></p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4 space-y-1 text-sm">
-          <p><code className="text-[#FFC98A]">POST detectBaseMark</code> — <span className="text-muted-foreground">body: <code>{'{ fileUrl }'}</code>. Scans audio for a BASE Mark. Returns <code>{'{ detected, payload_hex, pilot_score, mean_strength, agreement, matches[] }'}</code> where <code>matches</code> lists registry tracks whose payload matches.</span></p>
+          <p><code className="text-[#FFC98A]">POST detectBaseMark</code> — <span className="text-muted-foreground">body: <code>{'{ fileUrl }'}</code>. Scans audio for a BASE Mark (creators, authenticated). Returns <code>{'{ detected, payload_hex, mean_strength, agreement, matches[] }'}</code> where <code>matches</code> lists registry tracks whose payload matches. Internal detector diagnostics are never exposed.</span></p>
         </div>
       </section>
 

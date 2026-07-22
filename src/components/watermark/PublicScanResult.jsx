@@ -10,9 +10,6 @@ export default function PublicScanResult({ result, matches }) {
             <ShieldCheck className="w-5 h-5" /> BASE Mark detected
           </p>
           <p>Payload: <code className="text-[#FFC98A]">{result.payload_hex}</code></p>
-          <p className="text-muted-foreground">
-            Signal strength {Math.round(result.mean_strength * 1000) / 10}‰ · block agreement {Math.round(result.agreement * 100)}% · {result.blocks_scanned} blocks scanned
-          </p>
           {matches === null ? (
             <p className="text-muted-foreground">Checking the registry…</p>
           ) : matches.length > 0 ? (
