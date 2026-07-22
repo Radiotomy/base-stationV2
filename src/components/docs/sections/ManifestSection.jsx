@@ -6,7 +6,8 @@ const REQUEST = `GET /api/v1/cos/manifest/ua_9f83bd21
 Authorization: Bearer <YOUR_API_TOKEN>`;
 
 const RESPONSE = `{
-  "manifest_version": "1.0",
+  "manifest_version": "2.0",
+  "cos_engine": "2.0",
   "asset_id": "ua_9f83bd21",
   "title": "Neon Riverbed",
   "asset_type": "track",
@@ -14,9 +15,17 @@ const RESPONSE = `{
   "ai_disclosure_label": "ai_assisted",
   "ai_label": "ai_assisted",
   "participation_signals": {
-    "own_content":      { "points": 30, "granted": true  },
-    "detailed_prompt":  { "points": 15, "granted": true  },
-    "persona_preset":   { "points": 10, "granted": true  }
+    "user_content":  { "points": 35, "granted": true  },
+    "deep_prompt":   { "points": 18, "granted": true  },
+    "persona_used":  { "points": 9,  "granted": true  },
+    "iteration":     { "points": 8,  "granted": true  }
+  },
+  "dimensions": {
+    "content_authorship": { "points": 35, "max": 35, "pct": 100 },
+    "creative_direction": { "points": 18, "max": 45, "pct": 40  },
+    "sonic_identity":     { "points": 0,  "max": 22, "pct": 0   },
+    "vocal_identity":     { "points": 9,  "max": 9,  "pct": 100 },
+    "craft_refinement":   { "points": 8,  "max": 20, "pct": 40  }
   },
   "ddex_ai_metadata": {
     "ai_lyrical_content": false,
@@ -47,7 +56,9 @@ export default function ManifestSection() {
         <h1 className="text-3xl font-display text-foreground mb-4">Provenance Manifest</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
           Retrieves the complete, verifiable Provenance Manifest for an asset — the canonical record joining the COS
-          score, signal breakdown, DDEX AI attribution flags, cryptographic hash, and derivation chain. This is the URL
+          score, signal breakdown, the COS Engine 2.0 five-dimension roll-up (Content Authorship, Creative Direction,
+          Sonic Identity, Vocal Identity, Craft &amp; Refinement), DDEX AI attribution flags, cryptographic hash, and
+          derivation chain. This is the URL
           embedded in the asset's ID3v2 <code className="text-[#FFC98A] text-xs">WXXX</code> frame.
         </p>
       </div>

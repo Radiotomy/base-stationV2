@@ -8,13 +8,14 @@ Content-Type: application/json
 
 {
   "asset_id": "ua_9f83bd21",
-  "signals": {
-    "own_content": true,
-    "detailed_prompt": true,
-    "reference_upload": false,
-    "persona_preset": true,
-    "style_selection": true,
-    "iteration_count": 4
+  "telemetry": {
+    "prompt": "Dark synthwave at 108 BPM in F minor, verse-chorus-bridge…",
+    "userProvidedContent": true,
+    "styleOrTags": ["synthwave", "dark", "retro"],
+    "referenceFile": false,
+    "personaOrTemplate": true,
+    "isIteration": true,
+    "humanInstrumentPerformance": false
   }
 }`;
 
@@ -51,8 +52,11 @@ export default function CosCalculateSection() {
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#FF9A4D] mb-2">API Reference</p>
         <h1 className="text-3xl font-display text-foreground mb-4">Calculate COS</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
-          Computes the Creative Ownership Score for an asset from its participation telemetry. Returns the 0–100 score,
-          the derived RIAA/IFPI-style disclosure label, a human-readable basis, and the full signal breakdown.
+          Computes the Creative Ownership Score for an asset from its participation telemetry using{' '}
+          <span className="text-foreground font-medium">COS Engine 2.0</span>. Prompt depth is graded on a curve,
+          musical direction is detected from the prompt's vocabulary, and every granted point rolls up into one of
+          five creative dimensions. Returns the 0–100 score, the derived RIAA/IFPI-style disclosure label, a
+          human-readable basis, the full signal breakdown, the dimension roll-up, and a telemetry-confidence metric.
         </p>
       </div>
 
@@ -66,13 +70,16 @@ export default function CosCalculateSection() {
         title="Request body"
         params={[
           { name: 'asset_id', type: 'string', required: true, description: 'The BASE Station asset ID to score.' },
-          { name: 'signals', type: 'object', required: true, description: 'Participation telemetry object (see fields below).' },
-          { name: 'signals.own_content', type: 'boolean', required: false, description: 'Creator supplied their own lyrics, melody, or recording.' },
-          { name: 'signals.detailed_prompt', type: 'boolean', required: false, description: 'A substantive, creator-authored prompt directed the generation.' },
-          { name: 'signals.reference_upload', type: 'boolean', required: false, description: 'Creator uploaded reference audio or stems.' },
-          { name: 'signals.persona_preset', type: 'boolean', required: false, description: 'A creator-designed voice persona was used.' },
-          { name: 'signals.style_selection', type: 'boolean', required: false, description: 'Deliberate genre/mood/structure choices were made.' },
-          { name: 'signals.iteration_count', type: 'number', required: false, description: 'Number of refinement passes on the output.' },
+          { name: 'telemetry', type: 'object', required: true, description: 'Participation telemetry object (see fields below). The more fields reported, the higher the telemetry confidence.' },
+          { name: 'telemetry.prompt', type: 'string', required: false, description: 'The creator-authored prompt. Depth is graded: 40+ chars (+7), 100+ (+14), 200+ (+18); musical vocabulary (BPM, key, structure) adds +6.' },
+          { name: 'telemetry.userProvidedContent', type: 'boolean', required: false, description: 'Creator supplied their own lyrics, melody, or recording (+35).' },
+          { name: 'telemetry.styleOrTags', type: 'array', required: false, description: 'Genre/mood/style selections (+6); 3+ selections earn a rich-palette bonus (+4).' },
+          { name: 'telemetry.referenceFile', type: 'boolean', required: false, description: 'Creator uploaded reference audio, image, or document (+12).' },
+          { name: 'telemetry.personaOrTemplate', type: 'boolean', required: false, description: 'A creator-designed voice persona or template was used (+9).' },
+          { name: 'telemetry.isIteration', type: 'boolean', required: false, description: 'The work refines, remixes, or extends prior work (+8).' },
+          { name: 'telemetry.humanInstrumentPerformance', type: 'boolean', required: false, description: 'A recorded human performance is part of the work (+12).' },
+          { name: 'telemetry.hasSyntheticVocals', type: 'boolean', required: false, description: 'Synthetic or cloned vocals were used (feeds DDEX vocal attribution).' },
+          { name: 'telemetry.isAutomatedMaster', type: 'boolean', required: false, description: 'Mastering was performed by automated utilities (feeds DDEX post-production attribution).' },
         ]}
       />
 
@@ -90,9 +97,12 @@ export default function CosCalculateSection() {
         title="Response fields"
         params={[
           { name: 'human_participation_score', type: 'number', required: true, description: '0–100 Creative Ownership Score.' },
-          { name: 'ai_disclosure_label', type: 'string', required: true, description: '"ai_generated" (score < 50) or "ai_assisted" (score ≥ 50).' },
+          { name: 'cos_engine', type: 'string', required: true, description: 'Scoring engine version ("2.0").' },
+          { name: 'telemetry_confidence', type: 'number', required: true, description: '0–100 — how much of the creative process was actually observed by telemetry.' },
+          { name: 'ai_disclosure_label', type: 'string', required: true, description: '"ai_generated" (score < 40) or "ai_assisted" (score ≥ 40).' },
           { name: 'ai_disclosure_basis', type: 'string', required: true, description: 'Human-readable explanation of the label assignment.' },
           { name: 'participation_signals', type: 'object', required: true, description: 'Per-signal points and whether each was granted.' },
+          { name: 'dimensions', type: 'object', required: true, description: 'Five-dimension roll-up — points, ceiling, and percentage per creative dimension.' },
         ]}
       />
     </div>

@@ -102,7 +102,10 @@ export default function AITransparency() {
               Beyond the track-level label, every scored asset carries a{" "}
               <span className="text-white font-semibold">DDEX-style AI attribution profile</span> —
               granular flags recording whether lyrical content, composition, instrumentation, vocals,
-              and post-production were synthetic or human. An optional{" "}
+              and post-production were synthetic or human. Under COS Engine 2.0, each flag is derived
+              from one of five telemetry-backed creative dimensions (Content Authorship, Creative
+              Direction, Sonic Identity, Vocal Identity, Craft &amp; Refinement) rather than guesswork.
+              An optional{" "}
               <span className="text-white font-semibold">C2PA provenance hash</span> anchors these
               metrics to the audio container itself.
             </p>

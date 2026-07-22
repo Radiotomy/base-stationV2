@@ -35,15 +35,18 @@ const SECTIONS = [
           <p className="text-emerald-300 font-bold text-sm mb-1">💚 The more you put in, the more you own</p>
           <p>Here's the honest truth: if you let the AI decide everything, most of your content will carry the <strong className="text-foreground">AI-Generated</strong> label. But lean in — write your own lyrics, craft detailed prompts, upload references, build voice personas, iterate on your work — and your content earns the <strong className="text-foreground">AI-Assisted</strong> label (score 40+). That's your creative fingerprint, on the record.</p>
         </div>
-        <p><strong className="text-foreground">Ways to raise your score:</strong></p>
+        <p><strong className="text-foreground">Ways to raise your score (COS Engine 2.0):</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>+40</strong> — bring your own content (lyrics, script, copy)</li>
-          <li><strong>+15</strong> — write a detailed, intentional prompt (100+ chars)</li>
-          <li><strong>+15</strong> — upload reference material (audio, image, document)</li>
-          <li><strong>+10</strong> — use a saved voice persona or template</li>
-          <li><strong>+10</strong> — pick custom genres, moods, and style tags</li>
-          <li><strong>+10</strong> — iterate: remix, extend, or refine prior work</li>
+          <li><strong>+35</strong> — bring your own content (lyrics, script, copy)</li>
+          <li><strong>+7 to +18</strong> — prompt depth, graded: basic (+7), detailed 100+ chars (+14), deep 200+ chars (+18)</li>
+          <li><strong>+6</strong> — give real musical direction (BPM, key, song structure language)</li>
+          <li><strong>+12</strong> — upload reference material (audio, image, document)</li>
+          <li><strong>+9</strong> — use a saved voice persona or template</li>
+          <li><strong>+6 to +10</strong> — pick custom genres, moods, and style tags; a rich palette earns more</li>
+          <li><strong>+8</strong> — iterate: remix, extend, or refine prior work</li>
+          <li><strong>+12</strong> — include a recorded human performance</li>
         </ul>
+        <p>Engine 2.0 also maps every point onto <strong className="text-foreground">five creative dimensions</strong> — Content Authorship, Creative Direction, Sonic Identity, Vocal Identity, and Craft &amp; Refinement — so your manifest shows exactly which aspects of the work were human-directed, backed by a telemetry-confidence metric.</p>
         <p><strong className="text-foreground">Tiers:</strong> 🏆 Co-Creator (70–100) · 🎨 Collaborator (40–69) · 🤖 Curator (0–39)</p>
         <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20">
           <p className="text-amber-300 font-bold text-sm mb-1">🔒 Provenance Manifest &amp; DDEX export</p>

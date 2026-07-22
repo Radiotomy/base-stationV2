@@ -24,6 +24,7 @@ const RESPONSE = `{
   },
   "ai_disclosure_label": "ai_assisted",
   "human_participation_score": 72,
+  "cos_engine": "2.0",
   "base_mark_watermark": { "version": "1.0", "payload_hex": "dff13efe" },
   "manifest_url": "https://basestation.live/api/v1/cos/manifest/ua_9f83bd21",
   "export_url": "https://cdn.basestation.live/ddex/ua_9f83bd21.xml",
@@ -39,6 +40,9 @@ export default function DdexExportSection() {
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
           Generates a DDEX-style AI attribution bundle for an asset — five granular boolean flags describing where
           generative AI was involved in the recording — packaged for delivery to distributors and DSP partner channels.
+          Under COS Engine 2.0, each flag is derived directly from its matching creative dimension (Content Authorship,
+          Creative Direction, Sonic Identity, Vocal Identity, Craft &amp; Refinement), so the attribution is telemetry-backed
+          rather than self-declared.
         </p>
       </div>
 

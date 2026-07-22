@@ -6,7 +6,7 @@ const PILLARS = [
   {
     icon: Fingerprint,
     title: 'Creative Ownership Score (COS)',
-    text: 'A 0–100 score quantifying human creative input in AI-assisted works — built from telemetry signals like original lyrics, reference uploads, iteration depth, and persona design.',
+    text: 'A 0–100 score quantifying human creative input in AI-assisted works. Engine 2.0 grades telemetry signals — original lyrics, prompt depth, reference uploads, iteration, human performances — and maps every point onto five creative dimensions aligned with DDEX AI attribution categories.',
   },
   {
     icon: Shield,
@@ -54,7 +54,7 @@ export default function OverviewSection() {
           three provenance layers are produced:
         </p>
         <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
-          <li><span className="text-foreground font-medium">COS calculation</span> — the score, disclosure label (<code className="text-[#FFC98A] text-xs">ai_generated</code> / <code className="text-[#FFC98A] text-xs">ai_assisted</code>), and signal breakdown.</li>
+          <li><span className="text-foreground font-medium">COS Engine 2.0 calculation</span> — the score, disclosure label (<code className="text-[#FFC98A] text-xs">ai_generated</code> / <code className="text-[#FFC98A] text-xs">ai_assisted</code>), graded signal breakdown, five-dimension roll-up, and telemetry-confidence metric.</li>
           <li><span className="text-foreground font-medium">BASE Mark watermarking</span> — an inaudible acoustic watermark is automatically embedded on save; the marked file becomes the canonical audio used by every downstream step.</li>
           <li><span className="text-foreground font-medium">DDEX AI attribution bundle</span> — granular boolean flags (lyrics, composition, instrumentation, vocals, post-production) plus the watermark payload, exportable to partner channels.</li>
           <li><span className="text-foreground font-medium">ID3v2 embedding</span> — TXXX and WXXX frames (including the BASE Mark payload) written into the MP3 container so provenance travels with the file itself.</li>

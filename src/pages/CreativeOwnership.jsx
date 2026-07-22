@@ -6,12 +6,20 @@ import AiDisclosureBadge from '@/components/music/AiDisclosureBadge';
 import ParticipationBadge from '@/components/music/ParticipationBadge';
 
 const SIGNALS = [
-  { icon: FileText,  pts: '+40', label: 'Bring your own content',   desc: 'Write your own lyrics, script, or copy — the single biggest signal of authorship.' },
-  { icon: Sparkles,  pts: '+15', label: 'Write with intention',      desc: 'A detailed, deliberate prompt (100+ characters) shows real creative direction.' },
-  { icon: Upload,    pts: '+15', label: 'Upload reference material', desc: 'Source audio, images, or documents ground the AI in your creative choices.' },
-  { icon: Mic2,      pts: '+10', label: 'Use a saved persona',       desc: 'Voice personas, templates, and presets carry your artistic identity forward.' },
-  { icon: Image,     pts: '+10', label: 'Choose your style',         desc: 'Custom genres, moods, and style tags steer the outcome toward your vision.' },
-  { icon: RefreshCw, pts: '+10', label: 'Iterate and refine',        desc: 'Remixing, extending, and reworking prior pieces is craftsmanship — and it counts.' },
+  { icon: FileText,  pts: '+35', label: 'Bring your own content',   desc: 'Write your own lyrics, script, or copy — the single biggest signal of authorship.' },
+  { icon: Sparkles,  pts: '+7–18', label: 'Write with intention',    desc: 'Prompt depth is graded on a curve — basic (+7), detailed 100+ chars (+14), deep 200+ chars (+18). Real musical direction (BPM, key, structure) adds +6 more.' },
+  { icon: Upload,    pts: '+12', label: 'Upload reference material', desc: 'Source audio, images, or documents ground the AI in your creative choices.' },
+  { icon: Mic2,      pts: '+9',  label: 'Use a saved persona',       desc: 'Voice personas, templates, and presets carry your artistic identity forward.' },
+  { icon: Image,     pts: '+6–10', label: 'Choose your style',       desc: 'Custom genres, moods, and style tags (+6); a rich multi-tag palette earns +4 more.' },
+  { icon: RefreshCw, pts: '+8–20', label: 'Iterate and refine',      desc: 'Remixing, extending, and reworking prior pieces (+8) — and a recorded human performance adds +12.' },
+];
+
+const DIMENSIONS = [
+  { label: 'Content Authorship',  desc: 'Did the words, script, or source material come from you?' },
+  { label: 'Creative Direction',  desc: 'How much deliberate direction — prompt depth, musical specificity — did you give?' },
+  { label: 'Sonic Identity',      desc: 'Style choices and reference material that shape the sound.' },
+  { label: 'Vocal Identity',      desc: 'Personas and voice design carrying your artistic identity.' },
+  { label: 'Craft & Refinement',  desc: 'Iteration, reworking, and human performances layered into the work.' },
 ];
 
 export default function CreativeOwnership() {
@@ -107,6 +115,25 @@ export default function CreativeOwnership() {
                 </div>
                 <p className="text-sm font-bold text-foreground">{s.label}</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Five dimensions — COS Engine 2.0 */}
+        <section>
+          <h2 className="text-2xl font-black text-foreground text-center mb-2">Five creative dimensions</h2>
+          <p className="text-sm text-muted-foreground text-center mb-6 max-w-2xl mx-auto">
+            COS Engine 2.0 doesn't just produce a number — every point maps to one of five named creative
+            dimensions, each aligned 1:1 with a DDEX AI attribution category. Your manifest shows exactly
+            <em> which aspects</em> of the work were human-directed, plus a telemetry-confidence metric
+            reflecting how much recorded evidence backs the score.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            {DIMENSIONS.map(d => (
+              <div key={d.label} className="p-4 rounded-2xl bg-card border border-border space-y-1.5">
+                <p className="text-sm font-bold text-foreground">{d.label}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{d.desc}</p>
               </div>
             ))}
           </div>
