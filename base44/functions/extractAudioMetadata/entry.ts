@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // Lightweight audio metadata extractor: probes the file headers to estimate
 // duration + format without loading the entire file. For richer analysis
@@ -57,13 +58,21 @@ Deno.serve(async (req) => {
     const audio_url = body.audio_url || body.audioUrl;
     if (!audio_url) return Response.json({ error: 'Missing audio_url parameter' }, { status: 400 });
 
+    // SSRF guard — reject non-http(s), IP-literal, loopback, and internal hosts
+    let safeUrl;
+    try {
+      safeUrl = assertSafeUrl(audio_url);
+    } catch (e) {
+      return Response.json({ error: e.message }, { status: 400 });
+    }
+
     // Fetch only enough of the file to read headers (Range request)
     // — full duration calc needs file size, which we get from Content-Length.
-    const headRes = await fetch(audio_url, { method: 'HEAD' }).catch(() => null);
+    const headRes = await fetch(safeUrl, { method: 'HEAD', redirect: 'error' }).catch(() => null);
     const fileSize = headRes?.headers.get('content-length') ? parseInt(headRes.headers.get('content-length'), 10) : null;
 
     // Pull first 64KB for header analysis
-    const partialRes = await fetch(audio_url, { headers: { Range: 'bytes=0-65535' } });
+    const partialRes = await fetch(safeUrl, { headers: { Range: 'bytes=0-65535' }, redirect: 'error' });
     const partial = await partialRes.arrayBuffer();
     const container = detectContainer(partial);
 
