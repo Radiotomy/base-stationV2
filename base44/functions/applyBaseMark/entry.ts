@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { embedMark, payloadFromId, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
 import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -19,7 +20,15 @@ Deno.serve(async (req) => {
     }
     if (!url) return Response.json({ error: 'assetId or fileUrl is required' }, { status: 400 });
 
-    const dl = await fetch(url);
+    // SSRF guard — reject non-http(s), IP-literal, loopback, and internal hosts
+    let safeUrl;
+    try {
+      safeUrl = assertSafeUrl(url);
+    } catch (e) {
+      return Response.json({ error: e.message }, { status: 400 });
+    }
+
+    const dl = await fetch(safeUrl, { redirect: 'error' });
     if (!dl.ok) return Response.json({ error: 'Could not download the audio file' }, { status: 502 });
     let bytes = new Uint8Array(await dl.arrayBuffer());
 
