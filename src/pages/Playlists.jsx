@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { AnimatePresence } from "framer-motion";
 import CreatePlaylistModal from "@/components/playlists/CreatePlaylistModal";
 import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
+import StationShelf from "@/components/playlists/StationShelf";
 
 const GENRES = ["all", "hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "trap", "other"];
 
@@ -34,7 +35,11 @@ export default function Playlists() {
     setLoading(false);
   };
 
+  const stations = playlists.filter(p => p.tags?.includes("station"));
+  const stationIds = new Set(stations.map(p => p.id));
+
   const filtered = playlists.filter(p => {
+    if (stationIds.has(p.id)) return false; // stations live in their own shelf
     const matchesTab = tab === "featured" ? p.is_featured
       : tab === "mine" ? p.created_by === user?.email
       : tab === "community" ? !p.is_featured && p.is_public
@@ -47,26 +52,24 @@ export default function Playlists() {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-950 pt-20 pb-16 px-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-purple-500/20 via-transparent to-transparent" />
-        <div className="relative max-w-5xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <Badge className="mb-4 bg-purple-500/20 text-purple-300 border-purple-500/30 px-4 py-1.5 text-xs tracking-widest uppercase">
-              ♪ Community Playlists
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-black text-white mb-4 tracking-tight">
-              Curate the <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Vibe</span>
-            </h1>
-            <p className="text-purple-200/70 text-lg max-w-xl mx-auto mb-8">
-              Build and discover playlists from the world's most creative AI music artists.
-            </p>
+      <div className="relative overflow-hidden bg-gradient-to-br from-violet-950 via-purple-900 to-indigo-950 pt-20 pb-8 px-6">
+        <div className="relative max-w-7xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                Playlists <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">&amp; Stations</span>
+              </h1>
+              <p className="text-purple-200/70 text-sm mt-1">
+                Genre radio stations plus community-curated playlists.
+              </p>
+            </div>
             {user && (
-              <div className="flex gap-3 justify-center flex-wrap">
-                <Button onClick={() => setShowCreate(true)} className="bg-white text-purple-900 hover:bg-purple-50 font-bold px-8 py-3 rounded-full text-sm">
-                  <Plus className="w-4 h-4 mr-2" /> Create Playlist
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={() => setShowCreate(true)} size="sm" className="bg-white text-purple-900 hover:bg-purple-50 font-bold rounded-full">
+                  <Plus className="w-4 h-4 mr-1.5" /> Create Playlist
                 </Button>
-                <Button onClick={() => setShowRadioBuilder(true)} className="bg-purple-600/80 hover:bg-purple-600 border border-purple-400/40 text-white font-bold px-8 py-3 rounded-full text-sm">
-                  <Radio className="w-4 h-4 mr-2" /> Build Radio Mix
+                <Button onClick={() => setShowRadioBuilder(true)} size="sm" className="bg-purple-600/80 hover:bg-purple-600 border border-purple-400/40 text-white font-bold rounded-full">
+                  <Radio className="w-4 h-4 mr-1.5" /> Build Radio Mix
                 </Button>
               </div>
             )}
@@ -75,8 +78,10 @@ export default function Playlists() {
       </div>
 
       {/* Controls */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex flex-col md:flex-row gap-4 mb-8">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <StationShelf stations={stations} />
+
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
           {/* Tabs */}
           <div className="flex gap-2 bg-muted/50 rounded-xl p-1 w-fit flex-wrap">
             {[["featured", "⭐ Featured"], ["community", "🎧 Fan Picks"], ["all", "🌍 All"], ["mine", "👤 Mine"]].map(([key, label]) => (
