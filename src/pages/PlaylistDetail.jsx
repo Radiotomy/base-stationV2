@@ -17,7 +17,14 @@ export default function PlaylistDetail() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
   const [audioLoading, setAudioLoading] = useState(false);
+  const [volume, setVolume] = useState([70]);
+  const [muted, setMuted] = useState(false);
   const audioRef = useRef(null);
+
+  // Keep the audio element in sync with the volume controls
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = muted ? 0 : volume[0] / 100;
+  }, [volume, muted]);
 
   // Load + play the selected track whenever the index changes
   useEffect(() => {
@@ -223,6 +230,10 @@ export default function PlaylistDetail() {
           onToggle={togglePlay}
           onNext={skipNext}
           onPrev={skipPrev}
+          volume={volume}
+          muted={muted}
+          onVolumeChange={setVolume}
+          onMuteToggle={() => setMuted(m => !m)}
         />
       )}
     </div>

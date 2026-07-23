@@ -1,6 +1,7 @@
-import { Play, Pause, SkipBack, SkipForward, Music, Loader2 } from "lucide-react";
+import { Play, Pause, SkipBack, SkipForward, Music, Loader2, Volume2, VolumeX } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 
-export default function PlaylistPlayerBar({ track, isPlaying, isLoading, onToggle, onNext, onPrev }) {
+export default function PlaylistPlayerBar({ track, isPlaying, isLoading, onToggle, onNext, onPrev, volume, muted, onVolumeChange, onMuteToggle }) {
   if (!track) return null;
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background/95 backdrop-blur-lg">
@@ -29,6 +30,14 @@ export default function PlaylistPlayerBar({ track, isPlaying, isLoading, onToggl
             className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors">
             <SkipForward className="w-4 h-4" />
           </button>
+        </div>
+        <div className="hidden sm:flex items-center gap-2 w-36 flex-shrink-0">
+          <button onClick={onMuteToggle} aria-label={muted ? "Unmute" : "Mute"}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+            {muted || volume[0] === 0 ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <Slider value={volume} onValueChange={onVolumeChange} max={100} step={1}
+            className="flex-1 cursor-pointer" aria-label="Volume" />
         </div>
       </div>
     </div>

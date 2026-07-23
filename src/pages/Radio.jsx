@@ -10,6 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import RadioPlaylistBuilder from "@/components/radio/RadioPlaylistBuilder";
+import RadioPlaylistShelf from "@/components/radio/RadioPlaylistShelf";
 import EQPanel from "@/components/radio/EQPanel";
 import RoundVUGauge from "@/components/radio/RoundVUGauge";
 import ChannelChipRow from "@/components/radio/ChannelChipRow";
@@ -69,6 +70,7 @@ export default function Radio() {
   const [showQueue, setShowQueue] = useState(false);
   const [showEQ, setShowEQ] = useState(false);
   const [showChannels, setShowChannels] = useState(false);
+  const [showPlaylists, setShowPlaylists] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef(null);      // CORS-enabled element wired to EQ + VU meters
@@ -464,6 +466,12 @@ export default function Radio() {
         <AccordionBar title="5-Band EQ" tip="Open the 5-band equalizer to shape the sound" open={showEQ} onToggle={() => setShowEQ(p => !p)}
           right={<span className="text-[10px] font-mono text-[#C6F27E]/60 hidden sm:inline">60 · 250 · 1k · 4k · 12k</span>}>
           <EQPanel setBandGain={setBandGain} />
+        </AccordionBar>
+
+        {/* ═══════════ PLAYLISTS ACCORDION ═══════════ */}
+        <AccordionBar title="Playlists" tip="Open a saved playlist — including curated mixes like AudioDude & Kindred Country" open={showPlaylists} onToggle={() => setShowPlaylists(p => !p)}
+          right={<span className="text-[10px] font-mono text-white/40 hidden sm:inline">Curated + Your Mixes</span>}>
+          <RadioPlaylistShelf />
         </AccordionBar>
 
         {/* ═══════════ ALL CHANNELS ACCORDION ═══════════ */}
