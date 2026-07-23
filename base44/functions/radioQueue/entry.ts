@@ -20,20 +20,32 @@ async function resolveAudiusBase() {
   }
 }
 
-// Map our channel genre labels → Audius genre values
+// Genres that mean "no genre filter" — mixed/curated channels
+const UNFILTERED_GENRES = new Set(['discover', 'staff-picks', 'all']);
+
+// Map channel genre (labels AND DB slugs) → Audius genre values
 const AUDIUS_GENRE_MAP = {
   'Hip Hop & Trap': 'Hip-Hop/Rap',
+  'hip-hop': 'Hip-Hop/Rap',
+  'trap': 'Hip-Hop/Rap',
   'EDM': 'Electronic',
+  'edm': 'Electronic',
   'House': 'House',
   'Soul/R&B': 'R&B/Soul',
+  'r&b': 'R&B/Soul',
   'Lo-Fi': 'Lo-Fi',
+  'lo-fi': 'Lo-Fi',
   'Pop': 'Pop',
+  'pop': 'Pop',
   'Cinematic': 'Ambient',
   'Rock': 'Rock',
+  'rock': 'Rock',
   'Jazz': 'Jazz',
+  'jazz': 'Jazz',
+  'country': 'Country',
 };
 
-// Map our channel genre labels → community submission genre slugs
+// Map channel genre (labels AND DB slugs) → community submission genre slugs
 const COMMUNITY_GENRE_MAP = {
   'Hip Hop & Trap': 'hip-hop',
   'EDM': 'edm',
@@ -44,6 +56,7 @@ const COMMUNITY_GENRE_MAP = {
   'Cinematic': 'other',
   'Rock': 'rock',
   'Jazz': 'jazz',
+  'country': 'other',
 };
 
 function normalizeAudiusTrack(t, i = 0) {
@@ -69,7 +82,8 @@ Deno.serve(async (req) => {
     // Public endpoint — serves only Audius trending + approved community tracks,
     // so logged-out radio listeners can tune in too.
 
-    const { genre, limit = 15 } = await req.json().catch(() => ({}));
+    let { genre, limit = 15 } = await req.json().catch(() => ({}));
+    if (genre && UNFILTERED_GENRES.has(String(genre).toLowerCase())) genre = null;
 
     // ── Audius trending tracks ──────────────────────────────────────────────
     let audiusTracks = [];

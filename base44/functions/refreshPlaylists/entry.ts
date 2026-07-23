@@ -85,6 +85,20 @@ Deno.serve(async (req) => {
       try { await svc.Playlist.update(pid, { track_count: remaining.length }); } catch (_) { /* playlist may be gone */ }
     }
 
+    // ── 1b. Approved community submissions with dead audio → unlist from radio/charts ──
+    summary.unlisted_submissions = 0;
+    const subs = await svc.TrackSubmission.filter({ status: 'approved' }, '-created_date', 200);
+    for (const s of subs) {
+      const dead = !s.track_url || !(await isUrlAlive(s.track_url));
+      if (dead) {
+        await svc.TrackSubmission.update(s.id, {
+          status: 'rejected',
+          description: `${s.description || ''} [auto-unlisted: audio link no longer accessible]`.trim(),
+        });
+        summary.unlisted_submissions++;
+      }
+    }
+
     // ── 2. Prune stale empty auto-generated playlists (never user-created ones) ──
     for (const p of allPlaylists) {
       if (p.owner_name === 'Base Station Radio' && !stationTitles.has(p.title)) {
