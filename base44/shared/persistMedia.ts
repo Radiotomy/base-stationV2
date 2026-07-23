@@ -1,20 +1,11 @@
 // Shared media persistence helpers — copy external provider/CDN URLs into
 // Base44 storage so files never expire. Used by persistExternalMedia.
 
-// SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
+import { assertSafeUrl } from './safeUrl.ts';
+
+// SSRF guard — delegates to the shared validator (public http(s) hostnames only)
 export function isSafeUrl(raw) {
-  let u;
-  try { u = new URL(raw); } catch { return false; }
-  if (u.protocol !== 'https:' && u.protocol !== 'http:') return false;
-  const host = u.hostname.toLowerCase();
-  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
-  if (
-    ipv4.test(host) || host.includes(':') ||
-    host === 'localhost' || host.endsWith('.localhost') ||
-    host.endsWith('.local') || host.endsWith('.internal') ||
-    !host.includes('.')
-  ) return false;
-  return true;
+  try { assertSafeUrl(raw); return true; } catch { return false; }
 }
 
 // True when the URL is external (not already on Base44 storage)
@@ -29,7 +20,18 @@ export async function persistUrl(base44, url, filename) {
   if (!isExternalUrl(url)) return { url, persisted: false };
   if (!isSafeUrl(url)) return { url: null, persisted: false };
   try {
-    const r = await fetch(url);
+    // redirect: 'manual' + manual hop validation — a public URL must not be
+    // able to redirect the server into internal/metadata addresses
+    let r = await fetch(url, { redirect: 'manual' });
+    let hops = 0;
+    while (r.status >= 300 && r.status < 400 && hops < 3) {
+      const loc = r.headers.get('location');
+      if (!loc) return { url: null, persisted: false };
+      const next = new URL(loc, url).toString();
+      if (!isSafeUrl(next)) return { url: null, persisted: false };
+      r = await fetch(next, { redirect: 'manual' });
+      hops++;
+    }
     if (!r.ok) return { url: null, persisted: false }; // expired / dead link
     const blob = await r.blob();
     const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
