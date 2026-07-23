@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { fetchAudiusGenrePool, sampleShuffled } from '../../shared/audiusDiscovery.ts';
 
 // ── Audius gateway resolver (Bearer or public discovery) ──────────────────────
 const MANAGED_GATEWAY = 'https://api.audius.co/v1';
@@ -89,14 +90,11 @@ Deno.serve(async (req) => {
     let audiusTracks = [];
     try {
       const { base, headers, useAppName } = await resolveAudiusBase();
-      const url = new URL(`${base}/tracks/trending`);
-      if (useAppName) url.searchParams.set('app_name', APP_NAME);
-      url.searchParams.set('time', 'week');
       const mappedGenre = genre ? AUDIUS_GENRE_MAP[genre] : null;
-      if (mappedGenre) url.searchParams.set('genre', mappedGenre);
-      const res = await fetch(url.toString(), { headers });
-      const json = await res.json();
-      const items = (json?.data || []).slice(0, Math.ceil(limit * 0.6));
+      // Deep pool (weekly + monthly + underground trending) sampled at random —
+      // each tune-in gets a different mix instead of the same weekly top tracks.
+      const pool = await fetchAudiusGenrePool({ base, headers, useAppName, genre: mappedGenre, appName: APP_NAME });
+      const items = sampleShuffled(pool, Math.ceil(limit * 0.6));
       audiusTracks = items.map((t, i) => normalizeAudiusTrack(t, i));
     } catch (e) {
       console.warn('Audius trending:', e.message);

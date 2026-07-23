@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { fetchAudiusGenrePool, sampleShuffled } from '../../shared/audiusDiscovery.ts';
 
 // Admin maintenance: 1) remove playlist tracks whose audio is no longer accessible,
 // 2) prune stale empty auto-generated playlists, 3) rebuild fresh Audius genre
@@ -113,20 +114,15 @@ Deno.serve(async (req) => {
     // ── 3. Rebuild Audius genre stations with fresh trending content ──
     const { metaBase, metaHeaders, useAppName, streamBase } = await resolveAudius();
     const results = await Promise.all(STATIONS.map(async (station) => {
-      const url = new URL(`${metaBase}/tracks/trending`);
-      url.searchParams.set('time', 'week');
-      url.searchParams.set('genre', station.audiusGenre);
-      if (useAppName) url.searchParams.set('app_name', APP_NAME);
-      try {
-        const res = await fetch(url.toString(), { headers: metaHeaders });
-        const json = await res.json();
-        return { station, tracks: (json?.data || []).slice(0, 12) };
-      } catch (_) {
-        return { station, tracks: [] };
-      }
+      // Deep pool (weekly + monthly + underground trending), random sample —
+      // so every refresh yields a genuinely different tracklist.
+      const pool = await fetchAudiusGenrePool({
+        base: metaBase, headers: metaHeaders, useAppName, genre: station.audiusGenre, appName: APP_NAME,
+      });
+      return { station, tracks: sampleShuffled(pool, 12), pool_size: pool.length };
     }));
 
-    for (const { station, tracks } of results) {
+    for (const { station, tracks, pool_size } of results) {
       if (tracks.length === 0) {
         summary.stations.push({ title: station.title, tracks: 0, skipped: true });
         continue;
@@ -166,7 +162,7 @@ Deno.serve(async (req) => {
         source_type: 'external',
         source_id: t.id,
       })));
-      summary.stations.push({ title: station.title, tracks: tracks.length });
+      summary.stations.push({ title: station.title, tracks: tracks.length, pool_size });
     }
 
     return Response.json(summary);
