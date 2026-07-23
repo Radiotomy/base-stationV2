@@ -1,0 +1,121 @@
+{
+  "name": "MusicFinetune",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner of the finetune"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name of the sound profile / finetune"
+    },
+    "primary_genre": {
+      "type": "string",
+      "description": "Primary musical genre the finetune was trained on"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "elevenlabs_finetune_id": {
+      "type": "string",
+      "description": "Finetune id returned by the ElevenLabs Music Finetunes API"
+    },
+    "model_id": {
+      "type": "string",
+      "description": "Base music model the finetune was trained on (e.g. music_v2)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "completed",
+        "failed",
+        "blocked"
+      ],
+      "default": "pending",
+      "description": "ElevenLabs training lifecycle status"
+    },
+    "training_progress": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0
+    },
+    "failure_reason": {
+      "type": "string",
+      "description": "audio_processing_failed | copyright_violation | training_failed"
+    },
+    "source_track_titles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Titles of the user's original tracks used as training data (provenance lineage)"
+    },
+    "source_asset_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "UserAsset ids of the training tracks"
+    },
+    "credits_used": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id",
+    "name",
+    "elevenlabs_finetune_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

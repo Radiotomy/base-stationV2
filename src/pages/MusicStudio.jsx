@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Zap, SlidersHorizontal, RotateCcw, AudioLines } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
+import MySoundTab from '@/components/music/mysound/MySoundTab';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
+  { id: 'mysound',  label: '🎙️ My Sound',        icon: AudioLines,        desc: 'Train Music v2 on your own tracks & generate in your signature style' },
 ];
 
 export default function MusicStudio() {
@@ -66,9 +68,9 @@ export default function MusicStudio() {
 
       {/* Tab Content */}
       <div className="max-w-5xl mx-auto px-6 py-10">
-        {activeTab === 'quick'
-          ? <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />
-          : <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
+        {activeTab === 'quick' && <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />}
+        {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
+        {activeTab === 'mysound' && <MySoundTab />}
       </div>
     </div>
   );
