@@ -21,14 +21,10 @@ export function handleCreditError(err) {
   if (isOurInternalCreditError) {
     const msg = data?.message || 'You don\'t have enough credits for this generation.';
     toast.error(msg, {
-      description: `Required: ${data?.required ?? '?'} · Balance: ${data?.balance ?? '?'} · Buy a credit pack or upgrade to a monthly plan for the best value.`,
+      description: `Required: ${data?.required ?? '?'} · Balance: ${data?.balance ?? '?'} · During the open beta, credits are allotted by the BASE Station team.`,
       action: {
-        label: 'Buy Credits',
+        label: 'View Credits',
         onClick: () => { window.location.href = '/credits'; },
-      },
-      cancel: {
-        label: 'Upgrade Plan',
-        onClick: () => { window.location.href = '/credits?tab=subscriptions'; },
       },
       duration: 10000,
     });

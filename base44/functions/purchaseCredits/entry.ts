@@ -29,6 +29,15 @@ Deno.serve(async (req) => {
       return Response.json({ packages: CREDIT_PACKAGES, subscriptions: SUBSCRIPTION_TIERS });
     }
 
+    // BETA LOCK: self-serve purchasing is disabled until Stripe integration launches.
+    // Credits are allotted by admins via the admin dashboard. Only admins may invoke
+    // purchase actions (for internal testing).
+    if (user.role !== 'admin') {
+      return Response.json({
+        error: 'Credit purchases are disabled during the open beta. Credits are allotted by the BASE Station team.',
+      }, { status: 403 });
+    }
+
     // Purchase a one-time credit pack
     if (action === 'purchase_pack') {
       const pack = CREDIT_PACKAGES[package_id];

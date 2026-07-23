@@ -42,8 +42,8 @@ const STEPS = [
   },
   {
     n: 7,
-    title: 'Publish & register',
-    body: 'Submit the finished track to charts/playlists, then register on-chain via Blockchain Registry for permanent provenance.',
+    title: 'Publish, register & manage rights',
+    body: 'Submit the finished track to charts/playlists, register on-chain for permanent provenance, then manage DDEX exports and verification status from the Rights Portal.',
     link: '/submit',
     linkLabel: 'Submit Track →',
   },

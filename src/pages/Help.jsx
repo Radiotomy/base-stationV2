@@ -2,7 +2,8 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, ArrowLeft, BookOpen, Music, Mic2, Palette, Film, Sparkles,
-  Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint, Radio, Scale
+  Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint, Radio, Scale,
+  Layers, FileCheck, ScanLine, Users, Heart, Lock
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import HelpSection from '@/components/help/HelpSection';
@@ -154,11 +155,15 @@ const SECTIONS = [
   },
   {
     id: 'video',
-    title: 'Video Studio — AI music videos',
+    title: 'Video Studio — AI music videos (beta-locked)',
     icon: Film,
-    keywords: 'video ltx text image audio cinematic visualizer',
+    keywords: 'video ltx text image audio cinematic visualizer beta locked access request',
     body: (
       <>
+        <div className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/20 mb-2">
+          <p className="text-orange-300 font-bold text-sm mb-1">🔒 Beta-locked feature</p>
+          <p>Video Studio is currently in limited beta. Open it from the Studios hub and hit <strong className="text-foreground">Request Access</strong> — an admin will approve your request.</p>
+        </div>
         <p>Three modes:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Text to Video</strong> — describe the scene; LTX renders it.</li>
@@ -231,7 +236,11 @@ const SECTIONS = [
           <li>Video (LTX): 15 credits</li>
           <li>Visualizer: 12 credits</li>
         </ul>
-        <p>Check your balance in the header. <Link to="/credits" className="text-purple-400 hover:underline">Buy more credits →</Link></p>
+        <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
+          <p className="text-yellow-300 font-bold text-sm mb-1">⚡ Open beta credits</p>
+          <p>Every new account starts with a <strong className="text-foreground">250-credit welcome bonus</strong>. During the beta, additional credits are allotted by the BASE Station team — credit purchases (Stripe) arrive after the beta. Need a top-up? Ask in the <Link to="/forum" className="text-amber-400 hover:underline">community forum</Link>.</p>
+        </div>
+        <p>Check your balance in the header, and view your full transaction history on the <Link to="/credits" className="text-purple-400 hover:underline">Credits page →</Link></p>
       </>
     ),
   },
@@ -266,8 +275,116 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Submit Track</strong> — enter the public charts and playlists on BaseStation.</li>
           <li><strong>Publish to Audius</strong> — push to the Audius decentralized network from any finished asset.</li>
-          <li><strong>Live Studio</strong> — go live with a co-listening session for your fans, with reactions, chat, tipping, and collectible drops.</li>
+          <li><strong>Live Studio</strong> <span className="text-orange-300 font-semibold">(beta-locked — request access)</span> — go live with a co-listening session for your fans, with reactions, chat, tipping, and collectible drops.</li>
         </ul>
+      </>
+    ),
+  },
+  {
+    id: 'audio-tools',
+    title: 'Audio tool studios — stems, mashups, harmonies & more',
+    icon: Layers,
+    keywords: 'stems stem creator mashup vocal harmonizer cover song sfx sound effects audio remix extract split',
+    body: (
+      <>
+        <p>Beyond generation, a full rack of audio tools works on any track in your library or uploaded from your PC:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Stem Creator</strong> — split any track into vocals, drums, bass, and instrument stems.</li>
+          <li><strong>Mashup Studio</strong> — blend two tracks into a new hybrid arrangement.</li>
+          <li><strong>Vocal Harmonizer</strong> — layer AI-generated harmonies onto an existing vocal.</li>
+          <li><strong>Cover Song Studio</strong> — reimagine a track in a new genre or style with preset transformations.</li>
+          <li><strong>Audio Remix Studio</strong> — edit, extend, and apply effects to existing audio.</li>
+          <li><strong>Sound FX Studio</strong> — generate custom sound effects from text descriptions.</li>
+          <li><strong>Promo Studio</strong> — build shareable promo packages and social cards for a release.</li>
+        </ul>
+        <p>Every derived asset keeps its <strong className="text-foreground">provenance chain</strong> — stems, mashups, and masters all link back to their source track and inherit the correct AI disclosure label. Find them all in <Link to="/studios" className="text-purple-400 hover:underline">Studios →</Link></p>
+      </>
+    ),
+  },
+  {
+    id: 'rights',
+    title: 'Rights Management Portal — your catalog, verified',
+    icon: FileCheck,
+    keywords: 'rights portal catalog ddex export manifest verification ownership id3 tags metadata distributor',
+    body: (
+      <>
+        <p>The <Link to="/rights" className="text-emerald-400 hover:underline">Rights Portal</Link> gives you a single view of your entire audio catalog with per-track rights tooling:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Ownership scores</strong> — COS and AI disclosure label for every track at a glance.</li>
+          <li><strong>Verification status</strong> — BASE Mark watermark and on-chain hash-anchor state per track.</li>
+          <li><strong>DDEX export</strong> — copy a distributor-ready XML metadata bundle for any track.</li>
+          <li><strong>Provenance manifests</strong> — open the full attribution manifest for any asset.</li>
+          <li><strong>False-flag reporting</strong> — log downstream DSP flags straight into the Transparency Registry.</li>
+        </ul>
+        <p>Also see the <Link to="/id3-studio" className="text-amber-400 hover:underline">ID3 Tag Studio</Link> to write compliant metadata (including AI disclosure tags) directly into your audio files before distribution.</p>
+      </>
+    ),
+  },
+  {
+    id: 'basemark',
+    title: 'BASE Mark — acoustic watermark & public verification',
+    icon: ScanLine,
+    keywords: 'base mark watermark acoustic verify scanner detect provenance forensic embed audio',
+    body: (
+      <>
+        <p><strong className="text-foreground">BASE Mark</strong> is an inaudible acoustic watermark embedded directly into your audio waveform — it survives re-encoding and identifies your track even when metadata is stripped.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Automatic</strong> — every new WAV audio asset saved to your library is marked automatically.</li>
+          <li><strong>Manual</strong> — embed or detect marks on any file in the <Link to="/base-mark" className="text-amber-400 hover:underline">BASE Mark Studio</Link>.</li>
+          <li><strong>Public verification</strong> — anyone (no account needed) can scan a file at <Link to="/verify" className="text-emerald-400 hover:underline">/verify</Link> to confirm it's a registered BASE Station track.</li>
+        </ul>
+        <p>BASE Mark is one layer of the three-tier provenance stack: acoustic watermark → ID3/DDEX metadata → on-chain registration.</p>
+      </>
+    ),
+  },
+  {
+    id: 'community',
+    title: 'Community — charts, radio, challenges & forum',
+    icon: Users,
+    keywords: 'community charts radio challenges leaderboard badges forum threads discover playlists featured artists audius',
+    body: (
+      <>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong><Link to="/charts" className="text-purple-400 hover:underline">Charts</Link></strong> — weekly, monthly, and all-time rankings of community tracks. Plays and votes move the needle.</li>
+          <li><strong><Link to="/radio" className="text-purple-400 hover:underline">Radio</Link></strong> — 24/7 curated channels mixing community submissions with Audius catalog tracks.</li>
+          <li><strong><Link to="/challenges" className="text-purple-400 hover:underline">Challenges</Link></strong> — themed weekly competitions with badge rewards.</li>
+          <li><strong><Link to="/leaderboard" className="text-purple-400 hover:underline">Leaderboard &amp; Badges</Link></strong> — earn XP and badges for creating, submitting, and supporting other artists.</li>
+          <li><strong><Link to="/forum" className="text-purple-400 hover:underline">Community Forum</Link></strong> — open to everyone (no account required) with dedicated boards for legal &amp; terms, COS methodology, and AI music policy.</li>
+          <li><strong><Link to="/news-hub" className="text-purple-400 hover:underline">News Hub</Link></strong> — auto-curated AI music legal, policy, and industry news, refreshed 3× daily.</li>
+        </ul>
+      </>
+    ),
+  },
+  {
+    id: 'fans',
+    title: 'Fan economy — clubs, collectibles & tipping',
+    icon: Heart,
+    keywords: 'fans fan hub club membership collectibles tips tipping follow artists store xp',
+    body: (
+      <>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Fan Hub</strong> — follow artists, track your memberships and collectibles in <Link to="/fan-hub" className="text-pink-400 hover:underline">Fan Hub</Link>.</li>
+          <li><strong>Fan Clubs</strong> — creators can launch tiered fan clubs; fans join for exclusive access.</li>
+          <li><strong>Collectibles</strong> — creators mint limited-edition drops that fans claim; syncs with Audius.</li>
+          <li><strong>Tipping</strong> — support artists directly from their profile or during live sessions.</li>
+        </ul>
+        <p>Creators manage all of this from <Link to="/creator-dashboard" className="text-purple-400 hover:underline">My Workspace</Link>.</p>
+      </>
+    ),
+  },
+  {
+    id: 'beta',
+    title: 'Beta-locked features — Live Studio & Video Studio',
+    icon: Lock,
+    keywords: 'beta locked access request live studio video studio approval gate limited',
+    body: (
+      <>
+        <p>BASE Station is in <strong className="text-foreground">open beta</strong>. Two features remain gated while we scale them:</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Live Studio</strong> — live co-listening sessions with chat, reactions, quests, and drops.</li>
+          <li><strong>Video Studio</strong> — AI music video generation (text, image, and audio to video).</li>
+        </ul>
+        <p>Opening either page shows a <strong className="text-foreground">Request Access</strong> screen — submit it once and an admin will review your request. Everything else on the platform is fully open.</p>
       </>
     ),
   },

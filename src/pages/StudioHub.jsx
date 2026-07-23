@@ -61,6 +61,8 @@ const CATEGORIES = [
     accent: "bg-gradient-to-br from-emerald-600 to-teal-600",
     studios: [
       { to: "/submit",             emoji: "📤", label: "Submit Track",      desc: "Charts, radio, distribution" },
+      { to: "/rights",             emoji: "🛡️", label: "Rights Portal",     desc: "Catalog, DDEX & verification" },
+      { to: "/base-mark",          emoji: "〰️", label: "BASE Mark Studio",  desc: "Acoustic watermark & detection" },
       { to: "/promo-studio",       emoji: "📣", label: "Promo Package",     desc: "Visualizer + promo card bundle" },
       { to: "/social-automation",  emoji: "📱", label: "Social Automation", desc: "Promo cards for socials" },
       { to: "/asset-gallery",      emoji: "🖼️", label: "Asset Gallery",     desc: "Browse public creations" },

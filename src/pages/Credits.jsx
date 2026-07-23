@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
-import { Zap, Crown, TrendingDown, TrendingUp, Clock, ShoppingCart, CheckCircle, Star } from "lucide-react";
+import { Zap, Crown, TrendingDown, TrendingUp, Clock, Star, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AnimatePresence } from "framer-motion";
-import CreditPurchaseModal from "@/components/credits/CreditPurchaseModal";
 
 const CREDIT_COSTS = [
   { task: "Generate Music (Quick)", credits: 10, icon: "🎵" },
@@ -36,7 +34,6 @@ export default function Credits() {
   const [creditData, setCreditData] = useState(null);
   const [creditLogs, setCreditLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showPurchase, setShowPurchase] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -60,11 +57,6 @@ export default function Credits() {
       console.error(err);
     }
     setLoading(false);
-  };
-
-  const handlePurchased = (newBalance) => {
-    setCreditData(prev => prev ? { ...prev, balance: newBalance } : null);
-    loadData();
   };
 
   if (loading) return (
@@ -120,12 +112,15 @@ export default function Credits() {
                 </Badge>
               )}
             </div>
-            <Button
-              onClick={() => setShowPurchase(true)}
-              className="bg-yellow-500 hover:bg-yellow-400 text-yellow-950 font-black rounded-2xl px-8 py-6 text-lg gap-2 flex-shrink-0"
-            >
-              <ShoppingCart className="w-5 h-5" /> Get More Credits
-            </Button>
+            <div className="flex-shrink-0 max-w-xs p-4 rounded-2xl bg-yellow-500/10 border border-yellow-500/25">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Gift className="w-4 h-4 text-yellow-400" />
+                <p className="text-sm font-black text-yellow-300">Open Beta</p>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                New accounts start with a <strong className="text-foreground">250-credit welcome bonus</strong>. During the beta, additional credits are allotted by the BASE Station team — purchases arrive after launch.
+              </p>
+            </div>
           </div>
 
           {/* Monthly usage bar */}
@@ -222,11 +217,6 @@ export default function Credits() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {showPurchase && (
-          <CreditPurchaseModal onClose={() => setShowPurchase(false)} onPurchased={handlePurchased} />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
