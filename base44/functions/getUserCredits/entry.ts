@@ -11,12 +11,23 @@ Deno.serve(async (req) => {
     let creditRecord = credits.length > 0 ? credits[0] : null;
 
     if (!creditRecord) {
+      // Beta welcome bonus — every new tester starts with 250 credits
+      const WELCOME_CREDITS = 250;
       creditRecord = await base44.asServiceRole.entities.UserCredit.create({
         user_id: user.id,
         user_email: user.email,
-        balance: 0,
-        lifetime_earned: 0,
+        balance: WELCOME_CREDITS,
+        lifetime_earned: WELCOME_CREDITS,
         lifetime_spent: 0
+      });
+      await base44.asServiceRole.entities.CreditLog.create({
+        user_id: user.id,
+        user_email: user.email,
+        transaction_type: 'bonus',
+        amount: WELCOME_CREDITS,
+        balance_before: 0,
+        balance_after: WELCOME_CREDITS,
+        description: 'Beta welcome bonus — 250 starter credits'
       });
     }
 
