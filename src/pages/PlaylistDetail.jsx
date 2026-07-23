@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useParams, Link } from "react-router-dom";
+import PlaylistPlayerBar from "@/components/playlists/PlaylistPlayerBar";
 import { motion } from "framer-motion";
 import { Play, Pause, Music, Plus, ArrowLeft, Heart, Share2, MoreHorizontal, Clock, Shuffle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,53 @@ export default function PlaylistDetail() {
   const [playingIndex, setPlayingIndex] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
+  const [audioLoading, setAudioLoading] = useState(false);
+  const audioRef = useRef(null);
+
+  // Load + play the selected track whenever the index changes
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el || playingIndex === null) return;
+    const track = tracks[playingIndex];
+    if (!track?.audio_url) {
+      toast.error("This track has no audio available");
+      setIsPlaying(false);
+      return;
+    }
+    setAudioLoading(true);
+    el.src = track.audio_url;
+    el.play()
+      .then(() => { setIsPlaying(true); setAudioLoading(false); })
+      .catch(() => { setIsPlaying(false); setAudioLoading(false); });
+  }, [playingIndex, tracks]);
+
+  const playIndex = (i) => {
+    if (i === playingIndex) { togglePlay(); return; }
+    setPlayingIndex(i);
+  };
+
+  const togglePlay = () => {
+    const el = audioRef.current;
+    if (!el) return;
+    if (isPlaying) { el.pause(); setIsPlaying(false); }
+    else if (el.src) { el.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false)); }
+    else if (tracks.length > 0) { setPlayingIndex(0); }
+  };
+
+  const skipNext = () => { if (tracks.length > 0) setPlayingIndex((playingIndex + 1) % tracks.length); };
+  const skipPrev = () => { if (tracks.length > 0) setPlayingIndex((playingIndex - 1 + tracks.length) % tracks.length); };
+
+  // Broken/unreachable track → skip to the next one
+  const handleAudioError = () => {
+    if (playingIndex === null || tracks.length < 2) { setIsPlaying(false); setAudioLoading(false); return; }
+    toast.error(`"${tracks[playingIndex]?.track_title}" couldn't load — skipping`);
+    skipNext();
+  };
+
+  useEffect(() => {
+    const el = audioRef.current;
+    return () => { el?.pause(); };
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -92,11 +140,12 @@ export default function PlaylistDetail() {
 
         {/* Controls */}
         <div className="max-w-5xl mx-auto mt-6 flex items-center gap-4">
-          <Button onClick={() => { setPlayingIndex(0); setIsPlaying(true); }}
+          <Button onClick={togglePlay}
             className="w-14 h-14 rounded-full bg-purple-600 hover:bg-purple-500 p-0 shadow-xl shadow-purple-900/40">
-            <Play className="w-6 h-6 ml-0.5" fill="white" />
+            {isPlaying ? <Pause className="w-6 h-6" fill="white" /> : <Play className="w-6 h-6 ml-0.5" fill="white" />}
           </Button>
-          <Button variant="outline" size="icon" className="rounded-full w-10 h-10">
+          <Button variant="outline" size="icon" className="rounded-full w-10 h-10"
+            onClick={() => { if (tracks.length > 0) setPlayingIndex(Math.floor(Math.random() * tracks.length)); }}>
             <Shuffle className="w-4 h-4" />
           </Button>
           <Button variant="ghost" size="icon" className="rounded-full" onClick={() => { setLiked(!liked); toast.success(liked ? "Removed from likes" : "Added to likes"); }}>
@@ -129,7 +178,7 @@ export default function PlaylistDetail() {
               const isActive = playingIndex === i;
               return (
                 <motion.div key={track.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-                  onClick={() => { setPlayingIndex(i); setIsPlaying(true); }}
+                  onClick={() => playIndex(i)}
                   className={`group grid grid-cols-[2rem_1fr_auto] md:grid-cols-[2rem_1fr_1fr_auto] gap-4 px-4 py-3 rounded-xl cursor-pointer transition-all ${isActive ? "bg-purple-600/20 border border-purple-500/30" : "hover:bg-muted/50"}`}>
                   <div className="flex items-center">
                     {isActive && isPlaying ? (
@@ -164,6 +213,18 @@ export default function PlaylistDetail() {
           </div>
         )}
       </div>
+
+      <audio ref={audioRef} onEnded={skipNext} onError={handleAudioError} />
+      {playingIndex !== null && (
+        <PlaylistPlayerBar
+          track={tracks[playingIndex]}
+          isPlaying={isPlaying}
+          isLoading={audioLoading}
+          onToggle={togglePlay}
+          onNext={skipNext}
+          onPrev={skipPrev}
+        />
+      )}
     </div>
   );
 }
