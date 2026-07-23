@@ -1,23 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // Using jsmediatags to read ID3v2 and write back
 // For simplicity, we'll handle ID3v2.4 tags via fetching the file and re-encoding with new tags
-
-// SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
-function assertSafeUrl(raw) {
-  let u;
-  try { u = new URL(raw); } catch { throw new Error('Invalid URL'); }
-  if (u.protocol !== 'https:' && u.protocol !== 'http:') throw new Error('Only http(s) URLs are allowed');
-  const host = u.hostname.toLowerCase();
-  const ipv4 = /^\d{1,3}(\.\d{1,3}){3}$/;
-  if (
-    ipv4.test(host) || host.includes(':') ||
-    host === 'localhost' || host.endsWith('.localhost') ||
-    host.endsWith('.local') || host.endsWith('.internal') ||
-    !host.includes('.')
-  ) throw new Error('URL host not allowed');
-  return u.toString();
-}
 
 Deno.serve(async (req) => {
   try {
