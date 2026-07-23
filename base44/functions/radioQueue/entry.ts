@@ -70,6 +70,7 @@ function normalizeAudiusTrack(t, i = 0) {
     audio_url: `${streamBase}/tracks/${t.id}/stream`,
     duration_seconds: t.duration || 0,
     genre: t.genre || '',
+    ai_label: t.ai_attribution_user_id ? 'ai_generated' : null,
     source: 'audius',
     audius_id: t.id,
     permalink: t.permalink || '',
@@ -84,7 +85,10 @@ Deno.serve(async (req) => {
     // so logged-out radio listeners can tune in too.
 
     let { genre, limit = 15 } = await req.json().catch(() => ({}));
-    if (genre && UNFILTERED_GENRES.has(String(genre).toLowerCase())) genre = null;
+    // "ai" channel = only AI tracks: community AI-labeled submissions (top-played)
+    // + Audius tracks carrying opt-in AI attribution.
+    const aiOnly = genre && String(genre).toLowerCase() === 'ai';
+    if (aiOnly || (genre && UNFILTERED_GENRES.has(String(genre).toLowerCase()))) genre = null;
 
     // ── Audius trending tracks ──────────────────────────────────────────────
     let audiusTracks = [];
@@ -93,8 +97,31 @@ Deno.serve(async (req) => {
       const mappedGenre = genre ? AUDIUS_GENRE_MAP[genre] : null;
       // Deep pool (weekly + monthly + underground trending) sampled at random —
       // each tune-in gets a different mix instead of the same weekly top tracks.
-      const pool = await fetchAudiusGenrePool({ base, headers, useAppName, genre: mappedGenre, appName: APP_NAME });
-      const items = sampleShuffled(pool, Math.ceil(limit * 0.6));
+      let pool;
+      if (aiOnly) {
+        // Trending rarely surfaces AI-attributed tracks — search for them instead
+        // and keep only tracks carrying Audius's opt-in AI attribution.
+        const queries = ['AI generated', 'AI music', 'made with AI'];
+        const results = await Promise.all(queries.map(async (q) => {
+          const qs = useAppName ? `&app_name=${APP_NAME}` : '';
+          try {
+            const r = await fetch(`${base}/tracks/search?query=${encodeURIComponent(q)}&limit=50${qs}`, { headers });
+            const j = await r.json();
+            return j?.data || [];
+          } catch { return []; }
+        }));
+        const seen = new Set();
+        pool = results.flat().filter((t) => {
+          if (!t.ai_attribution_user_id || seen.has(t.id)) return false;
+          seen.add(t.id);
+          return true;
+        });
+        // Rank by play count → "top" AI tracks
+        pool.sort((a, b) => (b.play_count || 0) - (a.play_count || 0));
+      } else {
+        pool = await fetchAudiusGenrePool({ base, headers, useAppName, genre: mappedGenre, appName: APP_NAME });
+      }
+      const items = aiOnly ? pool.slice(0, limit) : sampleShuffled(pool, Math.ceil(limit * 0.6));
       audiusTracks = items.map((t, i) => normalizeAudiusTrack(t, i));
     } catch (e) {
       console.warn('Audius trending:', e.message);
@@ -104,10 +131,17 @@ Deno.serve(async (req) => {
     let communityTracks = [];
     try {
       const communityGenre = genre ? (COMMUNITY_GENRE_MAP[genre] || genre.toLowerCase()) : null;
-      const filter = communityGenre
-        ? { genre: communityGenre, status: 'approved' }
-        : { status: 'approved' };
-      const subs = await base44.asServiceRole.entities.TrackSubmission.filter(filter, '-created_date', Math.ceil(limit * 0.5));
+      const filter = aiOnly
+        ? { status: 'approved', ai_label: { $in: ['ai_generated', 'ai_assisted'] } }
+        : communityGenre
+          ? { genre: communityGenre, status: 'approved' }
+          : { status: 'approved' };
+      // AI channel = "top" AI tracks — rank by play count and let community fill the queue
+      const subs = await base44.asServiceRole.entities.TrackSubmission.filter(
+        filter,
+        aiOnly ? '-play_count' : '-created_date',
+        aiOnly ? limit : Math.ceil(limit * 0.5)
+      );
       communityTracks = subs.map((s, i) => ({
         track_title: s.title,
         artist_name: s.artist_name || 'Community Artist',

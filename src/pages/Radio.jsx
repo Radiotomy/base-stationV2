@@ -23,6 +23,7 @@ import AILabelBadge from "@/components/common/AILabelBadge";
 const DEFAULT_CHANNELS = [
   { id: "discover",   name: "Discover",         slug: "discover",  genre: null,              emoji: "🌟", color_theme: "#7C3AED", description: "Fresh tracks from Audius + the BASE Station community" },
   { id: "staffpicks", name: "Staff Picks",      slug: "staffpicks", genre: null,             emoji: "⭐", color_theme: "#FBBF24", description: "Hand-curated by the BASE Station team" },
+  { id: "ai",         name: "Top AI Tracks",     slug: "ai-top",    genre: "ai",              emoji: "🤖", color_theme: "#22D3EE", description: "The most-played AI-generated & AI-assisted tracks" },
   { id: "hiphop",     name: "Hip-Hop & Trap",   slug: "hiphop",    genre: "Hip Hop & Trap",  emoji: "🎤", color_theme: "#EF4444", description: "Beats, bars & trap bangers" },
   { id: "edm",        name: "EDM",               slug: "edm",       genre: "EDM",             emoji: "⚡", color_theme: "#06B6D4", description: "Synths, drops & electronic energy" },
   { id: "rb",         name: "Soul / R&B",        slug: "rb",        genre: "Soul/R&B",        emoji: "🎵", color_theme: "#EC4899", description: "Smooth R&B and neo-soul" },

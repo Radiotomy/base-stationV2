@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import AudiusLicenseBadge from '@/components/audius/AudiusLicenseBadge';
 import AudiusStreamPlayer from '@/components/audius/AudiusStreamPlayer';
+import AudiusAIBadge from '@/components/audius/AudiusAIBadge';
 
 export default function AudiusTrack() {
   const { id } = useParams();
@@ -73,6 +74,7 @@ export default function AudiusTrack() {
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Badge className="bg-emerald-500/20 text-emerald-300 border-0 w-fit">Audius</Badge>
               <AudiusLicenseBadge licensing={licensing} />
+              <AudiusAIBadge track={track} />
             </div>
             <h1 className="text-3xl md:text-4xl font-black text-foreground mb-2">{track.title}</h1>
             {track.user && (
