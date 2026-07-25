@@ -120,6 +120,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [genre, setGenre] = useState(initialGenre || 'Hip-Hop');
   const [mood, setMood] = useState('Energetic');
   const [tempo, setTempo] = useState('120');
+  const [customTitle, setCustomTitle] = useState('');
   const [soundPrompt, setSoundPrompt] = useState(initialTopic || '');
   const [lyrics, setLyrics] = useState('');
   const [lyricsMode, setLyricsMode] = useState('none'); // 'none' | 'custom' | 'generate' | 'saved'
@@ -327,8 +328,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     const primaryUrl = data.audio_url || data.output_url || data.audio_urls?.[0];
     if (primaryUrl) {
       const mergedLyrics = lyrics?.trim() ? lyrics : (data.lyrics || '');
-      await saveTrackToLibrary(primaryUrl, coverImageUrl, `${mood} ${genre} — ${providerLabel(provider)}`, {
-        title: data.title || `${mood} ${genre} — ${providerLabel(provider)}`,
+      const resolvedTitle = customTitle.trim() || `${mood} ${genre} — ${providerLabel(provider)}`;
+      await saveTrackToLibrary(primaryUrl, coverImageUrl, resolvedTitle, {
+        title: customTitle.trim() || data.title || resolvedTitle,
         bpm: data.bpm,
         key: data.key,
         duration: data.duration || duration,
@@ -457,6 +459,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         ...(duration && { duration }),
         genre, mood,
         tempo: parseInt(tempo, 10) || 120,
+        title: customTitle.trim() || `${mood} ${genre} — ${providerLabel(provider)}`,
         sound_prompt: currentPrompt || `${mood} ${genre} track`,
         ...(currentLyrics && lyricsMode !== 'none' && { lyrics: currentLyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
@@ -518,7 +521,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
-        title: result?.title || `${mood} ${genre} — ${providerLabel(provider)}`,
+        title: customTitle.trim() || result?.title || `${mood} ${genre} — ${providerLabel(provider)}`,
         file_url: audioUrl,
         thumbnail_url: result.cover_image_url || '',
         is_public: false,
@@ -578,6 +581,20 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground mt-2">✨ More AI music models coming soon.</p>
+      </div>
+
+      {/* Track Title (Optional) — overrides the default mood/genre/provider title */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Track Title (Optional)</p>
+        <Input
+          type="text"
+          value={customTitle}
+          onChange={e => setCustomTitle(e.target.value)}
+          placeholder={`Auto: ${mood} ${genre} — ${providerLabel(provider)}`}
+          maxLength={80}
+          className="rounded-xl"
+        />
+        <p className="text-[10px] text-muted-foreground mt-1.5">Leave blank to use "{mood} {genre} — {providerLabel(provider)}". Your title is applied everywhere: library, ID3 tags, and Community Buzz.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

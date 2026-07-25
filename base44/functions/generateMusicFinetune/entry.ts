@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const key = Deno.env.get('ELEVENLABS_API');
     if (!key) return Response.json({ error: 'ELEVENLABS_API not configured' }, { status: 500 });
 
-    const { record_id, prompt, duration_seconds = 60 } = await req.json();
+    const { record_id, prompt, title, duration_seconds = 60 } = await req.json();
     if (!record_id) return Response.json({ error: 'Missing record_id' }, { status: 400 });
     if (!prompt || !String(prompt).trim()) return Response.json({ error: 'Missing prompt' }, { status: 400 });
 
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id, user_email: user.email,
       asset_type: 'track',
-      title: `${rec.name} — ${String(prompt).slice(0, 60)}`,
+      title: (title && String(title).trim()) || `${rec.name} — ${String(prompt).slice(0, 60)}`,
       file_url,
       origin: 'creator',
       ai_label: 'ai_generated',

@@ -44,8 +44,10 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   const [routingDecision, setRoutingDecision] = useState(null);   // { provider, model, reason, routing_key }
   const [showProviderOverride, setShowProviderOverride] = useState(!!initialProvider);
   const [selectedGenre, setSelectedGenre] = useState(initialGenre);
+  const [customTitle, setCustomTitle] = useState('');
   const [voicePersonas, setVoicePersonas] = useState([]);
   const [selectedPersona, setSelectedPersona] = useState('auto');
+  const titleRef = useRef('');
   // Derived: effective provider is the override (if set) or the auto-routed one
   const provider = providerOverride || routingDecision?.provider || 'sonic';
   const [generating, setGenerating] = useState(false);
@@ -213,7 +215,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       const mergedLyrics = lyricsRef.current?.trim() ? lyricsRef.current : (data.lyrics || '');
       await saveTrackToLibrary(primaryUrl, coverImageUrl, {
         ...params,
-        title: data.title || params?.title || currentPrompt.slice(0, 40) || 'Generated Track',
+        title: params?.title || data.title || currentPrompt.slice(0, 40) || 'Generated Track',
         genre: data.genre || params?.genre,
         mood: data.mood || params?.mood,
         bpm: data.bpm || params?.bpm,
@@ -324,8 +326,10 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         cacheManager.set(cacheKey, aiDecision, 600); // cache 10 min
       }
 
+      // User's custom title takes priority over the AI's auto-generated title
+      const finalTitle = customTitle.trim() || aiDecision.title;
       setAiParams(aiDecision);
-      aiParamsRef.current = aiDecision;
+      aiParamsRef.current = { ...aiDecision, title: finalTitle };
       promptRef.current = prompt;
 
       // Step 2: Auto-route provider (unless user manually overrode)
@@ -373,7 +377,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
 
       const musicParams = {
         provider: effectiveProvider,
-        title: aiDecision.title,
+        title: finalTitle,
         duration: aiDecision.duration,
         genre: aiDecision.genre,
         mood: aiDecision.mood,
@@ -601,6 +605,22 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         </div>
       )}
 
+      {/* Track Title (Optional) — custom override for the AI's auto-naming */}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+          Track Title (Optional)
+          <InfoTip text="Let the AI name your track, or type your own title here — it overrides the AI's title everywhere: library, ID3 tags, and Community Buzz." />
+        </p>
+        <input
+          type="text"
+          value={customTitle}
+          onChange={e => { setCustomTitle(e.target.value); titleRef.current = e.target.value; }}
+          placeholder="Leave blank to let the AI name it"
+          maxLength={80}
+          className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
+      </div>
+
       {/* Main Prompt */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
@@ -645,7 +665,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
                 ? <Badge className="bg-pink-500/20 text-pink-300 border-pink-500/30 text-xs">🎤 Auto-lyrics on</Badge>
                 : <Badge className="bg-muted text-muted-foreground border-border text-xs">🎼 Instrumental</Badge>}
             </div>
-            {aiParams.title && <p className="text-xs text-purple-200 font-semibold">"{aiParams.title}"</p>}
+      {aiParams.title && <p className="text-xs text-purple-200 font-semibold">"{aiParams.title}"</p>}
             {aiParams.needs_lyrics && (
               <p className="text-xs text-pink-300/80 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3 flex-shrink-0" />

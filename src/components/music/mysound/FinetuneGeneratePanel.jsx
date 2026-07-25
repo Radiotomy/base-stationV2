@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 export default function FinetuneGeneratePanel({ finetune }) {
   const [prompt, setPrompt] = useState('');
+  const [title, setTitle] = useState('');
   const [duration, setDuration] = useState([60]);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState(null);
@@ -20,6 +21,7 @@ export default function FinetuneGeneratePanel({ finetune }) {
       const res = await base44.functions.invoke('generateMusicFinetune', {
         record_id: finetune.id,
         prompt: prompt.trim(),
+        title: title.trim(),
         duration_seconds: duration[0],
       });
       if (res.data?.error) throw new Error(res.data.error);
@@ -41,6 +43,18 @@ export default function FinetuneGeneratePanel({ finetune }) {
         <p className="text-xs text-muted-foreground mt-1">
           Your finetune controls the style — the prompt controls content, mood, tempo, and language.
         </p>
+      </div>
+
+      <div>
+        <label className="text-xs font-semibold text-muted-foreground uppercase mb-1.5 block">Track Title (Optional)</label>
+        <input
+          type="text"
+          value={title}
+          onChange={e => setTitle(e.target.value)}
+          placeholder={`Auto: ${finetune.name} — ${prompt.slice(0, 40) || 'track'}`}
+          maxLength={80}
+          className="w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
       </div>
 
       <Textarea
