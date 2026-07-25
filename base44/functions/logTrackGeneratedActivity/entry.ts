@@ -26,15 +26,26 @@ Deno.serve(async (req) => {
       if (users?.[0]?.full_name) actorName = users[0].full_name;
     }
 
+    // Surface the actual AI model used (e.g. "Lyria 3 Pro") — not the
+    // provider (e.g. "Tempolor") — so community transparency shows the real model.
+    const model = data.metadata?.model || '';
+    const descParts = [model, data.metadata?.genre, data.metadata?.mood].filter(Boolean);
+
     await base44.asServiceRole.entities.ActivityFeedItem.create({
       type: 'track_generated',
       actor_id: data.user_id || null,
       actor_name: actorName,
       title: `just generated a new track: "${data.title || 'Untitled'}"`,
-      description: [data.metadata?.genre, data.metadata?.mood].filter(Boolean).join(' · '),
+      description: descParts.join(' · '),
       thumbnail_url: data.thumbnail_url || null,
       entity_type: 'UserAsset',
       entity_id: event.entity_id,
+      metadata: {
+        model,
+        provider: data.metadata?.provider || '',
+        genre: data.metadata?.genre || '',
+        mood: data.metadata?.mood || '',
+      },
     });
 
     return Response.json({ logged: true });

@@ -71,6 +71,11 @@ export default function ActivityFeed({ limit = 10 }) {
                   <span className="text-xs text-muted-foreground flex-shrink-0 mt-0.5">{timeAgo(item.created_date)}</span>
                 </div>
                 {item.description && <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.description}</p>}
+                {item.metadata?.model && (
+                  <span className="inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-mono bg-muted/60 text-foreground/80 border border-border/40">
+                    {item.metadata.model}
+                  </span>
+                )}
               </div>
             </div>
           </motion.div>
