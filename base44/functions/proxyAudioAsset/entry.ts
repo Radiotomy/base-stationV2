@@ -4,6 +4,7 @@
 // file_url is on an external CDN without CORS headers.
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -19,8 +20,11 @@ Deno.serve(async (req) => {
       return Response.json({ file_url: source_url, proxied: false });
     }
 
+    // SSRF guard — reject internal/private hosts before fetching
+    const safeUrl = assertSafeUrl(source_url);
+
     // Fetch the external file
-    const r = await fetch(source_url);
+    const r = await fetch(safeUrl);
     if (!r.ok) {
       return Response.json({ error: `Fetch failed: ${r.status}` }, { status: 502 });
     }

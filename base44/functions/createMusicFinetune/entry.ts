@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { EL_BASE, elError, checkCredits, deductCredits } from '../../shared/elevenFinetunes.ts';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // Create an ElevenLabs Music Finetune (Music v2) from the user's own original tracks.
 // POST https://api.elevenlabs.io/v1/music/finetunes (multipart/form-data)
@@ -46,7 +47,8 @@ Deno.serve(async (req) => {
 
     for (const t of tracks) {
       if (!t?.url) continue;
-      const r = await fetch(t.url);
+      const safeUrl = assertSafeUrl(t.url);
+      const r = await fetch(safeUrl);
       if (!r.ok) {
         return Response.json({ error: `Couldn't fetch track "${t.title || t.url}" (HTTP ${r.status})` }, { status: 400 });
       }
