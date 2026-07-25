@@ -20,9 +20,9 @@ automatically — no further changes needed.
 
 ---
 
-## Step 1 — create a folder with these two files
+## Step 1 — create a folder with these files
 
-Make a folder (e.g. `base-mark-v2/`) and put exactly these two files in it.
+Make a folder (e.g. `base-mark-v2/`) and put these files in it.
 
 ### File 1: `cog.yaml`
 
@@ -38,10 +38,34 @@ build:
 predict: "predict.py:Predictor"
 ```
 
+### ⚠️ Bundle the model weights into the image
+
+`silentcipher.get_model()` **downloads** the 44.1 kHz checkpoint from
+HuggingFace by default. Replicate runs **each prediction in a throwaway
+container** — files downloaded during `setup()` do NOT persist to the next
+run, so every cold start re-downloads, and that download routinely hangs (the
+deployment sits in `starting` for minutes with no logs). Bake the weights into
+the image and load them by local path instead.
+
+```bash
+# from inside your base-mark-v2/ folder, before pushing
+huggingface-cli download Sony/SilentCipher \
+  --repo-type model \
+  --local-dir weights \
+  --include "Models/44_1_khz/73999_iteration/*"
+```
+
+Keep the `weights/` folder in the same directory as `predict.py` and `cog.yaml`
+so `cog push` ships it inside the image (the folder layout mirrors the HF repo):
+`weights/Models/44_1_khz/73999_iteration/`  contains the checkpoint and
+`hparams.yaml`. See <https://huggingface.co/Sony/SilentCipher/tree/main> if the
+path has changed.
+
 ### File 2: `predict.py`
 
 ```python
 import json
+import os
 import torch
 import librosa
 import soundfile as sf
@@ -52,7 +76,15 @@ class Predictor(BasePredictor):
     def setup(self):
         import silentcipher
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model = silentcipher.get_model(model_type="44.1k", device=self.device)
+        # Load the bundled checkpoint instead of re-downloading on every boot.
+        ckpt_dir = os.path.join(os.path.dirname(__file__), "weights", "Models", "44_1_khz", "73999_iteration")
+        self.model = silentcipher.get_model(
+            model_type="44.1k",
+            device=self.device,
+            ckpt_path=ckpt_dir,
+            config_path=os.path.join(ckpt_dir, "hparams.yaml"),
+        )
+        print("[base-mark-v2] model loaded from bundled weights")
 
     def predict(
         self,

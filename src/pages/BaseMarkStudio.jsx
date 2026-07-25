@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Fingerprint, BookOpen } from 'lucide-react';
 import EmbedMarkCard from '@/components/watermark/EmbedMarkCard';
+import EmbedMarkV2Card from '@/components/watermark/EmbedMarkV2Card';
 import DetectMarkCard from '@/components/watermark/DetectMarkCard';
 import V2RoadmapBanner from '@/components/watermark/V2RoadmapBanner';
 
@@ -28,7 +29,11 @@ export default function BaseMarkStudio() {
         </div>
         <div className="grid md:grid-cols-2 gap-6">
           <EmbedMarkCard />
+          <EmbedMarkV2Card />
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
           <DetectMarkCard />
+          <div />
         </div>
         <V2RoadmapBanner />
       </div>

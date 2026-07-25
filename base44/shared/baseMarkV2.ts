@@ -70,3 +70,43 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
   }
   return data.output;
 }
+
+// Fire a prediction WITHOUT blocking. Returns the full prediction object
+// { id, status, urls, ... } — caller polls getV2Prediction(id) until done.
+// Use this for the async embed flow so cold starts don't block the request.
+export async function startV2(input) {
+  const token = Deno.env.get('REPLICATE_API_TOKEN');
+  if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
+  const owner = v2Model().split('/')[0];
+  const deployment = v2Deployment();
+  const r = await fetch(`https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ input }),
+  });
+  const data = await r.json();
+  if (!r.ok) {
+    const msg = data?.detail || data?.error || JSON.stringify(data);
+    throw new Error(`Replicate deployment error (${r.status}): ${msg}`);
+  }
+  return data;
+}
+
+// Get the current status + output of a prediction by id.
+// status is one of: starting | processing | succeeded | failed | canceled
+export async function getV2Prediction(id) {
+  const token = Deno.env.get('REPLICATE_API_TOKEN');
+  if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
+  const r = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  const data = await r.json();
+  if (!r.ok) {
+    const msg = data?.detail || data?.error || JSON.stringify(data);
+    throw new Error(`Replicate poll error (${r.status}): ${msg}`);
+  }
+  return data;
+}
