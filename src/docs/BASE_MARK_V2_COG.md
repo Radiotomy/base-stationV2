@@ -26,16 +26,19 @@ Make a folder (e.g. `base-mark-v2/`) and put these files in it.
 
 ### File 1: `cog.yaml`
 
+> Uses the modern Cog schema (`run` + `python_requirements`). The legacy
+> `predict` / `python_packages` fields still work but emit deprecation warnings.
+
 ```yaml
 build:
   gpu: true
   python_version: "3.10"
-  python_packages:
+  python_requirements:
     - "torch==2.1.0"
     - "librosa==0.10.1"
     - "soundfile==0.12.1"
     - "git+https://github.com/sony/silentcipher.git"
-predict: "predict.py:Predictor"
+run: "predict.py:Predictor"
 ```
 
 ### ⚠️ Bundle the model weights into the image
@@ -86,7 +89,7 @@ class Predictor(BasePredictor):
         )
         print("[base-mark-v2] model loaded from bundled weights")
 
-    def predict(
+    def run(
         self,
         action: str = Input(choices=["encode", "decode"], description="encode = embed watermark, decode = detect"),
         audio: Path = Input(description="Input audio file (WAV, 44.1kHz preferred)"),
