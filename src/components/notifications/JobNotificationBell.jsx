@@ -17,6 +17,9 @@ const WATCHED_TASK_KINDS = new Set([
 ]);
 
 const POLL_INTERVAL_MS = 8000;
+// When nothing is processing, back off to a slow heartbeat instead of
+// hammering the server every 8s on every page.
+const IDLE_POLL_INTERVAL_MS = 60000;
 // After this many seconds of "processing", the bell starts driving the
 // provider poll itself. Covers the case where the user left the studio page
 // and the in-page polling loop was torn down.
@@ -65,7 +68,7 @@ export default function JobNotificationBell() {
     let cancelled = false;
 
     const tick = async () => {
-      if (!userIdRef.current) return;
+      if (!userIdRef.current) return false;
       try {
         const jobs = await base44.entities.GenerationJob.filter(
           { user_id: userIdRef.current },
@@ -73,7 +76,7 @@ export default function JobNotificationBell() {
           20
         );
 
-        if (cancelled) return;
+        if (cancelled) return false;
 
         const watched = jobs.filter(j =>
           WATCHED_TASK_KINDS.has(j.input_data?.task_kind || '')
@@ -139,15 +142,23 @@ export default function JobNotificationBell() {
             }
           }
         }
+        return processing.length > 0;
       } catch (err) {
         // Silent — keep polling
         console.warn('Job notification poll failed:', err.message);
+        return false;
       }
     };
 
-    tick();
-    const interval = setInterval(tick, POLL_INTERVAL_MS);
-    return () => { cancelled = true; clearInterval(interval); };
+    // Adaptive polling: fast while jobs are processing, slow heartbeat when idle
+    let timer = null;
+    const loop = async () => {
+      const hasActive = await tick();
+      if (cancelled) return;
+      timer = setTimeout(loop, hasActive ? POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS);
+    };
+    loop();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;

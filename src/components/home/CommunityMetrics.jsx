@@ -1,46 +1,28 @@
-import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Music, Users, Zap, Globe, Loader } from 'lucide-react';
+import { Music, Users, Zap, Loader } from 'lucide-react';
+import { useEntityList } from '@/hooks/useHomeEntityLists';
 
+// Data comes from the shared react-query cache (same fetch HomeStatsStrip
+// uses) — no duplicate requests and no 30-second polling loop re-downloading
+// thousands of records and churning memory.
 export default function CommunityMetrics() {
-  const [metrics, setMetrics] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const tracksQ = useEntityList('TrackSubmission');
+  const creatorsQ = useEntityList('UserXP');
+  const loading = tracksQ.isLoading || creatorsQ.isLoading;
 
-  useEffect(() => {
-    loadMetrics();
-    // Refresh every 30 seconds
-    const interval = setInterval(loadMetrics, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const loadMetrics = async () => {
-    try {
-      // Truth-in-disclosure: real counts only, no minimum floors or placeholder numbers.
-      // (User.list is admin-only, so UserXP serves as the public proxy for creator counts.)
-      const [tracks, creators] = await Promise.all([
-        base44.entities.TrackSubmission.list('-created_date', 1000).catch(() => []),
-        base44.entities.UserXP.list('-created_date', 1000).catch(() => []),
-      ]);
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-
-      setMetrics({
-        tracksToday: tracks.filter(t => new Date(t.created_date) >= today).length,
-        newUsersThisWeek: creators.filter(u => new Date(u.created_date) >= weekAgo).length,
-        totalCreators: creators.length,
-      });
-      setLoading(false);
-    } catch (error) {
-      console.error('Failed to load metrics:', error);
-      // No fabricated fallback — hide the panel rather than show untrue numbers
-      setMetrics(null);
-      setLoading(false);
-    }
-  };
+  const metrics = useMemo(() => {
+    if (!tracksQ.data || !creatorsQ.data) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return {
+      tracksToday: tracksQ.data.filter(t => new Date(t.created_date) >= today).length,
+      newUsersThisWeek: creatorsQ.data.filter(u => new Date(u.created_date) >= weekAgo).length,
+      totalCreators: creatorsQ.data.length,
+    };
+  }, [tracksQ.data, creatorsQ.data]);
 
   if (loading) {
     return (

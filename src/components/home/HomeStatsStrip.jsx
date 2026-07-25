@@ -1,30 +1,22 @@
-import { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { useEntityList } from "@/hooks/useHomeEntityLists";
 
 // Truth-in-disclosure: every number here is a live count from the database —
-// no marketing floors, no fabricated values.
+// no marketing floors, no fabricated values. Lists come from the shared
+// react-query cache so this page fetches each one only once.
 export default function HomeStatsStrip() {
-  const [stats, setStats] = useState(null);
+  const tracks = useEntityList("TrackSubmission");
+  const sessions = useEntityList("LiveSession");
+  const creators = useEntityList("UserXP");
+  const playlists = useEntityList("Playlist");
 
-  useEffect(() => {
-    let alive = true;
-    Promise.allSettled([
-      base44.entities.TrackSubmission.list("-created_date", 1000),
-      base44.entities.LiveSession.list("-created_date", 1000),
-      base44.entities.UserXP.list("-created_date", 1000),
-      base44.entities.Playlist.list("-created_date", 1000),
-    ]).then(([t, s, u, p]) => {
-      if (!alive) return;
-      const count = (r) => (r.status === "fulfilled" ? (r.value || []).length : 0);
-      setStats([
-        { label: "Tracks Submitted", value: count(t) },
-        { label: "Live Sessions", value: count(s) },
-        { label: "Community Creators", value: count(u) },
-        { label: "Playlists", value: count(p) },
-      ]);
-    });
-    return () => { alive = false; };
-  }, []);
+  const stats = tracks.data && sessions.data && creators.data && playlists.data
+    ? [
+        { label: "Tracks Submitted", value: tracks.data.length },
+        { label: "Live Sessions", value: sessions.data.length },
+        { label: "Community Creators", value: creators.data.length },
+        { label: "Playlists", value: playlists.data.length },
+      ]
+    : null;
 
   const display = stats || [
     { label: "Tracks Submitted", value: "—" },
