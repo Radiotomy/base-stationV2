@@ -26,14 +26,28 @@ export function unpackMessage(message) {
   return { valid: true, payload_hex: v.toString(16).padStart(8, '0') };
 }
 
-// Run a prediction on the private V2 model. Blocks up to ~60s via Prefer:wait,
-// then polls (cold starts on GPU models can take a while). Returns the output.
-export async function runV2(input, { timeoutMs = 120000 } = {}) {
+// Deployment name on Replicate (private models are invoked via the
+// deployments endpoint, not the model endpoint). Defaults to the same
+// name as the model. Override with BASE_MARK_V2_DEPLOYMENT env if needed.
+export function v2Deployment() {
+  const model = v2Model();
+  const override = Deno.env.get('BASE_MARK_V2_DEPLOYMENT');
+  if (override) return override;
+  // model is "owner/name" — deployment defaults to the "name" part.
+  return model.split('/')[1] || model;
+}
+
+// Run a prediction on the private V2 model via its Replicate deployment.
+// Blocks up to ~60s via Prefer:wait, then polls (cold starts on GPU models
+// can take a while). Returns the output.
+export async function runV2(input, { timeoutMs = 300000 } = {}) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  const r = await fetch(`https://api.replicate.com/v1/models/${v2Model()}/predictions`, {
+  const owner = v2Model().split('/')[0];
+  const deployment = v2Deployment();
+  const r = await fetch(`https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`, {
     method: 'POST',
     headers: { ...headers, 'Prefer': 'wait=60' },
     body: JSON.stringify({ input }),
@@ -41,10 +55,7 @@ export async function runV2(input, { timeoutMs = 120000 } = {}) {
   let data = await r.json();
   if (!r.ok) {
     const msg = data?.detail || data?.error || JSON.stringify(data);
-    if (r.status === 404) {
-      throw new Error(`BASE Mark V2 model "${v2Model()}" is not published on Replicate yet. Push it with Cog first.`);
-    }
-    throw new Error(`Replicate error (${r.status}): ${msg}`);
+    throw new Error(`Replicate deployment error (${r.status}): ${msg}`);
   }
 
   const started = Date.now();
