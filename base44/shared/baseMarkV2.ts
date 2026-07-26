@@ -75,12 +75,21 @@ export function v2WebhookUrl() {
   return `${base}${sep}sig=${secret}`;
 }
 
-// Build a prediction POST body. Neither the deployments endpoint nor the
-// /models/{owner}/{name}/predictions endpoint accepts a `version` field — they
-// run the model's configured/latest release. To pin a digest, set up a proper
-// Replicate deployment instead.
-function buildBody(input) {
+// Build a prediction POST body.
+//   - deployments endpoint: runs the deployment's current release (it ignores
+//     any `version` field and pins are managed in the Replicate dashboard).
+//   - /models/{owner}/{name}/predictions endpoint: accepts an optional `version`
+//     field = the image digest (SHA256). When BASE_MARK_V2_VERSION is set, the
+//     model-endpoint POST pins every prediction to that exact digest so a later
+//     `cog push` to :latest cannot silently shift neural-watermark behavior.
+//     We only attach `version` on the model-endpoint request so the deployments
+//     endpoint stays clean.
+function buildBody(input, isModelEndpoint) {
   const body = { input };
+  if (isModelEndpoint) {
+    const version = v2Version();
+    if (version) body.version = version;
+  }
   const webhook = v2WebhookUrl();
   if (webhook) {
     body.webhook = webhook;
@@ -99,10 +108,11 @@ async function postPrediction(input, prefer) {
   const urls = v2PostUrls();
   let fallback;
   for (let i = 0; i < urls.length; i++) {
+    const isModelEndpoint = urls[i].includes('/models/');
     const r = await fetch(urls[i], {
       method: 'POST',
       headers: prefer ? { ...headers, Prefer: prefer } : headers,
-      body: JSON.stringify(buildBody(input)),
+      body: JSON.stringify(buildBody(input, isModelEndpoint)),
     });
     if (r.status === 404 && i < urls.length - 1) { fallback = await r.text().catch(() => ''); continue; }
     const data = await r.json();
