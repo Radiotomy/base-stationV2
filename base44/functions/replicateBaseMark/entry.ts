@@ -16,11 +16,11 @@ Deno.serve(async (req) => {
     if (!token) return Response.json({ error: 'REPLICATE_API_TOKEN is not set' }, { status: 500 });
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-    const { action, query, model, version, input, cursor, status_filter, id, fileUrl, filename, contentType } = await req.json();
+    const { action, query, model, version, input, cursor, status_filter, id, fileUrl, filename, contentType, deployment } = await req.json();
 
     // Admin-only operations — protects predictions/cancel/uploadFile/versions from non-admins invoking
     // the endpoint directly.
-    const adminOnly = ['predictions', 'cancel', 'uploadFile', 'versions'];
+    const adminOnly = ['predictions', 'cancel', 'uploadFile', 'versions', 'checkDeployment'];
     if (adminOnly.includes(action) && user.role !== 'admin') {
       return Response.json({ error: 'Admin only' }, { status: 403 });
     }
@@ -61,6 +61,27 @@ Deno.serve(async (req) => {
         latest_version: m.latest_version?.id,
         default_example: m.default_example?.id,
         openapi_input_schema: m.latest_version?.openapi_schema?.components?.schemas?.Input,
+      });
+    }
+
+    if (action === 'checkDeployment') {
+      const target = deployment || model;
+      if (!target) return Response.json({ error: 'deployment (owner/name) is required' }, { status: 400 });
+      const r = await fetch(`https://api.replicate.com/v1/deployments/${target}`, { headers });
+      if (!r.ok) return Response.json({ ok: false, status: r.status, error: 'Deployment not found or not accessible' });
+      const d = await r.json();
+      return Response.json({
+        ok: true,
+        name: d.name,
+        owner: d.owner,
+        model: d.model,
+        release_info: d.release || d.version_release,
+        hardware: d.hardware,
+        min_instances: d.min_instances,
+        max_instances: d.max_instances,
+        created_at: d.created_at,
+        updated_at: d.updated_at,
+        raw: d,
       });
     }
 
