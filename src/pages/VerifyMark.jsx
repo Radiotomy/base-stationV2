@@ -43,7 +43,7 @@ export default function VerifyMark() {
             waveform for a BASE Mark, the inaudible provenance signature embedded in tracks made on BASE Station.
           </p>
           <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            <Lock className="w-3 h-3" /> Only a short audio snippet is analyzed on our secure servers — it is processed in memory and never stored.
+            <Lock className="w-3 h-3" /> Only a short audio snippet is analyzed on our secure servers. The acoustic scan runs in memory; signed-in creators also get a neural scan (snippet uploaded for that run only).
           </p>
         </div>
 
@@ -73,8 +73,8 @@ export default function VerifyMark() {
         </p>
         <p className="text-center text-[11px] text-muted-foreground/70">
           BASE Mark runs two live layers: V1 acoustic (applied automatically to every saved master) and V2 neural
-          (built to survive heavy compression and pitch/time attacks). This public scan reads the acoustic layer;
-          a clean scan is not proof a file was never marked.
+          (built to survive heavy compression and pitch/time attacks). This public scan checks the acoustic layer
+          first; signed-in creators also get a neural fallback scan; a clean scan is not proof a file was never marked.
         </p>
       </div>
     </div>
