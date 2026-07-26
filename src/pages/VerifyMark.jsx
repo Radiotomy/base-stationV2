@@ -72,8 +72,9 @@ export default function VerifyMark() {
           <Link to="/docs?section=base-mark" className="text-[#FFC98A] underline underline-offset-2">Read how BASE Mark works</Link>
         </p>
         <p className="text-center text-[11px] text-muted-foreground/70">
-          BASE Mark V1 is live today, and V2 — a neural watermark built to survive heavy compression and
-          pitch/time attacks — is in active development. A clean scan is not proof a file was never marked.
+          BASE Mark runs two live layers: V1 acoustic (applied automatically to every saved master) and V2 neural
+          (built to survive heavy compression and pitch/time attacks). This public scan reads the acoustic layer;
+          a clean scan is not proof a file was never marked.
         </p>
       </div>
     </div>

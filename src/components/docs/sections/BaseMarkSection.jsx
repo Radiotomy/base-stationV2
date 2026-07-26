@@ -20,18 +20,20 @@ export default function BaseMarkSection() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-4 text-sm text-muted-foreground">
-        <strong className="text-foreground">Status: V1 — live and active development.</strong> BASE Mark is a first-generation
-        technology that we are continuously testing, developing and growing. Robustness figures below are estimates
-        from internal testing and will improve as the engine evolves.
+      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Status: V2 — Neural Watermarking is live.</strong> BASE Mark V2, a learned
+        neural-network watermark in the same class as Meta's AudioSeal, now runs in production on our own private GPU
+        deployment. It is trained to survive aggressive lossy compression, pitch-shifting and time-stretching — attacks
+        that can defeat first-generation spread-spectrum marks. Embeds run asynchronously via webhook and settle in well
+        under a minute once the model is warm; the first run after idle may take a minute or two to cold-start. V2 carries
+        the identical 32-bit registry payload as V1, so both layers resolve any derivative audio back to one track record.
       </div>
 
       <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-4 text-sm text-muted-foreground">
-        <strong className="text-foreground">Next version: V2 — Neural Watermarking (in development).</strong>{' '}
-        We are building a learned, neural-network watermark — the same class of technology as Meta's AudioSeal —
-        trained to survive aggressive lossy compression, pitch-shifting and time-stretching. Our GPU inference
-        infrastructure is already connected and readiness-tested; V2 ships when the model clears our internal
-        robustness benchmarks. V1 marks remain fully traceable after the upgrade.
+        <strong className="text-foreground">V1 — still active.</strong> The original acoustic spread-spectrum layer remains
+        live and is applied automatically to every saved master. V2 is an additional neural layer you can embed from the
+        BASE Mark Studio. Both marks carry the same payload and both are checked on scan; a track marked with either
+        layer resolves to the same registry record. Robustness figures below are estimates from internal testing.
       </div>
 
       <img
