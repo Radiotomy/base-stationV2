@@ -24,6 +24,21 @@ export async function finalizeV2Prediction(base44, pred) {
   const asset = matches?.[0];
   if (!asset) return { status: "no_asset", prediction_id: predictionId };
 
+  // Idempotency guard — the async webhook and the frontend's poll loop can
+  // both wake up on the same settled prediction. If the asset is already in
+  // a terminal state, skip the redundant download + rehost and return.
+  const currentStatus = asset.metadata?.base_mark_v2?.status;
+  if (currentStatus === "completed" || currentStatus === "failed") {
+    return {
+      status: currentStatus,
+      prediction_id: predictionId,
+      asset_id: asset.id,
+      marked_file_url: asset.metadata?.base_mark_v2?.marked_file_url,
+      payload_hex: asset.metadata?.base_mark_v2?.payload_hex,
+      already_finalized: true,
+    };
+  }
+
   if (pred.status === "failed" || pred.status === "canceled") {
     await base44.entities.UserAsset.update(asset.id, {
       metadata: {

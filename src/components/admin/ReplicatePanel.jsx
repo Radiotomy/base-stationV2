@@ -36,6 +36,10 @@ export default function ReplicatePanel() {
   const [uploadUrl, setUploadUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  // Replicate has no delete endpoint for terminal predictions — failed/succeeded
+  // are immutable. Hide terminal-failed/canceled by default so the dashboard shows
+  // a clean surface; toggle on to inspect failures.
+  const [hideTerminalFailed, setHideTerminalFailed] = useState(true);
 
   const refreshModel = useCallback(async () => {
     setLoadingModel(true);
@@ -184,13 +188,22 @@ export default function ReplicatePanel() {
           <h4 className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5" /> Recent Predictions
           </h4>
-          {loadingPreds && <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground" />}
+          <div className="flex items-center gap-2">
+            {loadingPreds && <RefreshCw className="w-3 h-3 animate-spin text-muted-foreground" />}
+            <button
+              onClick={() => setHideTerminalFailed((v) => !v)}
+              className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${hideTerminalFailed ? "border-border bg-muted/40 text-muted-foreground" : "border-amber-500/30 bg-amber-500/10 text-amber-300"}`}
+              title="Toggle failed/canceled predictions"
+            >
+              {hideTerminalFailed ? "Show failed" : "Hide failed"}
+            </button>
+          </div>
         </div>
-        {preds.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-6 text-center">No predictions returned.</p>
+        {(hideTerminalFailed ? preds.filter((p) => p.status !== "failed" && p.status !== "canceled") : preds).length === 0 ? (
+          <p className="text-xs text-muted-foreground py-6 text-center">{hideTerminalFailed ? "No active or succeeded predictions." : "No predictions returned."}</p>
         ) : (
           <div className="space-y-2">
-            {preds.slice(0, 12).map((p) => (
+            {(hideTerminalFailed ? preds.filter((p) => p.status !== "failed" && p.status !== "canceled") : preds).slice(0, 12).map((p) => (
               <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/30 border border-border">
                 <span className="text-xs font-mono text-muted-foreground flex-shrink-0 w-24 truncate">{shortHash(p.id)}</span>
                 <Badge variant="outline" className={`text-xs ${STATUS_COLOR[p.status] || "bg-muted text-muted-foreground border-border"}`}>
@@ -283,7 +296,7 @@ export default function ReplicatePanel() {
         <div>
           <p className="text-xs font-semibold text-purple-300">Webhook-driven completion</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            New <code>embed</code> requests automatically register a Replicate webhook when <code>REPLICATE_WEBHOOK_URL</code> is set in Base44 dashboard → Replicate POSTs the result here (verify with <code>?sig=</code>), eliminating the 2.5s polling loop. Until then, <code>pollBaseMarkV2</code> keeps the embed completing. To enable: open Base44 → Functions → <code>replicateV2Webhook</code> → copy the URL → paste into the <code>REPLICATE_WEBHOOK_URL</code> secret.
+            <code>REPLICATE_WEBHOOK_URL</code> is set — new <code>embed</code> predictions register a Replicate webhook automatically and Replicate POSTs the result here (signed with <code>?sig=</code>), eliminating the 2.5s poll loop. For byte-stable consistency, pin <code>BASE_MARK_V2_VERSION</code> to the latest image digest; for warm/elastic scaling, create a Replicate <code>deployment</code> and set <code>BASE_MARK_V2_DEPLOYMENT</code>.
           </p>
         </div>
       </div>
