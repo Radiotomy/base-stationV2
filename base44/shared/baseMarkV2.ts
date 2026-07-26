@@ -69,8 +69,12 @@ export function v2WebhookUrl() {
 // (blocking). Centralizes webhook + version wiring so callers stay simple.
 function v2Body(input) {
   const body = { input };
-  const version = v2Version();
-  if (version) body.version = version;
+  // The deployments endpoint uses the deployment's own pinned version; sending
+  // a `version` field there is invalid. Only pin version on the model endpoint.
+  if (!v2Deployment()) {
+    const version = v2Version();
+    if (version) body.version = version;
+  }
   const webhook = v2WebhookUrl();
   if (webhook) {
     body.webhook = webhook;
