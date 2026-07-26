@@ -42,11 +42,17 @@ export function v2Deployment() {
 // object required). Callers try each in order and 404 → the next.
 export function v2PostUrls() {
   const [owner = '', name = ''] = v2Model().split('/');
-  const deployment = v2Deployment();
   const modelUrl = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
-  return deployment
-    ? [`https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`, modelUrl]
-    : [modelUrl];
+  const raw = v2Deployment();
+  if (!raw) return [modelUrl];
+  // The secret may be stored as "base-mark-v2" (bare name) or as the full
+  // "speedwolf2000/base-mark-v2" identifier. Normalize so we never produce a
+  // double-owner URL like /deployments/speedwolf2000/speedwolf2000/base-mark-v2.
+  const trimmed = raw.trim();
+  const [depOwner, depName] = trimmed.includes('/')
+    ? trimmed.split('/')
+    : [owner, trimmed];
+  return [`https://api.replicate.com/v1/deployments/${depOwner}/${depName}/predictions`, modelUrl];
 }
 
 // Optional deterministic version pin. When set (BASE_MARK_V2_VERSION), every
