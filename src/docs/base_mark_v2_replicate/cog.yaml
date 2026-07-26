@@ -1,10 +1,11 @@
 # BASE Mark V2 — Replicate model config
 # SilentCipher neural watermark encoder/decoder.
 # Hardware: T4 GPU (cost-friendly; cold starts ~2–5 min).
-# IMPORTANT: keep numpy listed in requirements.txt (referenced via
-# python_requirements below). Removing it reproduces
+#
+# numpy is a DIRECT dep (silentcipher imports it at load time) and must stay
+# listed in requirements.txt. Removing it reproduces
 #   RuntimeError: Numpy is not available
-# because SilentCipher's loader checks for numpy at import time.
+# because SilentCipher's loader checks for numpy during `import silentcipher`.
 
 build:
   python_version: "3.10"
