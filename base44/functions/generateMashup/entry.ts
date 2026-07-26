@@ -12,6 +12,7 @@
 //
 // Credits: 10 (Sonic generation, per docs)
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { waitUntil } from 'base44:runtime';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
@@ -249,7 +250,11 @@ Deno.serve(async (req) => {
     }).catch(() => {});
 
     // ── Background: rehost both sources → upload → mashup ───────────────────
-    (async () => {
+    // IMPORTANT: wrapped in waitUntil so the Worker stays alive to finish
+    // after we return the job_id. A bare fire-and-forget IIFE here was killed
+    // when the handler returned, leaving jobs stuck in 'processing' at the
+    // 'uploading' / 'sonic_upload' stage with provider_job_id never set.
+    waitUntil((async () => {
       try {
         // Step 1: ensure both sources are publicly fetchable
         const publicUrls = await Promise.all(sources.map(s => ensurePublicUrl(s.file_url)));
@@ -310,7 +315,7 @@ Deno.serve(async (req) => {
           completed_at: new Date().toISOString(),
         }).catch(() => {});
       }
-    })();
+    })());
 
     return Response.json({
       job_id: job.id,
