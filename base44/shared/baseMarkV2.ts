@@ -26,15 +26,23 @@ export function unpackMessage(message) {
   return { valid: true, payload_hex: v.toString(16).padStart(8, '0') };
 }
 
-// Deployment name on Replicate (private models are invoked via the
-// deployments endpoint, not the model endpoint). Defaults to the same
-// name as the model. Override with BASE_MARK_V2_DEPLOYMENT env if needed.
+// Deployment name on Replicate. Only used when BASE_MARK_V2_DEPLOYMENT is
+// explicitly set — in which case predictions go through the deployments
+// endpoint (Replicate's productionized load-balanced path). When unset,
+// predictions go through the model endpoint, which works as soon as a
+// version is pushed to r8.im/{owner}/{name}:latest — no separate
+// deployment object is required.
 export function v2Deployment() {
-  const model = v2Model();
-  const override = Deno.env.get('BASE_MARK_V2_DEPLOYMENT');
-  if (override) return override;
-  // model is "owner/name" — deployment defaults to the "name" part.
-  return model.split('/')[1] || model;
+  return Deno.env.get('BASE_MARK_V2_DEPLOYMENT') || null;
+}
+
+// Pick the Replicate prediction URL that matches how the model is hosted.
+export function v2PredictUrl() {
+  const [owner = '', name = ''] = v2Model().split('/');
+  const deployment = v2Deployment();
+  return deployment
+    ? `https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`
+    : `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
 }
 
 // Run a prediction on the private V2 model via its Replicate deployment.
@@ -45,9 +53,7 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  const owner = v2Model().split('/')[0];
-  const deployment = v2Deployment();
-  const r = await fetch(`https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`, {
+  const r = await fetch(v2PredictUrl(), {
     method: 'POST',
     headers: { ...headers, 'Prefer': 'wait=60' },
     body: JSON.stringify({ input }),
@@ -55,7 +61,7 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
   let data = await r.json();
   if (!r.ok) {
     const msg = data?.detail || data?.error || JSON.stringify(data);
-    throw new Error(`Replicate deployment error (${r.status}): ${msg}`);
+    throw new Error(`Replicate error (${r.status}): ${msg}`);
   }
 
   const started = Date.now();
@@ -77,9 +83,7 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
 export async function startV2(input) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
-  const owner = v2Model().split('/')[0];
-  const deployment = v2Deployment();
-  const r = await fetch(`https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`, {
+  const r = await fetch(v2PredictUrl(), {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -90,7 +94,7 @@ export async function startV2(input) {
   const data = await r.json();
   if (!r.ok) {
     const msg = data?.detail || data?.error || JSON.stringify(data);
-    throw new Error(`Replicate deployment error (${r.status}): ${msg}`);
+    throw new Error(`Replicate error (${r.status}): ${msg}`);
   }
   return data;
 }
