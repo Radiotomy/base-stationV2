@@ -36,13 +36,17 @@ export function v2Deployment() {
   return Deno.env.get('BASE_MARK_V2_DEPLOYMENT') || null;
 }
 
-// Pick the Replicate prediction URL that matches how the model is hosted.
-export function v2PredictUrl() {
+// Candidate prediction URLs in preference order. The deployments endpoint is
+// tried first when BASE_MARK_V2_DEPLOYMENT is set; the model endpoint is always
+// available as a fallback (works once a version is on :latest — no deployment
+// object required). Callers try each in order and 404 → the next.
+export function v2PostUrls() {
   const [owner = '', name = ''] = v2Model().split('/');
   const deployment = v2Deployment();
+  const modelUrl = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
   return deployment
-    ? `https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`
-    : `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
+    ? [`https://api.replicate.com/v1/deployments/${owner}/${deployment}/predictions`, modelUrl]
+    : [modelUrl];
 }
 
 // Optional deterministic version pin. When set (BASE_MARK_V2_VERSION), every
@@ -65,42 +69,52 @@ export function v2WebhookUrl() {
   return `${base}${sep}sig=${secret}`;
 }
 
-// Build the prediction POST body shared by both startV2 (async) and runV2
-// (blocking). Centralizes webhook + version wiring so callers stay simple.
-function v2Body(input) {
+// Build a prediction POST body. Neither the deployments endpoint nor the
+// /models/{owner}/{name}/predictions endpoint accepts a `version` field — they
+// run the model's configured/latest release. To pin a digest, set up a proper
+// Replicate deployment instead.
+function buildBody(input) {
   const body = { input };
-  // The deployments endpoint uses the deployment's own pinned version; sending
-  // a `version` field there is invalid. Only pin version on the model endpoint.
-  if (!v2Deployment()) {
-    const version = v2Version();
-    if (version) body.version = version;
-  }
   const webhook = v2WebhookUrl();
   if (webhook) {
     body.webhook = webhook;
-    body.webhook_events_filter = ['completed', 'failed'];
+    body.webhook_events_filter = ['completed'];
   }
   return body;
 }
 
-// Run a prediction on the private V2 model via its Replicate deployment.
-// Blocks up to ~60s via Prefer:wait, then polls (cold starts on GPU models
-// can take a while). Returns the output.
-export async function runV2(input, { timeoutMs = 300000 } = {}) {
+// POST a prediction, trying the deployments endpoint first and falling back to
+// the model endpoint on 404 (handles a missing/misconfigured deployment without
+// breaking the whole V2 pipeline).
+async function postPrediction(input, prefer) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-  const r = await fetch(v2PredictUrl(), {
-    method: 'POST',
-    headers: { ...headers, 'Prefer': 'wait=60' },
-    body: JSON.stringify(v2Body(input)),
-  });
-  let data = await r.json();
-  if (!r.ok) {
-    const msg = data?.detail || data?.error || JSON.stringify(data);
-    throw new Error(`Replicate error (${r.status}): ${msg}`);
+  const urls = v2PostUrls();
+  let fallback;
+  for (let i = 0; i < urls.length; i++) {
+    const r = await fetch(urls[i], {
+      method: 'POST',
+      headers: prefer ? { ...headers, Prefer: prefer } : headers,
+      body: JSON.stringify(buildBody(input)),
+    });
+    if (r.status === 404 && i < urls.length - 1) { fallback = await r.text().catch(() => ''); continue; }
+    const data = await r.json();
+    if (!r.ok) {
+      const msg = data?.detail || data?.error || JSON.stringify(data);
+      throw new Error(`Replicate error (${r.status}): ${msg}`);
+    }
+    return data;
   }
+  throw new Error(`Replicate prediction could not be created: ${fallback || 'no endpoint available'}`);
+}
+
+// Run a prediction on the private V2 model. Blocks up to ~60s via Prefer:wait,
+// then polls (cold starts on GPU models can take a while). Returns the output.
+export async function runV2(input, { timeoutMs = 300000 } = {}) {
+  let data = await postPrediction(input, 'wait=60');
+  const token = Deno.env.get('REPLICATE_API_TOKEN');
+  const headers = { 'Authorization': `Bearer ${token}` };
 
   const started = Date.now();
   while (data.status === 'starting' || data.status === 'processing') {
@@ -119,22 +133,7 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
 // { id, status, urls, ... } — caller polls getV2Prediction(id) until done.
 // Use this for the async embed flow so cold starts don't block the request.
 export async function startV2(input) {
-  const token = Deno.env.get('REPLICATE_API_TOKEN');
-  if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
-  const r = await fetch(v2PredictUrl(), {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(v2Body(input)),
-  });
-  const data = await r.json();
-  if (!r.ok) {
-    const msg = data?.detail || data?.error || JSON.stringify(data);
-    throw new Error(`Replicate error (${r.status}): ${msg}`);
-  }
-  return data;
+  return await postPrediction(input);
 }
 
 // Get the current status + output of a prediction by id.

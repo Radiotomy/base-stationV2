@@ -11,7 +11,7 @@ export default function BaseMarkStudio() {
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#FF9A4D]/30 bg-[#FF9A4D]/10 px-4 py-1.5 text-sm text-[#FFC98A]">
-            <Fingerprint className="w-4 h-4" /> BASE Mark · V1 Acoustic + V2 Neural · Live
+            <Fingerprint className="w-4 h-4" /> BASE Mark · Neural (V2) · Standard
           </div>
           <h1 className="font-display text-3xl md:text-4xl">Watermark & Trace Your Audio</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -23,9 +23,9 @@ export default function BaseMarkStudio() {
             <BookOpen className="w-4 h-4" /> Read the BASE Mark documentation
           </Link>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            BASE Mark runs two live layers: V1 acoustic spread-spectrum (applied automatically to every saved master)
-            and V2 neural watermarking (embedded here on our private GPU). Both carry the same payload and resolve to
-            one registry record. Heavy compression may weaken the V1 acoustic layer; V2 is built to survive it.
+            BASE Mark V2 is our neural watermark standard — applied automatically to every saved track on our private GPU
+            and robust to compression, pitch and time attacks. The original acoustic watermark (V1) is superseded but
+            legacy marks still resolve to the same registry record.
           </p>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
