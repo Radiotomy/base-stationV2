@@ -40,45 +40,55 @@ export default function MashupStudio() {
     async (data) => {
       setRunning(false);
       setJobId(null);
-      // Save the completed mashup as a UserAsset so it appears in the library
+      // The library asset is now created server-side on job completion (in
+      // pollGenerationJob / aimusicapiWebhook) so the track lands in the
+      // library even if the user navigated away. Prefer that asset; only
+      // fall back to a client-side create if the server hasn't finalized.
       try {
-        const participation = await calculateHumanParticipationScore({
-          userProvidedContent: false,
-          prompt: description,
-          styleOrTags: tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [],
-          referenceFile: true,   // 2 user-selected source tracks
-          isIteration: true,     // derived from prior works
-        });
-        const asset = await base44.entities.UserAsset.create({
-          asset_type: 'mashup',
-          title: data.title || title || 'Mashup',
-          description: `Sonic mashup of 2 tracks`,
-          file_url: data.audio_url,
-          thumbnail_url: data.cover_image_url || undefined,
-          origin: 'creator',
-          ai_disclosure_label: participation.label,
-          ai_disclosure_basis: participation.basis,
-          human_participation_score: participation.score,
-          participation_signals: participation.signals,
-          tags: ['mashup', 'creator', ...(tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [])],
-          metadata: {
-            bpm: data.bpm || (bpm ? parseInt(bpm) : undefined),
-            key: data.key || musicalKey || undefined,
-            duration: data.duration,
-            lyrics: data.lyrics,
-            provider: 'sonic',
-            model_version: data.model_version,
-            clip_id: data.clip_id,
-            source_count: 2,
-            provenance: {
-              created_by: 'mashup_studio',
-              providers_used: ['sonic'],
-              remix_sources: selected,
+        let asset = null;
+        if (data.mashup_asset_id) {
+          asset = await base44.entities.UserAsset.get(data.mashup_asset_id).catch(() => null);
+        }
+        if (!asset) {
+          const participation = await calculateHumanParticipationScore({
+            userProvidedContent: false,
+            prompt: description,
+            styleOrTags: tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [],
+            referenceFile: true,   // 2 user-selected source tracks
+            isIteration: true,     // derived from prior works
+          });
+          asset = await base44.entities.UserAsset.create({
+            asset_type: 'mashup',
+            title: data.title || title || 'Mashup',
+            description: `Sonic mashup of 2 tracks`,
+            file_url: data.audio_url,
+            thumbnail_url: data.cover_image_url || undefined,
+            origin: 'creator',
+            ai_disclosure_label: participation.label,
+            ai_disclosure_basis: participation.basis,
+            human_participation_score: participation.score,
+            participation_signals: participation.signals,
+            tags: ['mashup', 'creator', ...(tags ? tags.split(',').map(s => s.trim()).filter(Boolean) : [])],
+            metadata: {
+              bpm: data.bpm || (bpm ? parseInt(bpm) : undefined),
+              key: data.key || musicalKey || undefined,
+              duration: data.duration,
+              lyrics: data.lyrics,
+              provider: 'sonic',
+              model_version: data.model_version,
+              clip_id: data.clip_id,
+              source_count: 2,
+              mashup_job_id: jobId,  // match the server's idempotency marker
+              provenance: {
+                created_by: 'mashup_studio',
+                providers_used: ['sonic'],
+                remix_sources: selected,
+              },
             },
-          },
-        });
+          });
+        }
         setResult(asset);
-        toast.success('Mashup created!', { icon: '🎚️' });
+        toast.success('Mashup created & saved to library!', { icon: '🎚️' });
       } catch (err) {
         toast.error('Mashup ready, but library save failed: ' + (err.message || 'unknown'));
         // Fall back to showing the raw audio URL

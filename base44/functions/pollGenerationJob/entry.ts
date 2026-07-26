@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { finalizeMashupAsset } from '../../shared/mashupFinalize.ts';
 
 // Both aimusicapi.ai providers (Sonic, Producer) share one API key.
 // We only require SONIC_API_KEY to be set — it's used as the bearer token for both endpoints.
@@ -335,6 +336,7 @@ Deno.serve(async (req) => {
         clip_ids: m.clip_ids || undefined,
         aligned_lyrics: m.aligned_lyrics || undefined,
         ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
+        mashup_asset_id: m.mashup_asset_id || undefined,
       });
     }
     if (job.status === 'failed') {
@@ -498,6 +500,14 @@ Deno.serve(async (req) => {
           }).catch(() => {});
         }
 
+        // Server-side library save for mashups — decoupled from the user staying
+        // on the MashupStudio page. Idempotent; no-op for non-mashup jobs.
+        let mashupAssetId = undefined;
+        if (job.input_data?.task_kind === 'mashup') {
+          const asset = await finalizeMashupAsset(base44, job.id);
+          mashupAssetId = asset?.id || undefined;
+        }
+
         return Response.json({
           status: 'completed',
           audio_url: job.job_type === 'music' ? outputUrl : undefined,
@@ -522,6 +532,7 @@ Deno.serve(async (req) => {
           aligned_lyrics: providerData.aligned_lyrics || undefined,
           ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
           content_hash: contentHash,
+          mashup_asset_id: mashupAssetId,
         });
       }
 

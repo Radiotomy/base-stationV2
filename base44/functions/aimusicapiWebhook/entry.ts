@@ -15,6 +15,7 @@
 // the provider calls it directly. Trust comes from HMAC signature verification.
 
 import { createClient } from 'npm:@base44/sdk@0.8.25';
+import { finalizeMashupAsset } from '../../shared/mashupFinalize.ts';
 
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 const APP_ID = Deno.env.get('BASE44_APP_ID');
@@ -287,6 +288,12 @@ Deno.serve(async (req) => {
           description: `${job.provider} ${job.job_type} generation (webhook)`,
         });
       } catch (e) { console.warn('Webhook credit deduction failed:', e.message); }
+    }
+
+    // Server-side library save for mashups — decoupled from the user staying on
+    // the MashupStudio page. Idempotent; no-op for non-mashup jobs.
+    if (job.input_data?.task_kind === 'mashup') {
+      await finalizeMashupAsset(base44, job.id);
     }
 
     // Finalize pending API usage log
