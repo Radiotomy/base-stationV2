@@ -7,6 +7,11 @@ scipy>=1.10.1,<2.0.0
 torch==2.1.0
 torchaudio==2.1.0
 librosa==0.10.1
+# Pin numba/llvmlite to a stable, well-cached pair. Letting numba float pulls
+# llvmlite 0.48.0 (a dev release) whose PyPI wheel has a mismatched digest and
+# fails pip's integrity check mid-build.
+numba==0.59.1
+llvmlite==0.42.0
 soundfile==0.12.1
 resampy>=0.4.2
 einops>=0.7.0
