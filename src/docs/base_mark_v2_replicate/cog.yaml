@@ -1,0 +1,26 @@
+# BASE Mark V2 — Replicate model config
+# SilentCipher neural watermark encoder/decoder.
+# Hardware: T4 GPU (cost-friendly; cold starts ~2–5 min).
+# IMPORTANT: keep numpy listed in `python_packages` (or let it inherit from
+# requirements.txt). Removing it reproduces
+#   RuntimeError: Numpy is not available
+# because SilentCipher's loader checks for numpy at import time.
+
+build:
+  python_version: "3.10"
+  python_packages:
+    - numpy>=1.24.4,<2.0.0
+    - scipy>=1.10.1,<2.0.0
+    - torch==2.1.0
+    - torchaudio==2.1.0
+    - librosa==0.10.1
+    - soundfile==0.12.1
+    - resampy>=0.4.2
+    - einops>=0.7.0
+    - click>=8.1.0
+
+# Image runs as the model's default/latest release unless a deployment pins it.
+# signature references predict.py:Predictor (the class with predict())
+predict: predict.py:Predictor
+
+image: r8.im/speedwolf2000/base-mark-v2
