@@ -45,6 +45,40 @@ export function v2PredictUrl() {
     : `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
 }
 
+// Optional deterministic version pin. When set (BASE_MARK_V2_VERSION), every
+// V2 prediction is pinned to this exact image digest — watermarking stays
+// byte-stable across pushes to :latest. When unset, predictions run latest.
+export function v2Version() {
+  return Deno.env.get('BASE_MARK_V2_VERSION') || null;
+}
+
+// Optional webhook URL Replicate will POST to when a prediction settles.
+// Built from REPLICATE_WEBHOOK_URL (the deployed replicateV2Webhook function
+// URL, set in the Base44 dashboard) plus the shared secret as a ?sig= query.
+// Returns null when either env is missing — startV2 then leaves the predictor
+// on the existing pollBaseMarkV2 polling path. No silent breakage.
+export function v2WebhookUrl() {
+  const base = Deno.env.get('REPLICATE_WEBHOOK_URL');
+  const secret = Deno.env.get('REPLICATE_WEBHOOK_SECRET');
+  if (!base || !secret) return null;
+  const sep = base.includes('?') ? '&' : '?';
+  return `${base}${sep}sig=${secret}`;
+}
+
+// Build the prediction POST body shared by both startV2 (async) and runV2
+// (blocking). Centralizes webhook + version wiring so callers stay simple.
+function v2Body(input) {
+  const body = { input };
+  const version = v2Version();
+  if (version) body.version = version;
+  const webhook = v2WebhookUrl();
+  if (webhook) {
+    body.webhook = webhook;
+    body.webhook_events_filter = ['completed', 'failed'];
+  }
+  return body;
+}
+
 // Run a prediction on the private V2 model via its Replicate deployment.
 // Blocks up to ~60s via Prefer:wait, then polls (cold starts on GPU models
 // can take a while). Returns the output.
@@ -56,7 +90,7 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
   const r = await fetch(v2PredictUrl(), {
     method: 'POST',
     headers: { ...headers, 'Prefer': 'wait=60' },
-    body: JSON.stringify({ input }),
+    body: JSON.stringify(v2Body(input)),
   });
   let data = await r.json();
   if (!r.ok) {
@@ -89,7 +123,7 @@ export async function startV2(input) {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ input }),
+    body: JSON.stringify(v2Body(input)),
   });
   const data = await r.json();
   if (!r.ok) {

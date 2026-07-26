@@ -16,7 +16,14 @@ Deno.serve(async (req) => {
     if (!token) return Response.json({ error: 'REPLICATE_API_TOKEN is not set' }, { status: 500 });
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-    const { action, query, model, version, input } = await req.json();
+    const { action, query, model, version, input, cursor, status_filter, id, fileUrl, filename, contentType } = await req.json();
+
+    // Admin-only operations — protects predictions/cancel/uploadFile/versions from non-admins invoking
+    // the endpoint directly.
+    const adminOnly = ['predictions', 'cancel', 'uploadFile', 'versions'];
+    if (adminOnly.includes(action) && user.role !== 'admin') {
+      return Response.json({ error: 'Admin only' }, { status: 403 });
+    }
 
     if (action === 'status') {
       const r = await fetch('https://api.replicate.com/v1/account', { headers });
@@ -50,8 +57,79 @@ Deno.serve(async (req) => {
         model: `${m.owner}/${m.name}`,
         description: m.description,
         visibility: m.visibility,
+        run_count: m.run_count,
         latest_version: m.latest_version?.id,
+        default_example: m.default_example?.id,
         openapi_input_schema: m.latest_version?.openapi_schema?.components?.schemas?.Input,
+      });
+    }
+
+    if (action === 'versions') {
+      if (!model) return Response.json({ error: 'model is required (owner/name)' }, { status: 400 });
+      const url = new URL(`https://api.replicate.com/v1/models/${model}/versions`);
+      if (cursor) url.searchParams.set('cursor', cursor);
+      const r = await fetch(url.toString(), { headers });
+      const data = await r.json();
+      if (!r.ok) return Response.json({ ok: false, status: r.status, error: data });
+      const trimmed = (data.results || []).map((v) => ({
+        id: v.id,
+        created_at: v.created_at,
+        cog_info: v.cog_info && { name: v.cog_info.name, image_visibility: v.cog_info.image_visibility },
+      }));
+      return Response.json({ ok: true, results: trimmed, next: data.next, previous: data.previous });
+    }
+
+    if (action === 'predictions') {
+      const url = new URL('https://api.replicate.com/v1/predictions');
+      if (cursor) url.searchParams.set('cursor', cursor);
+      if (status_filter) url.searchParams.set('status', status_filter);
+      const r = await fetch(url.toString(), { headers });
+      const data = await r.json();
+      if (!r.ok) return Response.json({ ok: false, status: r.status, error: data });
+      const trimmed = (data.results || []).map((p) => ({
+        id: p.id, status: p.status, version: p.version,
+        created_at: p.created_at, completed_at: p.completed_at,
+        source: p.source?.api_key ? 'api' : p.source,
+        input: p.input, output: p.output, error: p.error,
+      }));
+      return Response.json({ ok: true, results: trimmed, next: data.next, previous: data.previous });
+    }
+
+    if (action === 'cancel') {
+      if (!id) return Response.json({ error: 'id (prediction id) is required' }, { status: 400 });
+      const r = await fetch(`https://api.replicate.com/v1/predictions/${id}/cancel`, { method: 'POST', headers });
+      const data = await r.json();
+      if (!r.ok) return Response.json({ ok: false, status: r.status, error: data });
+      return Response.json({ ok: true, id: data.id, status: data.status });
+    }
+
+    if (action === 'uploadFile') {
+      // Replicate Files API — register a private asset through Replicate's
+      // own storage so it can be used as an `audio` input via the replicates://
+      // URL scheme. Useful when an asset isn't publicly fetchable/cors-friendly.
+      if (!fileUrl) return Response.json({ error: 'fileUrl is required' }, { status: 400 });
+      const r = await fetch(fileUrl);
+      if (!r.ok) return Response.json({ error: `Failed to fetch ${fileUrl}` }, { status: 502 });
+      const blob = await r.blob();
+      const contentType = blob.type || contentType || 'application/octet-stream';
+      const safeName = (filename || 'upload').replace(/[^\w.\-]/g, '_').slice(0, 200);
+      const form = new FormData();
+      form.append('filename', safeName);
+      form.append('content_type', contentType);
+      form.append('content', blob, safeName);
+      const up = await fetch('https://api.replicate.com/v1/files', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: form,
+      });
+      const upData = await up.json();
+      if (!up.ok) return Response.json({ ok: false, status: up.status, error: upData });
+      return Response.json({
+        ok: true,
+        file_id: upData.id,
+        name: upData.name,
+        replicates_url: (upData.urls && (upData.urls.get || upData.urls.download)) || upData.uri,
+        size_bytes: upData.size,
       });
     }
 
