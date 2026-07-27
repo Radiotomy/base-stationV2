@@ -7,6 +7,8 @@ import { Play, Pause, Music, Plus, ArrowLeft, Heart, Share2, MoreHorizontal, Clo
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import ProvenanceBadge from "@/components/common/ProvenanceBadge";
+import AILabelBadge from "@/components/common/AILabelBadge";
 
 export default function PlaylistDetail() {
   const { id } = useParams();
@@ -208,7 +210,11 @@ export default function PlaylistDetail() {
                     </div>
                     <div className="min-w-0">
                       <p className={`font-semibold text-sm truncate ${isActive ? "text-purple-400" : "text-foreground"}`}>{track.track_title}</p>
-                      <p className="text-xs text-muted-foreground truncate md:hidden">{track.artist_name}</p>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <p className="text-xs text-muted-foreground truncate md:hidden">{track.artist_name}</p>
+                        <AILabelBadge label={track.ai_label} size="xs" />
+                        <ProvenanceBadge origin={track.source || track.origin || "community"} size="xs" />
+                      </div>
                     </div>
                   </div>
 

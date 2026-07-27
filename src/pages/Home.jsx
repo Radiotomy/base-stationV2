@@ -10,6 +10,7 @@ import HomeStatsStrip from "@/components/home/HomeStatsStrip";
 import HomeFeatureGrid from "@/components/home/HomeFeatureGrid";
 import HomePulsePanels from "@/components/home/HomePulsePanels";
 import HomeCTAPanel from "@/components/home/HomeCTAPanel";
+import HomeTemplatesPreview from "@/components/home/HomeTemplatesPreview";
 import HumanFirstManifesto from "@/components/home/HumanFirstManifesto";
 
 const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
@@ -61,6 +62,8 @@ export default function Home() {
             <CommunityMetrics />
 
             <HomeFeatureGrid />
+
+            <HomeTemplatesPreview />
 
             <HumanFirstManifesto />
 

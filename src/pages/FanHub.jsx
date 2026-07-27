@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { Users, Crown, Award, Heart } from "lucide-react";
 import FollowedArtistsSection from "@/components/fan/FollowedArtistsSection";
+import FollowingFeed from "@/components/fan/FollowingFeed";
 import MyMembershipsSection from "@/components/fan/MyMembershipsSection";
 import MyCollectiblesSection from "@/components/fan/MyCollectiblesSection";
 import MyCreatorActions from "@/components/fan/MyCreatorActions";
@@ -90,6 +91,7 @@ export default function FanHub() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
+          <FollowingFeed follows={follows} />
           <FollowedArtistsSection follows={follows} />
           <MyMembershipsSection memberships={memberships} creatorMap={creatorMap} />
           <MyCollectiblesSection claims={claims} creatorMap={creatorMap} />
