@@ -74,4 +74,3 @@ granular attribution profile:
 
 Creators view and export this profile ("Copy DDEX Tag Bundle" — an XML metadata snippet)
 from the Provenance Manifest card (`ProvenanceManifestCard`) in the Ownership dashboard.
-See `src/docs/COS_ARCHITECTURE_PROMPT.md` for the third-party builder prompt template.
