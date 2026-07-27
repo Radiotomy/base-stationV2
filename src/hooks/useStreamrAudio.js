@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { StreamrClient, EthereumKeyPairIdentity } from '@streamr/sdk';
 import { base44 } from '@/api/base44Client';
+// NOTE: @streamr/sdk is imported dynamically inside startPublish/startSubscribe
+// (see below). It pulls in Node-only globals (`global`, `process`, `Buffer`) at
+// module-eval time; importing it statically crashes the LiveStudio page on mount.
 import { STREAMR_CONFIG } from '@/config/streamrConfig';
 
 /**
@@ -94,6 +96,7 @@ export function useStreamrAudio({ sessionId, role } = {}) {
       }
 
       // Ephemeral publishing identity: private key stays in the browser.
+      const { StreamrClient, EthereumKeyPairIdentity } = await import('@streamr/sdk');
       const identity = await EthereumKeyPairIdentity.generate();
       const publisherAddress = await identity.getUserId();
 
@@ -180,6 +183,7 @@ export function useStreamrAudio({ sessionId, role } = {}) {
       gainRef.current = gain;
 
       // Public stream: no identity required — SDK generates a random one.
+      const { StreamrClient } = await import('@streamr/sdk');
       const subClient = new StreamrClient();
       clientRef.current = subClient;
 
