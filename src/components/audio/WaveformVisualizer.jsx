@@ -190,12 +190,11 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
     }
   };
 
-  const handleCanvasMouseDown = (e) => {
+  const pointerDownAt = (clientX) => {
     if (!audioRef.current || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = clientX - rect.left;
     const time = (x / canvas.width) * duration;
 
     if (selectedStart !== null && selectedEnd !== null) {
@@ -213,12 +212,11 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
     }
   };
 
-  const handleMouseMove = (e) => {
+  const pointerMoveTo = (clientX) => {
     if (!isDragging || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
+    const x = clientX - rect.left;
     const time = Math.max(0, Math.min(duration, (x / canvas.width) * duration));
 
     if (dragMode === 'start') {
@@ -235,17 +233,39 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
     }
   };
 
+  const handleCanvasMouseDown = (e) => pointerDownAt(e.clientX);
+  const handleMouseMove = (e) => pointerMoveTo(e.clientX);
+
+  // Touch equivalents — drags fire as the finger moves across the canvas.
+  // We preventDefault so the browser doesn't also synthesize a mouse event
+  // or start scrolling while the user is fine-tuning a selection edge.
+  const handleTouchStart = (e) => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    pointerDownAt(e.touches[0].clientX);
+  };
+  const handleTouchMove = (e) => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    pointerMoveTo(e.touches[0].clientX);
+  };
+
   const handleMouseUp = () => {
     setIsDragging(false);
     setDragMode(null);
   };
 
   useEffect(() => {
+    const handleTouchEnd = () => handleMouseUp();
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('touchend', handleTouchEnd);
+    window.addEventListener('touchcancel', handleTouchEnd);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
     };
   }, [isDragging, dragMode, selectedStart, selectedEnd, duration]);
 
@@ -289,13 +309,15 @@ export default function WaveformVisualizer({ audioUrl, onSegmentSelect, disabled
         <div
           className={`relative rounded-xl overflow-hidden bg-black border border-border ${!audioUrl ? 'opacity-50' : ''}`}
           onMouseDown={handleCanvasMouseDown}
-          style={{ cursor: isDragging ? 'grabbing' : 'crosshair' }}
+          style={{ cursor: isDragging ? 'grabbing' : 'crosshair', touchAction: 'none' }}
         >
           <canvas
             ref={canvasRef}
             width={800}
             height={120}
             onClick={handleCanvasClick}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
             className="w-full"
           />
           {isLoading && (

@@ -1,12 +1,14 @@
 {
-  "name": "Base Station - Multi-Chain AI Music",
+  "name": "Base Station",
   "short_name": "Base Station",
   "description": "Where AI Music Owns Itself. Create, discover, and own AI-generated music with immutable on-chain provenance.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0A0A12",
-  "theme_color": "#0A0A12",
+  "background_color": "#14100C",
+  "theme_color": "#0a0a0a",
+  "categories": ["music", "productivity", "entertainment"],
   "icons": [
     {
       "src": "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/f2f42bbf8_generated_image.png",
@@ -18,7 +20,13 @@
       "src": "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/f2f42bbf8_generated_image.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/f2f42bbf8_generated_image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
