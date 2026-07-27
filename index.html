@@ -24,6 +24,10 @@
     <meta name="twitter:title" content="Base Station" />
     <meta name="twitter:description" content="AI Music Studio · Radio · Community" />
     <meta name="twitter:image" content="https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/5999bbcfb_generated_image.png" />
+    <!-- Polyfill Node's `global` for browser code (Streamr's k-bucket/randombytes deps reference it). -->
+    <script>
+      if (typeof global === 'undefined') { window.global = globalThis; }
+    </script>
   </head>
   <body>
     <div id="root"></div>
