@@ -18,5 +18,10 @@ export default defineConfig({
     }),
     react(),
     nodePolyfills()
-  ]
+  ],
+  define: {
+    // Streamr's k-bucket / randombytes deps reference Node's `global`,
+    // which isn't defined in the browser — alias it to globalThis.
+    global: 'globalThis'
+  }
 });
