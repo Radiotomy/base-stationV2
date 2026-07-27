@@ -3,8 +3,10 @@ import { Music2 } from 'lucide-react';
 import LoopDiscoverTab from '@/components/loops/LoopDiscoverTab';
 import MyLoopsTab from '@/components/loops/MyLoopsTab';
 import CommunityLoopsTab from '@/components/loops/CommunityLoopsTab';
+import GenerateLoopTab from '@/components/loops/GenerateLoopTab';
 
 const TABS = [
+  { key: 'generate', label: 'Generate (BASE SoundForge)' },
   { key: 'discover', label: 'Discover Free Loops' },
   { key: 'mine', label: 'My Loops' },
   { key: 'community', label: 'Community Library' },
@@ -39,6 +41,7 @@ export default function LoopStudio() {
           ))}
         </div>
 
+        {tab === 'generate' && <GenerateLoopTab />}
         {tab === 'discover' && <LoopDiscoverTab />}
         {tab === 'mine' && <MyLoopsTab />}
         {tab === 'community' && <CommunityLoopsTab />}

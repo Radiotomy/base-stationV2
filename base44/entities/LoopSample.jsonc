@@ -34,7 +34,8 @@
       "enum": [
         "upload",
         "freesound",
-        "admin_collection"
+        "admin_collection",
+        "soundforge"
       ],
       "default": "upload"
     },

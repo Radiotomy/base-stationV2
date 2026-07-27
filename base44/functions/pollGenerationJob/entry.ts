@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { finalizeMashupAsset } from '../../shared/mashupFinalize.ts';
 import { getHarmonixPrediction, extractAudioUrl } from '../../shared/harmonix.ts';
+import { getSoundForgePrediction, extractSoundForgeAudioUrl } from '../../shared/soundForge.ts';
 
 // Both aimusicapi.ai providers (Sonic, Producer) share one API key.
 // We only require SONIC_API_KEY to be set — it's used as the bearer token for both endpoints.
@@ -303,6 +304,20 @@ async function pollProvider(provider, providerTaskId, job) {
     }
     if (data.status === 'failed' || data.status === 'canceled') {
       return { status: 'failed', error: data.error || 'BASE-Harmonix generation failed' };
+    }
+    return { status: 'processing' };
+  }
+
+  if (provider === 'soundforge') {
+    // BASE SoundForge (Stable Audio Open 1.0 on Replicate) — standard Replicate prediction lifecycle
+    const data = await getSoundForgePrediction(providerTaskId);
+    if (data.status === 'succeeded') {
+      const audioUrl = extractSoundForgeAudioUrl(data.output);
+      if (!audioUrl) return { status: 'failed', error: 'BASE SoundForge returned no audio output' };
+      return { status: 'completed', audio_url: audioUrl };
+    }
+    if (data.status === 'failed' || data.status === 'canceled') {
+      return { status: 'failed', error: data.error || 'BASE SoundForge generation failed' };
     }
     return { status: 'processing' };
   }

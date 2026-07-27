@@ -15,7 +15,8 @@
         "lyrics",
         "cover_art",
         "video",
-        "sfx"
+        "sfx",
+        "loop"
       ],
       "description": "Type of generation task"
     },
@@ -30,7 +31,8 @@
         "ltx",
         "nextcut",
         "elevenlabs",
-        "harmonix"
+        "harmonix",
+        "soundforge"
       ],
       "description": "Which provider handled the generation"
     },
