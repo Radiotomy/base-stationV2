@@ -3,6 +3,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 // Voice synthesis via ElevenLabs Text-to-Speech (replaces the retired Nuro TTS API).
 // Docs: POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id} — returns MP3 bytes.
 // Request contract unchanged: { text, persona_name, voice_type, accent, characteristics, speed, pitch, voice_id? }
+const VOICE_SYNTH_COST = 2;
 // Premade ElevenLabs voice IDs mapped by voice_type + accent:
 const VOICE_MAP = {
   male:    { american: 'pNInz6obpgDQGcFmaJgB', british: 'JBFqnCBsd6RMkjVDRZzb', australian: 'IKne3meq5aSn9XLyUdCD', default: 'pNInz6obpgDQGcFmaJgB' }, // Adam / George / Charlie
@@ -30,6 +31,18 @@ Deno.serve(async (req) => {
 
     const key = Deno.env.get('ELEVENLABS_API');
     if (!key) return Response.json({ error: 'ELEVENLABS_API not configured' }, { status: 500 });
+
+    // ── Server-side credit gate (this was previously logged but never deducted) ──
+    const creditRecs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+    let creditRecord = creditRecs[0];
+    const balance = creditRecord?.balance ?? 0;
+    if (balance < VOICE_SYNTH_COST) {
+      return Response.json({
+        error: 'Insufficient credits',
+        required: VOICE_SYNTH_COST, balance,
+        message: `Voice synthesis costs ${VOICE_SYNTH_COST} credits. You have ${balance}.`,
+      }, { status: 402 });
+    }
 
     const typeMap = VOICE_MAP[voice_type] || VOICE_MAP.male;
     const voiceId = explicitVoiceId || typeMap[accent] || typeMap.default;
@@ -71,11 +84,34 @@ Deno.serve(async (req) => {
     const file = new File([bytes], `voice-${Date.now()}.mp3`, { type: 'audio/mpeg' });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
+    // ── Deduct credits now that generation succeeded ──
+    if (!creditRecord) {
+      creditRecord = await base44.asServiceRole.entities.UserCredit.create({
+        user_id: user.id, user_email: user.email,
+        balance: 0, lifetime_earned: 0, lifetime_spent: 0,
+      });
+    }
+    const newBalance = Math.max(0, (creditRecord.balance || 0) - VOICE_SYNTH_COST);
+    await base44.asServiceRole.entities.UserCredit.update(creditRecord.id, {
+      balance: newBalance,
+      lifetime_spent: (creditRecord.lifetime_spent || 0) + VOICE_SYNTH_COST,
+      monthly_used: (creditRecord.monthly_used || 0) + VOICE_SYNTH_COST,
+    });
+    await base44.asServiceRole.entities.CreditLog.create({
+      user_id: user.id, user_email: user.email,
+      transaction_type: 'generation',
+      amount: -VOICE_SYNTH_COST,
+      balance_before: creditRecord.balance,
+      balance_after: newBalance,
+      provider: 'elevenlabs',
+      description: `Voice synthesis${persona_name ? ` — ${persona_name}` : ''}`,
+    }).catch(() => {});
+
     await base44.asServiceRole.entities.APIUsageLog.create({
       user_id: user.id, user_email: user.email, user_name: user.full_name,
       provider: 'elevenlabs',
       task: 'synthesize_voice',
-      credits_used: 2,
+      credits_used: VOICE_SYNTH_COST,
       status: 'success',
       timestamp: new Date().toISOString(),
       metadata: { model_version: 'eleven_multilingual_v2', voice_id: voiceId, voice_type, accent },
@@ -85,6 +121,8 @@ Deno.serve(async (req) => {
       audio_url: file_url,
       voice_id: voiceId,
       persona_name,
+      credits_used: VOICE_SYNTH_COST,
+      credits_remaining: newBalance,
       message: 'Voice synthesis complete',
     });
   } catch (error) {

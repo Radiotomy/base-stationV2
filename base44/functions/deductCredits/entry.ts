@@ -29,6 +29,20 @@ Deno.serve(async (req) => {
     const newBalance = creditRecord.balance - amt;
     if (newBalance < 0) return Response.json({ error: 'Insufficient credits' }, { status: 400 });
 
+    // Premium tier gating: non-premium accounts are capped at their monthly quota
+    // even if their balance covers it — premium accounts are exempt from this cap.
+    if (!creditRecord.is_premium && creditRecord.monthly_limit) {
+      const monthlyUsed = creditRecord.monthly_used || 0;
+      if (monthlyUsed + amt > creditRecord.monthly_limit) {
+        return Response.json({
+          error: 'Monthly credit limit reached',
+          monthly_limit: creditRecord.monthly_limit,
+          monthly_used: monthlyUsed,
+          message: `You've used your ${creditRecord.monthly_limit.toLocaleString()} monthly credits. Upgrade to Premium for a higher monthly cap, or wait until your reset date.`,
+        }, { status: 403 });
+      }
+    }
+
     // Update credit balance
     await base44.asServiceRole.entities.UserCredit.update(creditRecord.id, {
       balance: newBalance,

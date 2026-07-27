@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart3, Music, Zap, TrendingUp, Eye, Heart,
   Image, FileText, ChevronRight, Clock, CheckCircle, Folder, History, RefreshCw,
-  FolderOpen, Layers, Upload, Radio, Trophy, Award, ShieldCheck, Share2
+  FolderOpen, Layers, Upload, Radio, Trophy, Award, ShieldCheck, Share2, DollarSign
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
@@ -24,6 +24,7 @@ import OwnershipDashboard from "@/components/music/OwnershipDashboard";
 import ProofOfOwnershipTab from "@/components/dashboard/ProofOfOwnershipTab";
 import DistributionTab from "@/components/distribution/DistributionTab";
 import MyLoopsTab from "@/components/loops/MyLoopsTab";
+import ArtistRevenueDashboard from "@/components/creator/ArtistRevenueDashboard";
 import CircuitTabBar from "@/components/dashboard/circuit/CircuitTabBar";
 import WorkspaceSidebarNav from "@/components/dashboard/circuit/WorkspaceSidebarNav";
 import WorkspaceStatsBar from "@/components/dashboard/circuit/WorkspaceStatsBar";
@@ -139,6 +140,7 @@ export default function CreatorDashboard() {
     { key: "tracks",    label: "Submissions", icon: Upload, count: tracks.length, tip: "Tracks you've submitted to the community charts and radio, with their approval status" },
     { key: "live",      label: "Live",        icon: Radio,      tip: "Your live streaming sessions — past shows and stats" },
     { key: "fans",      label: "Fans",        icon: Trophy,     tip: "Fan economy — collectibles, fan club tiers, rewards and your top supporters" },
+    { key: "revenue",   label: "Revenue",     icon: DollarSign, tip: "Tracked earnings from tips, fan club memberships and collectible sales" },
     { key: "distribution", label: "Distribution", icon: Share2, tip: "Connect your Audius account and publish tracks to the streaming network with full provenance" },
     { key: "history",   label: "History",     icon: History,    tip: "Every AI generation you've run, with status and credits used" },
     { key: "ownership", label: "Ownership",   icon: Award,      tip: "Creative Ownership Scores — how much human input went into each creation" },
@@ -294,6 +296,11 @@ export default function CreatorDashboard() {
             <TopFansAnalytics creatorId={user.id} />
           </div>
         </div>
+      )}
+
+      {/* Revenue Tab */}
+      {activeTab === "revenue" && user && (
+        <ArtistRevenueDashboard userId={user.id} />
       )}
 
       {/* Distribution Tab */}

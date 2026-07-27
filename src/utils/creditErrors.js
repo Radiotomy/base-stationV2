@@ -30,6 +30,18 @@ export function handleCreditError(err) {
     });
     return true;
   }
+  // Non-premium monthly quota reached (premium tier gating)
+  if (status === 403 && data?.error === 'Monthly credit limit reached') {
+    toast.error(data?.message || 'Monthly credit limit reached.', {
+      description: `Used ${data?.monthly_used ?? '?'} / ${data?.monthly_limit ?? '?'} this month.`,
+      action: {
+        label: 'View Credits',
+        onClick: () => { window.location.href = '/credits'; },
+      },
+      duration: 10000,
+    });
+    return true;
+  }
   return false;
 }
 

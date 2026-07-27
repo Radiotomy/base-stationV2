@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import CostBadge from '@/components/credits/CostBadge';
+import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 
 export default function VoiceSynthesisPanel({ persona }) {
   const [text, setText] = useState('');
@@ -34,6 +36,7 @@ export default function VoiceSynthesisPanel({ persona }) {
         pitch,
       });
       const data = res.data;
+      refreshCreditsFromResponse(data);
       if (data?.audio_url) {
         setAudioUrl(data.audio_url);
         setLoading(false);
@@ -62,7 +65,7 @@ export default function VoiceSynthesisPanel({ persona }) {
       }
     } catch (err) {
       setLoading(false);
-      toast.error(err.message);
+      if (!handleCreditError(err)) toast.error(err?.response?.data?.message || err.message);
     }
   };
 
@@ -108,6 +111,7 @@ export default function VoiceSynthesisPanel({ persona }) {
       <Button onClick={synthesize} disabled={loading || !text.trim()} className="w-full bg-pink-600 hover:bg-pink-500 rounded-xl font-bold gap-2">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
         {loading ? 'Synthesizing…' : 'Synthesize Voice'}
+        {!loading && <CostBadge cost={2} size="sm" />}
       </Button>
 
       {audioUrl && (
