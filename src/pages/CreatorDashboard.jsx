@@ -47,7 +47,25 @@ export default function CreatorDashboard() {
   const [activeWorkspaceId, setActiveWorkspaceId] = useState(() => localStorage.getItem("bs_active_workspace") || "all");
   const navigate = useNavigate();
 
+  const OFFLINE_CACHE_KEY = "bs_offline_library_cache_v1";
+
   const loadData = useCallback(async (userId) => {
+    // Offline: skip network entirely and restore the last successful snapshot.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      try {
+        const cached = JSON.parse(localStorage.getItem(OFFLINE_CACHE_KEY) || "null");
+        if (cached && cached.userId === userId) {
+          setTracks(cached.tracks || []);
+          setAssets(cached.assets || []);
+          setUsageLogs(cached.usageLogs || []);
+          setWorkspaces(cached.workspaces || []);
+          setStats(cached.stats || null);
+          toast.info("You're offline — showing your last saved library");
+          return;
+        }
+      } catch { /* ignore corrupt cache */ }
+    }
+
     // Sequence requests instead of Promise.all to avoid bursting the per-second rate limit.
     // Each query is independently catch-guarded so a single 429 can't crash the whole dashboard.
     const userTracks = await base44.entities.TrackSubmission
@@ -69,7 +87,7 @@ export default function CreatorDashboard() {
     setUsageLogs(logs);
     const creditsSpent = logs.reduce((s, l) => s + (l.credits_used || 0), 0);
     const totalGenerations = logs.filter(l => l.status === 'success').length;
-    setStats({
+    const newStats = {
       total_tracks: userTracks.length,
       published: userTracks.filter(t => t.status === "approved").length,
       pending: userTracks.filter(t => t.status === "pending").length,
@@ -78,7 +96,15 @@ export default function CreatorDashboard() {
       total_assets: userAssets.length,
       credits_spent: creditsSpent,
       total_generations: totalGenerations,
-    });
+    };
+    setStats(newStats);
+
+    // Snapshot for offline browsing next time the user opens this page without a connection.
+    try {
+      localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify({
+        userId, tracks: userTracks, assets: userAssets, usageLogs: logs, workspaces: ws, stats: newStats,
+      }));
+    } catch { /* storage full or unavailable — safe to skip caching */ }
   }, []);
 
   useEffect(() => {

@@ -66,6 +66,7 @@ export default function CreditBalanceWidget({ className = "" }) {
   return (
     <Link
       to="/credits"
+      title="Your credits power every AI generation. New accounts get 250 free. Click to view your balance history and get more."
       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all hover:border-yellow-500/40 hover:bg-yellow-500/5 group ${
         isLow
           ? "border-red-500/40 bg-red-500/10"

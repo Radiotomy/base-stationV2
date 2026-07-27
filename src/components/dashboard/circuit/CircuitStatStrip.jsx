@@ -1,15 +1,17 @@
+import InfoTip from "@/components/common/InfoTip";
+
 /**
  * Circuit-board style stat strip — compact modules connected by a PCB trace
- * with node dots, replacing the bulky stat card grid.
- * Props: stats = [{ icon: LucideIcon, label: string, value: string|number, accent?: string, tip?: string }]
- * tip shows as a native hover balloon explaining the metric.
+ * with node dots. Each metric shows a rich hover/tap tooltip ("?") explaining
+ * what it measures, so users always know what the number means.
+ * Props: stats = [{ icon: LucideIcon, label, value, accent?, tip? }]
  */
 export default function CircuitStatStrip({ stats = [] }) {
   return (
     <div className="relative rounded-2xl border border-border bg-card/60 overflow-hidden">
       {/* top trace line */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#FF9A4D]/60 to-transparent" />
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 divide-x divide-y sm:divide-y lg:divide-y-0 divide-border/60">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 divide-x divide-y sm:divide-y-0 divide-border/60">
         {stats.map(({ icon: Icon, label, value, accent = "#FF9A4D", tip }) => (
           <div key={label} className="relative p-3.5 group cursor-default" title={tip}>
             {/* node dot */}
@@ -19,7 +21,12 @@ export default function CircuitStatStrip({ stats = [] }) {
             />
             <div className="flex items-center gap-1.5 mb-1.5">
               <Icon className="w-3 h-3" style={{ color: accent }} />
-              <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-muted-foreground truncate">{label}</p>
+              <p className="text-[9px] font-mono uppercase tracking-[0.15em] text-muted-foreground truncate flex-1">{label}</p>
+              {tip && (
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <InfoTip text={tip} side="bottom" />
+                </span>
+              )}
             </div>
             <p className="text-xl font-black text-foreground leading-none tabular-nums">{value}</p>
           </div>

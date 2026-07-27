@@ -19,6 +19,7 @@ import OnboardingModal from '@/components/onboarding/OnboardingModal';
 import GuidedTour from '@/components/onboarding/GuidedTour';
 import GlobalSearch from '@/components/search/GlobalSearch';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
+import OfflineBanner from '@/components/layout/OfflineBanner';
 import MobileLayout from './components/layout/MobileLayout';
 
 // Pages — lazy-loaded so each route only downloads its own code (big mobile perf win)
@@ -127,6 +128,7 @@ const AuthenticatedApp = () => {
 
   return (
     <>
+      <OfflineBanner />
       {!isAuthPage && <Header user={user} />}
       {!isAuthPage && <Breadcrumbs />}
       <Suspense fallback={<PageLoader />}>

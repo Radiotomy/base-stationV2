@@ -7,10 +7,12 @@ import { HelpCircle } from 'lucide-react';
  *
  * Props:
  *   - text: string or ReactNode shown inside the tooltip
+ *   - side: 'top' (default) | 'bottom' — which side of the trigger the bubble opens
  *   - size: 'xs' | 'sm' (default 'xs')
  *   - className: optional extra classes on the trigger button
+ *   - icon: optional override for the trigger node (defaults to HelpCircle)
  */
-export default function InfoTip({ text, size = 'xs', className = '' }) {
+export default function InfoTip({ text, side = 'top', size = 'xs', className = '', icon }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -23,6 +25,9 @@ export default function InfoTip({ text, size = 'xs', className = '' }) {
   }, [open]);
 
   const iconClass = size === 'sm' ? 'w-3.5 h-3.5' : 'w-3 h-3';
+  const bubblePos = side === 'bottom'
+    ? 'top-full mt-2'
+    : 'bottom-full mb-2';
 
   return (
     <span ref={ref} className="relative inline-flex">
@@ -31,15 +36,17 @@ export default function InfoTip({ text, size = 'xs', className = '' }) {
         onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
         className={`text-muted-foreground hover:text-foreground transition-colors inline-flex items-center ${className}`}
         aria-label="More info"
       >
-        <HelpCircle className={iconClass} />
+        {icon || <HelpCircle className={iconClass} />}
       </button>
       {open && (
         <span
           role="tooltip"
-          className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-60 max-w-[16rem] p-2.5 rounded-lg bg-black/95 border border-white/15 text-[11px] leading-relaxed text-white shadow-2xl"
+          className={`absolute z-50 left-1/2 -translate-x-1/2 ${bubblePos} w-60 max-w-[16rem] p-2.5 rounded-lg bg-black/95 border border-white/15 text-[11px] leading-relaxed text-white shadow-2xl pointer-events-none`}
         >
           {text}
         </span>
