@@ -32,9 +32,11 @@ const EQ_BANDS = PARAMETRIC_EQ_ZONES;
 const STYLE_PRESETS = [
   { id: 'streaming', label: '🎧 Streaming', desc: '-14 LUFS · Balanced',  lufs: -14, character: { radio: 10, destroy: 5,  heaven_low: 30, space: 25, master_punch: 55 } },
   { id: 'loud',      label: '🔊 Loud',      desc: '-8 LUFS · Punchy',     lufs: -8,  character: { radio: 15, destroy: 25, heaven_low: 40, space: 15, master_punch: 85 } },
-  { id: 'club',      label: '💃 Club',      desc: '-7 LUFS · Heavy bass', lufs: -7,  character: { radio: 5,  destroy: 30, heaven_low: 75, space: 20, master_punch: 90 } },
+  { id: 'club',      label: '💃 Club',      desc: '-9 LUFS · Heavy bass', lufs: -9,  character: { radio: 5,  destroy: 30, heaven_low: 75, space: 20, master_punch: 90 } },
+  { id: 'radio',     label: '📻 Radio',     desc: '-16 LUFS · AM presence', lufs: -16, character: { radio: 70, destroy: 15, heaven_low: 10, space: 10, master_punch: 65 } },
   { id: 'warm',      label: '🌅 Warm',      desc: '-13 LUFS · Analog',    lufs: -13, character: { radio: 20, destroy: 15, heaven_low: 50, space: 35, master_punch: 50 } },
   { id: 'vinyl',     label: '💿 Vinyl',     desc: '-16 LUFS · Smooth',    lufs: -16, character: { radio: 30, destroy: 20, heaven_low: 40, space: 45, master_punch: 40 } },
+  { id: 'lofi',      label: '📼 Lo-Fi',     desc: '-15 LUFS · Dusty & warm', lufs: -15, character: { radio: 45, destroy: 35, heaven_low: 25, space: 30, master_punch: 30 } },
   { id: 'balanced',  label: '⚖️ Balanced',  desc: '-12 LUFS · Versatile', lufs: -12, character: { radio: 10, destroy: 10, heaven_low: 35, space: 30, master_punch: 60 } },
 ];
 
@@ -56,6 +58,8 @@ export default function AIMasteringPanel() {
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [librarySelection, setLibrarySelection] = useState([]);
   const [libraryAssets, setLibraryAssets] = useState([]);
+  const [sourceMetadata, setSourceMetadata] = useState(null);
+  const [abMode, setAbMode] = useState('mastered'); // 'original' | 'mastered'
 
   // Stereo controls
   const [balance, setBalance] = useState(0);       // -100 (full L) → +100 (full R)
@@ -106,6 +110,16 @@ export default function AIMasteringPanel() {
 
   const analysers = graphReady ? chain.getAnalysers() : { left: null, right: null };
 
+  const fetchSourceMetadata = async (url) => {
+    setSourceMetadata(null);
+    try {
+      const res = await base44.functions.invoke('extractAudioMetadata', { audio_url: url });
+      if (res.data?.metadata) setSourceMetadata(res.data.metadata);
+    } catch {
+      // Non-critical — metadata display simply stays empty
+    }
+  };
+
   const handleUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -117,6 +131,7 @@ export default function AIMasteringPanel() {
       setTitle(file.name.replace(/\.[^/.]+$/, ''));
       setResult(null);
       toast.success('Audio loaded!');
+      fetchSourceMetadata(r.file_url);
     } catch (err) { toast.error(err.message); }
     setUploading(false);
   };
@@ -157,6 +172,7 @@ export default function AIMasteringPanel() {
       setTitle(asset.title || 'Library Track');
       setResult(null);
       toast.success('Track loaded from library!');
+      fetchSourceMetadata(url);
     } catch (err) {
       toast.error('Failed to load library track: ' + (err?.message || 'unknown'));
     }
@@ -235,6 +251,7 @@ export default function AIMasteringPanel() {
       });
 
       setResult({ asset, profile: { lufs_target: lufsTarget } });
+      setAbMode('mastered');
       toast.success('Master rendered & saved to library!', { id: 'master', icon: '✨' });
     } catch (err) {
       toast.dismiss('master');
@@ -243,7 +260,7 @@ export default function AIMasteringPanel() {
     setMastering(false);
   };
 
-  const playbackUrl = result?.asset?.file_url || audioUrl;
+  const playbackUrl = (result?.asset?.file_url && abMode === 'mastered') ? result.asset.file_url : audioUrl;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -275,6 +292,14 @@ export default function AIMasteringPanel() {
           </Button>
           {audioUrl && (
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Track title" className="rounded-xl text-sm" />
+          )}
+          {sourceMetadata && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {sourceMetadata.container && <Badge variant="outline" className="text-[10px] uppercase">{sourceMetadata.container}</Badge>}
+              {sourceMetadata.duration && <Badge variant="outline" className="text-[10px]">{Math.round(sourceMetadata.duration)}s</Badge>}
+              {sourceMetadata.bitrate && <Badge variant="outline" className="text-[10px]">{Math.round(sourceMetadata.bitrate / 1000)}kbps</Badge>}
+              {sourceMetadata.sample_rate && <Badge variant="outline" className="text-[10px]">{sourceMetadata.sample_rate}Hz</Badge>}
+            </div>
           )}
         </div>
 
@@ -397,6 +422,19 @@ export default function AIMasteringPanel() {
 
       {/* Right — Scrubber + VU Meter + Character + EQ */}
       <div className="lg:col-span-2 space-y-4">
+        {result?.asset?.file_url && (
+          <div className="flex items-center gap-2 bg-card rounded-xl border border-border p-2">
+            <span className="text-xs font-semibold text-muted-foreground px-2">A/B Compare:</span>
+            <Button size="sm" variant={abMode === 'original' ? 'default' : 'ghost'} onClick={() => setAbMode('original')}
+              className={`rounded-lg text-xs ${abMode === 'original' ? 'bg-amber-600 hover:bg-amber-500' : ''}`}>
+              A · Original
+            </Button>
+            <Button size="sm" variant={abMode === 'mastered' ? 'default' : 'ghost'} onClick={() => setAbMode('mastered')}
+              className={`rounded-lg text-xs ${abMode === 'mastered' ? 'bg-amber-600 hover:bg-amber-500' : ''}`}>
+              B · Mastered
+            </Button>
+          </div>
+        )}
         {playbackUrl ? (
           <ScrubWaveformPlayer
             key={playbackUrl}
