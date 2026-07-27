@@ -36,28 +36,44 @@ export function v2Deployment() {
   return Deno.env.get('BASE_MARK_V2_DEPLOYMENT') || null;
 }
 
-// Candidate prediction URLs in preference order. The deployments endpoint is
-// tried first when BASE_MARK_V2_DEPLOYMENT is set; the model endpoint is always
-// available as a fallback (works once a version is on :latest — no deployment
-// object required). Callers try each in order and 404 → the next.
+// Candidate prediction endpoints in preference order, each tagged with a
+// `kind` so buildBody knows whether to attach a `version` digest pin:
+//   deployments — POST /v1/deployments/{owner}/{name}/predictions (no version;
+//                runs the deployment's dashboard-pinned release). Primary path
+//                when BASE_MARK_V2_DEPLOYMENT is a real deployment name.
+//   generic     — POST /v1/predictions with {version, input}. The ONLY endpoint
+//                that accepts an explicit image digest, so it is the fallback
+//                whenever BASE_MARK_V2_VERSION is set. Also bypasses the
+//                "needs an official version" 404 the model endpoint returns on
+//                a freshly-pushed private model.
+//   models      — POST /v1/models/{owner}/{name}/predictions (no version; uses
+//                latest/official version). Always available as a last resort.
+// Callers try each in order and fall through on 404 to the next.
 export function v2PostUrls() {
   const [owner = '', name = ''] = v2Model().split('/');
-  const modelUrl = `https://api.replicate.com/v1/models/${owner}/${name}/predictions`;
+  const out = [];
   const raw = v2Deployment();
-  if (!raw) return [modelUrl];
-  // The secret may be stored as "base-mark-v2" (bare name) or as the full
-  // "speedwolf2000/base-mark-v2" identifier. Normalize so we never produce a
-  // double-owner URL like /deployments/speedwolf2000/speedwolf2000/base-mark-v2.
-  const trimmed = raw.trim();
-  const [depOwner, depName] = trimmed.includes('/')
-    ? trimmed.split('/')
-    : [owner, trimmed];
-  return [`https://api.replicate.com/v1/deployments/${depOwner}/${depName}/predictions`, modelUrl];
+  if (raw) {
+    // The secret may be stored as "base-mark-v2" (bare name) or as the full
+    // "speedwolf2000/base-mark-v2" identifier. Normalize so we never produce a
+    // double-owner URL like /deployments/speedwolf2000/speedwolf2000/base-mark-v2.
+    const trimmed = raw.trim();
+    const [depOwner, depName] = trimmed.includes('/')
+      ? trimmed.split('/')
+      : [owner, trimmed];
+    out.push({ url: `https://api.replicate.com/v1/deployments/${depOwner}/${depName}/predictions`, kind: 'deployments' });
+  }
+  const version = v2Version();
+  if (version) out.push({ url: 'https://api.replicate.com/v1/predictions', kind: 'generic' });
+  out.push({ url: `https://api.replicate.com/v1/models/${owner}/${name}/predictions`, kind: 'models' });
+  return out;
 }
 
-// Optional deterministic version pin. When set (BASE_MARK_V2_VERSION), every
-// V2 prediction is pinned to this exact image digest — watermarking stays
-// byte-stable across pushes to :latest. When unset, predictions run latest.
+// Optional deterministic version pin (image digest). When set, predictions
+// routed through the generic /v1/predictions endpoint are pinned to this exact
+// digest so watermarking stays byte-stable across pushes to :latest. The
+// deployments endpoint ignores it (uses the dashboard-pinned release) and the
+// models endpoint rejects it, so it only takes effect on the generic path.
 export function v2Version() {
   return Deno.env.get('BASE_MARK_V2_VERSION') || null;
 }
@@ -76,17 +92,17 @@ export function v2WebhookUrl() {
 }
 
 // Build a prediction POST body.
-//   - deployments endpoint: runs the deployment's current release (it ignores
-//     any `version` field and pins are managed in the Replicate dashboard).
-//   - /models/{owner}/{name}/predictions endpoint: accepts an optional `version`
-//     field = the image digest (SHA256). When BASE_MARK_V2_VERSION is set, the
-//     model-endpoint POST pins every prediction to that exact digest so a later
-//     `cog push` to :latest cannot silently shift neural-watermark behavior.
-//     We only attach `version` on the model-endpoint request so the deployments
-//     endpoint stays clean.
-function buildBody(input, isModelEndpoint) {
+//   - deployments: runs the dashboard-pinned release; REJECTS a `version`
+//     field (422 "Additional property version is not allowed"), so never send one.
+//   - generic (/v1/predictions): the ONLY endpoint that accepts an explicit
+//     image digest. Attaches `version` = BASE_MARK_V2_VERSION when set, pinning
+//     every prediction to that exact digest so a later `cog push` to :latest
+//     cannot silently shift neural-watermark behavior.
+//   - models: uses latest/official version; sends no `version` (the endpoint
+//     rejects it the same way deployments does).
+function buildBody(input, kind) {
   const body = { input };
-  if (isModelEndpoint) {
+  if (kind === 'generic') {
     const version = v2Version();
     if (version) body.version = version;
   }
@@ -98,23 +114,24 @@ function buildBody(input, isModelEndpoint) {
   return body;
 }
 
-// POST a prediction, trying the deployments endpoint first and falling back to
-// the model endpoint on 404 (handles a missing/misconfigured deployment without
-// breaking the whole V2 pipeline).
+// POST a prediction, trying endpoints in preference order (deployments →
+// generic → models) and falling through on 404 to the next. A 404 means the
+// resource (deployment / official version) does not exist; any other error is
+// surfaced immediately so a real failure isn't masked by a silent fallback.
 async function postPrediction(input, prefer) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-  const urls = v2PostUrls();
+  const endpoints = v2PostUrls();
   let fallback;
-  for (let i = 0; i < urls.length; i++) {
-    const isModelEndpoint = urls[i].includes('/models/');
-    const r = await fetch(urls[i], {
+  for (let i = 0; i < endpoints.length; i++) {
+    const { url, kind } = endpoints[i];
+    const r = await fetch(url, {
       method: 'POST',
       headers: prefer ? { ...headers, Prefer: prefer } : headers,
-      body: JSON.stringify(buildBody(input, isModelEndpoint)),
+      body: JSON.stringify(buildBody(input, kind)),
     });
-    if (r.status === 404 && i < urls.length - 1) { fallback = await r.text().catch(() => ''); continue; }
+    if (r.status === 404 && i < endpoints.length - 1) { fallback = await r.text().catch(() => ''); continue; }
     const data = await r.json();
     if (!r.ok) {
       const msg = data?.detail || data?.error || JSON.stringify(data);
