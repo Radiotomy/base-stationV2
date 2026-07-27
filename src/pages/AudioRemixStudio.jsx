@@ -20,15 +20,34 @@ const EDIT_TASKS = [
   { value: 'replace_section', label: '✂️ Replace Section', desc: 'Swap a segment of the audio' },
 ];
 
-const STEM_TIERS = [
-  { value: 'basic', label: 'Basic', desc: '4 stems — vocals, drums, bass, other' },
-  { value: 'advanced', label: 'Advanced', desc: 'Full multi-stem breakdown (vocals, backing vocals, drums, kick, snare, bass, guitar, piano, synth, strings, fx & more)' },
-];
+const STEM_PROVIDERS = {
+  sonic: {
+    label: 'Sonic',
+    tiers: [
+      { value: 'basic', label: 'Basic', desc: '4 stems — vocals, drums, bass, other' },
+      { value: 'advanced', label: 'Advanced', desc: 'Full multi-stem breakdown (vocals, backing vocals, drums, kick, snare, bass, guitar, piano, synth, strings, fx & more)' },
+    ],
+  },
+  tempcolor: {
+    label: 'Tempolor',
+    tiers: [
+      { value: 'basic', label: 'Basic', desc: '2 stems — vocals & instrumental only' },
+    ],
+  },
+  elevenlabs: {
+    label: 'ElevenLabs',
+    tiers: [
+      { value: 'basic', label: 'Basic', desc: '2 stems — vocals & instrumental' },
+      { value: 'advanced', label: 'Advanced', desc: '6 stems for detailed mixing & production control' },
+    ],
+  },
+};
 
 export default function AudioRemixStudio() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [audioUrl, setAudioUrl] = useState('');
   const [selectedTask, setSelectedTask] = useState('extract_stems');
+  const [stemProvider, setStemProvider] = useState('sonic');
   const [stemTier, setStemTier] = useState('basic');
   const [taskParams, setTaskParams] = useState('');
   const [stems, setStems] = useState([]);
@@ -99,7 +118,7 @@ export default function AudioRemixStudio() {
     try {
       let params = {};
       if (taskParams) { try { params = JSON.parse(taskParams); } catch { toast.error('Invalid JSON params'); setProcessing(false); return; } }
-      if (selectedTask === 'extract_stems') params.tier = stemTier;
+      if (selectedTask === 'extract_stems') { params.provider = stemProvider; params.tier = stemTier; }
       const res = await base44.functions.invoke('processMusicEdits', { task: selectedTask, audioUrl, parameters: params });
       const data = res.data;
       if (data?.task_id) {
@@ -251,18 +270,31 @@ export default function AudioRemixStudio() {
                     <p className="text-xs text-muted-foreground">{EDIT_TASKS.find(t => t.value === selectedTask)?.desc}</p>
                   </div>
 
-                  {/* Tiered stem selector — Basic (4-stem) vs Advanced (full multi-stem) */}
+                  {/* Stem provider + tiered separation selector */}
                   {selectedTask === 'extract_stems' && (
-                    <div className="space-y-2">
-                      <label className="text-xs font-semibold text-muted-foreground uppercase">Separation Tier</label>
-                      <div className="grid grid-cols-1 gap-2">
-                        {STEM_TIERS.map(t => (
-                          <button key={t.value} onClick={() => setStemTier(t.value)}
-                            className={`p-2.5 rounded-xl border text-left transition-all ${stemTier === t.value ? 'border-purple-500 bg-purple-500/10' : 'border-border bg-card hover:border-border/80'}`}>
-                            <p className="text-xs font-bold text-foreground">{t.label}</p>
-                            <p className="text-xs text-muted-foreground">{t.desc}</p>
-                          </button>
-                        ))}
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">Provider</label>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {Object.entries(STEM_PROVIDERS).map(([key, p]) => (
+                            <button key={key} onClick={() => { setStemProvider(key); setStemTier(p.tiers[0].value); }}
+                              className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all ${stemProvider === key ? 'border-purple-500 bg-purple-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-semibold text-muted-foreground uppercase">Separation Tier</label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {STEM_PROVIDERS[stemProvider].tiers.map(t => (
+                            <button key={t.value} onClick={() => setStemTier(t.value)}
+                              className={`p-2.5 rounded-xl border text-left transition-all ${stemTier === t.value ? 'border-purple-500 bg-purple-500/10' : 'border-border bg-card hover:border-border/80'}`}>
+                              <p className="text-xs font-bold text-foreground">{t.label}</p>
+                              <p className="text-xs text-muted-foreground">{t.desc}</p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
