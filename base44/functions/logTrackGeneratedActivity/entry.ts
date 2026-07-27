@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Entity automation handler: fires when a UserAsset track is created.
-// Adds a "just generated" item to the Community Buzz activity feed.
+// Entity automation handler: fires when a UserAsset track OR a LoopSample is
+// created. Adds a "just generated" item to the Community Buzz activity feed.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -9,21 +9,43 @@ Deno.serve(async (req) => {
     const event = payload?.event;
     let data = payload?.data;
 
-    if (!event || event.entity_name !== 'UserAsset') {
-      return Response.json({ skipped: true, reason: 'not a UserAsset event' });
+    if (!event || (event.entity_name !== 'UserAsset' && event.entity_name !== 'LoopSample')) {
+      return Response.json({ skipped: true, reason: 'not a UserAsset or LoopSample event' });
     }
     if (payload?.payload_too_large || !data) {
-      data = await base44.asServiceRole.entities.UserAsset.get(event.entity_id);
-    }
-    if (!data || data.asset_type !== 'track') {
-      return Response.json({ skipped: true, reason: 'not a track asset' });
+      data = await base44.asServiceRole.entities[event.entity_name].get(event.entity_id);
     }
 
+    const isLoop = event.entity_name === 'LoopSample';
+    if (!isLoop && data?.asset_type !== 'track') {
+      return Response.json({ skipped: true, reason: 'not a track asset' });
+    }
+    if (!data) return Response.json({ skipped: true, reason: 'no data' });
+
     // Resolve a display name for the creator
-    let actorName = data.user_email ? data.user_email.split('@')[0] : 'A creator';
+    let actorName = data.user_name || (data.user_email ? data.user_email.split('@')[0] : 'A creator');
     if (data.user_id) {
       const users = await base44.asServiceRole.entities.User.filter({ id: data.user_id }).catch(() => []);
       if (users?.[0]?.full_name) actorName = users[0].full_name;
+    }
+
+    if (isLoop) {
+      const descParts = [data.category, data.bpm ? `${data.bpm} BPM` : null, data.source === 'soundforge' ? 'BASE SoundForge' : null].filter(Boolean);
+      await base44.asServiceRole.entities.ActivityFeedItem.create({
+        type: 'loop_generated',
+        actor_id: data.user_id || null,
+        actor_name: actorName,
+        title: `just generated a new loop/sample: "${data.title || 'Untitled'}"`,
+        description: descParts.join(' · '),
+        entity_type: 'LoopSample',
+        entity_id: event.entity_id,
+        metadata: {
+          category: data.category || '',
+          source: data.source || '',
+          bpm: data.bpm || '',
+        },
+      });
+      return Response.json({ logged: true });
     }
 
     // Surface the actual AI model used (e.g. "Lyria 3 Pro") — not the

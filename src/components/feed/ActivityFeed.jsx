@@ -6,6 +6,7 @@ import { Zap, Music, Radio, Star, Users, PlayCircle, Mic2 } from "lucide-react";
 
 const EVENT_ICONS = {
   track_generated: { icon: Zap, color: "bg-cyan-500/20 text-cyan-400" },
+  loop_generated: { icon: Music, color: "bg-teal-500/20 text-teal-400" },
   track_submitted: { icon: Music, color: "bg-purple-500/20 text-purple-400" },
   session_started: { icon: Radio, color: "bg-green-500/20 text-green-400" },
   session_completed: { icon: PlayCircle, color: "bg-blue-500/20 text-blue-400" },
