@@ -22,6 +22,7 @@ import LiveSessionsTab from "@/components/dashboard/LiveSessionsTab";
 import OwnershipDashboard from "@/components/music/OwnershipDashboard";
 import ProofOfOwnershipTab from "@/components/dashboard/ProofOfOwnershipTab";
 import DistributionTab from "@/components/distribution/DistributionTab";
+import MyLoopsTab from "@/components/loops/MyLoopsTab";
 import CircuitStatStrip from "@/components/dashboard/circuit/CircuitStatStrip";
 import CircuitTabBar from "@/components/dashboard/circuit/CircuitTabBar";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,7 @@ export default function CreatorDashboard() {
 
   const TABS = [
     { key: "library",   label: "Library",     icon: FolderOpen, count: assets.length, tip: "All your generated tracks, lyrics and cover art — play, download or open them in any studio" },
+    { key: "loops",     label: "Loops",       icon: Music,      tip: "Your saved loops, one-shots and samples — uploaded, generated or imported from Freesound" },
     { key: "projects",  label: "Projects",    icon: Layers,     tip: "Group related assets into projects to organize bigger releases" },
     { key: "tracks",    label: "Submissions", icon: Upload, count: tracks.length, tip: "Tracks you've submitted to the community charts and radio, with their approval status" },
     { key: "live",      label: "Live",        icon: Radio,      tip: "Your live streaming sessions — past shows and stats" },
@@ -250,6 +252,11 @@ export default function CreatorDashboard() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Loops Tab */}
+      {activeTab === "loops" && user && (
+        <MyLoopsTab />
       )}
 
       {/* Projects Tab */}
