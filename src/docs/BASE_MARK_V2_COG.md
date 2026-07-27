@@ -53,26 +53,66 @@ deployment sits in `starting` for minutes with no logs). Bake the weights into
 the image and load them by local path instead.
 
 ```bash
-# from inside your base-mark-v2/ folder, before pushing
-# NOTE: the HF repo layout is `Sony/SilentCipher/44_1_khz/73999_iteration/`
-# (at the ROOT — there is NO `Models/` directory). An earlier version of this
-# doc used `--include "Models/44_1_khz/..."`, which matches nothing on HF and
-# silently downloads ZERO bytes — `predict.py` then can't find the bundled
-# checkpoint, silentcipher falls back to re-downloading from HF inside the
-# throwaway container on every single cold start, and the deployment hangs in
-# `starting` for minutes. Use the ROOT path below.
+# from inside your base-mark-v2/ folder, before pushing.
+# NOTE: the HF repo layout is Sony/SilentCipher/44_1_khz/73999_iteration/
+# (at the ROOT — there is NO Models/ directory on HF; Models/ only exists in
+# the GitHub repo as an empty placeholder). An earlier version of this doc
+# used --include "Models/44_1_khz/...", which matches nothing on HF, silently
+# downloads ZERO bytes, forces silentcipher back to a per-cold-start HF
+# download inside the throwaway container, and hangs the deployment in
+# "starting" for minutes. Use the ROOT path below.
+
+# Pin an explicit HF revision so the bundle is reproducible + tamper-evident.
+# This is the same revision audited by the Irodori-TTS team (a third-party
+# integrator who published a SHA-256 manifest of every blob — see
+# ⚠️ License note below).
 huggingface-cli download Sony/SilentCipher \
   --repo-type model \
+  --revision a1c4d021905e0dc5b24be5f68db5fc4dba410ee1 \
   --local-dir weights \
   --include "44_1_khz/73999_iteration/*"
+
+# opt.ckpt is optimizer STATE — silentcipher never loads it at inference
+# (only enc_c / dec_c / dec_m_0 + hparams.yaml). Drop it to shrink the image.
+rm -f weights/44_1_khz/73999_iteration/opt.ckpt
+
+# Verify the four blobs we ship against the audited SHA-256 manifest BEFORE
+# `cog push`, so a silently-tampered or partially-downloaded weight is caught
+# at build time instead of producing wrong watermarks in production.
+sha256sum -c <<'EOF'
+ff64f80d2391fdfc888e4103c499be4a2c958e59626587a1eab6db93204814c7  weights/44_1_khz/73999_iteration/enc_c.ckpt
+c23b57635172b2fbd3a8531d15ba76b5885a10d0fe902ccb823c521c56041b33  weights/44_1_khz/73999_iteration/dec_c.ckpt
+829540c058270d29788f05294894d45bf436e44add0e1099422242ebb94b7088  weights/44_1_khz/73999_iteration/dec_m_0.ckpt
+27735fd4db0c00c29fef7af872ad1e5efe854e48d530a86c75beac2b87f09ce3  weights/44_1_khz/73999_iteration/hparams.yaml
+EOF
 ```
 
 Keep the `weights/` folder in the same directory as `predict.py` and `cog.yaml`
-so `cog push` ships it inside the image. After the download above the local
-layout is `weights/44_1_khz/73999_iteration/` containing `enc_c.ckpt`,
-`dec_c.ckpt`, `dec_m_0.ckpt`, `opt.ckpt`, and `hparams.yaml` (~35 MB total).
-See <https://huggingface.co/Sony/SilentCipher/tree/main/44_1_khz/73999_iteration>
-if the path has changed.
+so `cog push` ships it inside the image. After the steps above the local layout
+is `weights/44_1_khz/73999_iteration/` containing `enc_c.ckpt`, `dec_c.ckpt`,
+`dec_m_0.ckpt`, and `hparams.yaml` (~30 MB). See
+<https://huggingface.co/Sony/SilentCipher/tree/main/44_1_khz/73999_iteration>
+if the path or revision has changed.
+
+### ⚠️ License note — model weights
+
+The silentcipher **source code** on GitHub is MIT-licensed. Sony has NOT
+published an explicit license for the **model-weight blobs** on Hugging Face,
+nor terms governing audio watermarked with those weights. A third-party
+integrator (the Irodori-TTS team) filed a formal clarification request with
+Sony in 2024 asking exactly this; until Sony replies, commercial use of the
+weights sits in an **unconfirmed** (not blocked, not cleared) legal gap.
+
+Practical posture for BASE Mark V2:
+
+- Internal / forensic provenance use (marking your own assets, registry
+  match, embed→detect QA) is low-risk and is what we ship by default.
+- Do NOT assert "MIT-licensed, commercially cleared" for the weights in any
+  seller-facing docs or partner terms until Sony confirms.
+- We mirror the Irodori-TTS provenance practice (pinned revision + SHA-256
+  manifest) so our build is reproducible and auditable regardless of the
+  eventual license outcome. Track Sony's reply and update this note when it
+  lands.
 
 ### File 2: `predict.py`
 
