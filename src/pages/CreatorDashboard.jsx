@@ -24,8 +24,9 @@ import OwnershipDashboard from "@/components/music/OwnershipDashboard";
 import ProofOfOwnershipTab from "@/components/dashboard/ProofOfOwnershipTab";
 import DistributionTab from "@/components/distribution/DistributionTab";
 import MyLoopsTab from "@/components/loops/MyLoopsTab";
-import CircuitStatStrip from "@/components/dashboard/circuit/CircuitStatStrip";
 import CircuitTabBar from "@/components/dashboard/circuit/CircuitTabBar";
+import WorkspaceSidebarNav from "@/components/dashboard/circuit/WorkspaceSidebarNav";
+import WorkspaceStatsBar from "@/components/dashboard/circuit/WorkspaceStatsBar";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -177,39 +178,34 @@ export default function CreatorDashboard() {
       </div>
 
       {/* XP Widget */}
-      {user && <div className="mb-6"><XPWidget userId={user.id} collapsible /></div>}
+      {user && <div className="mb-4"><XPWidget userId={user.id} collapsible /></div>}
 
-      {/* Stats — circuit strip */}
+      {/* Stats — collapsible circuit strip */}
       {stats && (
         <div className="mb-6">
-          <CircuitStatStrip stats={[
+          <WorkspaceStatsBar stats={[
+            { icon: Folder,      label: "Assets",     value: stats.total_assets,                 accent: "#60a5fa", tip: "Everything in your library — tracks, lyrics, art & more" },
+            { icon: Eye,         label: "Plays",      value: stats.total_plays.toLocaleString(), accent: "#FFC98A", tip: "Total plays across all your published tracks" },
+            { icon: TrendingUp,  label: "Credits",    value: stats.credits_spent,                accent: "#f59e0b", tip: "Total credits spent on AI generations" },
+            { icon: Zap,         label: "Generated",  value: stats.total_generations,            accent: "#22d3ee", tip: "Successful AI generations you've run" },
             { icon: Music,       label: "Submitted",  value: stats.total_tracks,                 accent: "#FF9A4D", tip: "Tracks you've submitted to the community" },
             { icon: CheckCircle, label: "Published",  value: stats.published,                    accent: "#34d399", tip: "Submissions approved and live on charts & radio" },
             { icon: Clock,       label: "Pending",    value: stats.pending,                      accent: "#fbbf24", tip: "Submissions awaiting review" },
-            { icon: Eye,         label: "Plays",      value: stats.total_plays.toLocaleString(), accent: "#FFC98A", tip: "Total plays across all your published tracks" },
             { icon: Heart,       label: "Likes",      value: stats.total_likes.toLocaleString(), accent: "#fb7185", tip: "Total likes from listeners" },
-            { icon: Folder,      label: "Assets",     value: stats.total_assets,                 accent: "#60a5fa", tip: "Everything in your library — tracks, lyrics, art & more" },
-            { icon: Zap,         label: "Generated",  value: stats.total_generations,            accent: "#22d3ee", tip: "Successful AI generations you've run" },
-            { icon: TrendingUp,  label: "Credits",    value: stats.credits_spent,                accent: "#f59e0b", tip: "Total credits spent on AI generations" },
           ]} />
         </div>
       )}
 
-      {/* Quick Jump to Studios — slim strip */}
-      <Link to="/studios"
-        className="mb-6 flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-border/60 bg-card/40 hover:border-[#FF9A4D]/40 transition-colors group">
-        <div className="flex items-center gap-3 min-w-0">
-          <Music className="w-4 h-4 text-[#FF9A4D] flex-shrink-0" />
-          <p className="font-mono text-xs uppercase tracking-wider text-foreground">Studio Hub</p>
-          <p className="text-xs text-muted-foreground truncate hidden sm:block">— 11 creation, editing & publishing tools</p>
-        </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-[#FFC98A] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
-      </Link>
+      {/* Section nav — sidebar on desktop, scrollable rail on mobile */}
+      <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-6 lg:items-start">
+        <aside className="lg:sticky lg:top-6 mb-6 lg:mb-0">
+          <WorkspaceSidebarNav tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+          <div className="lg:hidden">
+            <CircuitTabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+          </div>
+        </aside>
 
-      {/* Tabs — circuit rail */}
-      <div className="mb-6">
-        <CircuitTabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
-      </div>
+        <div className="min-w-0">
 
       {/* Asset Library Tab */}
       {activeTab === "library" && (
@@ -327,6 +323,9 @@ export default function CreatorDashboard() {
           <PerTrackAnalytics userId={user.id} assets={assets} />
         </div>
       )}
+
+        </div>
+      </div>
     </div>
   );
 }
