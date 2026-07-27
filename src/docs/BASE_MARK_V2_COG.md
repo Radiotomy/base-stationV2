@@ -26,18 +26,20 @@ Make a folder (e.g. `base-mark-v2/`) and put these files in it.
 
 ### File 1: `cog.yaml`
 
-> Uses the modern Cog schema (`run` + `python_requirements`). The legacy
-> `predict` / `python_packages` fields still work but emit deprecation warnings.
+> Uses the modern Cog schema (`run` + `python_requirements` as a **path to a
+> requirements file**). The legacy `predict` / `python_packages` fields and the
+> inline-list form of `python_requirements` still build, but **do not use the
+> inline-list form** — it installs silentcipher as a separate pip transaction
+> with no scipy/numpy pin, so pip pulls scipy 1.13+ (built against the NumPy 2.x
+> C-API) on top of the 1.x numpy torch requires, reproducing
+> `RuntimeError: Numpy is not available` at `import silentcipher` time. Always
+> point `python_requirements` at the pinned `requirements.txt` in this folder.
 
 ```yaml
 build:
   gpu: true
   python_version: "3.10"
-  python_requirements:
-    - "torch==2.1.0"
-    - "librosa==0.10.1"
-    - "soundfile==0.12.1"
-    - "git+https://github.com/sony/silentcipher.git"
+  python_requirements: requirements.txt
 run: "predict.py:Predictor"
 ```
 
@@ -136,12 +138,23 @@ If `silentcipher.get_model` errors about checkpoints, check the
 
 ## Step 3 — push to your Replicate account
 
+> If you have pushed this model before, **bust the Docker layer cache** so the
+> pip-install layer is actually rebuilt with the pinned `requirements.txt`
+> below. A cached layer from a previously-broken build will silently re-ship the
+> old scipy 1.13+ and reproduce `RuntimeError: Numpy is not available` even
+> though the file on disk says `scipy==1.12.0`:
+
 ```bash
 cog login
-cog push r8.im/speedwolf2000/base-mark-v2
+cog push --no-cache r8.im/speedwolf2000/base-mark-v2
 ```
 
-The first push uploads a few GB (one time only).
+The first push uploads a few GB (one time only). After it lands, run on Replicate:
+**create a new deployment release pinned to the new image digest** (or update the
+existing `base-mark-v2` deployment's release to the new digest). The deployment
+endpoint **ignores** a `version` field on individual predictions — only the
+deployment's current release controls which image runs. Confirm the new digest is
+active in the Replicate UI before testing.
 
 ---
 
