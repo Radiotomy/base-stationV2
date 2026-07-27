@@ -1,0 +1,130 @@
+{
+  "name": "LoopSample",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Uploader/owner id"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "loop",
+        "one_shot",
+        "drum_loop",
+        "bass_loop",
+        "melodic_loop",
+        "vocal_chop",
+        "fx",
+        "sample"
+      ],
+      "default": "loop"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "upload",
+        "freesound",
+        "admin_collection"
+      ],
+      "default": "upload"
+    },
+    "bpm": {
+      "type": "number"
+    },
+    "key": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "collection_name": {
+      "type": "string",
+      "description": "Batch/collection grouping, e.g. 'CD Vol 1' or a Freesound pack name"
+    },
+    "license": {
+      "type": "string",
+      "description": "e.g. CC0, CC-BY, User Upload"
+    },
+    "attribution": {
+      "type": "string",
+      "description": "Required credit text for CC-BY sourced content"
+    },
+    "external_id": {
+      "type": "string",
+      "description": "Freesound sound id when source=freesound"
+    },
+    "external_url": {
+      "type": "string",
+      "description": "Link back to the original source page"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false,
+      "description": "Visible in the shared community loop library"
+    }
+  },
+  "required": [
+    "title",
+    "file_url"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_public": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

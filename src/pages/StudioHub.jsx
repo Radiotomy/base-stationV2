@@ -29,6 +29,7 @@ const CATEGORIES = [
       { to: "/audio-remix-studio", emoji: "🎛️", label: "Audio Remix",       desc: "Edit, effects & remix" },
       { to: "/stem-creator",       emoji: "🧬", label: "Stem Creator",       desc: "Split vocals, drums, bass" },
       { to: "/mashup-studio",      emoji: "🔀", label: "Mashup Studio",      desc: "Blend multiple tracks" },
+      { to: "/loop-studio",        emoji: "🥁", label: "Loops & Samples",    desc: "Free loops, uploads & batch collections" },
       { to: "/vocal-harmonizer",   emoji: "🎼", label: "Vocal Harmonizer",   desc: "Add AI harmony layers" },
       { to: "/id3-studio",         emoji: "🏷️", label: "ID3 Tag Editor",     desc: "Edit metadata & tags" },
     ],
