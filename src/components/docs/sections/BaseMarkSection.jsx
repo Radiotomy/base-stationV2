@@ -21,19 +21,31 @@ export default function BaseMarkSection() {
       </div>
 
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-muted-foreground">
-        <strong className="text-foreground">Status: V2 — Neural Watermarking is our standard.</strong> BASE Mark V2, a
-        learned neural-network watermark in the same class as Meta's AudioSeal, runs in production on our own private GPU
-        deployment and is applied automatically to every saved audio asset. It survives aggressive lossy compression,
-        pitch-shifting and time-stretching — attacks that defeat the earlier acoustic layer. Embeds run asynchronously via
-        webhook and settle in under a minute once the model is warm; the first run after idle may cold-start for a minute or
-        two. The 32-bit registry payload ties any derivative audio back to a single track record.
+        <strong className="text-foreground">Status: Cascaded dual-layer watermarking is our standard.</strong> Every new
+        audio asset is automatically stamped with <strong className="text-foreground">both</strong> BASE Mark layers on
+        the same file: V1 (acoustic spread-spectrum) is embedded first, then V2 (learned neural network, in the same
+        class as Meta's AudioSeal) is layered on top, running on our own private GPU deployment. We verified end-to-end
+        that the two layers don't interfere — V1 still resolves after V2 is embedded on top, and V2 resolves
+        independently. The 32-bit registry payload is identical across both layers, so either one traces any
+        derivative audio back to the same track record.
       </div>
 
-      <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-4 text-sm text-muted-foreground">
-        <strong className="text-foreground">V1 — our initial technology, superseded.</strong> BASE Mark's first layer was
-        an acoustic spread-spectrum watermark. It has been superseded by V2 — new assets are now marked with V2 only. The
-        handful of existing V1 marks are still detected on scan and resolve to the same registry record, so legacy tracks
-        remain traceable. Robustness figures below reflect the original acoustic engine; V2's neural robustness is higher.
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3 text-sm">
+        <p className="font-semibold text-foreground">Why cascade instead of picking one?</p>
+        <p className="text-muted-foreground">The two engines are orthogonal technologies with different strengths, so
+          stacking them gives forensic redundancy: an attack that defeats one layer usually leaves the other intact.</p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="rounded-lg border border-border p-3 space-y-1.5">
+            <p className="font-medium text-foreground">V1 — Acoustic (spread-spectrum)</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> instant, deterministic, no GPU dependency — embeds synchronously in the same request that saves the track; cheap to verify at scale.</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> weakens under aggressive lossy re-encoding, pitch-shifting or time-stretching.</p>
+          </div>
+          <div className="rounded-lg border border-border p-3 space-y-1.5">
+            <p className="font-medium text-foreground">V2 — Neural (learned model)</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> survives the compression, pitch and time attacks that break V1 — it's learned to be robust to exactly those transforms.</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> runs async on a GPU (cold starts can take a couple of minutes) and detection costs more compute per scan.</p>
+          </div>
+        </div>
       </div>
 
       <img

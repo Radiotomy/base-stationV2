@@ -1,19 +1,24 @@
 # BASE Mark — Forensic Integrity and Attribution Specification
 
 **Document class:** Public technical specification (protocol-level)
-**Engine version:** BASE Mark V1 (V2 neural watermark in development)
-**Last updated:** 2026-07-22
+**Engine version:** BASE Mark Cascade — V1 (acoustic) + V2 (neural), stacked on every asset
+**Last updated:** 2026-07-27
 
 ---
 
 ## 1. Purpose
 
-BASE Mark is BASE Station's acoustic watermarking system: an inaudible, persistent
+BASE Mark is BASE Station's watermarking system: an inaudible, persistent
 provenance signature embedded directly into the audio waveform of every master
-(WAV/FLAC) saved on the platform. It satisfies industry-standard forensic
-requirements for tamper-resistant media tracking and functions as a
-**technological protection measure (TPM)** under applicable anti-circumvention
-statutes (17 U.S.C. § 1201 and international equivalents).
+(WAV/FLAC) saved on the platform. As of this version, every new asset receives
+**two cascaded layers on the same file** — V1 (acoustic spread-spectrum DSP) is
+embedded first, then V2 (a learned neural-network watermark) is layered on top.
+The two engines are orthogonal technologies, verified end-to-end (see §7) to not
+interfere with one another when stacked, giving forensic redundancy: an attack
+that defeats one layer typically leaves the other intact. It satisfies
+industry-standard forensic requirements for tamper-resistant media tracking and
+functions as a **technological protection measure (TPM)** under applicable
+anti-circumvention statutes (17 U.S.C. § 1201 and international equivalents).
 
 This document describes the *protocol* — what the mark asserts, how it is
 verified, and its legal standing. The embedding mathematics, detection
@@ -90,9 +95,19 @@ client devices:
 Public repositories, client bundles, and API responses are audited to exclude
 these elements. Only outcome-level data crosses the trust boundary.
 
-## 7. Version policy
+## 7. Version policy & cascade verification
 
-- **V1 (current):** pure-DSP spread-spectrum mark; production since 2026.
-- **V2 (in development):** neural watermark targeting robustness against heavy
-  lossy compression and pitch/time attacks. V1 marks remain fully traceable
-  after the V2 rollout; payload semantics are unchanged.
+- **V1:** pure-DSP spread-spectrum mark; instant, deterministic, no GPU
+  dependency. Weakens under aggressive lossy re-encoding, pitch-shifting or
+  time-stretching.
+- **V2:** neural watermark, robust against the compression and pitch/time
+  attacks that weaken V1. Runs asynchronously on a private GPU deployment
+  (cold starts can take minutes; typically settles in under a minute once warm).
+- **Cascade (current production behavior):** V1 is embedded first, then V2 is
+  embedded on top of the V1-marked file, so the shipped audio always carries
+  both signatures. An internal end-to-end smoke test synthesizes a test file,
+  embeds V1, layers V2 on top, then re-runs both detectors against the final
+  cascaded output — confirming V1 still resolves after V2 is applied, and V2
+  resolves independently, with matching payloads on both layers. Legacy
+  V1-only or V2-only marks remain fully traceable; payload semantics are
+  unchanged across all layers.
