@@ -312,17 +312,20 @@ export default function Radio() {
                 <AnimatePresence mode="wait">
                   {nowPlaying ? (
                     <motion.div key={nowPlaying.track_title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="flex items-center gap-2.5 min-w-0 mt-2">
+                      className="flex items-center gap-3.5 min-w-0 mt-2">
                       {nowPlaying.cover_image_url ? (
-                        <img src={nowPlaying.cover_image_url} alt="" className="w-9 h-9 rounded object-cover border border-[#C6F27E]/30 flex-shrink-0" />
+                        <img src={nowPlaying.cover_image_url} alt="" className="w-[72px] h-[72px] rounded object-cover border border-[#C6F27E]/30 flex-shrink-0" />
                       ) : (
-                        <div className="w-9 h-9 rounded bg-black/50 border border-[#C6F27E]/20 flex items-center justify-center flex-shrink-0">
-                          <Music className="w-4 h-4 text-[#C6F27E]/40" />
+                        <div className="w-[72px] h-[72px] rounded bg-black/50 border border-[#C6F27E]/20 flex items-center justify-center flex-shrink-0">
+                          <Music className="w-7 h-7 text-[#C6F27E]/40" />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="text-[#C6F27E] text-base sm:text-lg leading-tight truncate" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{nowPlaying.track_title}</p>
-                        <p className="text-[#A8C97E]/80 text-sm truncate" style={MONO_LCD}>{nowPlaying.artist_name}</p>
+                        <p className="text-[#C6F27E] text-lg sm:text-xl leading-tight truncate" style={{ ...MONO_LCD, ...GREEN_GLOW }}>{nowPlaying.track_title}</p>
+                        <p className="text-[#A8C97E]/80 text-base truncate" style={MONO_LCD}>{nowPlaying.artist_name}</p>
+                        {nowPlaying.genre && (
+                          <p className="text-[#A8C97E]/50 text-sm truncate" style={MONO_LCD}>{nowPlaying.genre}</p>
+                        )}
                       </div>
                     </motion.div>
                   ) : (
