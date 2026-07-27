@@ -70,7 +70,7 @@ export default function LiveWatch() {
   }, []);
 
   // Event bus — audience listens. Phase 5.7: also drive sync playback.
-  const { publishEvent } = useLiveEventBus(roomId, (evt) => {
+  useLiveEventBus(roomId, (evt) => {
     setRecentEvents((prev) => [...prev.slice(-19), evt]);
     // Drive sync playback only when in sync mode
     const mode = sessionAudioModeRef.current;
@@ -261,12 +261,6 @@ export default function LiveWatch() {
 
     base44.functions.invoke('joinLiveSession', { sessionId: roomId }).catch(() => {});
 
-    publishEvent('join', {
-      userId: currentUser.id,
-      displayName: currentUser.full_name || 'Fan',
-      type: 'fan',
-    });
-
     // Phase 5.6 — log audio mode on join
     base44.functions.invoke('trackAnalytics', {
       event_type: 'live_participant_join',
@@ -290,20 +284,8 @@ export default function LiveWatch() {
       })
       .catch(() => {});
 
-    const alreadyIn = (session?.state?.participants || []).some(p => p.id === currentUser.id);
-    if (!alreadyIn) {
-      const updated = [
-        ...(session?.state?.participants || []),
-        { id: currentUser.id, displayName: currentUser.full_name || 'Fan', type: 'fan', avatarUrl: '' },
-      ];
-      base44.entities.LiveSession.update(roomId, {
-        state: { ...(session?.state || {}), participants: updated },
-      }).catch(() => {});
-    }
-
     return () => {
       base44.functions.invoke('leaveLiveSession', { sessionId: roomId }).catch(() => {});
-      publishEvent('leave', { userId: currentUser?.id, type: 'fan' });
     };
   }, [session?.status, currentUser?.id]);
 

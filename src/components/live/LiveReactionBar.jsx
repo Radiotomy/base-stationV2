@@ -23,11 +23,12 @@ export default function LiveReactionBar({ sessionId, currentUser, isLive }) {
   const [sessionXP, setSessionXP] = useState(0);
   const [floaters, setFloaters] = useState([]); // { id, emoji, x }
 
-  // Subscribe to reactions from other users
+  // Subscribe to reactions from other users (skip our own — applied optimistically on send)
   useEffect(() => {
     if (!sessionId) return;
     const unsub = base44.entities.LiveChatMessage.subscribe(evt => {
       if (evt.type === 'create' && evt.data?.session_id === sessionId && evt.data?.type === 'reaction') {
+        if (evt.data.user_id === currentUser?.id) return;
         const label = REACTIONS.find(r => r.emoji === evt.data.emoji)?.label;
         if (label) {
           setCounts(prev => ({ ...prev, [label]: (prev[label] || 0) + 1 }));
@@ -36,7 +37,7 @@ export default function LiveReactionBar({ sessionId, currentUser, isLive }) {
       }
     });
     return unsub;
-  }, [sessionId]);
+  }, [sessionId, currentUser?.id]);
 
   const spawnFloater = (emoji) => {
     const id = Date.now() + Math.random();

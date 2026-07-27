@@ -58,12 +58,13 @@ export function useLiveEventBus(roomId, onEvent) {
     const currentEvents = currentSession?.state?.recentEvents || [];
     const updatedEvents = [...currentEvents, newEvent].slice(-20); // cap at 20
 
-    await base44.entities.LiveSession.update(roomId, {
-      state: {
-        ...(currentSession?.state || {}),
-        recentEvents: updatedEvents,
-      },
-    });
+    // Targeted update of only state.recentEvents — preserves nowPlaying &
+    // participants. A full-state overwrite would clobber concurrent performer
+    // playback writes (lost-update race).
+    await base44.entities.LiveSession.updateMany(
+      { id: roomId },
+      { $set: { "state.recentEvents": updatedEvents } }
+    );
 
     // Also publish to Intelligence OS event log (non-blocking, non-UI-blocking)
     const eventTypeMap = {

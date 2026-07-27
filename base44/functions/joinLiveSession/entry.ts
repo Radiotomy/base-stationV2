@@ -21,15 +21,39 @@ Deno.serve(async (req) => {
     const newCount = (session.viewer_count || 0) + 1;
     const newPeak = Math.max(session.peak_viewers || 0, newCount);
 
-    await base44.asServiceRole.entities.LiveSession.update(sessionId, {
-      viewer_count: newCount,
-      peak_viewers: newPeak,
+    // Manage presence atomically (service role bypasses RLS): add the fan to
+    // state.participants and append a 'join' event to state.recentEvents,
+    // without clobbering the performer's nowPlaying.
+    const participants = Array.isArray(session.state?.participants) ? session.state.participants : [];
+    const alreadyIn = participants.some((p) => p.id === user.id);
+    const updatedParticipants = alreadyIn ? participants : [
+      ...participants,
+      { id: user.id, displayName: user.full_name || 'Fan', type: 'fan', avatarUrl: '' },
+    ];
+
+    const recentEvents = Array.isArray(session.state?.recentEvents) ? session.state.recentEvents : [];
+    const joinEvent = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      type: 'join',
+      payload: { userId: user.id, displayName: user.full_name || 'Fan', type: 'fan' },
+      timestamp: new Date().toISOString(),
+    };
+    const updatedEvents = [...recentEvents, joinEvent].slice(-20);
+
+    await base44.asServiceRole.entities.LiveSession.updateMany({ id: sessionId }, {
+      $inc: { viewer_count: 1 },
+      $set: {
+        peak_viewers: newPeak,
+        "state.participants": updatedParticipants,
+        "state.recentEvents": updatedEvents,
+      },
     });
 
     return Response.json({
       viewer_count: newCount,
       peak_viewers: newPeak,
       audio_mode: session.audio_mode || session.state?.audio_mode || 'sync',
+      joined: !alreadyIn,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

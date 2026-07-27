@@ -71,6 +71,16 @@ export default function LiveStudio() {
     ...overrides,
   });
 
+  // Targeted patch of state.nowPlaying — preserves recentEvents & participants
+  // (a full-state overwrite would clobber concurrent bus events and fan joins).
+  const patchNowPlaying = async (np) => {
+    if (!sessionId) return;
+    await base44.entities.LiveSession.updateMany(
+      { id: sessionId },
+      { $set: { "state.nowPlaying": np } }
+    ).catch(() => {});
+  };
+
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
@@ -139,10 +149,9 @@ export default function LiveStudio() {
     })();
   }, [currentUser]);
 
-  // Event bus — performer publishes + listens
-  const { publishEvent } = useLiveEventBus(sessionId, (evt) => {
-    setRecentEvents((prev) => [...prev.slice(-19), evt]);
-  });
+  // Event bus — performer publishes; recentEvents are delivered via the
+  // LiveSession entity subscription below, so the bus callback is a no-op here.
+  const { publishEvent } = useLiveEventBus(sessionId, () => {});
 
   // Subscribe to session for viewer count + participant list
   useEffect(() => {
@@ -222,10 +231,8 @@ export default function LiveStudio() {
           await streamr.startPublish(stream);
           if (streamr.status === 'error') {
             toast.error('Streamr audio unavailable — falling back to synchronized playback.');
-            await base44.entities.LiveSession.update(sessionId, {
-              audio_mode: 'sync',
-              streamr_enabled: false,
-              state: await buildStateUpdate({ audio_mode: 'sync' }),
+            await base44.entities.LiveSession.updateMany({ id: sessionId }, {
+              $set: { audio_mode: 'sync', streamr_enabled: false, "state.audio_mode": 'sync' },
             });
             setAudioMode('sync');
           }
@@ -262,15 +269,17 @@ export default function LiveStudio() {
 
     // Phase 5.7 — flip nowPlaying.isPlaying false so fans pause immediately
     const stoppedNowPlaying = buildNowPlaying({ isPlaying: false });
-    const endState = await buildStateUpdate({ nowPlaying: stoppedNowPlaying });
 
-    await base44.entities.LiveSession.update(sessionId, {
-      status: 'completed',
-      end_time: new Date().toISOString(),
-      duration_seconds: duration,
-      peak_viewers: viewerCount,
-      state: endState,
-    });
+    // Targeted update: set completion + nowPlaying without clobbering the
+    // backend-tracked peak_viewers or the live recentEvents/participants.
+    await base44.entities.LiveSession.updateMany({ id: sessionId }, {
+      $set: {
+        status: 'completed',
+        end_time: new Date().toISOString(),
+        duration_seconds: duration,
+        "state.nowPlaying": stoppedNowPlaying,
+      },
+    }).catch(() => {});
 
     // Phase 5.7 — explicit session-end event for fan-side overlay
     await safePublish('session-end', { performerId: currentUser?.id });
@@ -344,12 +353,13 @@ export default function LiveStudio() {
       isPlaying: false,
       updated_at: new Date().toISOString(),
     };
-    const newState = await buildStateUpdate({ nowPlaying: np });
-    await base44.entities.LiveSession.update(sessionId, {
-      current_track_title: track.title,
-      current_track_artist: currentUser?.full_name || '',
-      state: newState,
-    });
+    await base44.entities.LiveSession.updateMany({ id: sessionId }, {
+      $set: {
+        current_track_title: track.title,
+        current_track_artist: currentUser?.full_name || '',
+        "state.nowPlaying": np,
+      },
+    }).catch(() => {});
     // Phase 5.7 — authoritative track-change event
     await safePublish('track-change', {
       track_url: track.file_url || '',
@@ -384,8 +394,7 @@ export default function LiveStudio() {
       title: selectedTrack?.title,
       position_ms: positionMs,
     });
-    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ isPlaying: true }) });
-    base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
+    patchNowPlaying(buildNowPlaying({ isPlaying: true }));
   };
 
   const handlePause = async () => {
@@ -398,8 +407,7 @@ export default function LiveStudio() {
       title: selectedTrack?.title,
       position_ms: positionMs,
     });
-    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ isPlaying: false }) });
-    base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
+    patchNowPlaying(buildNowPlaying({ isPlaying: false }));
   };
 
   const handleRestart = async () => {
@@ -412,8 +420,7 @@ export default function LiveStudio() {
       track_url: selectedTrack?.file_url || '',
       position_ms: 0,
     });
-    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ isPlaying: true, position_ms: 0 }) });
-    base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
+    patchNowPlaying(buildNowPlaying({ isPlaying: true, position_ms: 0 }));
   };
 
   const handleSeek = async (newTime) => {
@@ -426,8 +433,7 @@ export default function LiveStudio() {
       title: selectedTrack?.title,
       position_ms: positionMs,
     });
-    const newState = await buildStateUpdate({ nowPlaying: buildNowPlaying({ position_ms: positionMs }) });
-    base44.entities.LiveSession.update(sessionId, { state: newState }).catch(() => {});
+    patchNowPlaying(buildNowPlaying({ position_ms: positionMs }));
   };
 
   const handleMicToggle = async () => {
