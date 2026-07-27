@@ -31,11 +31,6 @@ const OPERATIONS = [
   { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Get BPM", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "BPM data", category: "utility" },
   { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Get VOX", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "Vocal audio", category: "utility" },
   { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Concat Music", api_credits: 2, api_usd: 2 * AIMUSIC_CREDIT_USD, output: "1 track", category: "utility" },
-  // ── PRODUCER (via AIMusicAPI) ───────────────────────────────────────────────
-  { provider: "producer", model: "FUZZ-2.0", operation: "Create Music", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "1 track", category: "music" },
-  // ── NURO (via AIMusicAPI) ───────────────────────────────────────────────────
-  { provider: "nuro", model: "v2.0", operation: "Create Vocal Music", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "1 track", category: "music" },
-  { provider: "nuro", model: "v2.0", operation: "Create BGM (Instrumental)", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "1 track", category: "music" },
   // ── LYRICS (via AIMusicAPI) ─────────────────────────────────────────────────
   { provider: "sonic", model: "Lyrics API", operation: "Generate Lyrics", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "Full lyrics", category: "lyrics" },
   // ── TEMPOLOR ────────────────────────────────────────────────────────────────
@@ -49,8 +44,6 @@ const OPERATIONS = [
 
 const PROVIDER_STYLE = {
   sonic:     { label: "Sonic",    color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" },
-  producer:  { label: "Producer", color: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
-  nuro:      { label: "Nuro",     color: "bg-pink-500/20 text-pink-300 border-pink-500/30" },
   tempcolor: { label: "Tempolor", color: "bg-amber-500/20 text-amber-300 border-amber-500/30" },
 };
 

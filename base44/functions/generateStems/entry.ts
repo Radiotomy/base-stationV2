@@ -6,9 +6,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  * Provider-agnostic stem separation. Creates a GenerationJob, deducts credits,
  * and returns simulated stem UserAssets that inherit origin from the source.
  *
- * Real provider wiring (Loudly, Nuro, Sonic, custom DSP) plugs in via
- * the providerRouter helper — for now we register the job structure so
- * the UI is fully functional and persistence is correct.
+ * Real provider wiring (Sonic, custom DSP) plugs in via the providerRouter
+ * helper — for now we register the job structure so the UI is fully
+ * functional and persistence is correct.
  *
  * Payload: { assetId, stemTypes?: ['vocals','drums','bass','other'] }
  */
@@ -33,14 +33,8 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Source must be a track' }, { status: 400 });
     }
 
-    // Pick a provider — Loudly preferred for speed, Sonic as fallback
-    const balances = await base44.asServiceRole.entities.ProviderBalance.list();
-    const balanceMap = Object.fromEntries(balances.map(b => [b.provider, b]));
-    const candidates = ['loudly', 'sonic', 'nuro', 'producer'];
-    const ranked = candidates
-      .map(p => ({ name: p, score: balanceMap[p]?.score ?? 50 }))
-      .sort((a, b) => b.score - a.score);
-    const primary = ranked[0]?.name || 'loudly';
+    // Only Sonic is currently wired for stem separation
+    const primary = 'sonic';
 
     // Create generation job
     const job = await base44.entities.GenerationJob.create({

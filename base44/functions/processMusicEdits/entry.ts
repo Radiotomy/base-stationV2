@@ -20,8 +20,11 @@ Deno.serve(async (req) => {
     // Route to appropriate provider based on task
     switch (task) {
       case 'extract_stems': {
-        // Use Sonic API for stem extraction
+        // Use Sonic API for stem extraction — tiered: Basic = 4-stem (vocals/drums/bass/other),
+        // Advanced = full multi-stem breakdown (vocals, backing vocals, drums, kick, snare, bass,
+        // guitar, piano, synth, strings, fx, other).
         const sonicApiKey = Deno.env.get('SONIC_API_KEY');
+        const tier = parameters.tier === 'advanced' ? 'advanced' : 'basic';
         const stemResponse = await fetch('https://api.aimusicapi.ai/api/v1/sonic/separate', {
           method: 'POST',
           headers: {
@@ -30,7 +33,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             audio_url: audioUrl,
-            separate_type: parameters.separate_type || 'full' // 'full' for 4 stems (vocals, drums, bass, other)
+            separate_type: tier === 'advanced' ? (parameters.separate_type || 'advanced') : 'full',
           })
         });
 
@@ -40,6 +43,7 @@ Deno.serve(async (req) => {
 
         const stemData = await stemResponse.json();
         result.stems = stemData.stems || [];
+        result.tier = tier;
         result.task_id = stemData.task_id;
         break;
       }
@@ -66,58 +70,6 @@ Deno.serve(async (req) => {
         const remasterData = await remasterResponse.json();
         result.outputUrl = remasterData.output_url;
         result.task_id = remasterData.task_id;
-        break;
-      }
-
-      case 'add_vocals': {
-        // Use Nuro or Producer API to add vocals
-        const nuroApiKey = Deno.env.get('NURO_API_KEY');
-        const vocalResponse = await fetch('https://api.aimusicapi.ai/api/v1/nuro/add-vocals', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${nuroApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            instrumental_url: audioUrl,
-            vocal_prompt: parameters.vocal_prompt || 'Default male vocals',
-            duration: parameters.duration || 30
-          })
-        });
-
-        if (!vocalResponse.ok) {
-          throw new Error(`Nuro API error: ${vocalResponse.statusText}`);
-        }
-
-        const vocalData = await vocalResponse.json();
-        result.outputUrl = vocalData.output_url;
-        result.task_id = vocalData.task_id;
-        break;
-      }
-
-      case 'add_instrumental': {
-        // Use Producer API to add instrumental backing
-        const producerApiKey = Deno.env.get('PRODUCER_API_KEY');
-        const instrumentalResponse = await fetch('https://api.aimusicapi.ai/api/v1/producer/add-instrument', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${producerApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            vocal_url: audioUrl,
-            instrument_prompt: parameters.instrument_prompt || 'Piano and strings',
-            genre: parameters.genre || 'pop'
-          })
-        });
-
-        if (!instrumentalResponse.ok) {
-          throw new Error(`Producer API error: ${instrumentalResponse.statusText}`);
-        }
-
-        const instrumentalData = await instrumentalResponse.json();
-        result.outputUrl = instrumentalData.output_url;
-        result.task_id = instrumentalData.task_id;
         break;
       }
 

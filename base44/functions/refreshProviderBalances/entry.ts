@@ -2,7 +2,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const PROVIDERS = [
   { name: "sonic", envKey: "SONIC_API_KEY" },
-  { name: "producer", envKey: "PRODUCER_API_KEY" },
   { name: "tempcolor", envKey: "TEMPCOLOR_API_KEY" },
   { name: "ltx", envKey: "LTX_API_KEY" },
 ];
@@ -11,7 +10,7 @@ const PROVIDERS = [
 // Each provider has a different API shape — we do best-effort
 async function fetchBalance(provider, apiKey) {
   try {
-    if (provider === "sonic" || provider === "producer") {
+    if (provider === "sonic") {
       // Official endpoint: GET /api/v1/get-credits → { credits, extra_credits }
       const res = await fetch("https://api.aimusicapi.ai/api/v1/get-credits", {
         method: "GET",

@@ -18,7 +18,7 @@ export const PROVIDER_DETAILS = {
 };
 
 // Human-readable provider name for any provider key (covers legacy internal ids)
-const EXTRA_LABELS = { producer: 'Producer', nuro: 'Nuro', core: 'Core (AI)', ltx: 'LTX Video' };
+const EXTRA_LABELS = { nuro: 'Nuro', core: 'Core (AI)', ltx: 'LTX Video' };
 export function providerLabel(key) {
   return PROVIDER_DETAILS[key]?.label || EXTRA_LABELS[key] || key;
 }

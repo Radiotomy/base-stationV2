@@ -17,17 +17,19 @@ const EDIT_TASKS = [
   { value: 'vox_isolate', label: '🎙️ VOX Isolate', desc: 'Extract clean vocal track only', group: 'vox' },
   { value: 'vox_remove', label: '🔇 VOX Remove', desc: 'Remove vocals — instrumental only', group: 'vox' },
   { value: 'vox_enhance', label: '✨ VOX Enhance', desc: 'De-noise & enhance vocal clarity', group: 'vox' },
-  { value: 'add_vocals', label: '🎤 Add AI Vocals', desc: 'Add AI vocals to instrumental track' },
-  { value: 'add_instrumental', label: '🎸 Add Instrumental', desc: 'Add backing track to vocals' },
   { value: 'replace_section', label: '✂️ Replace Section', desc: 'Swap a segment of the audio' },
 ];
 
-const STEM_NAMES = ['vocals', 'drums', 'bass', 'other'];
+const STEM_TIERS = [
+  { value: 'basic', label: 'Basic', desc: '4 stems — vocals, drums, bass, other' },
+  { value: 'advanced', label: 'Advanced', desc: 'Full multi-stem breakdown (vocals, backing vocals, drums, kick, snare, bass, guitar, piano, synth, strings, fx & more)' },
+];
 
 export default function AudioRemixStudio() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [audioUrl, setAudioUrl] = useState('');
   const [selectedTask, setSelectedTask] = useState('extract_stems');
+  const [stemTier, setStemTier] = useState('basic');
   const [taskParams, setTaskParams] = useState('');
   const [stems, setStems] = useState([]);
   const [processing, setProcessing] = useState(false);
@@ -51,9 +53,10 @@ export default function AudioRemixStudio() {
         if (status === 'completed') {
           const output = res.data?.output_url;
           if (selectedTask === 'extract_stems') {
-            // output is an object: { vocals, drums, bass, other }
+            // output is an object keyed by stem name — basic tier returns 4 keys,
+            // advanced tier returns the full multi-stem breakdown
             const stemData = res.data?.stems || {};
-            setStems(STEM_NAMES.map(name => ({ name, url: stemData[name] || '' })).filter(s => s.url));
+            setStems(Object.entries(stemData).map(([name, url]) => ({ name, url })).filter(s => s.url));
           } else {
             setEditedAudio(output);
           }
@@ -96,6 +99,7 @@ export default function AudioRemixStudio() {
     try {
       let params = {};
       if (taskParams) { try { params = JSON.parse(taskParams); } catch { toast.error('Invalid JSON params'); setProcessing(false); return; } }
+      if (selectedTask === 'extract_stems') params.tier = stemTier;
       const res = await base44.functions.invoke('processMusicEdits', { task: selectedTask, audioUrl, parameters: params });
       const data = res.data;
       if (data?.task_id) {
@@ -106,8 +110,8 @@ export default function AudioRemixStudio() {
       } else if (data?.stems) {
         // Synchronous stem result (array or object)
         const stemArr = Array.isArray(data.stems)
-          ? data.stems.map((url, i) => ({ name: STEM_NAMES[i] || `stem ${i + 1}`, url }))
-          : STEM_NAMES.map(n => ({ name: n, url: data.stems[n] || '' })).filter(s => s.url);
+          ? data.stems.map((url, i) => ({ name: `Stem ${i + 1}`, url }))
+          : Object.entries(data.stems).map(([name, url]) => ({ name, url })).filter(s => s.url);
         setStems(stemArr);
         setProcessing(false);
         toast.success('Stems extracted!');
@@ -246,6 +250,22 @@ export default function AudioRemixStudio() {
                     </Select>
                     <p className="text-xs text-muted-foreground">{EDIT_TASKS.find(t => t.value === selectedTask)?.desc}</p>
                   </div>
+
+                  {/* Tiered stem selector — Basic (4-stem) vs Advanced (full multi-stem) */}
+                  {selectedTask === 'extract_stems' && (
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase">Separation Tier</label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {STEM_TIERS.map(t => (
+                          <button key={t.value} onClick={() => setStemTier(t.value)}
+                            className={`p-2.5 rounded-xl border text-left transition-all ${stemTier === t.value ? 'border-purple-500 bg-purple-500/10' : 'border-border bg-card hover:border-border/80'}`}>
+                            <p className="text-xs font-bold text-foreground">{t.label}</p>
+                            <p className="text-xs text-muted-foreground">{t.desc}</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Extra params for replace section */}
                   {selectedTask === 'replace_section' && (

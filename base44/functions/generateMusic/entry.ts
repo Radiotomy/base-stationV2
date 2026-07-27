@@ -1,18 +1,16 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Both aimusicapi.ai providers (Sonic, Producer) share one API key.
-// We only require SONIC_API_KEY to be set — it's used as the bearer token for both.
-// Note: Nuro has been deprecated by aimusicapi.ai (returns HTTP 410 Gone).
-const AIMUSICAPI_KEY   = Deno.env.get('SONIC_API_KEY');
-const SONIC_API_KEY    = AIMUSICAPI_KEY;
-const PRODUCER_API_KEY = AIMUSICAPI_KEY;
+// Sonic (aimusicapi.ai) — bearer token for the Sonic endpoints.
+// Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone, and
+// Producer is no longer used by BASE Station (Sonic + Tempolor + ElevenLabs cover all cases).
+const SONIC_API_KEY    = Deno.env.get('SONIC_API_KEY');
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
 // Public URL of our webhook receiver — derived from the app's deployed function path.
-// The aimusicapi platform POSTs here when Sonic/Nuro/Producer tasks settle.
+// The aimusicapi platform POSTs here when Sonic tasks settle.
 // Falls back gracefully (no webhook attached) if not configured.
 function getWebhookConfig() {
   const url = Deno.env.get('AIMUSICAPI_WEBHOOK_URL'); // set this to https://<app>/functions/aimusicapiWebhook
@@ -132,65 +130,6 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
   const taskId = data.task_id;
   if (!taskId) throw new Error('No task_id from Sonic: ' + JSON.stringify(data));
   return { task_id: taskId, provider: 'sonic' };
-}
-
-// ── Producer ─────────────────────────────────────────────────────────────────
-// Docs: POST /api/v1/producer/create — https://docs.aimusicapi.ai/producer-instructions
-// Required: task_type: "create_music", plus sound and/or lyrics
-// Models (mv): FUZZ-3-Demo | FUZZ-2.0 (default) | FUZZ-2.0 Pro | FUZZ-2.0 Raw | FUZZ-1.1 Pro | FUZZ-1.1 | FUZZ-1.0 Pro | FUZZ-1.0 | FUZZ-0.8
-// Poll: GET /api/v1/producer/task/{task_id} → { status: "PENDING"|"RUNNING"|"SUCCESS"|"FAILED", data: [{audio_url,...}] }
-// Retired task_types (HTTP 410): cover_music, extend_music, replace_music, swap_*, music_variation
-const PRODUCER_VALID_MV = ['FUZZ-3-Demo','FUZZ-2.0','FUZZ-2.0 Pro','FUZZ-2.0 Raw','FUZZ-1.1 Pro','FUZZ-1.1','FUZZ-1.0 Pro','FUZZ-1.0','FUZZ-0.8'];
-
-async function generateWithProducer({ genre, mood, sound_prompt, lyrics, model, title: userTitle }) {
-  const mv = (model && PRODUCER_VALID_MV.includes(model)) ? model : 'FUZZ-2.0';
-  const body = {
-    task_type: 'create_music',
-    sound: (sound_prompt || `${mood} ${genre} music`).slice(0, 2000),
-    mv,
-    title: (userTitle || `${mood} ${genre}`).slice(0, 80),
-    ...(lyrics && { lyrics: String(lyrics).slice(0, 5000), make_instrumental: false }),
-    ...(!lyrics && { make_instrumental: true }),
-  };
-  const wh = getWebhookConfig();
-  if (wh) Object.assign(body, wh);
-
-  // 25s timeout matching Sonic — Producer occasionally hangs which causes gateway 502s
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
-  let res, data;
-  try {
-    res = await fetch(`${AI_BASE}/producer/create`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${PRODUCER_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    data = await res.json();
-  } catch (fetchErr) {
-    if (fetchErr.name === 'AbortError') {
-      const err = new Error('Producer API timed out after 25s. Please try again or use Sonic.');
-      err.providerStatus = 504;
-      err.providerType = 'timeout';
-      throw err;
-    }
-    throw fetchErr;
-  } finally {
-    clearTimeout(timeout);
-  }
-  console.log('Producer create response:', JSON.stringify(data));
-  if (!res.ok) {
-    // Surface aimusicapi error structure { type, error } per spec
-    // Special: HTTP 410 = endpoint_retired, 402 = insufficient_credits, 502 = upstream_error
-    const err = new Error(data.error || data.message || `Producer HTTP ${res.status}`);
-    err.providerStatus = res.status;
-    err.providerType = data.type || null;
-    throw err;
-  }
-  // Docs: response is { message: "success", task_id: "uuid" }
-  const taskId = data.task_id;
-  if (!taskId) throw new Error('No task_id from Producer: ' + JSON.stringify(data));
-  return { task_id: taskId, provider: 'producer' };
 }
 
 // ── Tempolor ──────────────────────────────────────────────────────────────────
@@ -343,7 +282,6 @@ async function generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyr
 // ── Credit cost table (per provider) ─────────────────────────────────────────
 const CREDIT_COSTS = {
   sonic: 10,
-  producer: 10,
   tempcolor: 10,
   elevenlabs: 10,
 };
@@ -406,9 +344,9 @@ Deno.serve(async (req) => {
       } catch (e) { console.warn('VoicePersona lookup failed:', e.message); }
     }
 
-    // Nuro deprecated — auto-redirect to Sonic (vocal) or Producer (instrumental)
+    // Nuro deprecated — auto-redirect to Sonic (vocal) or Tempolor (instrumental)
     if (provider === 'nuro') {
-      provider = (lyrics && lyrics.trim().length > 0) ? 'sonic' : 'producer';
+      provider = (lyrics && lyrics.trim().length > 0) ? 'sonic' : 'tempcolor';
       routing_reason = `${routing_reason || 'auto'}_nuro_deprecated`;
     }
 
@@ -428,8 +366,6 @@ Deno.serve(async (req) => {
     try {
       if (provider === 'elevenlabs')
         providerResult = await generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyrics, model, tempolor_mode }, base44);
-      else if (provider === 'producer')
-        providerResult = await generateWithProducer({ genre, mood, sound_prompt, lyrics, model, title });
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
       else // default: sonic
@@ -460,8 +396,6 @@ Deno.serve(async (req) => {
     // Determine exact model version used per provider
     const modelVersionMap = {
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
-      // FUZZ-* retired upstream (Apr 2026) — Producer now runs on Google Lyria 3 Pro
-      producer: 'Lyria 3 Pro',
       tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
       elevenlabs: providerResult.model || model || 'music_v1',
     };
@@ -531,7 +465,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Async (Sonic, Nuro, Producer, Tempolor): create job record with provider task_id
+    // Async (Sonic, Tempolor): create job record with provider task_id
     // Stamp credit_cost on input_data so pollGenerationJob can deduct on completion.
     // CRITICAL: persist lyrics, title, model + sound_prompt so they survive async recovery
     // and can be re-attached to ID3 tags + UserAsset metadata on completion.

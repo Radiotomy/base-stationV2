@@ -14,7 +14,6 @@ import ReplicatePanel from "@/components/admin/ReplicatePanel";
 
 const PROVIDER_META = {
   sonic:     { label: "Sonic",      color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",    dot: "bg-cyan-400" },
-  producer:  { label: "Producer",   color: "bg-purple-500/20 text-purple-300 border-purple-500/30", dot: "bg-purple-400" },
   tempcolor: { label: "Tempolor",   color: "bg-orange-500/20 text-orange-300 border-orange-500/30", dot: "bg-orange-400" },
   ltx:       { label: "LTX Video",  color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30", dot: "bg-emerald-400" },
   core:      { label: "Core (AI)",  color: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30", dot: "bg-yellow-400" },
