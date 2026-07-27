@@ -54,17 +54,25 @@ the image and load them by local path instead.
 
 ```bash
 # from inside your base-mark-v2/ folder, before pushing
+# NOTE: the HF repo layout is `Sony/SilentCipher/44_1_khz/73999_iteration/`
+# (at the ROOT — there is NO `Models/` directory). An earlier version of this
+# doc used `--include "Models/44_1_khz/..."`, which matches nothing on HF and
+# silently downloads ZERO bytes — `predict.py` then can't find the bundled
+# checkpoint, silentcipher falls back to re-downloading from HF inside the
+# throwaway container on every single cold start, and the deployment hangs in
+# `starting` for minutes. Use the ROOT path below.
 huggingface-cli download Sony/SilentCipher \
   --repo-type model \
   --local-dir weights \
-  --include "Models/44_1_khz/73999_iteration/*"
+  --include "44_1_khz/73999_iteration/*"
 ```
 
 Keep the `weights/` folder in the same directory as `predict.py` and `cog.yaml`
-so `cog push` ships it inside the image (the folder layout mirrors the HF repo):
-`weights/Models/44_1_khz/73999_iteration/`  contains the checkpoint and
-`hparams.yaml`. See <https://huggingface.co/Sony/SilentCipher/tree/main> if the
-path has changed.
+so `cog push` ships it inside the image. After the download above the local
+layout is `weights/44_1_khz/73999_iteration/` containing `enc_c.ckpt`,
+`dec_c.ckpt`, `dec_m_0.ckpt`, `opt.ckpt`, and `hparams.yaml` (~35 MB total).
+See <https://huggingface.co/Sony/SilentCipher/tree/main/44_1_khz/73999_iteration>
+if the path has changed.
 
 ### File 2: `predict.py`
 
@@ -82,7 +90,12 @@ class Predictor(BasePredictor):
         import silentcipher
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         # Load the bundled checkpoint instead of re-downloading on every boot.
-        ckpt_dir = os.path.join(os.path.dirname(__file__), "weights", "Models", "44_1_khz", "73999_iteration")
+        # NOTE: no "Models" segment — the HF repo layout is
+        # `Sony/SilentCipher/44_1_khz/73999_iteration/` at the root, and the
+        # `huggingface-cli download --local-dir weights` step mirrors that
+        # exactly. An extra "Models" here would point at a non-existent path,
+        # force silentcipher back to a per-cold-start HF download, and hang.
+        ckpt_dir = os.path.join(os.path.dirname(__file__), "weights", "44_1_khz", "73999_iteration")
         self.model = silentcipher.get_model(
             model_type="44.1k",
             device=self.device,
