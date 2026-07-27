@@ -17,9 +17,16 @@ librosa==0.10.1                    # import librosa  (needs numba + resampy)
 soundfile==0.12.1                  # import soundfile as sf
 
 # --- silentcipher/* sibling imports (inferred from upstream requirements) ---
-numpy>=1.24.4,<2.0.0               # numpy (SilentCipher loader imports it directly)
+# NumPy + SciPy are pinned TOGETHER to stay on the 1.x C-ABI. SciPy 1.13+ wheels
+# are compiled against the NumPy 2.x C-API; installing them with a 1.x runtime
+# numpy (required by torch 2.1.0 + numba 0.59.x) raises
+#   RuntimeError: Numpy is not available
+# at `import scipy` time (triggered by `import silentcipher`), before predict.py
+# runs the encoder. SciPy 1.12.0 is the last wheel built against the NumPy 1.x
+# ABI and is proven-compatible with numpy 1.26.4 / libsusa here.
+numpy==1.26.4                      # numpy (SilentCipher loader imports it directly)
 torchaudio==2.1.0                  # torchaudio transforms in get_model path
-scipy>=1.10.1,<2.0.0               # scipy.signal DSP filters
+scipy==1.12.0                      # scipy.signal DSP filters (≤ 1.12 — see above)
 einops>=0.7.0                      # tensor rearrange in transformer blocks
 resampy>=0.4.2                     # librosa resampling helper
 typing_extensions>=4.8.0           # type hints / runtime annotations

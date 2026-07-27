@@ -2,10 +2,11 @@
 # SilentCipher neural watermark encoder/decoder.
 # Hardware: T4 GPU (cost-friendly; cold starts ~2–5 min).
 #
-# numpy is a DIRECT dep (silentcipher imports it at load time) and must stay
-# listed in requirements.txt. Removing it reproduces
-#   RuntimeError: Numpy is not available
-# because SilentCipher's loader checks for numpy during `import silentcipher`.
+# numpy + scipy are DIRECT deps (silentcipher imports them at load time) and
+# must stay pinned together in requirements.txt. Letting scipy drift to 1.13+
+# reproduces `RuntimeError: Numpy is not available` at `import scipy` time —
+# 1.13+ wheels are built against the NumPy 2.x C-API, which is incompatible with
+# the 1.x numpy that torch 2.1.0 + numba 0.59.x require. See requirements.txt.
 
 build:
   python_version: "3.10"
