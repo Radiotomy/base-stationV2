@@ -14,11 +14,10 @@
 // IMPORTANT: This endpoint is intentionally PUBLIC (no base44.auth.me() check) —
 // the provider calls it directly. Trust comes from HMAC signature verification.
 
-import { createClient } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { finalizeMashupAsset } from '../../shared/mashupFinalize.ts';
 
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
-const APP_ID = Deno.env.get('BASE44_APP_ID');
 
 async function verifySignature(rawBody, timestamp, signatureHeader) {
   if (!WEBHOOK_SECRET) throw new Error('AIMUSICAPI_WEBHOOK_SECRET not configured');
@@ -172,7 +171,7 @@ Deno.serve(async (req) => {
     }
 
     // 3. Find the matching job via service role (no user context here)
-    const base44 = createClient({ appId: APP_ID, requiresAuth: false });
+    const base44 = createClientFromRequest(req);
     const jobs = await base44.asServiceRole.entities.GenerationJob.filter({ provider_job_id: normalized.task_id });
     const job = jobs[0];
     if (!job) {

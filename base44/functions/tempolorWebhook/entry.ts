@@ -21,9 +21,8 @@
 // fields onto the existing GenerationJob.output_metadata without overwriting
 // data from earlier callbacks.
 
-import { createClient } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 
-const APP_ID = Deno.env.get('BASE44_APP_ID');
 const WEBHOOK_SECRET = Deno.env.get('TEMPOLOR_WEBHOOK_SECRET') || '';
 
 // SSRF guard — only allow public http(s) hostnames, never IP literals or internal hosts
@@ -94,7 +93,7 @@ Deno.serve(async (req) => {
       return ackSuccess();
     }
 
-    const base44 = createClient({ appId: APP_ID, requiresAuth: false });
+    const base44 = createClientFromRequest(req);
 
     for (const song of songs) {
       const itemId = song.item_id;
