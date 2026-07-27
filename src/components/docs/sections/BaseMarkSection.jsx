@@ -10,39 +10,41 @@ export default function BaseMarkSection() {
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Fingerprint className="w-6 h-6 text-[#FF9A4D]" />
-          <h1 className="font-display text-2xl">BASE Mark — Acoustic Watermarking</h1>
+          <h1 className="font-display text-2xl">BASE Mark — Unified Watermarking Standard</h1>
         </div>
         <p className="text-muted-foreground">
-          BASE Mark is BASE Station's own open, in-house acoustic watermark — a blind, localized
-          spread-spectrum system inspired by research such as Meta's AudioSeal and WavMark. Unlike ID3
-          tags or C2PA manifests, the mark lives inside the audio waveform itself, so it survives
+          BASE Mark is BASE Station's own in-house audio watermark: a single forensic signature built from
+          two complementary layers embedded on the same file — a blind, localized spread-spectrum layer and
+          a learned neural-network layer, in the same class as research like Meta's AudioSeal and WavMark.
+          Unlike ID3 tags or C2PA manifests, the mark lives inside the audio waveform itself, so it survives
           metadata stripping, re-encoding, cutting, stem-splitting, sampling and remixing.
         </p>
       </div>
 
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-muted-foreground">
-        <strong className="text-foreground">Status: Cascaded dual-layer watermarking is our standard.</strong> Every new
-        audio asset is automatically stamped with <strong className="text-foreground">both</strong> BASE Mark layers on
-        the same file: V1 (acoustic spread-spectrum) is embedded first, then V2 (learned neural network, in the same
-        class as Meta's AudioSeal) is layered on top, running on our own private GPU deployment. We verified end-to-end
-        that the two layers don't interfere — V1 still resolves after V2 is embedded on top, and V2 resolves
-        independently. The 32-bit registry payload is identical across both layers, so either one traces any
-        derivative audio back to the same track record.
+        <strong className="text-foreground">Status: live, applied automatically to every saved track.</strong> The
+        moment an audio asset is saved, BASE Station embeds <strong className="text-foreground">both layers</strong>
+        on the same file: the spectral layer first (instant, no GPU needed), then the neural layer on top, running on
+        our own private GPU deployment. We verified end-to-end that the two layers don't interfere with one another —
+        each still resolves independently to the same registry record after the other is embedded on top. The 32-bit
+        registry payload is identical across both layers, so either one traces any derivative audio back to the same
+        track record.
       </div>
 
       <div className="rounded-xl border border-border bg-card p-4 space-y-3 text-sm">
-        <p className="font-semibold text-foreground">Why cascade instead of picking one?</p>
-        <p className="text-muted-foreground">The two engines are orthogonal technologies with different strengths, so
-          stacking them gives forensic redundancy: an attack that defeats one layer usually leaves the other intact.</p>
+        <p className="font-semibold text-foreground">Why two layers instead of one?</p>
+        <p className="text-muted-foreground">The two layers are complementary technologies with different strengths, so
+          combining them into one signature gives forensic redundancy: an attack that defeats one layer usually leaves
+          the other intact.</p>
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="rounded-lg border border-border p-3 space-y-1.5">
-            <p className="font-medium text-foreground">V1 — Acoustic (spread-spectrum)</p>
+            <p className="font-medium text-foreground">Spectral Layer</p>
             <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> instant, deterministic, no GPU dependency — embeds synchronously in the same request that saves the track; cheap to verify at scale.</p>
             <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> weakens under aggressive lossy re-encoding, pitch-shifting or time-stretching.</p>
           </div>
           <div className="rounded-lg border border-border p-3 space-y-1.5">
-            <p className="font-medium text-foreground">V2 — Neural (learned model)</p>
-            <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> survives the compression, pitch and time attacks that break V1 — it's learned to be robust to exactly those transforms.</p>
+            <p className="font-medium text-foreground">Neural Layer</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> survives the compression, pitch and time attacks that weaken the spectral layer — it's learned to be robust to exactly those transforms.</p>
             <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> runs async on a GPU (cold starts can take a couple of minutes) and detection costs more compute per scan.</p>
           </div>
         </div>
@@ -102,13 +104,13 @@ export default function BaseMarkSection() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-display text-lg">Limitations (v1)</h2>
+        <h2 className="font-display text-lg">Limitations</h2>
         <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
           <li>Embedding accepts 16-bit or 24-bit PCM WAV files and FLAC (decoded to 16-bit PCM WAV before marking).</li>
-          <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — decoded to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the mark and lowers detection confidence.</li>
-          <li>Heavy lossy re-compression, pitch-shifting or time-stretching can weaken or break detection.</li>
+          <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — decoded to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the spectral layer and lowers detection confidence, which is exactly why the neural layer exists alongside it.</li>
+          <li>Heavy lossy re-compression, pitch-shifting or time-stretching can weaken or break the spectral layer specifically; the neural layer is built to survive these.</li>
           <li>Audio shorter than ~2 seconds cannot carry a full payload.</li>
-          <li>Like all watermarks, it is a deterrent and forensic tool — not unbreakable DRM.</li>
+          <li>Like all watermarks, BASE Mark is a deterrent and forensic tool — not unbreakable DRM.</li>
         </ul>
       </section>
 

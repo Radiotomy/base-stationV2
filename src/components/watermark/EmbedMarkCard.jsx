@@ -36,12 +36,13 @@ export default function EmbedMarkCard() {
     <div className="merc-card rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <Fingerprint className="w-5 h-5 text-[#FF9A4D]" />
-        <h2 className="font-display text-lg">Embed a BASE Mark</h2>
+        <h2 className="font-display text-lg">BASE Mark — Spectral Layer</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Pick a track from your library. We embed an inaudible 32-bit watermark directly into the audio
-        waveform — it survives cutting, sampling and remixing, even if all metadata is stripped.
-        Requires WAV audio (16-bit or 24-bit PCM).
+        Pick a track from your library. We embed an inaudible 32-bit signature directly into the audio
+        waveform, instantly — it survives cutting, sampling and remixing, even if all metadata is stripped.
+        This is one of the two layers that make up your track's full BASE Mark; the neural layer runs
+        alongside it automatically. Requires WAV audio (16-bit or 24-bit PCM).
       </p>
       <Select value={selected} onValueChange={setSelected}>
         <SelectTrigger><SelectValue placeholder="Choose a library track…" /></SelectTrigger>
@@ -55,13 +56,13 @@ export default function EmbedMarkCard() {
       </Select>
       <Button onClick={embed} disabled={!selected || busy} className="merc-button w-full">
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />}
-        {busy ? 'Embedding watermark…' : 'Embed BASE Mark'}
+        {busy ? 'Embedding…' : 'Embed Spectral Layer'}
       </Button>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {result && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-2 text-sm">
           <p className="flex items-center gap-2 text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-4 h-4" /> Watermark embedded
+            <CheckCircle2 className="w-4 h-4" /> Spectral layer embedded
           </p>
           <p>Payload: <code className="text-[#FFC98A]">{result.payload_hex}</code></p>
           <a href={result.marked_file_url} target="_blank" rel="noopener noreferrer"

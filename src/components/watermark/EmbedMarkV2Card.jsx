@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const AUDIO_TYPES = ['track', 'master', 'stem', 'mashup', 'harmony', 'sfx'];
 
-// Neural (SilentCipher) watermark via the BASE Mark V2 Replicate model.
+// BASE Mark's neural layer (SilentCipher, via a private Replicate model).
 // The embed runs asynchronously — fires the prediction, then polls every
 // few seconds until the marked WAV is persisted. A cold T4 instance can
 // take 2–5 minutes on the first run; the progress bar reflects that window.
@@ -85,14 +85,12 @@ export default function EmbedMarkV2Card() {
     <div className="merc-card rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-2">
         <BrainCircuit className="w-5 h-5 text-[#FF9A4D]" />
-        <h2 className="font-display text-lg">Embed a BASE Mark V2 (Neural)</h2>
-        <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-[#FF9A4D]/30 bg-[#FF9A4D]/10 px-2.5 py-0.5 text-[11px] text-[#FFC98A]">
-          New
-        </span>
+        <h2 className="font-display text-lg">BASE Mark — Neural Layer</h2>
       </div>
       <p className="text-sm text-muted-foreground">
-        Embeds a learned, neural watermark that survives aggressive compression, pitch-shifting and
-        time-stretching. Runs on a GPU — the first run after idle may take a few minutes to cold-start.
+        Embeds the learned, neural half of your track's BASE Mark — the layer that survives aggressive
+        compression, pitch-shifting and time-stretching. Runs on a GPU — the first run after idle may take
+        a few minutes to cold-start. Applied automatically to every saved track alongside the spectral layer.
       </p>
       <Select value={selected} onValueChange={setSelected}>
         <SelectTrigger><SelectValue placeholder="Choose a library track…" /></SelectTrigger>
@@ -106,7 +104,7 @@ export default function EmbedMarkV2Card() {
       </Select>
       <Button onClick={embed} disabled={!selected || busy} className="merc-button w-full">
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <BrainCircuit className="w-4 h-4" />}
-        {starting ? 'Starting…' : phase === 'processing' ? 'Watermarking on GPU…' : 'Embed Neural Mark'}
+        {starting ? 'Starting…' : phase === 'processing' ? 'Watermarking on GPU…' : 'Embed Neural Layer'}
       </Button>
 
       {phase === 'processing' && (
@@ -131,7 +129,7 @@ export default function EmbedMarkV2Card() {
       {phase === 'done' && result && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-2 text-sm">
           <p className="flex items-center gap-2 text-emerald-400 font-semibold">
-            <CheckCircle2 className="w-4 h-4" /> Neural watermark embedded
+            <CheckCircle2 className="w-4 h-4" /> Neural layer embedded
           </p>
           {result.payload_hex && <p>Payload: <code className="text-[#FFC98A]">{result.payload_hex}</code></p>}
           {result.marked_file_url && (

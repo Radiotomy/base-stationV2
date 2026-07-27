@@ -72,9 +72,9 @@ export default function VerifyMark() {
           <Link to="/docs?section=base-mark" className="text-[#FFC98A] underline underline-offset-2">Read how BASE Mark works</Link>
         </p>
         <p className="text-center text-[11px] text-muted-foreground/70">
-          BASE Mark V2 — a neural watermark applied to every saved track — is our current standard; the earlier
-          acoustic layer (V1) remains detected for legacy tracks. This public scan checks the acoustic layer first;
-          signed-in creators also get a neural scan; a clean scan is not proof a file was never marked.
+          BASE Mark is one signature made of two layers, applied automatically to every saved track: a spectral
+          layer and a neural layer. This public scan checks the spectral layer first; signed-in creators also get
+          a neural scan; a clean scan is not proof a file was never marked.
         </p>
       </div>
     </div>
