@@ -78,6 +78,11 @@
       "type": "boolean",
       "default": false,
       "description": "Visible in the shared community loop library"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [
