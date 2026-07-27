@@ -10,12 +10,11 @@
 // comes from constant-time comparison of the ?sig= query param against
 // REPLICATE_WEBHOOK_SECRET. Replicate itself does not HMAC-sign webhooks.
 
-import { createClient } from "npm:@base44/sdk@0.8.40";
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 import { getV2Prediction } from "../../shared/baseMarkV2.ts";
 import { finalizeV2Prediction } from "../../shared/baseMarkV2Finalize.ts";
 
 const SECRET = Deno.env.get("REPLICATE_WEBHOOK_SECRET") || "";
-const APP_ID = Deno.env.get("BASE44_APP_ID");
 
 function sigMatches(provided) {
   if (!SECRET || !provided || provided.length !== SECRET.length) return false;
@@ -43,8 +42,11 @@ Deno.serve(async (req) => {
       return Response.json({ ok: true, status: "processing", prediction_id: pid });
     }
 
-    // No logged-in user — use service role to write the asset.
-    const base44 = createClient({ appId: APP_ID, requiresAuth: false });
+    // No logged-in user (public webhook) — createClientFromRequest auto-binds
+    // the internal service token so asServiceRole can bypass RLS. The plain
+    // createClient({requiresAuth:false}) form does NOT bind a service token,
+    // which is why Replicate saw 500s here.
+    const base44 = createClientFromRequest(req);
     const result = await finalizeV2Prediction(base44.asServiceRole, pred);
     return Response.json({ ok: true, ...result });
   } catch (error) {
