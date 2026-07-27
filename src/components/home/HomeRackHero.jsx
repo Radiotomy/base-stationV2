@@ -78,10 +78,7 @@ export default function HomeRackHero({ user }) {
         <div className="flex justify-center gap-8 sm:gap-12 pt-5 pb-1">
           {user ? (
             <>
-              <KnobButton
-                label={user?.is_creator === false ? "Tune In" : "Go to Studio"}
-                to={user?.is_creator === false ? "/radio" : "/creator-dashboard"}
-              />
+              <KnobButton label="Radio" to="/radio" />
               {user?.is_creator !== false && <KnobButton label="Create Music" to="/music-studio" />}
               <KnobButton label="Learn Why" to="/why-base-station" />
             </>
