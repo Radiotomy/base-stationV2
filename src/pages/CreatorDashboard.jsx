@@ -12,6 +12,7 @@ import XPWidget from "@/components/dashboard/XPWidget";
 import ProjectsTab from "@/components/dashboard/ProjectsTab";
 import GenerationHistoryTab from "@/components/dashboard/GenerationHistoryTab";
 import UsageAnalytics from "@/components/dashboard/UsageAnalytics";
+import PerTrackAnalytics from "@/components/dashboard/PerTrackAnalytics";
 import TrackCard from "@/components/dashboard/TrackCard";
 import WorkspaceSwitcher from "@/components/dashboard/WorkspaceSwitcher";
 import CollectibleManagerPanel from "@/components/creator/CollectibleManagerPanel";
@@ -321,7 +322,10 @@ export default function CreatorDashboard() {
 
       {/* Analytics Tab */}
       {activeTab === "analytics" && user && (
-        <UsageAnalytics userId={user.id} />
+        <div className="space-y-4">
+          <UsageAnalytics userId={user.id} />
+          <PerTrackAnalytics userId={user.id} assets={assets} />
+        </div>
       )}
     </div>
   );

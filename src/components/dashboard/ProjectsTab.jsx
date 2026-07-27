@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Folder, Music, FileText, Image, Film, ExternalLink, Trash2, Edit2, CheckCircle, X, Loader2, Link as LinkIcon, GitBranch, ChevronDown } from 'lucide-react';
+import { Plus, Folder, Music, FileText, Image, Film, ExternalLink, Trash2, Edit2, CheckCircle, X, Loader2, Link as LinkIcon, GitBranch, ChevronDown, Archive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import ProjectWorkflowTimeline from '@/components/studio/ProjectWorkflowTimeline';
+import { createZip, fetchAsBytes, textToBytes } from '@/utils/zipBuilder';
 
 const STATUS_COLORS = {
   draft:       'bg-muted text-muted-foreground',
@@ -18,12 +19,49 @@ const STATUS_COLORS = {
 
 function ProjectCard({ project, assets, onDelete, onEdit }) {
   const [workflowOpen, setWorkflowOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const hasTrack    = !!project.track_url || !!project.track_asset_id;
   const hasLyrics   = !!project.lyrics_text || !!project.lyrics_asset_id;
   const hasCoverArt = !!project.cover_image_url || !!project.cover_art_asset_id;
   const hasVideo    = !!project.video_url || !!project.video_asset_id;
   const completionCount = [hasTrack, hasLyrics, hasCoverArt, hasVideo].filter(Boolean).length;
   const workflowSteps = project.workflow?.steps || [];
+
+  const exportZip = async () => {
+    setExporting(true);
+    try {
+      const files = [];
+      if (project.track_url) {
+        const bytes = await fetchAsBytes(project.track_url);
+        if (bytes) files.push({ name: 'track.mp3', data: bytes });
+      }
+      if (project.cover_image_url) {
+        const bytes = await fetchAsBytes(project.cover_image_url);
+        if (bytes) files.push({ name: 'cover-art.jpg', data: bytes });
+      }
+      if (project.video_url) {
+        const bytes = await fetchAsBytes(project.video_url);
+        if (bytes) files.push({ name: 'video.mp4', data: bytes });
+      }
+      if (project.lyrics_text) {
+        files.push({ name: 'lyrics.txt', data: textToBytes(project.lyrics_text) });
+      }
+      if (files.length === 0) { toast.error('No files to export yet'); setExporting(false); return; }
+      const zipBlob = await createZip(files);
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${(project.title || 'project').replace(/[^a-z0-9\s-]/gi, '').trim().replace(/\s+/g, '_')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Project exported!');
+    } catch (err) {
+      toast.error('Export failed: ' + err.message);
+    }
+    setExporting(false);
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
@@ -42,6 +80,10 @@ function ProjectCard({ project, assets, onDelete, onEdit }) {
           {project.description && <p className="text-xs text-muted-foreground line-clamp-1">{project.description}</p>}
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <Button onClick={exportZip} disabled={exporting || completionCount === 0} size="icon" variant="ghost"
+            title="Export track, cover art, video & lyrics as a ZIP" className="h-7 w-7 rounded-lg">
+            {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
+          </Button>
           <Button onClick={() => onEdit(project)} size="icon" variant="ghost" className="h-7 w-7 rounded-lg">
             <Edit2 className="w-3.5 h-3.5" />
           </Button>
