@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { finalizeMashupAsset } from '../../shared/mashupFinalize.ts';
+import { getHarmonixPrediction, extractAudioUrl } from '../../shared/harmonix.ts';
 
 // Both aimusicapi.ai providers (Sonic, Producer) share one API key.
 // We only require SONIC_API_KEY to be set — it's used as the bearer token for both endpoints.
@@ -292,6 +293,20 @@ async function pollProvider(provider, providerTaskId, job) {
     return { status: 'processing' };
   }
 
+  if (provider === 'harmonix') {
+    // BASE-Harmonix (ACE-Step v1.5 on Replicate) — standard Replicate prediction lifecycle
+    const data = await getHarmonixPrediction(providerTaskId);
+    if (data.status === 'succeeded') {
+      const audioUrl = extractAudioUrl(data.output);
+      if (!audioUrl) return { status: 'failed', error: 'BASE-Harmonix returned no audio output' };
+      return { status: 'completed', audio_url: audioUrl };
+    }
+    if (data.status === 'failed' || data.status === 'canceled') {
+      return { status: 'failed', error: data.error || 'BASE-Harmonix generation failed' };
+    }
+    return { status: 'processing' };
+  }
+
   return null; // unknown provider
 }
 
@@ -337,6 +352,8 @@ Deno.serve(async (req) => {
         aligned_lyrics: m.aligned_lyrics || undefined,
         ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
         mashup_asset_id: m.mashup_asset_id || undefined,
+        tier: job.input_data?.tier || undefined,
+        needs_basemark: m.needs_basemark || undefined,
       });
     }
     if (job.status === 'failed') {
@@ -415,6 +432,7 @@ Deno.serve(async (req) => {
             clip_id: providerData.clip_id || null,
             clip_ids: providerData.clip_ids || null,
             aligned_lyrics: providerData.aligned_lyrics || null,
+            ...(job.provider === 'harmonix' && { needs_basemark: job.input_data?.tier === 'vault' }),
           },
           credits_used: cost,
           completed_at: completedAt,
@@ -533,6 +551,8 @@ Deno.serve(async (req) => {
           ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
           content_hash: contentHash,
           mashup_asset_id: mashupAssetId,
+          tier: job.input_data?.tier || undefined,
+          needs_basemark: (job.provider === 'harmonix' && job.input_data?.tier === 'vault') || undefined,
         });
       }
 

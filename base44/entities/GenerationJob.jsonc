@@ -29,7 +29,8 @@
         "tempcolor",
         "ltx",
         "nextcut",
-        "elevenlabs"
+        "elevenlabs",
+        "harmonix"
       ],
       "description": "Which provider handled the generation"
     },

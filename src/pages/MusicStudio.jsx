@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw, AudioLines } from 'lucide-react';
+import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import MySoundTab from '@/components/music/mysound/MySoundTab';
+import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
   { id: 'mysound',  label: '🎙️ My Sound',        icon: AudioLines,        desc: 'Train Music v2 on your own tracks & generate in your signature style' },
+  { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
 ];
 
 export default function MusicStudio() {
@@ -71,6 +73,7 @@ export default function MusicStudio() {
         {activeTab === 'quick' && <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />}
         {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
         {activeTab === 'mysound' && <MySoundTab />}
+        {activeTab === 'harmonix' && <HarmonixGenerateTab />}
       </div>
     </div>
   );
