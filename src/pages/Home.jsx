@@ -9,7 +9,6 @@ import HomeRackHero from "@/components/home/HomeRackHero";
 import HomeStatsStrip from "@/components/home/HomeStatsStrip";
 import HomeFeatureGrid from "@/components/home/HomeFeatureGrid";
 import HomePulsePanels from "@/components/home/HomePulsePanels";
-import HomeCTAPanel from "@/components/home/HomeCTAPanel";
 import HomeTemplatesPreview from "@/components/home/HomeTemplatesPreview";
 import HumanFirstManifesto from "@/components/home/HumanFirstManifesto";
 
@@ -64,8 +63,6 @@ export default function Home() {
             <HomeFeatureGrid />
 
             <HomeTemplatesPreview />
-
-            <HumanFirstManifesto />
 
             <HomePulsePanels topTracks={topTracks} />
 
@@ -134,7 +131,7 @@ export default function Home() {
               </div>
             )}
 
-            <HomeCTAPanel user={user} />
+            <HumanFirstManifesto />
 
             {/* Legal / transparency footer strip */}
             <div className="rounded-xl border border-black/70 bg-[#0F0C09] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
