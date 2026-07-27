@@ -44,9 +44,14 @@ export function resolveTier(tier) {
   return HARMONIX_TIERS[tier] || HARMONIX_TIERS.pro;
 }
 
+import { generationWebhookUrl } from './replicateWebhook.ts';
+
 async function postPrediction(input, prefer) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
+  const body = { version: HARMONIX_VERSION, input };
+  const webhook = generationWebhookUrl();
+  if (webhook) { body.webhook = webhook; body.webhook_events_filter = ['completed']; }
   const res = await fetch('https://api.replicate.com/v1/predictions', {
     method: 'POST',
     headers: {
@@ -54,7 +59,7 @@ async function postPrediction(input, prefer) {
       'Content-Type': 'application/json',
       ...(prefer ? { Prefer: prefer } : {}),
     },
-    body: JSON.stringify({ version: HARMONIX_VERSION, input }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) {

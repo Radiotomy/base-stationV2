@@ -13,6 +13,7 @@
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 import { getV2Prediction } from "../../shared/baseMarkV2.ts";
 import { finalizeV2Prediction } from "../../shared/baseMarkV2Finalize.ts";
+import { finalizeJob } from "../../shared/jobFinalize.ts";
 
 const SECRET = Deno.env.get("REPLICATE_WEBHOOK_SECRET") || "";
 
@@ -47,6 +48,17 @@ Deno.serve(async (req) => {
     // createClient({requiresAuth:false}) form does NOT bind a service token,
     // which is why Replicate saw 500s here.
     const base44 = createClientFromRequest(req);
+
+    // This single webhook URL is shared by two different prediction flows —
+    // BASE Mark V2 embeds AND generation jobs (BASE-Harmonix, BASE SoundForge).
+    // Check for a matching GenerationJob first; fall through to the V2 embed
+    // finalizer when there isn't one.
+    const jobs = await base44.asServiceRole.entities.GenerationJob.filter({ provider_job_id: pid });
+    if (jobs[0]) {
+      const result = await finalizeJob(base44.asServiceRole, jobs[0]);
+      return Response.json({ ok: true, ...result });
+    }
+
     const result = await finalizeV2Prediction(base44.asServiceRole, pred);
     return Response.json({ ok: true, ...result });
   } catch (error) {
