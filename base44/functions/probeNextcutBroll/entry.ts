@@ -1,9 +1,16 @@
 // Probes NextCut to discover the b-roll endpoint shape.
 // Tries the most likely paths and payload shapes with the existing NEXTCUT_API key.
 // Returns a ranked list of what worked / what failed and why.
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 
 Deno.serve(async (req) => {
   try {
+    const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me().catch(() => null);
+    if (!user || user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     const apiKey = Deno.env.get("NEXTCUT_API");
     if (!apiKey) {
       return Response.json({ error: "NEXTCUT_API secret not set" }, { status: 500 });
