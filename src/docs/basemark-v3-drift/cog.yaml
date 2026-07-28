@@ -24,3 +24,11 @@ build:
     - "soundfile==0.12.1"
     - "huggingface_hub==0.25.2"
     - "wavmark==0.0.3"
+  # Pre-download the WavMark checkpoint INTO the image. Left to `setup`, the
+  # first boot fetches it from HuggingFace and Replicate disabled the version
+  # with "consistently fails to complete setup" — the download does not fit the
+  # setup budget. Baking it in also removes the fetch from every cold start.
+  # Invoked via load_model() rather than a pinned filename so the cache path and
+  # checkpoint name stay whatever the pinned wavmark release expects.
+  run:
+    - "python -c \"import wavmark; wavmark.load_model()\""

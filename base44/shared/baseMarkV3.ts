@@ -95,6 +95,24 @@ export async function runV3(input, { timeoutMs = 300000 } = {}) {
   return data.output;
 }
 
+// Fire a prediction WITHOUT waiting. GPU cold start plus a full-length master
+// exceeds a single request's time budget, so long jobs are started here and
+// polled across separate invocations.
+export async function startV3(input) {
+  return await postPrediction(input);
+}
+
+export async function getV3Prediction(id) {
+  const token = Deno.env.get('REPLICATE_API_TOKEN');
+  if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
+  const r = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` },
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error(`V3 poll error (${r.status}): ${data?.detail || data?.error || ''}`);
+  return data;
+}
+
 export async function encodeV3(audioUrl, slot) {
   return await runV3({ audio: audioUrl, mode: 'encode', slot_hex: slotHex(slot) });
 }
