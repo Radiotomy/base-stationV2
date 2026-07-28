@@ -1,0 +1,34 @@
+{
+  "name": "Notify User on Job Completion",
+  "description": "Sends an email notification to the user when their music/video generation job finishes (completed or failed).",
+  "trigger": {
+    "condition": "${ ((.trigger.changed_fields | index(\"status\") != null) and (.trigger.data.status == \"completed\" or .trigger.data.status == \"failed\") and (.trigger.data.user_email != null and .trigger.data.user_email != \"\" and .trigger.data.user_email != [] and .trigger.data.user_email != {})) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "GenerationJob"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notify_user_on_job_completion",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sendJobNotification",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "Auto-Poll Stuck Generation Jobs",
+  "description": "Safety-net poller \u2014 finalizes any GenerationJob stuck in 'processing' for 2+ minutes across all users, before provider output data (e.g. Replicate) expires.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 5,
+      "interval_unit": "minutes",
+      "interval_anchor": "2026-07-27T18:24:27.317000",
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "auto_poll_stuck_generation_jobs",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "autoPollStuckJobs",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

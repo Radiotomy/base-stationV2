@@ -1,0 +1,34 @@
+{
+  "name": "Notify Fans When Artist Goes Live",
+  "description": "When a LiveSession status changes to 'streaming', email all of the artist's followers and post to the community activity feed.",
+  "trigger": {
+    "condition": "${ ((.trigger.changed_fields | index(\"status\") != null) and (.trigger.data.status == \"streaming\")) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "update"
+      ],
+      "entity_name": "LiveSession"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "notify_fans_when_artist_goes_live",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "notifyFansLiveStart",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

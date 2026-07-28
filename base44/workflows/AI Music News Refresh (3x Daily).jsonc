@@ -1,0 +1,41 @@
+{
+  "name": "AI Music News Refresh (3x Daily)",
+  "description": "Searches the web for verified AI music legal, policy, industry, and technology news and publishes fresh articles to the News & Legal Hub. Runs every 8 hours (3x daily).",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 8,
+      "interval_unit": "hours",
+      "interval_anchor": "2026-07-18T16:46:31.606000",
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "ai_music_news_refresh_3x_daily",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "updateAIMusicNews",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

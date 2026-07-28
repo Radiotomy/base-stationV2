@@ -1,0 +1,34 @@
+{
+  "name": "Persist New Asset Media",
+  "description": "Copies externally-hosted asset files (tracks, covers) from new library assets into Base44 storage so links never expire.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "UserAsset"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "persist_new_asset_media",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "persistExternalMedia",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

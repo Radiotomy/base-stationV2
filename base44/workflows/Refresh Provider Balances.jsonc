@@ -1,0 +1,41 @@
+{
+  "name": "Refresh Provider Balances",
+  "description": "Polls all AI provider APIs to update their credit balances in the ProviderBalance entity",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "interval",
+      "cron_expression": null,
+      "one_time_date": null,
+      "timezone": "UTC",
+      "interval_value": 2,
+      "interval_unit": "hours",
+      "interval_anchor": "2026-05-01T01:00:19.651000",
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "refresh_provider_balances",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "refreshProviderBalances",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

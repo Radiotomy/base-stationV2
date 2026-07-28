@@ -1,0 +1,34 @@
+{
+  "name": "Log Generated Loop to Community Buzz",
+  "description": "When a loop/sample is saved to a user's library, add a \"just generated\" item to the home page Community Buzz feed.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "LoopSample"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "log_generated_loop_to_community_buzz",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "run_function": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "logTrackGeneratedActivity",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}
