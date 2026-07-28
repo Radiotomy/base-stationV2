@@ -13,7 +13,8 @@ Deno.serve(async (req) => {
     const token = Deno.env.get('REPLICATE_API_TOKEN');
     if (!token) return Response.json({ error: 'REPLICATE_API_TOKEN is not set' }, { status: 500 });
 
-    const version = v3Version();
+    const body = await req.json().catch(() => ({}));
+    const version = body?.version || v3Version();
     const url = version
       ? `https://api.replicate.com/v1/models/${v3Model()}/versions/${version}`
       : `https://api.replicate.com/v1/models/${v3Model()}`;
