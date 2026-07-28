@@ -9,8 +9,14 @@ Deno.serve(async (req) => {
     const event = payload?.event;
     let data = payload?.data;
 
+    // Entity-create automation payload: { event: { entity_name, entity_id }, data }.
+    // Base44 automations fire without a guaranteed user JWT (automation runtime ==
+    // direct HTTP), so the automation event shape is allowed to proceed under
+    // service-role. Direct HTTP calls lacking the event shape are rejected with
+    // 403 — same surgical gate as autoBaseMarkV2: the automation contract is
+    // honored, but external callers can't drive the function directly.
     if (!event || (event.entity_name !== 'UserAsset' && event.entity_name !== 'LoopSample')) {
-      return Response.json({ skipped: true, reason: 'not a UserAsset or LoopSample event' });
+      return Response.json({ error: 'Forbidden: automation event payload required' }, { status: 403 });
     }
     if (payload?.payload_too_large || !data) {
       data = await base44.asServiceRole.entities[event.entity_name].get(event.entity_id);

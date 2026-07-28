@@ -71,14 +71,14 @@ Deno.serve(async (req) => {
       solana: { total: solRegs.length, registered: solRegs.filter(r => r.registration_status === 'registered').length },
     };
 
-    // Platform wallet addresses — optional public env (NEVER expose private keys).
-    // Read via dynamic key to keep them optional / non-required.
+    // Optional public platform wallet addresses (NEVER expose private keys).
+    // Registered as secrets so the admin dashboard surfaces configured wallets.
     const readEnv = (k) => { try { return Deno.env.get(k) || null; } catch { return null; } };
     const wallets = {
-      base: readEnv(['BASE', 'PLATFORM', 'WALLET', 'ADDRESS'].join('_')),
-      solana: readEnv(['SOLANA', 'PLATFORM', 'WALLET', 'ADDRESS'].join('_')),
-      polygon: readEnv(['POLYGON', 'PLATFORM', 'WALLET', 'ADDRESS'].join('_')),
-      streamr: readEnv(['STREAMR', 'PLATFORM', 'WALLET', 'ADDRESS'].join('_')),
+      base: readEnv('BASE_PLATFORM_WALLET_ADDRESS'),
+      solana: readEnv('SOLANA_PLATFORM_WALLET_ADDRESS'),
+      polygon: readEnv('POLYGON_PLATFORM_WALLET_ADDRESS'),
+      streamr: readEnv('STREAMR_PLATFORM_WALLET_ADDRESS'),
     };
 
     return Response.json({
