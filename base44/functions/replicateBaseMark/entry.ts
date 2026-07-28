@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     // Admin-only operations — protects prediction execution and account
     // management from non-admins invoking the endpoint directly and burning
     // the platform's REPLICATE_API_TOKEN credits on arbitrary models.
-    const adminOnly = ['predictions', 'cancel', 'uploadFile', 'versions', 'checkDeployment', 'run'];
+    const adminOnly = ['predictions', 'cancel', 'uploadFile', 'versions', 'checkDeployment', 'run', 'status'];
     if (adminOnly.includes(action) && user.role !== 'admin') {
       return Response.json({ error: 'Admin only' }, { status: 403 });
     }
