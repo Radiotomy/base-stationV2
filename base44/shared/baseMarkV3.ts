@@ -12,8 +12,13 @@
 export const BASE_MARK_V3_VERSION = '3.0';
 export const V3_SLOT_BITS = 16;
 
+// A Replicate model is always "owner/name". A stored value without a slash is a
+// misconfigured secret (it has happened: the secret name itself got saved as the
+// value), and using it produces a confusing 404 from Replicate rather than an
+// obvious config error — so ignore it and fall back to the known model.
 export function v3Model() {
-  return Deno.env.get('BASE_MARK_V3_MODEL') || 'speedwolf2000/basemark-drift';
+  const raw = (Deno.env.get('BASE_MARK_V3_MODEL') || '').trim();
+  return raw.includes('/') ? raw : 'speedwolf2000/basemark-drift';
 }
 
 // Pinned image digest. Predictions run through the generic /v1/predictions

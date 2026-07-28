@@ -47,19 +47,25 @@ and needs a slot-allocation strategy before wide rollout. V1 and V2 keep
 carrying the full 32-bit payload on the same file, so this is a pointer layer.
 """
 
-import base64
+import pathlib
 import subprocess
 import tempfile
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import soundfile as sf
 import torch
 import wavmark
-from cog import BasePredictor, Input, Path as CogPath
+from cog import BasePredictor, Input, Path
 from pydantic import BaseModel
 from scipy.signal import resample_poly
+
+# `cog.Path` MUST be imported unaliased and used unaliased in annotations. Cog
+# identifies file inputs/outputs by that exact name when it generates the
+# OpenAPI schema; importing it as an alias made `audio` build as a plain
+# `type: object`, and Replicate then rejected every URL string with
+# "input.audio: Invalid type. Expected: object, given: string". Filesystem paths
+# are therefore module-qualified as `pathlib.Path` to keep the two distinct.
 
 WM_RATE = 16000
 PAYLOAD_BITS = 16
@@ -69,15 +75,15 @@ class Output(BaseModel):
     detected: bool
     payload_hex: Optional[str]
     confidence: float
-    audio: Optional[CogPath]
+    audio: Optional[Path]
     sample_rate: Optional[int]
     channels: Optional[int]
     note: str
 
 
-def _decode_to_wav(src: Path) -> Path:
+def _decode_to_wav(src: pathlib.Path) -> pathlib.Path:
     """Normalize any input container to float-friendly PCM WAV via ffmpeg."""
-    out = Path(tempfile.mkdtemp()) / "in.wav"
+    out = pathlib.Path(tempfile.mkdtemp()) / "in.wav"
     subprocess.run(
         ["ffmpeg", "-y", "-i", str(src), "-c:a", "pcm_s24le", str(out)],
         check=True,
@@ -114,7 +120,7 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
-        audio: CogPath = Input(description="Audio file to mark or scan."),
+        audio: Path = Input(description="Audio file to mark or scan."),
         mode: str = Input(
             description="'encode' embeds a slot; 'decode' scans for one.",
             choices=["encode", "decode"],
@@ -125,7 +131,7 @@ class Predictor(BasePredictor):
             default="0000",
         ),
     ) -> Output:
-        wav_path = _decode_to_wav(Path(str(audio)))
+        wav_path = _decode_to_wav(pathlib.Path(str(audio)))
         x, sr = sf.read(str(wav_path), dtype="float32", always_2d=True)
         n_ch = x.shape[1]
         mono = x.mean(axis=1)
@@ -174,14 +180,14 @@ class Predictor(BasePredictor):
         delta = delta[: len(mono)]
 
         out = np.clip(x + delta[:, None], -1.0, 1.0)
-        out_path = Path(tempfile.mkdtemp()) / "marked.wav"
+        out_path = pathlib.Path(tempfile.mkdtemp()) / "marked.wav"
         sf.write(str(out_path), out, sr, subtype="PCM_24")
 
         return Output(
             detected=True,
             payload_hex=slot_hex.lower(),
             confidence=1.0,
-            audio=CogPath(out_path),
+            audio=Path(out_path),
             sample_rate=sr,
             channels=n_ch,
             note=(
