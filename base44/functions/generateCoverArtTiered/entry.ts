@@ -52,6 +52,18 @@ Deno.serve(async (req) => {
       }, { status: 402 });
     }
 
+    // IDOR guard: the GenerationJob is updated via asServiceRole (bypasses
+    // RLS), so verify the supplied job_id belongs to the caller before any
+    // update — otherwise an attacker could overwrite another user's job by
+    // passing its id. Covers both the failure-path and success-path updates.
+    if (job_id) {
+      const job = await base44.asServiceRole.entities.GenerationJob.get(job_id).catch(() => null);
+      if (!job) return Response.json({ error: 'Job not found' }, { status: 404 });
+      if (job.user_id !== user.id) {
+        return Response.json({ error: 'Forbidden: job does not belong to caller' }, { status: 403 });
+      }
+    }
+
     // Call Tempcolor API - https://platform.tempolor.com/docs
     const tempcolorResponse = await fetch('https://api.tempolor.com/v1/image/generate', {
       method: 'POST',
