@@ -57,6 +57,18 @@ Deno.serve(async (req) => {
       level: newLevel,
     });
 
+    // Record this award in AnalyticsEvent so the per-session cap (computed
+    // above from the same records) accumulates across calls and can't be
+    // bypassed by replaying the endpoint.
+    await base44.asServiceRole.entities.AnalyticsEvent.create({
+      user_id: user.id,
+      user_email: user.email,
+      event_type: 'live_reaction',
+      session_id: sessionId,
+      event_data: { xp_awarded: xpToAward, session_xp_kind: kind },
+      timestamp: new Date().toISOString(),
+    }).catch(() => {});
+
     // Auto-award badges
     const newBadges = [];
     const badgeThresholds = [
