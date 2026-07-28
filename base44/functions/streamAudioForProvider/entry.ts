@@ -19,6 +19,35 @@ function b64urlDecode(s) {
   return atob(s);
 }
 
+// Strict suffix match on Base44-owned domains only — no substring checks,
+// so lookalike hosts (e.g. preview-sandbox-attacker.com) are rejected.
+function isAllowedHost(hostname) {
+  return /(^|\.)base44\.(app|com|dev)$/.test(hostname);
+}
+
+// Fetch with redirect: 'manual' and re-validate the target host on every
+// redirect hop, so a base44-owned URL that 302s to an internal/metadata
+// address can't turn this proxy into an SSRF sink.
+async function safeFetch(target, init = {}) {
+  let r = await fetch(target, { ...init, redirect: 'manual' });
+  let hops = 0;
+  let current = target;
+  while (r.status >= 300 && r.status < 400 && hops < 5) {
+    const loc = r.headers.get('location');
+    if (!loc) break;
+    let next;
+    try { next = new URL(loc, current).toString(); }
+    catch { return new Response('Bad redirect', { status: 400 }); }
+    if (!isAllowedHost(new URL(next).hostname)) {
+      return new Response('Forbidden redirect host', { status: 403 });
+    }
+    r = await fetch(next, { ...init, redirect: 'manual' });
+    current = next;
+    hops++;
+  }
+  return r;
+}
+
 Deno.serve(async (req) => {
   try {
     const url = new URL(req.url);
@@ -39,14 +68,12 @@ Deno.serve(async (req) => {
     let host;
     try { host = new URL(target).hostname; }
     catch { return new Response('Bad url', { status: 400 }); }
-    // Strict suffix match on Base44-owned domains only — no substring checks,
-    // so lookalike hosts (e.g. preview-sandbox-attacker.com) are rejected.
-    const allowed = /(^|\.)base44\.(app|com|dev)$/.test(host);
-    if (!allowed) return new Response('Forbidden host', { status: 403 });
+    if (!isAllowedHost(host)) return new Response('Forbidden host', { status: 403 });
 
     // HEAD: probe upstream with a tiny GET (Base44 file API 404s on HEAD), then return headers.
     if (req.method === 'HEAD') {
-      const upstream = await fetch(target, { method: 'GET', headers: { Range: 'bytes=0-1' } });
+      const upstream = await safeFetch(target, { method: 'GET', headers: { Range: 'bytes=0-1' } });
+      if (upstream.status === 403 || upstream.status === 400) return upstream;
       const headers = new Headers();
       const ct = upstream.headers.get('content-type'); headers.set('content-type', ct || 'audio/mpeg');
       const cl = upstream.headers.get('content-length'); if (cl) headers.set('content-length', cl);
@@ -57,7 +84,8 @@ Deno.serve(async (req) => {
     // GET (with optional Range): stream through
     const fwdHeaders = {};
     const range = req.headers.get('range'); if (range) fwdHeaders['Range'] = range;
-    const upstream = await fetch(target, { headers: fwdHeaders });
+    const upstream = await safeFetch(target, { headers: fwdHeaders });
+    if (upstream.status === 403 || upstream.status === 400) return upstream;
     const headers = new Headers();
     const ct = upstream.headers.get('content-type'); headers.set('content-type', ct || 'audio/mpeg');
     const cl = upstream.headers.get('content-length'); if (cl) headers.set('content-length', cl);
