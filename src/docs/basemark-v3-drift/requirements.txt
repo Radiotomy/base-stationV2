@@ -1,0 +1,9 @@
+# Reference only — cog.yaml's python_packages block is what actually builds the
+# image. This file exists so the pinned set can be installed locally for testing
+# outside Cog (python -m venv && pip install -r requirements.txt).
+torch==2.4.1
+numpy==1.26.4
+scipy==1.14.1
+soundfile==0.12.1
+huggingface_hub==0.25.2
+wavmark==0.0.3

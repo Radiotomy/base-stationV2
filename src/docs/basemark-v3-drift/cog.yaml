@@ -1,0 +1,21 @@
+# BASE Mark V3 — Drift Layer (WavMark-based)
+# Cog build definition. Push with:
+#   cog login
+#   cog push r8.im/<your-account>/basemark-drift
+#
+# This is NOT part of the BASE Station app bundle — it lives here so the
+# deployment definition is version-controlled alongside the code that calls it.
+build:
+  gpu: true
+  python_version: "3.11"
+  system_packages:
+    - "libsndfile1"
+    - "ffmpeg"
+  python_packages:
+    - "torch==2.4.1"
+    - "numpy==1.26.4"
+    - "scipy==1.14.1"
+    - "soundfile==0.12.1"
+    - "huggingface_hub==0.25.2"
+    - "wavmark==0.0.3"
+predict: "predict.py:Predictor"
