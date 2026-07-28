@@ -28,16 +28,22 @@ const AUDIO_TYPES = ['track', 'stem', 'master', 'harmony', 'mashup', 'sfx'];
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Admin-only — automations invoke with platform admin auth context; this
-    // blocks unauthenticated external callers from triggering watermarking
-    // (and Replicate GPU spend) on arbitrary assets.
-    const user = await base44.auth.me().catch(() => null);
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
     const body = await req.json();
 
     const isAutomation = body?.event?.entity_name === 'UserAsset';
+    // Base44 automations fire WITHOUT a user session (automation runtime ==
+    // direct HTTP, no JWT), so the entity-create event shape MUST be allowed
+    // to proceed under service-role — gating it with base44.auth.me() would
+    // 403 every new UserAsset and silently halt all watermarking. The direct
+    // back-fill shape ({ assetId }) has no automation backing it, so we
+    // require admin there to block external callers from triggering
+    // Replicate GPU spend on arbitrary assets.
+    if (!isAutomation) {
+      const user = await base44.auth.me().catch(() => null);
+      if (!user || user.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: Admin access required for direct invocation' }, { status: 403 });
+      }
+    }
     const assetId = isAutomation ? body.event.entity_id : body?.assetId;
     if (!assetId) return Response.json({ skipped: true, reason: 'No asset id' });
 
