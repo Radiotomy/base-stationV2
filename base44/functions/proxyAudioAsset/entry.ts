@@ -20,11 +20,23 @@ Deno.serve(async (req) => {
       return Response.json({ file_url: source_url, proxied: false });
     }
 
-    // SSRF guard — reject internal/private hosts before fetching
-    const safeUrl = assertSafeUrl(source_url);
-
-    // Fetch the external file
-    const r = await fetch(safeUrl);
+    // SSRF guard — reject internal/private hosts, and re-validate on every
+    // redirect hop so an external server can't 302 the backend into internal
+    // or cloud-metadata addresses (169.254.169.254, 127.0.0.1, etc.).
+    let safeUrl = assertSafeUrl(source_url);
+    let r = await fetch(safeUrl, { redirect: 'manual' });
+    let hops = 0;
+    while (r.status >= 300 && r.status < 400 && hops < 3) {
+      const loc = r.headers.get('location');
+      if (!loc) return Response.json({ error: 'Redirect without location' }, { status: 502 });
+      const next = assertSafeUrl(new URL(loc, safeUrl).toString());
+      r = await fetch(next, { redirect: 'manual' });
+      safeUrl = next;
+      hops++;
+    }
+    if (r.status >= 300 && r.status < 400) {
+      return Response.json({ error: 'Too many redirects' }, { status: 502 });
+    }
     if (!r.ok) {
       return Response.json({ error: `Fetch failed: ${r.status}` }, { status: 502 });
     }
