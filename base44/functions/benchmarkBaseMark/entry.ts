@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { embedMark, detectMark, payloadFromId } from '../../shared/baseMark.ts';
 import { packMessage, unpackMessage, startV2, getV2Prediction, decodeV2 } from '../../shared/baseMarkV2.ts';
 import { ATTACKS, decodeWav, encodeWav, synthesizeBenchmarkSource } from '../../shared/audioAttacks.ts';
+import { buildCandidates, detectMarkDesync } from '../../shared/baseMarkSearch.ts';
 
 // BASE Mark robustness benchmark — produces MEASURED per-layer survival numbers
 // so public robustness claims can be sourced to real data instead of estimates.
@@ -111,6 +112,72 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Desync-search sweep — measures the searching detector against the
+    //    plain one on the SAME attacked files, so the delta is attributable. ──
+    if (action === 'v1_search') {
+      const trials = Math.max(1, Math.min(5, body.trials || 2));
+      const seconds = Math.max(4, Math.min(30, body.seconds || 12));
+      const keys = attackKeys(body.attacks);
+      const runId = body.run_id || crypto.randomUUID();
+      const { audio, kind } = await loadSource(base44, body.fileUrl, seconds);
+      const candidates = buildCandidates(body.grid || {});
+
+      const marked = [];
+      for (let t = 0; t < trials; t++) {
+        const payloadHex = payloadFromId(`search-${runId}-${t}`);
+        marked.push({ payloadHex, bytes: embedMark(encodeWav(audio), payloadHex) });
+      }
+
+      const rows = [];
+      const results = [];
+      for (const key of keys) {
+        let plainOk = 0;
+        let searchOk = 0;
+        let falsePos = 0;
+        const winners = [];
+        for (const m of marked) {
+          const attacked = encodeWav(ATTACKS[key].apply(decodeWav(m.bytes)));
+          let plain = { detected: false, payload_hex: null };
+          try { plain = detectMark(attacked); } catch { /* unsupported */ }
+          if (plain.detected && plain.payload_hex === m.payloadHex) plainOk++;
+
+          const found = detectMarkDesync(attacked, { candidates });
+          if (found.detected && found.payload_hex === m.payloadHex) {
+            searchOk++;
+            winners.push(found.candidate);
+          } else if (found.detected) {
+            falsePos++;
+          }
+        }
+        const pct = Number(((searchOk / trials) * 100).toFixed(1));
+        rows.push({
+          run_id: runId,
+          layer: 'spectral',
+          attack: key,
+          attack_label: `${ATTACKS[key].label} [desync search]`,
+          trials,
+          survived: searchOk,
+          survival_pct: pct,
+          source_kind: kind,
+          source_seconds: Number((audio.channels[0].length / audio.sampleRate).toFixed(2)),
+          sample_rate: audio.sampleRate,
+          cascaded: false,
+          notes: `plain detector ${((plainOk / trials) * 100).toFixed(0)}%; grid ${candidates.length} candidates; wrong-payload hits ${falsePos}; winners ${winners.join(',') || 'none'}`,
+        });
+        results.push({
+          attack: key,
+          label: ATTACKS[key].label,
+          plain_pct: Number(((plainOk / trials) * 100).toFixed(1)),
+          search_pct: pct,
+          wrong_payload_hits: falsePos,
+          winning_candidates: winners,
+        });
+      }
+
+      await base44.asServiceRole.entities.BaseMarkBenchmark.bulkCreate(rows);
+      return Response.json({ run_id: runId, layer: 'spectral', mode: 'desync_search', trials, candidates: candidates.length, results });
+    }
+
     // ── Neural path: embed the cascade, then attack it one step at a time ────
     if (action === 'v2_start') {
       const seconds = Math.max(4, Math.min(30, body.seconds || 12));
@@ -210,7 +277,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json({ error: 'action must be v1_sweep, v2_start, v2_poll or v2_attack' }, { status: 400 });
+    return Response.json({ error: 'action must be v1_sweep, v1_search, v2_start, v2_poll or v2_attack' }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

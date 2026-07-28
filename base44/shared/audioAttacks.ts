@@ -176,6 +176,19 @@ export const ATTACKS = {
   pitch_up_1: { label: 'Pitch shift +1 semitone (resample)', apply: (a) => pitchShiftResample(a, 1) },
   pitch_down_1: { label: 'Pitch shift -1 semitone (resample)', apply: (a) => pitchShiftResample(a, -1) },
   pitch_up_2: { label: 'Pitch shift +2 semitones (resample)', apply: (a) => pitchShiftResample(a, 2) },
+  // Deliberately OFF-GRID shifts. A real attacker picks arbitrary amounts, so
+  // these sit at the worst-case distance from a 25-cent search grid (~12-13
+  // cents away from the nearest candidate) and measure the search's tolerance.
+  pitch_up_113c: { label: 'Pitch shift +113 cents (off-grid resample)', apply: (a) => pitchShiftResample(a, 1.13) },
+  pitch_up_37c: { label: 'Pitch shift +37 cents (off-grid resample)', apply: (a) => pitchShiftResample(a, 0.37) },
+  // Tiny shifts, used to bracket how much resampling error the spectral
+  // detector tolerates before chip alignment drifts apart.
+  pitch_up_5c: { label: 'Pitch shift +5 cents (0.29% speed)', apply: (a) => pitchShiftResample(a, 0.05) },
+  pitch_up_2c: { label: 'Pitch shift +2 cents (0.12% speed)', apply: (a) => pitchShiftResample(a, 0.02) },
+  // 44.1kHz <-> 48kHz sample-rate conversion done WRONG (played at the other
+  // rate). This is not a deliberate attack, it happens by accident constantly in
+  // real production pipelines, and it is an exactly-known ratio.
+  resample_48_441: { label: '44.1kHz master played at 48kHz (+146.6 cents)', apply: (a) => pitchShiftResample(a, 1.4664) },
   stretch_105: { label: 'Time stretch +5% (pitch preserved)', apply: (a) => timeStretchOLA(a, 1.05) },
   stretch_095: { label: 'Time stretch -5% (pitch preserved)', apply: (a) => timeStretchOLA(a, 0.95) },
   lowpass_15k: { label: 'Low-pass 15kHz (codec-style band-limiting)', apply: (a) => lowPass(a, 15000) },
