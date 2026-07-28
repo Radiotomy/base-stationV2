@@ -47,9 +47,10 @@ layers, which the mark makes discoverable even after metadata stripping.
 |---|---|
 | Inaudibility | Signature is shaped below perceptual masking thresholds of the program material |
 | Blind detection | No original/reference file is required to verify |
-| Localization | The identifier repeats through the file; measured recovery is reliable from ~5s excerpts, content-dependent at ~3s, and unreliable at ~2s or below |
+| Localization | The identifier repeats through the file; measured recovery is reliable from ~5s excerpts. Below ~3s the detector **declines to answer** rather than guess (see §8) |
 | Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat both layers** (measured 0% recovery) — this is a stated limitation, not a degradation |
 | Non-repudiation | Payload is threaded through the cryptographic manifest and on-chain anchor at embed time |
+| Abstention | Detection thresholds scale with the evidence available, so the detector reports "insufficient evidence" instead of a low-confidence attribution |
 
 ## 4. Verification model (black-box)
 
@@ -123,3 +124,26 @@ these elements. Only outcome-level data crosses the trust boundary.
   applied, and the Neural Layer resolves independently, with matching payloads
   on both. Assets marked before this standard remain fully traceable; payload
   semantics are unchanged across all layers.
+
+## 8. Abstention over guessing (false-positive discipline)
+
+A wrong attribution is materially worse than no attribution: a miss is honest,
+while a confident wrong answer can misdirect a real dispute. The Spectral Layer
+detector is therefore built to abstain.
+
+- **Evidence-scaled thresholds.** The payload decision threshold is derived from
+  the noise deviation of the statistic *for the amount of audio actually
+  supplied*, rather than a single constant tuned on long files. Short excerpts
+  must clear a proportionally higher bar.
+- **Minimum input length.** Below roughly 3 seconds the detector returns
+  "insufficient evidence" and no payload. It does not return a best guess.
+- **Search discipline.** Any detection produced by testing multiple candidate
+  re-timings must clear a stricter bar than a single-shot detection, because
+  testing N candidates otherwise multiplies the false-positive rate by N. The
+  recovered payload must additionally match a registered asset; a payload
+  matching no asset is discarded rather than reported.
+
+This behavior is regression-tested by the internal attack benchmark: an earlier
+build returned a confidently wrong payload from a 2-second excerpt, and the
+benchmark now asserts that such inputs are declined while genuine 5-second
+excerpts, 11kHz low-pass and 10dB-SNR noise still resolve at 100%.

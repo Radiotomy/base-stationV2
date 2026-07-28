@@ -33,9 +33,16 @@
 import { detectMark } from './baseMark.ts';
 import { decodeWav, encodeWav, pitchShiftResample, timeStretchOLA } from './audioAttacks.ts';
 
-// Strength floor for accepting a searched hit. detectMark's own single-shot gate
-// is 0.02; a grid search needs more evidence per candidate to hold the same
-// overall false-positive rate.
+// Extra evidence a searched hit must carry, as a multiple of the detector's own
+// evidence-scaled strength gate. Trying N candidates and keeping the best gives
+// the detector N independent chances to hallucinate a mark, so matching the
+// single-shot gate would inflate the false-positive rate by roughly N. Requiring
+// 1.5x the gate the detector computed for that clip keeps the search honest
+// while staying duration-aware.
+export const SEARCH_GATE_MULTIPLE = 1.5;
+
+// Absolute floor retained for callers that want a single constant; the real
+// acceptance test is SEARCH_GATE_MULTIPLE against the per-clip gate.
 export const SEARCH_MIN_STRENGTH = 0.03;
 
 // Candidate inverse transforms. Each entry undoes a plausible attack.
@@ -95,7 +102,13 @@ export function detectMarkDesync(bytes, options = {}) {
     return { detected: false, payload_hex: null, mean_strength: 0, candidate: null, candidates_tried: candidates.length };
   }
 
-  const accepted = best.res.detected && best.strength >= SEARCH_MIN_STRENGTH;
+  // The winning candidate must have passed the detector's own gates AND cleared
+  // the stricter multi-candidate bar for the evidence this clip actually had.
+  const searchGate = Math.max(
+    SEARCH_MIN_STRENGTH,
+    SEARCH_GATE_MULTIPLE * (best.res.strength_gate || SEARCH_MIN_STRENGTH),
+  );
+  const accepted = best.res.detected && best.strength >= searchGate;
   return {
     detected: accepted,
     payload_hex: accepted ? best.res.payload_hex : null,

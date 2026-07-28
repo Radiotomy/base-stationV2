@@ -24,7 +24,13 @@ const SPECTRAL_ONLY = [
   { attack: 'Pitch shift -1 semitone', pct: 0 },
   { attack: 'Pitch shift +2 semitones', pct: 0 },
   { attack: 'Time stretch -5%', pct: 0 },
-  { attack: '2s crop', pct: 0 },
+];
+
+// Inputs the detector deliberately refuses rather than answering. These are not
+// failures — they are abstentions, and they are the correct behavior.
+const DECLINED = [
+  { attack: '3s crop', note: 'Below the evidence floor — declined' },
+  { attack: '2s crop', note: 'Below the evidence floor — declined' },
 ];
 
 export default function RobustnessChart() {
@@ -78,6 +84,22 @@ export default function RobustnessChart() {
         </div>
       </div>
 
+      <div className="rounded-xl border border-border bg-card p-5">
+        <p className="font-bold text-foreground text-sm mb-1">Inputs the detector refuses</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          These are not scored as failures. Below the evidence floor the detector reports insufficient evidence
+          and returns no payload, because a confidently wrong attribution is worse than no attribution.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5">
+          {DECLINED.map((r) => (
+            <div key={r.attack} className="flex items-center justify-between text-xs border-b border-border/40 py-1">
+              <span className="text-muted-foreground">{r.attack}</span>
+              <span className="font-bold text-amber-400">{r.note}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-5">
         <p className="font-bold text-foreground text-sm mb-2">Honest caveats on these numbers</p>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
@@ -87,14 +109,15 @@ export default function RobustnessChart() {
             5% time stretch. Resampling is the strongest attack we have measured against BASE Mark.
           </li>
           <li>
-            <strong className="text-foreground">Crop survival is content-dependent, not a fixed floor.</strong> The
-            same 3-second crop recovered 100% from one source and 0% from another, because survival depends on
-            the signal level inside the cropped window. Treat short-clip figures as indicative only.
+            <strong className="text-foreground">Crop survival is content-dependent, not a fixed floor.</strong> Survival
+            depends on the signal level inside the cropped window, so figures near the evidence floor are
+            indicative only. 5-second excerpts measure 100%; anything shorter is declined by design.
           </li>
           <li>
-            <strong className="text-foreground">2-second clips are unreliable and can mis-identify.</strong> At
-            2 seconds the spectral detector recovered no correct payload, and in one configuration returned a
-            confidently wrong one. Do not rely on clips this short for attribution.
+            <strong className="text-foreground">Very short clips are declined rather than answered.</strong> An
+            earlier build returned a confidently wrong payload from a 2-second excerpt. Detection thresholds now
+            scale with the amount of audio supplied, so inputs below roughly 3 seconds report insufficient
+            evidence and return no payload at all. A miss is honest; a wrong attribution is not.
           </li>
           <li>
             <strong className="text-foreground">No real codec in the loop.</strong> We cannot run an MP3/AAC

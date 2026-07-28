@@ -170,6 +170,43 @@ export function embedMark(bytes, payloadHex) {
   return out;
 }
 
+// Minimum blocks required to attempt detection at all.
+//
+// This is a false-positive control, not a convenience limit. The pilot stage
+// takes the MAXIMUM correlation over all 33,792 sample offsets, so its output is
+// an extreme-value statistic: with K blocks of evidence the per-offset noise
+// deviation is 1/sqrt(K*CHIP_LEN), and the max over N offsets lands near
+// sqrt(2*ln N) ~= 4.6 of those deviations even on unmarked audio. At 2 seconds
+// only K=1 block exists, putting the expected noise maximum around 0.14 — four
+// times the old fixed 0.035 gate, so unmarked audio passed the gate by
+// construction. With so few blocks there is also almost no majority-vote
+// redundancy left, so the recovered bits were essentially random. That is the
+// mechanism behind the measured 2-second false positive with a confidently wrong
+// payload: the single most dangerous failure mode this detector can have, since
+// a wrong attribution is far worse than no attribution.
+//
+// 4 blocks (~3.1s @ 44.1kHz) is the floor we attempt. Benchmarking already
+// showed 3s recovery is content-dependent and 2s unreliable, so below this we
+// decline to answer rather than guess.
+const MIN_BLOCKS = 4;
+
+// The pilot stage's job is only to RECOVER ALIGNMENT, not to decide detection.
+// Because it maximizes over 33,792 offsets its genuine score sits close to its
+// own noise maximum by construction (measured ~0.04-0.06 against a ~0.04 noise
+// max at K=12), so scaling this gate up rejects real marks — it measurably broke
+// 5-second crops and 11kHz low-pass, both of which carried strong payloads. It
+// stays a loose sanity floor.
+const PILOT_MIN = 0.035;
+
+// The payload stage is the real discriminator and the gate that has to scale.
+// bitCorr averages nc over `usable` blocks, so its noise deviation is
+// 1/sqrt(usable*CHIP_LEN) and unmarked audio produces a mean absolute value near
+// 0.8 of that. Genuine marks measure 4-7 deviations above it, so a 3-sigma gate
+// separates them cleanly at every length: it admits the real 5s-crop payload
+// (0.0606 vs a 0.0383 gate) while rejecting the 2-second noise case (~0.018
+// against a 0.066 gate) that previously produced a confident wrong answer.
+const STRENGTH_SIGMAS = 3.0;
+
 // Detect a BASE Mark in a 16-bit PCM WAV. Survives arbitrary cuts because
 // alignment is recovered by scanning every sample offset for the pilot.
 export function detectMark(bytes) {
@@ -178,8 +215,12 @@ export function detectMark(bytes) {
   const x = monoSamples(bytes, wav);
   const frames = x.length;
   const totalBlocks = Math.floor(frames / BLOCK);
-  if (totalBlocks < 2) {
-    return { detected: false, reason: 'Audio too short to scan (about 2 seconds minimum).' };
+  if (totalBlocks < MIN_BLOCKS) {
+    return {
+      detected: false,
+      reason: 'Audio too short to scan reliably (about 3 seconds minimum). Shorter clips cannot be attributed with confidence, so no result is reported.',
+      too_short: true,
+    };
   }
   const pilot = getChips(0);
   const K = Math.max(1, Math.min(12, Math.floor((frames - CHIP_LEN) / BLOCK) - 1));
@@ -232,13 +273,23 @@ export function detectMark(bytes) {
   for (let k = 0; k < BITS; k++) strengthSum += Math.abs(bitCorr[k]);
   const meanStrength = strengthSum / BITS;
   const agreement = voteCount ? agreeCount / voteCount : 0;
-  const detected = bestScore > 0.035 && meanStrength > 0.02;
+
+  // Evidence-scaled gates. Each statistic is compared against its own noise
+  // deviation for the amount of evidence actually available, so a short clip has
+  // to clear a proportionally higher bar instead of inheriting a threshold that
+  // was only ever valid for long files. The original fixed constants are kept as
+  // floors so behavior on long, well-evidenced files is unchanged.
+  const pilotGate = PILOT_MIN;
+  const strengthGate = Math.max(0.02, STRENGTH_SIGMAS / Math.sqrt(usable * CHIP_LEN));
+  const detected = bestScore > pilotGate && meanStrength > strengthGate;
 
   return {
     detected,
     payload_hex: detected ? payloadHex : null,
     pilot_score: Number(bestScore.toFixed(4)),
     mean_strength: Number(meanStrength.toFixed(4)),
+    pilot_gate: Number(pilotGate.toFixed(4)),
+    strength_gate: Number(strengthGate.toFixed(4)),
     agreement: Number(agreement.toFixed(3)),
     blocks_scanned: usable,
     sample_offset: bestO,
