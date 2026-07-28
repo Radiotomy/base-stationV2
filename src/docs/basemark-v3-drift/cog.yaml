@@ -5,6 +5,12 @@
 #
 # This is NOT part of the BASE Station app bundle — it lives here so the
 # deployment definition is version-controlled alongside the code that calls it.
+#
+# `predict` is deliberately the FIRST key: a copy/paste that drops the final
+# line of the file is a common failure, and Cog's error for a missing predict
+# reference ("no predict or train reference found in cog.yaml") does not point
+# at truncation as the cause.
+predict: "predict.py:Predictor"
 build:
   gpu: true
   python_version: "3.11"
@@ -18,4 +24,3 @@ build:
     - "soundfile==0.12.1"
     - "huggingface_hub==0.25.2"
     - "wavmark==0.0.3"
-predict: "predict.py:Predictor"
