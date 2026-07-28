@@ -104,9 +104,11 @@ export default function RobustnessChart() {
         <p className="font-bold text-foreground text-sm mb-2">Honest caveats on these numbers</p>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li>
-            <strong className="text-foreground">Pitch and tempo changes defeat both layers.</strong> Neither
+            <strong className="text-foreground">Pitch and tempo changes defeat both layers on a normal scan.</strong> Neither
             the spectral nor the neural layer recovered the payload after a one-semitone pitch shift or a
-            5% time stretch. Resampling is the strongest attack we have measured against BASE Mark.
+            5% time stretch. Resampling is the strongest attack we have measured against BASE Mark. A deep
+            scan re-times the audio to undo it and recovers exact-ratio shifts (whole semitones, 44.1/48kHz
+            mishandling) at 100%, but arbitrary shifts and tempo stretches stay unrecoverable.
           </li>
           <li>
             <strong className="text-foreground">Crop survival is content-dependent, not a fixed floor.</strong> Survival

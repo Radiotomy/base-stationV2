@@ -143,6 +143,46 @@ detector is therefore built to abstain.
   recovered payload must additionally match a registered asset; a payload
   matching no asset is discarded rather than reported.
 
+## 9. Deep scan (re-timed audio)
+
+Resampling and time-stretching do not erase the mark, they **desynchronize** it:
+the chip sequence is keyed to a fixed sample length, so once the time axis is
+rescaled the detector cannot line it up. The mark is still present in the file.
+
+The deep scan inverts the problem at detection time — the suspect audio is
+re-timed by a curated set of inverse ratios and the standard detector is run at
+each one. Measured results:
+
+| Transform | Normal scan | Deep scan |
+|---|---|---|
+| 44.1kHz master played at 48kHz | 0% | **100%** |
+| Pitch shift ±1 semitone | 0% | **100%** |
+| Off-grid shift (e.g. +37 cents) | 0% | 0% (clean miss, no false payload) |
+| Pitch-preserved tempo stretch | 0% | 0% |
+
+Scope and hard limits, all measured:
+
+- **Exact ratios only.** Tolerance is sub-sample — a pseudo-noise chip sequence
+  decorrelates within roughly one sample of drift. A candidate 2 cents off
+  recovers nothing, and a 0.04-cent discrepancy was enough to lose a genuine
+  hit. Candidates are therefore declared as exact ratios with the cents derived,
+  and a stepped search grid is useless: it only recovers a shift that happens to
+  land exactly on a grid point.
+- **Tempo stretching is unrecoverable.** Overlap-add resynthesis is not
+  invertible; it discards the fine phase structure the chips live in, so undoing
+  a stretch adds smearing rather than restoring alignment. Those candidates were
+  removed rather than shipped at a permanent 0%.
+- **Requires ≥12 seconds.** A re-timed recovery is marginal, and the payload gate
+  tightens as block count falls: the same ±1 semitone shift that recovers at 100%
+  from 12 seconds is rejected from 8. Shorter input is declined.
+- **Bounded execution.** Candidates are processed in small batches across
+  invocations. Running the full set in one request exceeds the CPU limit.
+- **Registry confirmation is mandatory**, per §8 — searching many candidates
+  multiplies false-positive exposure, so an unmatched payload is discarded.
+
+An arbitrary, hand-dialed re-timing by an informed adversary remains out of
+reach, and no detection-time search changes that.
+
 This behavior is regression-tested by the internal attack benchmark: an earlier
 build returned a confidently wrong payload from a 2-second excerpt, and the
 benchmark now asserts that such inputs are declined while genuine 5-second

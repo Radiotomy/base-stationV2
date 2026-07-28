@@ -188,7 +188,16 @@ export const ATTACKS = {
   // 44.1kHz <-> 48kHz sample-rate conversion done WRONG (played at the other
   // rate). This is not a deliberate attack, it happens by accident constantly in
   // real production pipelines, and it is an exactly-known ratio.
-  resample_48_441: { label: '44.1kHz master played at 48kHz (+146.6 cents)', apply: (a) => pitchShiftResample(a, 1.4664) },
+  // The EXACT ratio, not a rounded semitone count. This attack models a real
+  // production accident (a 44.1kHz master played back as if it were 48kHz), and
+  // detection tolerance is so tight that a rounded constant tests something the
+  // real world never produces: with the value rounded to 1.4664 semitones the
+  // curated exact-ratio candidate could not recover the mark, purely from the
+  // 0.04-cent discrepancy between the two.
+  resample_48_441: {
+    label: '44.1kHz master played at 48kHz (+146.6 cents)',
+    apply: (a) => pitchShiftResample(a, 12 * Math.log2(48000 / 44100)),
+  },
   stretch_105: { label: 'Time stretch +5% (pitch preserved)', apply: (a) => timeStretchOLA(a, 1.05) },
   stretch_095: { label: 'Time stretch -5% (pitch preserved)', apply: (a) => timeStretchOLA(a, 0.95) },
   lowpass_15k: { label: 'Low-pass 15kHz (codec-style band-limiting)', apply: (a) => lowPass(a, 15000) },

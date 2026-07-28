@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { ScanSearch, Loader2, Lock, FileAudio } from 'lucide-react';
 import { fileToVerifySnippetB64 } from '@/utils/verifyAudioClip';
 import PublicScanResult from '@/components/watermark/PublicScanResult';
+import DeepScanPanel from '@/components/watermark/DeepScanPanel';
 
 export default function VerifyMark() {
   const [file, setFile] = useState(null);
@@ -12,6 +13,12 @@ export default function VerifyMark() {
   const [phase, setPhase] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [snippetB64, setSnippetB64] = useState(null);
+  const [canDeepScan, setCanDeepScan] = useState(false);
+
+  useEffect(() => {
+    base44.auth.isAuthenticated().then(setCanDeepScan).catch(() => setCanDeepScan(false));
+  }, []);
 
   const scan = async () => {
     setBusy(true); setError(''); setResult(null);
@@ -23,6 +30,7 @@ export default function VerifyMark() {
       } catch {
         throw new Error('Could not decode this audio file. Supported: WAV, MP3, OGG, M4A/MP4, WebM, FLAC.');
       }
+      setSnippetB64(b64);
       setPhase('Verifying…');
       const res = await base44.functions.invoke('verifyBaseMark', { fileB64: b64 });
       setResult(res.data);
@@ -55,7 +63,7 @@ export default function VerifyMark() {
             <input
               type="file" accept=".wav,.mp3,.ogg,.oga,.m4a,.mp4,.aac,.webm,.flac,audio/*"
               className="hidden"
-              onChange={(e) => { setFile(e.target.files?.[0] || null); setResult(null); setError(''); }}
+              onChange={(e) => { setFile(e.target.files?.[0] || null); setResult(null); setError(''); setSnippetB64(null); }}
             />
           </label>
           <Button onClick={scan} disabled={!file || busy} className="merc-button w-full">
@@ -64,6 +72,9 @@ export default function VerifyMark() {
           </Button>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <PublicScanResult result={result} matches={result?.matches ?? null} />
+          {result && !result.detected && !result.too_short && snippetB64 && canDeepScan && (
+            <DeepScanPanel fileB64={snippetB64} />
+          )}
         </div>
 
         <p className="text-center text-xs text-muted-foreground">

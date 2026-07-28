@@ -2,7 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { embedMark, detectMark, payloadFromId } from '../../shared/baseMark.ts';
 import { packMessage, unpackMessage, startV2, getV2Prediction, decodeV2 } from '../../shared/baseMarkV2.ts';
 import { ATTACKS, decodeWav, encodeWav, synthesizeBenchmarkSource } from '../../shared/audioAttacks.ts';
-import { buildCandidates, detectMarkDesync } from '../../shared/baseMarkSearch.ts';
+import { buildCandidates, detectMarkDesync, CURATED_CANDIDATES } from '../../shared/baseMarkSearch.ts';
 
 // BASE Mark robustness benchmark — produces MEASURED per-layer survival numbers
 // so public robustness claims can be sourced to real data instead of estimates.
@@ -120,7 +120,12 @@ Deno.serve(async (req) => {
       const keys = attackKeys(body.attacks);
       const runId = body.run_id || crypto.randomUUID();
       const { audio, kind } = await loadSource(base44, body.fileUrl, seconds);
-      const candidates = buildCandidates(body.grid || {});
+      // `curated: true` measures the exact-ratio list the production deep scan
+      // actually ships, rather than an arbitrary grid. Benchmarking showed the
+      // detector tolerates well under 2 cents of drift, so a stepped grid only
+      // ever recovers shifts that happen to land on a grid point — the curated
+      // list is the only form of this search with real-world hit rate.
+      const candidates = body.curated ? CURATED_CANDIDATES : buildCandidates(body.grid || {});
 
       const marked = [];
       for (let t = 0; t < trials; t++) {

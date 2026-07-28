@@ -27,6 +27,7 @@ Deno.serve(async (req) => {
     let payload_hex = null;
     let engine = null;
     let reason = null;
+    let tooShort = false;
 
     try {
       const v1 = detectMark(bytes);
@@ -36,6 +37,7 @@ Deno.serve(async (req) => {
         engine = 'acoustic';
       } else {
         reason = v1.reason || null;
+        tooShort = !!v1.too_short;
       }
     } catch (e) {
       return Response.json({ error: e.message }, { status: 400 });
@@ -107,6 +109,9 @@ Deno.serve(async (req) => {
       payload_hex: detected ? payload_hex : null,
       engine,
       reason: detected ? null : reason,
+      // Signals to the client that a deep scan is pointless — there simply isn't
+      // enough audio for any detector, re-timed or not.
+      too_short: tooShort,
       matches,
     });
   } catch (error) {
