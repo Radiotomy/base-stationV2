@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { detectMark } from '../../shared/baseMark.ts';
-import { runV2, unpackMessage } from '../../shared/baseMarkV2.ts';
+import { decodeV2, unpackMessage } from '../../shared/baseMarkV2.ts';
 
 // Public black-box verifier for the no-login /verify page.
 // Accepts a short base64 mono WAV snippet, scans it server-side, and returns
@@ -54,7 +54,9 @@ Deno.serve(async (req) => {
       try {
         const file = new Blob([bytes], { type: 'audio/wav' });
         const { file_url } = await base44.asServiceRole.integrations.Core.UploadFile({ file });
-        const output = await runV2({ action: 'decode', audio: file_url });
+        // Submissions here are always short snippets cut out of a longer track,
+        // so crop-robust decoding is required for the neural layer to resolve.
+        const output = await decodeV2(file_url, { phaseShift: true });
         const resultUrl = typeof output === 'string' ? output : Array.isArray(output) ? output[0] : output?.url;
         if (resultUrl) {
           const rr = await fetch(resultUrl);

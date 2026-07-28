@@ -162,6 +162,22 @@ export async function runV2(input, { timeoutMs = 300000 } = {}) {
   return data.output;
 }
 
+// Run a V2 decode. `phaseShift` maps to SilentCipher's `phase_shift_decoding`,
+// which the upstream model documents as what makes the decoder robust to audio
+// CROPS — the exact case for user-submitted snippets. It is significantly slower,
+// so callers opt in only where crop robustness matters.
+// Older builds of the container may not expose the input, so a rejected request
+// is retried once without the flag rather than losing V2 detection entirely.
+export async function decodeV2(audio, { phaseShift = false } = {}) {
+  if (!phaseShift) return await runV2({ action: 'decode', audio });
+  try {
+    return await runV2({ action: 'decode', audio, phase_shift_decoding: true });
+  } catch (e) {
+    if (!/422|Additional property|not allowed|unexpected keyword/i.test(e.message || '')) throw e;
+    return await runV2({ action: 'decode', audio });
+  }
+}
+
 // Fire a prediction WITHOUT blocking. Returns the full prediction object
 // { id, status, urls, ... } — caller polls getV2Prediction(id) until done.
 // Use this for the async embed flow so cold starts don't block the request.
