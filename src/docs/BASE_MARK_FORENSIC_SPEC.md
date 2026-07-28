@@ -47,8 +47,8 @@ layers, which the mark makes discoverable even after metadata stripping.
 |---|---|
 | Inaudibility | Signature is shaped below perceptual masking thresholds of the program material |
 | Blind detection | No original/reference file is required to verify |
-| Localization | Any surviving contiguous chunk of a few seconds carries the complete identifier |
-| Persistence | Survives metadata stripping, re-encoding, cutting, stem separation, sampling, remixing (robustness degrades under aggressive lossy compression and pitch/time transforms — see public docs) |
+| Localization | The identifier repeats through the file; measured recovery is reliable from ~5s excerpts, content-dependent at ~3s, and unreliable at ~2s or below |
+| Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat both layers** (measured 0% recovery) — this is a stated limitation, not a degradation |
 | Non-repudiation | Payload is threaded through the cryptographic manifest and on-chain anchor at embed time |
 
 ## 4. Verification model (black-box)
@@ -98,12 +98,22 @@ these elements. Only outcome-level data crosses the trust boundary.
 ## 7. Two-layer design & verification
 
 - **Spectral Layer:** pure-DSP spread-spectrum mark; instant, deterministic, no
-  GPU dependency. Weakens under aggressive lossy re-encoding, pitch-shifting or
-  time-stretching.
-- **Neural Layer:** learned watermark, robust against the compression and
-  pitch/time attacks that weaken the Spectral Layer. Runs asynchronously on a
-  private GPU deployment (cold starts can take minutes; typically settles in
-  under a minute once warm).
+  GPU dependency. Measured robust to band-limiting, 8-bit quantization and
+  additive noise down to 10dB SNR; broken by pitch-shifting and time-stretching.
+- **Neural Layer:** learned watermark (SilentCipher — Singh et al., Interspeech
+  2024), trained against audio compression, time-jittering and additive white
+  noise. Runs asynchronously on a private GPU deployment (cold starts can take
+  minutes; typically settles in under a minute once warm). **It does not confer
+  pitch/time robustness** — benchmarked at 0% recovery after a one-semitone
+  pitch shift or a 5% time stretch, the same as the Spectral Layer.
+- **Measured robustness.** All robustness figures published by BASE Station are
+  produced by an internal attack benchmark that applies each distortion to a
+  finished cascaded file and re-runs both detectors independently, counting a
+  trial as recovered only on an exact payload match. No published figure is an
+  estimate. Current runs use synthetic broadband material at small sample sizes;
+  the benchmark environment cannot run a real MP3/AAC encoder, so no bitrate
+  figures are published — only the measurable components of codec damage
+  (band-limiting, quantization).
 - **Combined signature (current production behavior):** the Spectral Layer is
   embedded first, then the Neural Layer is embedded on top of that file, so
   the shipped audio always carries both. An internal end-to-end smoke test

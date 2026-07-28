@@ -1,0 +1,95 @@
+{
+  "name": "BaseMarkBenchmark",
+  "type": "object",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Groups all attack results measured in one benchmark run"
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "spectral",
+        "neural"
+      ],
+      "description": "Which BASE Mark layer this measurement is for. spectral = V1 DSP, neural = V2 SilentCipher"
+    },
+    "attack": {
+      "type": "string",
+      "description": "Stable attack identifier from the ATTACKS registry, e.g. pitch_up_1"
+    },
+    "attack_label": {
+      "type": "string",
+      "description": "Human-readable attack description exactly as measured"
+    },
+    "trials": {
+      "type": "number",
+      "default": 1,
+      "description": "Number of independent payloads tested for this attack"
+    },
+    "survived": {
+      "type": "number",
+      "default": 0,
+      "description": "How many trials recovered the correct payload"
+    },
+    "survival_pct": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "survived / trials as a percentage \u2014 the measured number"
+    },
+    "mean_strength": {
+      "type": "number",
+      "description": "Mean detector correlation strength across trials (spectral layer only)"
+    },
+    "source_kind": {
+      "type": "string",
+      "enum": [
+        "synthetic",
+        "uploaded"
+      ],
+      "default": "synthetic",
+      "description": "Test material used"
+    },
+    "source_seconds": {
+      "type": "number",
+      "description": "Duration of the source material in seconds"
+    },
+    "sample_rate": {
+      "type": "number"
+    },
+    "cascaded": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when measured on a file carrying BOTH layers (V1 then V2 on top)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Caveats for this measurement"
+    }
+  },
+  "required": [
+    "run_id",
+    "layer",
+    "attack",
+    "survival_pct"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

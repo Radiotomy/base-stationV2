@@ -15,9 +15,11 @@ export default function BaseMarkSection() {
         <p className="text-muted-foreground">
           BASE Mark is BASE Station's own in-house audio watermark: a single forensic signature built from
           two complementary layers embedded on the same file — a blind, localized spread-spectrum layer and
-          a learned neural-network layer, in the same class as research like Meta's AudioSeal and WavMark.
+          a learned neural-network layer built on <strong className="text-foreground">SilentCipher</strong> (Singh
+          et al., Interspeech 2024), in the same research class as Meta's AudioSeal and WavMark.
           Unlike ID3 tags or C2PA manifests, the mark lives inside the audio waveform itself, so it survives
-          metadata stripping, re-encoding, cutting, stem-splitting, sampling and remixing.
+          metadata stripping, band-limiting, quantization, cutting, stem-splitting and remixing. Pitch- and
+          tempo-shifted copies are its known gap — see the measured robustness figures below.
         </p>
       </div>
 
@@ -40,12 +42,12 @@ export default function BaseMarkSection() {
           <div className="rounded-lg border border-border p-3 space-y-1.5">
             <p className="font-medium text-foreground">Spectral Layer</p>
             <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> instant, deterministic, no GPU dependency — embeds synchronously in the same request that saves the track; cheap to verify at scale.</p>
-            <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> weakens under aggressive lossy re-encoding, pitch-shifting or time-stretching.</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> broken outright by pitch-shifting or time-stretching — our benchmark measured 0% payload recovery after a one-semitone shift or a 5% stretch. Short clips (~2s) are unreliable.</p>
           </div>
           <div className="rounded-lg border border-border p-3 space-y-1.5">
             <p className="font-medium text-foreground">Neural Layer</p>
-            <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> survives the compression, pitch and time attacks that weaken the spectral layer — it's learned to be robust to exactly those transforms.</p>
-            <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> runs async on a GPU (cold starts can take a couple of minutes) and detection costs more compute per scan.</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-emerald-400">Strengths:</strong> trained against audio compression, time-jittering and additive noise, and it verifies independently of the spectral layer — so a scan still resolves when one layer is stripped or a file is re-encoded.</p>
+            <p className="text-muted-foreground text-xs"><strong className="text-[#FFC98A]">Weaknesses:</strong> runs async on a GPU (cold starts can take a couple of minutes) and detection costs more compute per scan. It does <strong className="text-foreground">not</strong> rescue pitch-shifted or time-stretched audio — we measured 0% recovery there, same as the spectral layer.</p>
           </div>
         </div>
       </div>
@@ -75,7 +77,7 @@ export default function BaseMarkSection() {
         <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
           <li><strong className="text-foreground">Payload:</strong> a unique 32-bit identifier derived from the track's asset record, registered in the track's provenance metadata, COS Manifest, DDEX bundle, and ID3 frames.</li>
           <li><strong className="text-foreground">Embedding:</strong> a proprietary spread-spectrum process shapes an inaudible signature directly into the waveform, scaled to the music's own loudness (psychoacoustic masking) so it never colors the mix. The exact embedding parameters are confidential and executed exclusively in BASE Station's secure server environment.</li>
-          <li><strong className="text-foreground">Localization:</strong> the identifier repeats continuously through the file. Any surviving contiguous chunk of a few seconds — a sampled loop, a cut stem, a remix layer — still carries the complete identifier.</li>
+          <li><strong className="text-foreground">Localization:</strong> the identifier repeats continuously through the file, so a surviving contiguous chunk — a sampled loop, a cut stem, a remix layer — can still carry the complete identifier. In benchmarking, 5-second excerpts recovered reliably; 3-second excerpts were content-dependent, and 2-second excerpts were not reliable at all.</li>
           <li><strong className="text-foreground">Detection (blind):</strong> no original file is needed. Detection runs as a secure black-box service that reports the outcome without disclosing internal alignment or confidence mechanics.</li>
           <li><strong className="text-foreground">Tracing:</strong> a detected payload is matched against the BASE Station asset registry to identify the original track, artist and Creative Ownership Score.</li>
         </ul>
@@ -108,8 +110,9 @@ export default function BaseMarkSection() {
         <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
           <li>Embedding accepts 16-bit or 24-bit PCM WAV files and FLAC (decoded to 16-bit PCM WAV before marking).</li>
           <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — decoded to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the spectral layer and lowers detection confidence, which is exactly why the neural layer exists alongside it.</li>
-          <li>Heavy lossy re-compression, pitch-shifting or time-stretching can weaken or break the spectral layer specifically; the neural layer is built to survive these.</li>
-          <li>Audio shorter than ~2 seconds cannot carry a full payload.</li>
+          <li><strong className="text-foreground">Pitch-shifting and time-stretching defeat both layers.</strong> Resampling a track — even by one semitone or 5% — broke the spectral <em>and</em> the neural layer in our benchmark (0% recovery on both). This is BASE Mark's most significant known limitation, and we do not claim otherwise.</li>
+          <li>Excerpts of ~2 seconds or shorter are not reliable for attribution, and in one measured configuration the spectral detector returned a confidently incorrect payload at that length. Use longer excerpts for any attribution that matters.</li>
+          <li>Band-limited material (narrow-bandwidth or heavily filtered audio) is the hardest case for imperceptible neural marking, as noted by the SilentCipher authors.</li>
           <li>Like all watermarks, BASE Mark is a deterrent and forensic tool — not unbreakable DRM.</li>
         </ul>
       </section>
