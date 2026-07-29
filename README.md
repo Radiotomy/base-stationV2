@@ -22,6 +22,9 @@ work is yours.
 - [Why it exists](#why-it-exists)
 - [Feature overview](#feature-overview)
 - [The provenance stack](#the-provenance-stack)
+- [Live Studio](#live-studio--realtime-performance-beta)
+- [Video Studio](#video-studio--music-video-composition-beta)
+- [Roadmap](#roadmap)
 - [Tech stack](#tech-stack)
 - [Repository layout](#repository-layout)
 - [Local development](#local-development)
@@ -64,7 +67,8 @@ certificate, and an inaudible forensic watermark embedded in the audio itself.
 | **Studios** | Music, Lyrics (+Pro), Cover Art, Stems, Mashup, Vocal Harmonizer, Mastering, Cover Song, Audio Remix, Loops, SFX, Visualizer, Video, Promo, Voice Creator, ID3 Tags, BASE Mark |
 | **Provenance** | BASE Mark watermarking (3 layers), Creative Ownership Score, DDEX export, C2PA hash, on-chain registration, certificates |
 | **Community** | Radio rack, charts, playlists, challenges, leaderboard, badges, featured artists, guest-accessible forum |
-| **Live** | Realtime sessions with synchronized playback, chat + moderation, reactions, quests, portal stage visuals |
+| **Live** *(beta)* | Streamr-transported realtime sessions, sub-second synchronized playback, portal stage visuals, chat + moderation, reactions, quests, recordable session bundles |
+| **Video** *(beta)* | Storyboarding, onset-timed cuts, scene templates & transitions, b-roll search, NextCut composition |
 | **Fan economy** | Fan clubs with tiers, collectibles, tipping, creator storefront, revenue dashboard |
 | **Integrations** | Audius (publish/import/identity), Freesound, ElevenLabs, Replicate, IPFS/Pinata, Base & Solana, Streamr |
 | **Workspace** | Library with lineage, projects, workspaces, generation history, credits, usage analytics |
@@ -121,6 +125,73 @@ themselves are community-governed via `CosProposal` / `CosProposalVote`.
 Content hash registered to Base (Solana supported), provenance metadata pinned
 to IPFS, a generated certificate PDF, and scheduled reconciliation audits.
 Platform-sponsored — creators need no wallet and pay no gas.
+
+## Live Studio — realtime performance *(beta)*
+
+Live Studio is not a video call with music playing over it. It's a synchronized
+performance layer built on the same infrastructure as the studios:
+
+- **Sub-second playback alignment** across every viewer via a dedicated sync
+  clock, so a drop lands at the same moment for everyone in the room
+- **Streamr transport** for decentralized live audio delivery, fed by an
+  AudioWorklet PCM capture path straight off the performer's chain
+- **Portal stage visuals** — Butterchurn and Three.js scenes driven by live audio
+  analysis, with fan-selectable visual layers
+- **A real room** — chat with moderation, reaction bar, participant list,
+  co-performer invites, live quests with XP, and triggered drop overlays
+- **Sessions become assets.** A performance can be recorded, bundled and
+  published to Audius, and it carries the same provenance treatment as a studio
+  master — a live set leaves with its lineage intact rather than as an
+  untraceable recording
+
+## Video Studio — music video composition *(beta)*
+
+Vibe-prompt storyboarding, cuts timed to the track's own transients via onset
+detection, scene templates and transitions, Pexels b-roll preview, and
+NextCut/Shotstack composition — with the source track's provenance carried
+through to the finished video.
+
+Both studios are gated behind beta access requests while we test them at scale.
+
+## Roadmap
+
+### Full DSP distribution
+
+The gap we're closing next: getting a finished master from BASE Station onto
+Spotify, Apple Music, YouTube Music, Amazon, Tidal and Deezer without the creator
+leaving the platform — and without the provenance work being discarded at the
+handoff, which is what happens today with every existing distributor.
+
+That last part is the whole point, and it's why this is an opportunity rather
+than a commodity integration. **A track leaving BASE Station arrives at a DSP
+with exactly what the July 2026 RIAA/IFPI labeling standard asks for, already
+assembled:**
+
+- a track-level AI disclosure label with a stated evidentiary basis, not a
+  self-declared checkbox
+- a granular DDEX AI attribution profile (lyrical / composition /
+  instrumentation / vocals / post-production)
+- a C2PA provenance hash anchoring those metrics to the audio container
+- an on-chain content-hash registration with a downloadable certificate
+- a forensic watermark embedded in the audio itself, recoverable after transcode,
+  crop, tempo change and close-range re-recording
+
+DSPs and distributors are currently absorbing AI disclosure as a policy problem —
+flagging, blocking, appealing and re-reviewing at scale, on metadata they have no
+way to verify. Provenance-first ingestion inverts that: the disclosure arrives
+verified, machine-readable and cryptographically anchored, so the platform
+reviews evidence instead of manufacturing suspicion. Fewer false flags, fewer
+appeals, and a defensible audit trail on both sides.
+
+**Status:** actively evaluating distribution partners who want that pipeline as a
+differentiator. If the right partner doesn't materialize, we'll build direct
+delivery ourselves — the hard part, the provenance layer, is already shipped and
+running in production.
+
+Partner or DSP interest: reach out through the app's support channel.
+
+Also in progress: expanded Drift Layer coverage, published cross-layer benchmark
+results, and creator-facing appeal tooling backed by the transparency registry.
 
 ## Tech stack
 
