@@ -69,6 +69,9 @@ export default function JobNotificationBell() {
 
     const tick = async () => {
       if (!userIdRef.current) return false;
+      // Background tabs don't need job updates — skip the query entirely so a
+      // stack of open tabs isn't each running an entity fetch loop.
+      if (typeof document !== 'undefined' && document.hidden) return false;
       try {
         const jobs = await base44.entities.GenerationJob.filter(
           { user_id: userIdRef.current },
@@ -158,7 +161,22 @@ export default function JobNotificationBell() {
       timer = setTimeout(loop, hasActive ? POLL_INTERVAL_MS : IDLE_POLL_INTERVAL_MS);
     };
     loop();
-    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+
+    // Coming back to the tab should refresh immediately rather than waiting out
+    // the remaining idle interval.
+    const onVisible = () => {
+      if (!document.hidden && !cancelled) {
+        if (timer) clearTimeout(timer);
+        loop();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
