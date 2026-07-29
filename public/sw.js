@@ -1,76 +1,72 @@
-// BASE Station service worker — app shell caching + offline library support.
-// Strategy:
-//  - Navigations & static assets: network-first, falling back to cache when offline.
-//  - Entity/API GET reads: cache-first-refresh — serve the last cached response
-//    instantly if offline, otherwise fetch fresh and update cache.
-// This lets the app shell load offline and lets pages that already fetched a
-// user's library, tracks, etc. re-render from cache when there's no connection.
+/* BASE Station service worker — v2.
+ *
+ * Deliberately minimal. The previous version intercepted navigations and could
+ * resolve a fetch handler with something that wasn't a Response, which produced
+ * "Failed to convert value to 'Response'" and turned page loads into network
+ * errors — the app looked frozen and buttons stopped responding because the
+ * document itself never settled.
+ *
+ * Rules now:
+ *   - Navigations, API calls, entity traffic, websockets and anything
+ *     cross-origin are NEVER intercepted. No respondWith, no opinion.
+ *   - Only immutable build output (/assets/**, icons, manifest) is cached, and
+ *     every path through the handler returns a real Response or falls back to
+ *     the network.
+ */
 
-const CACHE_VERSION = 'base-station-v2';
-const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
-const API_CACHE = `${CACHE_VERSION}-api`;
+const CACHE = 'bs-static-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
+  event.waitUntil(Promise.resolve());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((key) => key.startsWith('base-station-') && key !== RUNTIME_CACHE && key !== API_CACHE)
-          .map((key) => caches.delete(key))
-      )
-    )
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-function isApiRequest(url) {
-  return url.pathname.includes('/api/apps/') && url.pathname.includes('/entities/');
+// Only Vite's content-hashed build output and static icons are safe to cache —
+// they're immutable, so a cache hit can never serve a stale app.
+function isCacheableAsset(url) {
+  return url.pathname.startsWith('/assets/')
+    || url.pathname === '/manifest.json'
+    || /\.(?:woff2?|ttf|otf|png|jpg|jpeg|svg|webp|ico)$/i.test(url.pathname);
 }
 
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  if (request.method !== 'GET') return;
+  const req = event.request;
 
-  const url = new URL(request.url);
+  // Anything that isn't a plain same-origin GET for an immutable asset is left
+  // completely alone — including page navigations, which is what was breaking.
+  if (req.method !== 'GET' || req.mode === 'navigate') return;
 
-  // Only handle same-origin navigations/assets + our own API reads; let
-  // everything else (third-party audio CDNs, analytics, etc.) pass through untouched.
-  if (url.origin !== self.location.origin && !isApiRequest(url)) return;
-
-  if (isApiRequest(url)) {
-    // Entity list/get reads — cache for offline library browsing.
-    event.respondWith(
-      fetch(request)
-        .then((res) => {
-          const copy = res.clone();
-          caches.open(API_CACHE).then((cache) => cache.put(request, copy));
-          return res;
-        })
-        .catch(() => caches.match(request))
-    );
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch {
     return;
   }
+  if (url.origin !== self.location.origin || !isCacheableAsset(url)) return;
 
-  if (request.mode === 'navigate') {
-    // App shell — network-first so users always get the latest build when online.
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html').then((r) => r || caches.match('/')))
-    );
-    return;
-  }
-
-  // Static assets (js/css/images) — network-first, cache fallback for offline.
   event.respondWith(
-    fetch(request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+    caches.match(req).then((hit) => {
+      if (hit) return hit;
+      return fetch(req).then((res) => {
+        // Only store complete, successful responses; never cache an error or an
+        // opaque partial, and never let a cache write failure break the fetch.
+        if (res && res.ok && res.status === 200) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+        }
         return res;
-      })
-      .catch(() => caches.match(request))
+      });
+      // No .catch here that returns undefined — if the network fails, the
+      // rejection propagates as a normal fetch failure, exactly as it would
+      // without a service worker.
+    })
   );
 });
