@@ -6,29 +6,34 @@
 # This is NOT part of the BASE Station app bundle — it lives here so the
 # deployment definition is version-controlled alongside the code that calls it.
 #
-# `predict` is deliberately the FIRST key: a copy/paste that drops the final
-# line of the file is a common failure, and Cog's error for a missing predict
-# reference ("no predict or train reference found in cog.yaml") does not point
-# at truncation as the cause.
-predict: "predict.py:Predictor"
+# `run` is deliberately the FIRST key: a copy/paste that drops the final line of
+# the file is a common failure, and Cog's error for a missing predictor
+# reference does not point at truncation as the cause.
+#
+# This was `predict:` — renamed after Cog started warning
+# `deprecated field "predict": use "run" instead`. If a Cog version too old for
+# the new key ever errors with "no predict or train reference found in
+# cog.yaml", rename this single key back to `predict:`; nothing else changes.
+run: "predict.py:Predictor"
 build:
   gpu: true
   python_version: "3.11"
   system_packages:
     - "libsndfile1"
     - "ffmpeg"
-  python_packages:
-    - "torch==2.4.1"
-    - "numpy==1.26.4"
-    - "scipy==1.14.1"
-    - "soundfile==0.12.1"
-    - "huggingface_hub==0.25.2"
-    - "wavmark==0.0.3"
+  # Was an inline `python_packages:` list — Cog deprecated it in favour of
+  # pointing at a requirements file. requirements.txt in this directory is now
+  # the single source of truth for the pinned set (it used to be a local-testing
+  # mirror that could silently drift out of sync with this file).
+  python_requirements: "requirements.txt"
   # Pre-download the WavMark checkpoint INTO the image. Left to `setup`, the
   # first boot fetches it from HuggingFace and Replicate disabled the version
   # with "consistently fails to complete setup" — the download does not fit the
   # setup budget. Baking it in also removes the fetch from every cold start.
   # Invoked via load_model() rather than a pinned filename so the cache path and
   # checkpoint name stay whatever the pinned wavmark release expects.
+  #
+  # NOTE: `build.run` (image build commands) is unrelated to the top-level `run`
+  # key above (the predictor reference). Both are correct as written.
   run:
     - "python -c \"import wavmark; wavmark.load_model()\""

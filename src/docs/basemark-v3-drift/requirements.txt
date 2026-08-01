@@ -1,6 +1,10 @@
-# Reference only — cog.yaml's python_packages block is what actually builds the
-# image. This file exists so the pinned set can be installed locally for testing
-# outside Cog (python -m venv && pip install -r requirements.txt).
+# Authoritative pinned dependency set for the Drift Layer image — cog.yaml's
+# `build.python_requirements` points here, so this file is what actually builds
+# the container (it was previously a local-testing mirror of an inline
+# python_packages list, which could drift out of sync).
+#
+# pydantic is deliberately NOT pinned here: it is Cog's own dependency, and
+# predict.py imports BaseModel from `cog` so the versions can never disagree.
 torch==2.4.1
 numpy==1.26.4
 scipy==1.14.1
