@@ -218,8 +218,14 @@ class Predictor(BasePredictor):
         dt = time.time() - t_enc
         _log(f"encode finished in {dt:.1f}s ({dt/max(marked_len/sr, 0.001):.2f}s per audio-second)")
 
+        # Everything below this line is where the run actually stalls. The
+        # model loop finishes in seconds; the container then goes silent for
+        # many minutes. Each post-loop step is timed separately so the log says
+        # which one it is instead of leaving a single unexplained gap.
         delta16 = np.asarray(w16, dtype=np.float32) - m16[: len(w16)]
+        t_rs = time.time()
         delta = _resample(delta16, WM_RATE, sr)
+        _log(f"delta upsampled {WM_RATE}->{sr} in {time.time()-t_rs:.1f}s")
 
         # Length can drift by a sample or two through two resampling stages; pad
         # or trim the delta rather than the master. The master must come out
@@ -228,9 +234,24 @@ class Predictor(BasePredictor):
             delta = np.pad(delta, (0, len(mono) - len(delta)))
         delta = delta[: len(mono)]
 
+        t_mix = time.time()
         out = np.clip(x + delta[:, None], -1.0, 1.0)
-        out_path = pathlib.Path(tempfile.mkdtemp()) / "marked.wav"
-        sf.write(str(out_path), out, sr, subtype="PCM_24")
+        _log(f"mixed delta into master in {time.time()-t_mix:.1f}s")
+
+        # FLAC, not WAV. A 4-minute 24-bit stereo 44.1kHz master is ~70MB as
+        # PCM WAV, and Cog has to upload that file before the prediction can
+        # resolve — which is the silent multi-minute tail after the model loop.
+        # FLAC is lossless at 24-bit, so the low-band delta is preserved
+        # bit-exactly and the detector sees identical samples, at roughly half
+        # the bytes. Never switch this to a lossy codec: the mark lives in
+        # 0-8kHz and would not survive.
+        t_w = time.time()
+        out_path = pathlib.Path(tempfile.mkdtemp()) / "marked.flac"
+        sf.write(str(out_path), out, sr, format="FLAC", subtype="PCM_24")
+        _log(
+            f"wrote {out_path.stat().st_size/1e6:.1f}MB FLAC in {time.time()-t_w:.1f}s; "
+            "handing to cog for upload"
+        )
 
         return Output(
             detected=True,
