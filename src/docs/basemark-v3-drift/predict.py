@@ -125,7 +125,10 @@ class Predictor(BasePredictor):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = wavmark.load_model().to(self.device)
 
-    def predict(
+    # Named `run`, not `predict`. Cog warns
+    # `Predictor.predict() is deprecated; use run() instead` — the entrypoint
+    # method was renamed alongside the cog.yaml `predict:` -> `run:` key.
+    def run(
         self,
         audio: Path = Input(description="Audio file to mark or scan."),
         mode: str = Input(
