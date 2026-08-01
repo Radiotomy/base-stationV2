@@ -26,7 +26,9 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Admin only' }, { status: 403 });
     }
 
-    const { fileUrl, slot = 1, stage, predictionId, embed } = await req.json();
+    // maxSeconds bounds the encode to the first N seconds so a test run is
+    // fast and measurable; 0 marks the whole master.
+    const { fileUrl, slot = 1, stage, predictionId, embed, maxSeconds = 0 } = await req.json();
     const expected = slotHex(slot);
     const meta = { version: BASE_MARK_V3_VERSION, model: v3Model(), pinned_version: v3Version(), expected_slot: expected };
 
@@ -39,7 +41,7 @@ Deno.serve(async (req) => {
       } catch (e) {
         return Response.json({ error: e.message }, { status: 400 });
       }
-      const p = await startV3({ audio: safeUrl, mode: 'encode', slot_hex: expected });
+      const p = await startV3({ audio: safeUrl, mode: 'encode', slot_hex: expected, max_seconds: maxSeconds });
       return Response.json({ ...meta, stage: 'encode', predictionId: p.id, status: p.status, done: false });
     }
 

@@ -49,7 +49,9 @@ carrying the full 32-bit payload on the same file, so this is a pointer layer.
 
 import pathlib
 import subprocess
+import sys
 import tempfile
+import time
 from typing import Optional
 
 import numpy as np
@@ -76,6 +78,16 @@ from scipy.signal import resample_poly
 
 WM_RATE = 16000
 PAYLOAD_BITS = 16
+
+
+def _log(msg: str) -> None:
+    """Unbuffered stderr line so Replicate's log tail shows live progress.
+
+    Without this the container emits NOTHING between boot and result, which
+    makes a slow run and a hung run look identical from the API — the exact
+    ambiguity that made a 13-minute encode impossible to diagnose.
+    """
+    print(f"[drift] {msg}", file=sys.stderr, flush=True)
 
 
 class Output(BaseModel):
@@ -140,15 +152,30 @@ class Predictor(BasePredictor):
             description="encode only — 16-bit slot as 4 hex chars, e.g. '01f4'.",
             default="0000",
         ),
+        max_seconds: float = Input(
+            description=(
+                "encode only — mark just the first N seconds instead of the whole "
+                "master. 0 = full length. WavMark embeds sequentially, one model "
+                "pass per ~1s chunk, so encode time scales linearly with duration; "
+                "bounding it gives a fast, measurable run. The rest of the master "
+                "is passed through untouched."
+            ),
+            default=0.0,
+        ),
     ) -> Output:
+        t0 = time.time()
+        _log(f"decoding container (mode={mode})")
         wav_path = _decode_to_wav(pathlib.Path(str(audio)))
         x, sr = sf.read(str(wav_path), dtype="float32", always_2d=True)
         n_ch = x.shape[1]
         mono = x.mean(axis=1)
+        _log(f"loaded {len(mono)/sr:.1f}s @ {sr}Hz / {n_ch}ch in {time.time()-t0:.1f}s")
 
         if mode == "decode":
             m16 = _resample(mono, sr, WM_RATE)
-            bits, info = wavmark.decode_watermark(self.model, m16, show_progress=False)
+            _log(f"scanning {len(m16)/WM_RATE:.1f}s on {self.device}")
+            bits, info = wavmark.decode_watermark(self.model, m16, show_progress=True)
+            _log(f"scan finished in {time.time()-t0:.1f}s")
             if bits is None:
                 return Output(
                     detected=False,
@@ -176,8 +203,20 @@ class Predictor(BasePredictor):
 
         # ── encode: band-split delta embedding, original master preserved ──
         bits = _hex_to_bits(slot_hex)
-        m16 = _resample(mono, sr, WM_RATE)
-        w16, _ = wavmark.encode_watermark(self.model, m16, bits, show_progress=False)
+        # Only the marked REGION goes through the model. Everything after it is
+        # left alone by zero-padding the delta, so the master is still returned
+        # at full length either way.
+        marked_len = len(mono) if max_seconds <= 0 else min(len(mono), int(max_seconds * sr))
+        m16 = _resample(mono[:marked_len], sr, WM_RATE)
+        n_chunks = max(1, len(m16) // WM_RATE)
+        _log(
+            f"encoding slot {slot_hex} over {marked_len/sr:.1f}s "
+            f"(~{n_chunks} sequential chunks) on {self.device}"
+        )
+        t_enc = time.time()
+        w16, _ = wavmark.encode_watermark(self.model, m16, bits, show_progress=True)
+        dt = time.time() - t_enc
+        _log(f"encode finished in {dt:.1f}s ({dt/max(marked_len/sr, 0.001):.2f}s per audio-second)")
 
         delta16 = np.asarray(w16, dtype=np.float32) - m16[: len(w16)]
         delta = _resample(delta16, WM_RATE, sr)
@@ -201,7 +240,8 @@ class Predictor(BasePredictor):
             sample_rate=sr,
             channels=n_ch,
             note=(
-                f"Slot embedded as a low-band delta. Output kept at {sr}Hz / {n_ch}ch — "
+                f"Slot embedded as a low-band delta over the first {marked_len/sr:.1f}s "
+                f"of {len(mono)/sr:.1f}s. Output kept at {sr}Hz / {n_ch}ch — "
                 "full bandwidth preserved, master not resampled."
             ),
         )
