@@ -56,10 +56,17 @@ import numpy as np
 import soundfile as sf
 import torch
 import wavmark
-from cog import BasePredictor, Input, Path
-from pydantic import BaseModel
+from cog import BasePredictor, BaseModel, Input, Path
 from scipy.signal import resample_poly
 
+# `BaseModel` comes from `cog`, NOT from `pydantic`. Importing it directly from
+# pydantic broke setup with "ModuleNotFoundError: No module named 'pydantic'" —
+# pydantic is cog's own transitive dependency, not a declared package here, and
+# it is not guaranteed importable from the predictor's environment. Cog
+# re-exports BaseModel so output schemas always bind to the pydantic version
+# cog itself is using; declaring pydantic in python_packages instead risks
+# installing a major version cog cannot use (v1 vs v2).
+#
 # `cog.Path` MUST be imported unaliased and used unaliased in annotations. Cog
 # identifies file inputs/outputs by that exact name when it generates the
 # OpenAPI schema; importing it as an alias made `audio` build as a plain
