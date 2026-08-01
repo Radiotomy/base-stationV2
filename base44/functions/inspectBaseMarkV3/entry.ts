@@ -14,6 +14,36 @@ Deno.serve(async (req) => {
     if (!token) return Response.json({ error: 'REPLICATE_API_TOKEN is not set' }, { status: 500 });
 
     const body = await req.json().catch(() => ({}));
+
+    // `cancel: "<prediction id>"` kills a run stuck in starting/processing.
+    // A prediction against a disabled version never resolves on its own and
+    // keeps billing hardware, so it has to be cancelled explicitly.
+    if (body?.cancel) {
+      // Use the cancel URL Replicate hands back on the prediction itself —
+      // constructing `/predictions/<id>/cancel` by hand returned 404 even
+      // though the same id fetched fine.
+      const g = await fetch(`https://api.replicate.com/v1/predictions/${body.cancel}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const gd = await g.json().catch(() => ({}));
+      const cancelUrl = gd?.urls?.cancel;
+      if (!cancelUrl) {
+        return Response.json({ cancelled: false, status: gd?.status ?? g.status, detail: 'no cancel url on prediction' });
+      }
+      const c = await fetch(cancelUrl, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const cd = await c.json().catch(() => ({}));
+      return Response.json({
+        cancelled: c.ok,
+        http: c.status,
+        status: cd?.status ?? null,
+        detail: cd?.detail ?? null,
+        cancel_url: cancelUrl,
+        prediction_status: gd?.status ?? null,
+      });
+    }
     // `latest: true` deliberately ignores the pinned secret — after a push we
     // need the id of the build that was just uploaded, which is exactly the
     // thing the (still stale) pin cannot tell us.
