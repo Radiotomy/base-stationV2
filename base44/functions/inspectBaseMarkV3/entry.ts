@@ -14,7 +14,10 @@ Deno.serve(async (req) => {
     if (!token) return Response.json({ error: 'REPLICATE_API_TOKEN is not set' }, { status: 500 });
 
     const body = await req.json().catch(() => ({}));
-    const version = body?.version || v3Version();
+    // `latest: true` deliberately ignores the pinned secret — after a push we
+    // need the id of the build that was just uploaded, which is exactly the
+    // thing the (still stale) pin cannot tell us.
+    const version = body?.latest ? null : (body?.version || v3Version());
     const url = version
       ? `https://api.replicate.com/v1/models/${v3Model()}/versions/${version}`
       : `https://api.replicate.com/v1/models/${v3Model()}`;
@@ -28,6 +31,9 @@ Deno.serve(async (req) => {
       status: r.status,
       model: v3Model(),
       version,
+      // The id to paste into BASE_MARK_V3_VERSION after a `cog push` — the
+      // push output only prints the image digest, which is a different thing.
+      latest_version: d?.latest_version?.id ?? null,
       input: schema?.Input ?? null,
       output: schema?.Output ?? null,
       detail: d?.detail ?? null,
