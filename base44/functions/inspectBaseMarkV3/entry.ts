@@ -44,6 +44,26 @@ Deno.serve(async (req) => {
         prediction_status: gd?.status ?? null,
       });
     }
+    // `inspect: "<prediction id>"` returns the run's real state and tail of its
+    // container logs — the dashboard's "Starting"/"Processing" labels do not say
+    // whether the GPU is booting, downloading weights, or actually encoding.
+    if (body?.inspect) {
+      const r = await fetch(`https://api.replicate.com/v1/predictions/${body.inspect}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const d = await r.json().catch(() => ({}));
+      return Response.json({
+        id: body.inspect,
+        status: d?.status ?? null,
+        version: d?.version ?? null,
+        created_at: d?.created_at ?? null,
+        started_at: d?.started_at ?? null,
+        completed_at: d?.completed_at ?? null,
+        error: d?.error ?? null,
+        logs_tail: (d?.logs || '').slice(-2000),
+      });
+    }
+
     // `latest: true` deliberately ignores the pinned secret — after a push we
     // need the id of the build that was just uploaded, which is exactly the
     // thing the (still stale) pin cannot tell us.
