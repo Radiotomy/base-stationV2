@@ -46,7 +46,6 @@ shipping a V3 claim that turned out to be false.
 3. CPU only. No GPU cold start, no warm pool, no idle burn.
 """
 
-import json
 import pathlib
 import re
 import subprocess
@@ -278,14 +277,25 @@ class Predictor(BasePredictor):
         if not re.fullmatch(r"[0-9a-f]{%d}" % PAYLOAD_HEX_CHARS, msg):
             raise ValueError(f"payload_hex must be exactly {PAYLOAD_HEX_CHARS} hex characters")
 
-        # FLAC out, same reasoning as V3: a 24-bit stereo master is enormous as
-        # PCM WAV and Cog must upload it before the prediction resolves, which
-        # is where V3's runs silently stalled for minutes. FLAC is lossless, so
-        # the detector sees identical samples. Never make this lossy.
-        out_path = pathlib.Path(tempfile.mkdtemp()) / "marked.flac"
-        p = _run(["audiowmark", "add", str(wav_path), str(out_path), msg] + key_args)
-        if p.returncode != 0 or not out_path.exists():
+        # audiowmark writes WAV ONLY — its output formats are wav, rf64,
+        # wav-pipe and raw. It happily READS flac and mp3, which makes it easy
+        # to assume it writes them too; handing it "marked.flac" produces a WAV
+        # with a misleading extension rather than an error.
+        work = pathlib.Path(tempfile.mkdtemp())
+        marked_wav = work / "marked.wav"
+        p = _run(["audiowmark", "add", str(wav_path), str(marked_wav), msg] + key_args)
+        if p.returncode != 0 or not marked_wav.exists():
             raise RuntimeError(f"audiowmark add failed: {(p.stderr or p.stdout)[-500:]}")
+
+        # Transcode to FLAC ourselves, same reasoning as V3: a 24-bit stereo
+        # master is enormous as PCM WAV and Cog must upload it before the
+        # prediction resolves, which is where V3's runs silently stalled for
+        # minutes. FLAC is lossless, so the detector sees identical samples.
+        # Never make this lossy — the mark would not survive.
+        out_path = work / "marked.flac"
+        c = _run(["ffmpeg", "-y", "-i", str(marked_wav), "-c:a", "flac", str(out_path)])
+        if c.returncode != 0 or not out_path.exists():
+            raise RuntimeError(f"FLAC transcode failed: {c.stderr[-500:]}")
 
         dt = time.time() - t0
         _log(f"wrote {out_path.stat().st_size/1e6:.1f}MB FLAC in {dt:.1f}s total")

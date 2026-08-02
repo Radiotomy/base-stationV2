@@ -55,4 +55,7 @@ build:
     - "git clone --depth 1 --branch 0.6.4 https://github.com/swesterfeld/audiowmark.git /src/audiowmark"
     - "cd /src/audiowmark && ./autogen.sh && make -j4 && make install"
     # Fail the BUILD, not the first prediction, if the binary did not land.
-    - "audiowmark --help > /dev/null"
+    # `command -v` rather than `--help`: plenty of CLIs print help and exit
+    # non-zero, which would fail the build for the one reason we do NOT care
+    # about. This checks exactly the thing we mean — the binary is on PATH.
+    - "command -v audiowmark"
