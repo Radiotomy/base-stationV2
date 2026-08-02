@@ -11,7 +11,7 @@ import { audioBufferToWav } from '@/utils/wavEncoder';
  *
  * Applies each track's volume, pan, mute and solo exactly as the mixer shows.
  */
-export async function renderMixdown(tracks, { sampleRate = 44100 } = {}) {
+export async function renderMixdown(tracks, { sampleRate = 44100, bitDepth = 24 } = {}) {
   const audible = tracks.filter((t) => {
     const anySolo = tracks.some((x) => x.solo);
     return !(t.muted || (anySolo && !t.solo));
@@ -50,10 +50,14 @@ export async function renderMixdown(tracks, { sampleRate = 44100 } = {}) {
     source.start(0);
   });
 
+  // Web Audio mixes in 32-bit float internally, so exporting at 24-bit keeps
+  // resolution the mix genuinely has rather than padding it — and it's the depth
+  // Apple Music / Spotify HQ / mastering submissions expect.
   const rendered = await ctx.startRendering();
   return {
-    blob: audioBufferToWav(rendered, { bitDepth: 16 }),
+    blob: audioBufferToWav(rendered, { bitDepth }),
     duration_seconds: +rendered.duration.toFixed(3),
     sample_rate: sampleRate,
+    bit_depth: bitDepth,
   };
 }

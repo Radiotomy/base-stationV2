@@ -14,12 +14,13 @@ import { renderMixdown } from '@/utils/renderMixdown';
  */
 export default function MixdownButton({ tracks, onDone }) {
   const [stage, setStage] = useState(null);
+  const [bitDepth, setBitDepth] = useState(24);
 
   const run = async () => {
     if (!tracks.length) return;
     try {
       setStage('Mixing down…');
-      const { blob, duration_seconds, sample_rate } = await renderMixdown(tracks);
+      const { blob, duration_seconds, sample_rate, bit_depth } = await renderMixdown(tracks, { bitDepth });
 
       setStage('Uploading…');
       const title = `Mixdown — ${new Date().toLocaleDateString()}`;
@@ -39,7 +40,7 @@ export default function MixdownButton({ tracks, onDone }) {
           mix_type: 'multitrack_mixdown',
           duration: duration_seconds,
           sample_rate,
-          bit_depth: 16,
+          bit_depth,
           source_tracks: tracks.map((t) => ({ name: t.name, url: t.url, volume: t.volume, pan: t.pan })),
         },
       });
@@ -58,9 +59,25 @@ export default function MixdownButton({ tracks, onDone }) {
   };
 
   return (
-    <Button onClick={run} disabled={!tracks.length || !!stage} className="rounded-xl gap-2">
-      {stage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-      {stage || 'Mix Down & Mark'}
-    </Button>
+    <div className="flex items-center gap-1">
+      <div className="flex rounded-xl border border-border overflow-hidden">
+        {[24, 16].map((d) => (
+          <button
+            key={d}
+            onClick={() => setBitDepth(d)}
+            disabled={!!stage}
+            className={`px-2.5 py-1.5 text-xs font-semibold transition-colors ${
+              bitDepth === d ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {d}-bit
+          </button>
+        ))}
+      </div>
+      <Button onClick={run} disabled={!tracks.length || !!stage} className="rounded-xl gap-2">
+        {stage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+        {stage || 'Mix Down & Mark'}
+      </Button>
+    </div>
   );
 }
