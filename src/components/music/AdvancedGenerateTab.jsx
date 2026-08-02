@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
+import MasterDownloadButtons from '@/components/music/MasterDownloadButtons';
 import ChipSelector from '@/components/music/ChipSelector';
 import ModelFamilySelect from '@/components/music/ModelFamilySelect';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
@@ -134,6 +135,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [savedAssetId, setSavedAssetId] = useState(null);
   const [lastError, setLastError] = useState(null); // persistent failure banner
   const [mastersBrief, setMastersBrief] = useState(null); // 243 Masters brief imported from Lyrics Studio
   const [runningMasters, setRunningMasters] = useState(false);
@@ -262,7 +264,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         console.warn('ID3 tagging skipped:', tagErr.message);
       }
 
-      await base44.entities.UserAsset.create({
+      return await base44.entities.UserAsset.create({
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
@@ -288,6 +290,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           vocal_timbre: extraMeta?.vocal_timbre || '',
           content_hash: extraMeta?.content_hash || '',
           sound_prompt: extraMeta?.sound_prompt || '',
+          // Lossless master — the BASE Mark cascade marks this file, not the MP3.
+          wav_url: extraMeta?.wav_url || '',
+          clip_id: extraMeta?.clip_id || '',
           auto_saved: true,
           id3_tagged: finalUrl !== audioUrl,
           ...(mastersBrief && {
@@ -303,6 +308,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       });
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
+      return null;
     }
   }, [mood, genre, provider, tempo, duration, mastersBrief, lyricsMode, selectedPersona]);
 
@@ -329,7 +335,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     if (primaryUrl) {
       const mergedLyrics = lyrics?.trim() ? lyrics : (data.lyrics || '');
       const resolvedTitle = customTitle.trim() || `${mood} ${genre} — ${providerLabel(provider)}`;
-      await saveTrackToLibrary(primaryUrl, coverImageUrl, resolvedTitle, {
+      const savedAsset = await saveTrackToLibrary(primaryUrl, coverImageUrl, resolvedTitle, {
+        wav_url: data.wav_url || '',
+        clip_id: data.clip_id || '',
         title: customTitle.trim() || data.title || resolvedTitle,
         bpm: data.bpm,
         key: data.key,
@@ -342,6 +350,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         content_hash: data.content_hash || null,
         model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : 'Lyria 3 Pro'),
       });
+      if (savedAsset?.id) setSavedAssetId(savedAsset.id);
       // Reflect provider-returned lyrics into UI so user can see them
       if (mergedLyrics && !lyrics?.trim()) {
         setLyrics(mergedLyrics);
@@ -448,6 +457,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     setGenerating(true);
     setResult(null);
     setJobId('');
+    setSavedAssetId(null);
     setLastError(null);
     savedRef.current = false; // reset guard for new generation
     // Read latest values directly from state refs to avoid stale closure issues
@@ -993,17 +1003,20 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                   <Button onClick={saveToLibrary} disabled={saving} className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
                     <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save to Library'}
                   </Button>
-                  <a href={audioUrl} download className="flex-1">
-                    <Button variant="outline" className="w-full gap-2 rounded-xl">
-                      <Download className="w-4 h-4" /> Download
-                    </Button>
-                  </a>
+                  <MasterDownloadButtons
+                    mp3Url={audioUrl}
+                    wavUrl={result?.wav_url}
+                    clipId={result?.clip_id}
+                    provider={provider}
+                    assetId={savedAssetId}
+                    title={customTitle.trim() || `${mood} ${genre}`}
+                  />
                   <MidiExportButton audioUrl={audioUrl} bpm={result?.bpm} musicalKey={result?.key} title={`${mood} ${genre}`} />
                   <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
                     {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
                     {extending ? 'Extending…' : 'Extend'}
                   </Button>
-                  <Button variant="outline" onClick={() => { setResult(null); setJobId(''); }} className="gap-2 rounded-xl">
+                  <Button variant="outline" onClick={() => {       setResult(null); setJobId(''); setSavedAssetId(null); }} className="gap-2 rounded-xl">
                     <RotateCcw className="w-4 h-4" />
                   </Button>
                 </div>
