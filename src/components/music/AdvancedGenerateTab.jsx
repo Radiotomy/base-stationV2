@@ -573,7 +573,15 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Provider</p>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {PROVIDERS.map(p => (
-            <button key={p.value} onClick={() => setProvider(p.value)}
+            <button key={p.value} onClick={() => {
+              setProvider(p.value);
+              if (p.value === 'elevenlabs' && provider !== 'elevenlabs') {
+                toast('🎧 ElevenLabs delivers MP3 only', {
+                  description: 'Your track still gets BASE Mark protection (neural + drift layers), but not the lossless spectral layer. Pick Sonic, Tempolor or Harmonix for a full WAV master.',
+                  duration: 7000,
+                });
+              }
+            }}
               className={`p-3 rounded-xl border text-left transition-all ${provider === p.value ? p.color : 'border-border bg-card hover:border-border/80'}`}>
               <p className="text-sm font-bold text-foreground">{p.label}</p>
               <p className="text-xs text-muted-foreground">{p.desc}</p>
