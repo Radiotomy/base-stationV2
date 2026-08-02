@@ -1,6 +1,7 @@
 import { finalizeMashupAsset } from './mashupFinalize.ts';
 import { getHarmonixPrediction, extractAudioUrl } from './harmonix.ts';
 import { getSoundForgePrediction, extractSoundForgeAudioUrl } from './soundForge.ts';
+import { fetchPolishUpload } from './loopPolish.ts';
 
 // Both aimusicapi.ai providers (Sonic, Producer) share one API key.
 const AIMUSICAPI_KEY    = Deno.env.get('SONIC_API_KEY');
@@ -347,6 +348,7 @@ export async function finalizeJob(base44, job) {
       ai_label: job.ai_label || (job.job_type === 'music' ? 'ai_generated' : undefined),
       mashup_asset_id: m.mashup_asset_id || undefined,
       tier: job.input_data?.tier || undefined,
+      loop: m.loop || undefined,
       needs_basemark: m.needs_basemark || undefined,
     };
   }
@@ -362,6 +364,20 @@ export async function finalizeJob(base44, job) {
 
   if (providerData?.status === 'completed') {
     const baseName = (providerData.title || job.job_type || 'output').slice(0, 60);
+    // SoundForge loops get the same finishing pass as the synchronous path —
+    // trimmed, bar-locked, seamlessly folded and normalized — so a loop that
+    // completes via webhook is never rougher than one that completes inline.
+    if (job.provider === 'soundforge' && providerData.audio_url) {
+      try {
+        const polished = await fetchPolishUpload(
+          base44, providerData.audio_url, job.input_data?.prompt || baseName,
+          { bpm: job.input_data?.bpm || null, category: job.input_data?.category || 'loop' }
+        );
+        providerData.audio_url = polished.file_url;
+        providerData.loop = polished.info;
+        if (polished.info?.duration_seconds) providerData.duration = polished.info.duration_seconds;
+      } catch (e) { console.warn('Loop polish failed, keeping raw output:', e.message); }
+    }
     if (providerData.audio_urls?.length) {
       providerData.audio_urls = await Promise.all(
         providerData.audio_urls.map((u, i) => persistUrl(base44, u, `${baseName}_${i + 1}.${audioExt(u)}`))
@@ -421,6 +437,7 @@ export async function finalizeJob(base44, job) {
         clip_id: providerData.clip_id || null,
         clip_ids: providerData.clip_ids || null,
         aligned_lyrics: providerData.aligned_lyrics || null,
+        ...(providerData.loop && { loop: providerData.loop }),
         ...(job.provider === 'harmonix' && { needs_basemark: job.input_data?.tier === 'vault' }),
       },
       credits_used: cost,
@@ -534,6 +551,7 @@ export async function finalizeJob(base44, job) {
       content_hash: contentHash,
       mashup_asset_id: mashupAssetId,
       tier: job.input_data?.tier || undefined,
+      loop: providerData.loop || undefined,
       needs_basemark: (job.provider === 'harmonix' && job.input_data?.tier === 'vault') || undefined,
     };
   }

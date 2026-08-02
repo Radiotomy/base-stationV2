@@ -4,6 +4,7 @@ import {
   SOUNDFORGE_CREDIT_COST, SOUNDFORGE_MAX_DURATION,
   SOUNDFORGE_INFER_STEPS, SOUNDFORGE_INSTRUMENTAL,
 } from '../../shared/soundForge.ts';
+import { fetchPolishUpload } from '../../shared/loopPolish.ts';
 
 // BASE SoundForge — generates loops, one-shots, and sound effects from a text
 // prompt. Built on ACE-Step v1.5 (Apache 2.0), wrapped in our own prompt
@@ -83,11 +84,11 @@ Deno.serve(async (req) => {
       const providerUrl = extractSoundForgeAudioUrl(pred.output);
       if (!providerUrl) return Response.json({ error: 'BASE SoundForge did not return audio output' }, { status: 502 });
 
-      const r = await fetch(providerUrl);
-      const blob = await r.blob();
-      const safeName = prompt.replace(/[^\w.\-]/g, '_').slice(0, 60) || 'soundforge';
-      const file = new File([blob], `${safeName}.wav`, { type: 'audio/wav' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      // Finish the raw model output into a DAW-ready file before it is ever
+      // stored — trimmed, bar-locked, seamlessly folded and normalized.
+      const { file_url, info: loopInfo } = await fetchPolishUpload(
+        base44, providerUrl, prompt, { bpm: bpm ? Number(bpm) : null, category }
+      );
 
       const job = await base44.entities.GenerationJob.create({
         user_id: user.id, user_email: user.email,
@@ -96,7 +97,11 @@ Deno.serve(async (req) => {
         ai_label: 'ai_generated',
         input_data: baseInputData,
         output_url: file_url,
-        output_metadata: { duration: safeDuration, model_version: 'BASE SoundForge (ACE-Step v1.5)' },
+        output_metadata: {
+          duration: loopInfo?.duration_seconds || safeDuration,
+          model_version: 'BASE SoundForge (ACE-Step v1.5)',
+          loop: loopInfo || null,
+        },
         credits_used: cost,
         started_at: generatedAt, completed_at: generatedAt,
       });
@@ -112,6 +117,7 @@ Deno.serve(async (req) => {
 
       return Response.json({
         status: 'completed', audio_url: file_url, job_id: job.id,
+        loop: loopInfo,
         credits_used: cost, credits_remaining: remaining,
       });
     }
