@@ -10,9 +10,10 @@
       "type": "string",
       "enum": [
         "spectral",
-        "neural"
+        "neural",
+        "drift"
       ],
-      "description": "Which BASE Mark layer this measurement is for. spectral = V1 DSP, neural = V2 SilentCipher"
+      "description": "Which BASE Mark layer this measurement is for. spectral = V1 DSP, neural = V2 SilentCipher, drift = V3 WavMark. A drift row records SLOT recovery, not payload recovery \u2014 V3 carries a 16-bit pointer, so 'survived' means the correct slot came back, which the registry then resolves to the asset."
     },
     "attack": {
       "type": "string",
@@ -30,7 +31,7 @@
     "survived": {
       "type": "number",
       "default": 0,
-      "description": "How many trials recovered the correct payload"
+      "description": "How many trials recovered the correct payload (or, for the drift layer, the correct slot)"
     },
     "survival_pct": {
       "type": "number",
@@ -41,6 +42,10 @@
     "mean_strength": {
       "type": "number",
       "description": "Mean detector correlation strength across trials (spectral layer only)"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Mean decoder confidence across trials (drift layer only) \u2014 WavMark reports its own confidence, which is not comparable to the spectral layer's correlation strength and is therefore kept in a separate field"
     },
     "source_kind": {
       "type": "string",
@@ -61,7 +66,7 @@
     "cascaded": {
       "type": "boolean",
       "default": false,
-      "description": "True when measured on a file carrying BOTH layers (V1 then V2 on top)"
+      "description": "True when measured on a file carrying MORE THAN ONE layer. A standalone drift row (V3 alone on clean audio) measures WavMark's own robustness; a cascaded row measures it under V1's noise floor, which is the configuration production would actually ship."
     },
     "notes": {
       "type": "string",
