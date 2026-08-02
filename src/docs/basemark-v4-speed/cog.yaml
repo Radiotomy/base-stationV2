@@ -28,6 +28,11 @@ build:
     - "autoconf"
     - "automake"
     - "libtool"
+    # Supplies /usr/share/aclocal/lib-link.m4, which defines the
+    # AC_LIB_HAVE_LINKFLAGS macro audiowmark's configure.ac uses to locate
+    # libgcrypt. Without it autoreconf fails at "possibly undefined macro"
+    # rather than at anything that looks like a missing dependency.
+    - "gettext"
     - "pkg-config"
     - "git"
     - "libfftw3-dev"
