@@ -21,6 +21,17 @@ export function v3Model() {
   return raw.includes('/') ? raw : 'speedwolf2000/basemark-drift';
 }
 
+// Warm-pool deployment for the Drift Layer. Predictions are routed here FIRST
+// so that a warmed instance is actually used — warming a deployment while the
+// caller still hits the model endpoint would pay for idle GPU and cold-start
+// anyway. If the deployment does not exist (or was never created) the request
+// 404s and the endpoint list falls through to the normal model path, so this is
+// safe to leave enabled permanently.
+export function v3Deployment() {
+  const raw = (Deno.env.get('BASE_MARK_V3_DEPLOYMENT') || '').trim();
+  return raw.includes('/') ? raw : 'speedwolf2000/basemark-drift-warm';
+}
+
 // Pinned image digest. Predictions run through the generic /v1/predictions
 // endpoint whenever this is set, so a later `cog push` to :latest cannot
 // silently shift watermarking behavior — same discipline as V2.
@@ -45,6 +56,9 @@ export function slotFromHex(hex) {
 function endpoints(version) {
   const [owner = '', name = ''] = v3Model().split('/');
   const out = [];
+  // Deployment first: it is the only endpoint that can hit a warm instance.
+  // It carries its own pinned version, so no version is sent with it.
+  out.push({ url: `https://api.replicate.com/v1/deployments/${v3Deployment()}/predictions`, kind: 'deployment' });
   if (version) out.push({ url: 'https://api.replicate.com/v1/predictions', kind: 'generic' });
   out.push({ url: `https://api.replicate.com/v1/models/${owner}/${name}/predictions`, kind: 'models' });
   return out;
