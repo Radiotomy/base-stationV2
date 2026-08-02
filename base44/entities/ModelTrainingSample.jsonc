@@ -1,0 +1,117 @@
+{
+  "name": "ModelTrainingSample",
+  "type": "object",
+  "description": "Opt-in telemetry for improving BASE-Harmonix. Deliberately stores NO audio and no third-party provider output \u2014 only the prompt the user wrote, the settings they chose, and what they did with the result. That keeps every row unambiguously ours to learn from, across all providers, with no licensing exposure.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner of the sample. Retained so a user who later withdraws consent can have their rows deleted."
+    },
+    "provider": {
+      "type": "string",
+      "description": "Which generation provider produced the result \u2014 harmonix, sonic, tempcolor, elevenlabs. Cross-provider rows are what make this an evaluation set rather than just Harmonix usage stats."
+    },
+    "model": {
+      "type": "string",
+      "description": "Specific model/tier used, e.g. 'vault' or 'TemPolor v4.6'"
+    },
+    "prompt": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "The style/sound prompt the user wrote. User-authored text, not provider output."
+    },
+    "lyrics_structure": {
+      "type": "string",
+      "description": "Section tag skeleton only (e.g. 'intro,verse,chorus,verse,chorus,outro') \u2014 never the lyric text itself. Enough to learn which structures succeed without storing anyone's writing."
+    },
+    "genre": {
+      "type": "string"
+    },
+    "mood": {
+      "type": "string"
+    },
+    "duration": {
+      "type": "number"
+    },
+    "used_masters_engine": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the 243 Masters engine wrote this brief \u2014 lets us measure whether Masters-formatted prompts actually outperform hand-written ones"
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "generated",
+        "saved",
+        "downloaded",
+        "published",
+        "regenerated",
+        "discarded"
+      ],
+      "default": "generated",
+      "description": "Strongest available implicit signal. 'regenerated' (user immediately tried again) is the most reliable negative label; 'published' the strongest positive."
+    },
+    "rating": {
+      "type": "string",
+      "enum": [
+        "up",
+        "down"
+      ],
+      "description": "Explicit user rating when given. Explicit beats implicit, so this overrides outcome when present."
+    },
+    "rating_reason": {
+      "type": "string",
+      "description": "Optional short reason for a thumbs-down \u2014 the part that tells you WHAT to fix"
+    },
+    "paired_with_id": {
+      "type": "string",
+      "description": "Links this sample to a competing generation from the same prompt. A pair with one winner is a preference example \u2014 the format that actually feeds preference tuning."
+    },
+    "asset_id": {
+      "type": "string",
+      "description": "UserAsset created from this generation, when one was saved"
+    },
+    "consent_version": {
+      "type": "string",
+      "description": "Which consent text the user agreed to when this row was written. Consent terms change; a row is only usable under the terms it was collected under."
+    }
+  },
+  "required": [
+    "user_id",
+    "provider"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

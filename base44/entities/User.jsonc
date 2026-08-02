@@ -16,6 +16,16 @@
       "type": "boolean",
       "default": false,
       "description": "Admin-granted access to beta studios (Video Studio, Live Studio)"
+    },
+    "training_opt_in": {
+      "type": "boolean",
+      "default": false,
+      "description": "User has explicitly agreed to let their prompts, settings and ratings improve BASE-Harmonix. Defaults to false \u2014 consent must be given, never assumed. No audio is ever collected under this flag."
+    },
+    "training_opt_in_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When consent was given. Needed to prove which consent version applied at collection time."
     }
   },
   "required": []

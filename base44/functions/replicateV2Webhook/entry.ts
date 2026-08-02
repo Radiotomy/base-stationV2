@@ -6,34 +6,33 @@
 // omit the output URL), then run the SAME finalization as pollBaseMarkV2
 // via the shared baseMarkV2Finalize helper.
 //
-// IMPORTANT: this endpoint is intentionally PUBLIC (no user auth) — trust
-// comes from constant-time comparison of the ?sig= query param against
-// REPLICATE_WEBHOOK_SECRET. Replicate itself does not HMAC-sign webhooks.
+// IMPORTANT: this endpoint is intentionally PUBLIC (no user auth). Trust now
+// comes from Replicate's HMAC signature (standard-webhooks: webhook-id /
+// webhook-timestamp / webhook-signature), which also detects replays and body
+// tampering — neither of which the old ?sig= query param could do. The legacy
+// query secret is still accepted when no signature headers are present, so
+// in-flight predictions started before this change still finalize.
 
 import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 import { getV2Prediction } from "../../shared/baseMarkV2.ts";
 import { finalizeV2Prediction } from "../../shared/baseMarkV2Finalize.ts";
 import { finalizeJob } from "../../shared/jobFinalize.ts";
-
-const SECRET = Deno.env.get("REPLICATE_WEBHOOK_SECRET") || "";
-
-function sigMatches(provided) {
-  if (!SECRET || !provided || provided.length !== SECRET.length) return false;
-  let diff = 0;
-  for (let i = 0; i < SECRET.length; i++) diff |= SECRET.charCodeAt(i) ^ provided.charCodeAt(i);
-  return diff === 0;
-}
+import { verifyReplicateWebhook } from "../../shared/replicateVerify.ts";
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   try {
-    const u = new URL(req.url);
-    if (!sigMatches(u.searchParams.get("sig") || "")) {
+    // Read the RAW body — re-serialising parsed JSON changes the bytes and the
+    // HMAC would never match.
+    const rawBody = await req.text();
+    const verdict = await verifyReplicateWebhook(req, rawBody);
+    if (!verdict.ok) {
+      console.warn("replicateV2Webhook rejected:", verdict.reason);
       return new Response("Forbidden", { status: 403 });
     }
 
-    const body = await req.json();
+    const body = JSON.parse(rawBody);
     const pid = body?.id;
     if (!pid) return Response.json({ ok: true, status: "ignored" });
 
