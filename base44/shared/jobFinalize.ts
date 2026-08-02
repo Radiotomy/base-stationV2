@@ -11,6 +11,15 @@ const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
+// Providers return different containers (SoundForge/Harmonix can emit WAV,
+// Sonic/Tempolor emit MP3). Naming every persisted file ".mp3" mislabels
+// lossless masters and makes them look compressed to the BASE Mark cascade,
+// so keep whatever extension the source URL actually carries.
+function audioExt(url, fallback = 'mp3') {
+  const m = /\.(wav|flac|mp3|m4a|ogg|opus)(?:\?|#|$)/i.exec(url || '');
+  return m ? m[1].toLowerCase() : fallback;
+}
+
 // Copy an external provider URL into Base44 storage so files persist
 // (provider CDN links expire and block CORS). Falls back to original URL.
 async function persistUrl(base44, url, filename) {
@@ -299,7 +308,7 @@ export async function pollProvider(provider, providerTaskId, job) {
       if (!audioUrl) {
         return { status: 'failed', error: data.data_removed ? 'BASE SoundForge output expired before it could be retrieved — please regenerate.' : 'BASE SoundForge returned no audio output' };
       }
-      return { status: 'completed', audio_url: audioUrl };
+      return { status: 'completed', audio_url: audioUrl, model_version: 'BASE SoundForge (ACE-Step v1.5)' };
     }
     if (data.status === 'failed' || data.status === 'canceled') {
       return { status: 'failed', error: data.error || 'BASE SoundForge generation failed' };
@@ -355,11 +364,11 @@ export async function finalizeJob(base44, job) {
     const baseName = (providerData.title || job.job_type || 'output').slice(0, 60);
     if (providerData.audio_urls?.length) {
       providerData.audio_urls = await Promise.all(
-        providerData.audio_urls.map((u, i) => persistUrl(base44, u, `${baseName}_${i + 1}.mp3`))
+        providerData.audio_urls.map((u, i) => persistUrl(base44, u, `${baseName}_${i + 1}.${audioExt(u)}`))
       );
       providerData.audio_url = providerData.audio_urls[0];
     } else if (providerData.audio_url) {
-      providerData.audio_url = await persistUrl(base44, providerData.audio_url, `${baseName}.mp3`);
+      providerData.audio_url = await persistUrl(base44, providerData.audio_url, `${baseName}.${audioExt(providerData.audio_url)}`);
     }
     if (providerData.video_url) providerData.video_url = await persistUrl(base44, providerData.video_url, `${baseName}.mp4`);
     // Sonic: pull the free lossless WAV so the watermark cascade gets PCM, not MP3.

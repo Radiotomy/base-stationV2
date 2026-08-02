@@ -1,9 +1,13 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { startSoundForge, extractSoundForgeAudioUrl, SOUNDFORGE_CREDIT_COST, SOUNDFORGE_MAX_DURATION } from '../../shared/soundForge.ts';
+import {
+  startSoundForge, extractSoundForgeAudioUrl,
+  SOUNDFORGE_CREDIT_COST, SOUNDFORGE_MAX_DURATION,
+  SOUNDFORGE_INFER_STEPS, SOUNDFORGE_INSTRUMENTAL,
+} from '../../shared/soundForge.ts';
 
 // BASE SoundForge — generates loops, one-shots, and sound effects from a text
-// prompt. Built on the open-source Stable Audio Open model, wrapped in our own
-// prompt presets and product identity (see shared/soundForge.ts).
+// prompt. Built on ACE-Step v1.5 (Apache 2.0), wrapped in our own prompt
+// presets and product identity (see shared/soundForge.ts).
 
 async function deductCredits(base44, user, amount, jobId) {
   const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -53,19 +57,16 @@ Deno.serve(async (req) => {
     const safeDuration = Math.min(Math.max(Number(duration_seconds) || 8, 1), SOUNDFORGE_MAX_DURATION);
     const fullPrompt = bpm ? `${bpm} BPM ${prompt}` : prompt;
 
+    // ACE-Step input schema. Loops are always instrumental, and we ask for WAV
+    // so samples land in the user's DAW without a lossy generation in the path.
     const replicateInput = {
-      prompt: fullPrompt.slice(0, 500),
-      seconds_total: safeDuration,
-      steps: 100,
-      cfg_scale: 6,
+      prompt: fullPrompt.slice(0, 1000),
+      lyrics: SOUNDFORGE_INSTRUMENTAL,
+      duration: safeDuration,
+      inference_steps: SOUNDFORGE_INFER_STEPS,
       seed: -1,
       batch_size: 1,
-      sampler_type: 'dpmpp-3m-sde',
-      seconds_start: 0,
-      sigma_max: 500,
-      sigma_min: 0.03,
-      negative_prompt: '',
-      init_noise_level: 1,
+      audio_format: 'wav',
     };
 
     let pred;
@@ -95,7 +96,7 @@ Deno.serve(async (req) => {
         ai_label: 'ai_generated',
         input_data: baseInputData,
         output_url: file_url,
-        output_metadata: { duration: safeDuration, model_version: 'BASE SoundForge (Stable Audio Open 1.0)' },
+        output_metadata: { duration: safeDuration, model_version: 'BASE SoundForge (ACE-Step v1.5)' },
         credits_used: cost,
         started_at: generatedAt, completed_at: generatedAt,
       });
