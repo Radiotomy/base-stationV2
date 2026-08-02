@@ -68,20 +68,6 @@ export default function CreativeOwnership() {
           </p>
         </section>
 
-        {/* Human-first stance */}
-        <section className="p-6 rounded-2xl bg-card border border-amber-500/20 space-y-3">
-          <h2 className="text-2xl font-black text-foreground text-center">A hit factory we don't condone</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed text-center max-w-2xl mx-auto">
-            We provide some of the best AI music tools in the industry — and we're always pushing to make
-            them better. Left on autopilot, they're capable of operating as a fully automated hit factory.
-            <strong className="text-foreground"> That's not what BASE Station is for.</strong> We push for
-            the most human interaction and participation possible: your ideas, your words, your references,
-            your refinements. When reliance falls on the tools instead of the creator's brain and creative
-            process, the output is ranked exactly as such — through the COS, GenAI disclosure labels, and
-            the provenance methods below. Innovation and human participation always outrank automation here.
-          </p>
-        </section>
-
         {/* Two labels */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-6 rounded-2xl bg-card border border-border space-y-3">
@@ -188,14 +174,9 @@ export default function CreativeOwnership() {
         <section className="p-6 rounded-2xl bg-muted/40 border border-border space-y-3">
           <p className="text-xs text-muted-foreground italic leading-relaxed text-center">"{OWNERSHIP_POLICY_TEXT}"</p>
           <p className="text-[11px] text-muted-foreground/70 leading-relaxed text-center">
-            On July 10, 2026, IFPI, RIAA, A2IM, WIN, IMPALA, The Grammys, SAG-AFTRA and the Human Artistry Campaign
-            introduced a voluntary track-level labeling program distinguishing "AI-Generated" from "AI-Assisted"
-            sound recordings. That program currently applies to sound recordings only — BASE Station voluntarily
-            extends the same spirit of transparency to lyrics, cover art, and video through the COS.{' '}
-            <a href="https://www.riaa.com/music-community-introduces-new-labeling-programto-distinguish-generative-ai-in-sound-recordings/"
-              target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
-              Read the announcement →
-            </a>
+            The COS extends the music community&apos;s track-level GenAI labeling program to lyrics, cover art
+            and video.{' '}
+            <Link to="/transparency" className="text-emerald-400 hover:underline">See the labeling policy →</Link>
           </p>
         </section>
 
@@ -207,11 +188,8 @@ export default function CreativeOwnership() {
             <Link to="/creator-dashboard?tab=ownership">
               <Button className="rounded-xl font-bold gap-2 merc-button"><Award className="w-4 h-4" /> Open My Ownership Dashboard</Button>
             </Link>
-            <Link to="/transparency">
-              <Button variant="outline" className="rounded-xl font-bold gap-2"><User className="w-4 h-4" /> AI Transparency Policy</Button>
-            </Link>
-            <Link to="/governance">
-              <Button variant="outline" className="rounded-xl font-bold gap-2"><TrendingUp className="w-4 h-4" /> Community Tuning Panel</Button>
+            <Link to="/trust">
+              <Button variant="outline" className="rounded-xl font-bold gap-2"><User className="w-4 h-4" /> Trust &amp; Provenance</Button>
             </Link>
           </div>
         </section>

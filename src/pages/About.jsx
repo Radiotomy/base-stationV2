@@ -138,22 +138,18 @@ export default function About() {
             shouldn't have to hide their tools. They simply need a way to prove their authorship.
           </p>
           <p className="text-slate-300 mb-6 leading-relaxed">
-            That is why we built the{" "}
-            <Link to="/creative-ownership" className="font-bold text-amber-500 hover:text-amber-400 underline underline-offset-2">
-              Creative Ownership Score (0–100 COS)
-            </Link>{" "}
-            directly into BASE Station — not as a static proprietary ceiling, but as a living,
-            community-tuned ledger. Rather than treating AI generation as an unvetted "black box,"
-            the platform meticulously captures a creator's explicit intent. When you write custom
-            lyrics, feed specific audio references, establish style constraints, and iteratively refine
-            your arrangements, the platform documents those human inputs.
+            That is why provenance is built into BASE Station rather than bolted on. Instead of treating AI
+            generation as an unvetted black box, the platform captures a creator&apos;s explicit intent and
+            turns it into an immutable ledger of creative signals — separating low-effort automated output
+            from genuine hybrid collaboration, so your work qualifies for transparent, human-guided credit
+            rather than blanket suppression.
           </p>
-          <p className="text-slate-300 leading-relaxed">
-            By providing an immutable ledger of creative signals, we separate low-effort automated spam
-            from genuine, hybrid human collaboration. This methodology aligns perfectly with the music
-            community's voluntary track-level labeling program, ensuring that your work qualifies for
-            transparent, human-guided credits rather than facing suppression.
-          </p>
+          <Link
+            to="/trust"
+            className="inline-block font-bold text-amber-500 hover:text-amber-400 underline underline-offset-2"
+          >
+            How that works in practice: Trust &amp; Provenance →
+          </Link>
         </div>
       </section>
 

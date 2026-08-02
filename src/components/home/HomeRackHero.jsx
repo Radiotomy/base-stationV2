@@ -80,13 +80,13 @@ export default function HomeRackHero({ user }) {
             <>
               <KnobButton label="Radio" to="/radio" />
               {user?.is_creator !== false && <KnobButton label="Create Music" to="/music-studio" />}
-              <KnobButton label="Learn Why" to="/why-base-station" />
+              <KnobButton label="Trust" to="/trust" />
             </>
           ) : (
             <>
               <KnobButton label="Join Free" onClick={() => base44.auth.redirectToLogin()} />
               <KnobButton label="Explore" to="/radio" />
-              <KnobButton label="Learn Why" to="/why-base-station" />
+              <KnobButton label="Trust" to="/trust" />
             </>
           )}
         </div>

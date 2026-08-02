@@ -99,22 +99,12 @@ export default function AITransparency() {
           </h2>
           <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
             <p>
-              Beyond the track-level label, every scored asset carries a{" "}
-              <span className="text-white font-semibold">DDEX-style AI attribution profile</span> —
-              granular flags recording whether lyrical content, composition, instrumentation, vocals,
-              and post-production were synthetic or human. Under COS Engine 2.0, each flag is derived
-              from one of five telemetry-backed creative dimensions (Content Authorship, Creative
-              Direction, Sonic Identity, Vocal Identity, Craft &amp; Refinement) rather than guesswork.
-              An optional{" "}
-              <span className="text-white font-semibold">C2PA provenance hash</span> anchors these
-              metrics to the audio container itself.
+              Beyond the track-level label, every scored asset carries a machine-readable DDEX-style AI
+              attribution profile, exportable from its Provenance Manifest — so distributors and partner
+              channels receive verifiable disclosure data instead of a single opaque label.
             </p>
             <p>
-              Creators can export this profile as a DDEX Tag Bundle from their asset's{" "}
-              <span className="text-white font-semibold">Provenance Manifest</span> in the{" "}
-              <Link to="/creator-dashboard?tab=ownership" className="text-[#FFC98A] underline underline-offset-2">Ownership dashboard</Link>{" "}
-              — giving distributors and partner channels verifiable, machine-readable disclosure data
-              instead of a single opaque label.
+              <Link to="/creative-ownership" className="text-[#FFC98A] underline underline-offset-2">How the Creative Ownership Score builds that profile →</Link>
             </p>
           </div>
         </section>
@@ -172,7 +162,10 @@ export default function AITransparency() {
           </div>
         </section>
 
-        <div className="text-center">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link to="/trust" className="inline-flex items-center gap-2 merc-button-dark rounded-full px-5 py-2.5 text-sm font-bold">
+            <ShieldCheck className="w-4 h-4" /> Trust &amp; Provenance
+          </Link>
           <Link to="/terms" className="inline-flex items-center gap-2 merc-button-dark rounded-full px-5 py-2.5 text-sm font-bold">
             <FileText className="w-4 h-4" /> Read the full Terms of Use
           </Link>

@@ -10,7 +10,7 @@ import HomeStatsStrip from "@/components/home/HomeStatsStrip";
 import HomeFeatureGrid from "@/components/home/HomeFeatureGrid";
 import HomePulsePanels from "@/components/home/HomePulsePanels";
 import HomeTemplatesPreview from "@/components/home/HomeTemplatesPreview";
-import HumanFirstManifesto from "@/components/home/HumanFirstManifesto";
+import HomeTrustStrip from "@/components/home/HomeTrustStrip";
 
 const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
 
@@ -131,27 +131,7 @@ export default function Home() {
               </div>
             )}
 
-            <HumanFirstManifesto />
-
-            {/* Legal / transparency footer strip */}
-            <div className="rounded-xl border border-black/70 bg-[#0F0C09] px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-2">
-              <p className="text-[11px] text-white/50 font-semibold text-center sm:text-left">
-                Every track on BASE Station carries a GenAI disclosure label aligned with the music community's voluntary labeling program (RIAA, IFPI &amp; partners, July 2026) plus a 0–100 Creative Ownership Score.
-              </p>
-              <div className="flex items-center gap-x-4 gap-y-1 flex-wrap justify-center flex-shrink-0 text-[11px] font-bold">
-                <Link to="/about" className="text-white/60 hover:text-white transition-colors">About</Link>
-                <span className="text-white/20">·</span>
-                <Link to="/creative-ownership" className="text-[#6EE7B7] hover:text-white transition-colors">Ownership Score</Link>
-                <span className="text-white/20">·</span>
-                <Link to="/transparency" className="text-[#FFC98A] hover:text-white transition-colors">AI Transparency</Link>
-                <span className="text-white/20">·</span>
-                <Link to="/terms" className="text-white/60 hover:text-white transition-colors">Terms of Use</Link>
-                <span className="text-white/20">·</span>
-                <Link to="/docs" className="text-white/60 hover:text-white transition-colors">Docs</Link>
-                <span className="text-white/20">·</span>
-                <a href="mailto:contact@basestation.live" className="text-[#FF9A4D] hover:text-white transition-colors">Contact</a>
-              </div>
-            </div>
+            <HomeTrustStrip />
 
           </div>
           <RailHoles />

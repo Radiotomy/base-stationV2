@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
   LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper, Shield, Search,
-  MessagesSquare, Scale, Heart
+  MessagesSquare, Heart
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -23,8 +23,7 @@ const NAV_ITEMS = [
   { to: "/fan-hub", label: "My Fan Hub", icon: Heart },
   { to: "/forum", label: "Forum", icon: MessagesSquare },
   { to: "/news-hub", label: "News & Legal", icon: Newspaper },
-  { to: "/transparency", label: "AI Transparency", icon: Shield },
-  { to: "/governance", label: "Community Tuning Panel", icon: Scale },
+  { to: "/trust", label: "Trust & Provenance", icon: Shield },
   // Multi-Chain nav hidden for now — restore when blockchain features return:
   // { to: "/blockchain", label: "Multi-Chain", icon: Globe },
 ];
@@ -42,8 +41,7 @@ const COMMUNITY_NAV = [
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
   { to: "/forum", label: "Forum", icon: MessagesSquare },
   { to: "/news-hub", label: "News & Legal", icon: Newspaper },
-  { to: "/transparency", label: "AI Transparency", icon: Shield },
-  { to: "/governance", label: "Community Tuning Panel", icon: Scale },
+  { to: "/trust", label: "Trust & Provenance", icon: Shield },
 ];
 
 const CREATOR_NAV = [
@@ -210,25 +208,11 @@ export default function Header({ user }) {
                       )}
                       <div className="my-1 border-t border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]" />
                       <Link
-                        to="/creative-ownership"
+                        to="/trust"
                         onClick={() => setDropdownOpen(false)}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
                       >
-                        <Shield className="w-4 h-4" /> Ownership & COS
-                      </Link>
-                      <Link
-                        to="/transparency"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
-                      >
-                        <Globe className="w-4 h-4" /> AI Transparency
-                      </Link>
-                      <Link
-                        to="/governance"
-                        onClick={() => setDropdownOpen(false)}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/5 transition-all"
-                      >
-                        <Star className="w-4 h-4" /> Governance
+                        <Shield className="w-4 h-4" /> Trust & Provenance
                       </Link>
                       <div className="my-1 border-t border-black shadow-[0_1px_0_rgba(255,255,255,0.06)]" />
                       <button

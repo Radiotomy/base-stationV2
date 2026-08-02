@@ -84,7 +84,7 @@ const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'));
 const Credits = lazy(() => import('./pages/Credits'));
 const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
 const SocialMediaAutomation = lazy(() => import('./pages/SocialMediaAutomation'));
-const WhyBaseStation = lazy(() => import('./pages/WhyBaseStation'));
+const TrustCenter = lazy(() => import('./pages/TrustCenter'));
 const AIMusicLegalNews = lazy(() => import('./pages/AIMusicLegalNews'));
 const DocsHub = lazy(() => import('./pages/DocsHub'));
 const About = lazy(() => import('./pages/About'));
@@ -159,7 +159,8 @@ const AuthenticatedApp = () => {
             <Route path="/fanclub/:creatorId" element={<FanClub />} />
             <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
             <Route path="/verify" element={<VerifyMark />} />
-            <Route path="/why-base-station" element={<WhyBaseStation />} />
+            <Route path="/trust" element={<TrustCenter />} />
+            <Route path="/why-base-station" element={<Navigate to="/trust" replace />} />
             <Route path="/news-hub" element={<AIMusicLegalNews />} />
             <Route path="/docs" element={<DocsHub />} />
             <Route path="/developers" element={<Navigate to="/docs" replace />} />
