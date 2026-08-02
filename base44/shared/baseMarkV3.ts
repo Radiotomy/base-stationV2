@@ -52,7 +52,7 @@ function endpoints(version) {
 
 // `version` overrides the pinned secret — used to A/B a freshly pushed build
 // against the last known-good one without editing the pin.
-async function postPrediction(input, prefer, version = v3Version()) {
+async function postPrediction(input, prefer, version = v3Version(), webhook = null) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -63,6 +63,12 @@ async function postPrediction(input, prefer, version = v3Version()) {
     // Only the generic endpoint accepts an explicit version digest; the models
     // endpoint rejects it outright.
     const body = kind === 'generic' ? { version, input } : { input };
+    // Only fire on terminal states — intermediate events would hit the
+    // finalizer while the prediction is still processing.
+    if (webhook) {
+      body.webhook = webhook;
+      body.webhook_events_filter = ['completed'];
+    }
     const r = await fetch(url, {
       method: 'POST',
       headers: prefer ? { ...headers, Prefer: prefer } : headers,
@@ -100,8 +106,8 @@ export async function runV3(input, { timeoutMs = 300000 } = {}) {
 // Fire a prediction WITHOUT waiting. GPU cold start plus a full-length master
 // exceeds a single request's time budget, so long jobs are started here and
 // polled across separate invocations.
-export async function startV3(input, version) {
-  return await postPrediction(input, undefined, version || v3Version());
+export async function startV3(input, version, webhook = null) {
+  return await postPrediction(input, undefined, version || v3Version(), webhook);
 }
 
 export async function getV3Prediction(id) {

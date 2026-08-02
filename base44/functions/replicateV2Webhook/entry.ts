@@ -17,6 +17,7 @@ import { createClientFromRequest } from "npm:@base44/sdk@0.8.38";
 import { getV2Prediction } from "../../shared/baseMarkV2.ts";
 import { finalizeV2Prediction } from "../../shared/baseMarkV2Finalize.ts";
 import { finalizeJob } from "../../shared/jobFinalize.ts";
+import { finalizeV3Prediction } from "../../shared/baseMarkV3Finalize.ts";
 import { verifyReplicateWebhook } from "../../shared/replicateVerify.ts";
 
 Deno.serve(async (req) => {
@@ -47,6 +48,22 @@ Deno.serve(async (req) => {
     // createClient({requiresAuth:false}) form does NOT bind a service token,
     // which is why Replicate saw 500s here.
     const base44 = createClientFromRequest(req);
+
+    // Drift Layer (V3) runs tag themselves with ?v3_asset so they reach the V3
+    // finalizer. Without this they would fall through to finalizeV2Prediction,
+    // which would misfile the drift output as a neural embed. The asset id is
+    // only a hint — the stored prediction_id must match the settled prediction,
+    // so a forged or stale id finalizes nothing.
+    const v3AssetId = new URL(req.url).searchParams.get("v3_asset");
+    if (v3AssetId) {
+      const asset = await base44.asServiceRole.entities.UserAsset.get(v3AssetId).catch(() => null);
+      if (asset?.metadata?.base_mark_v3?.prediction_id === pid) {
+        const result = await finalizeV3Prediction(base44, pred, asset);
+        return Response.json({ ok: true, layer: "v3", ...result });
+      }
+      console.warn("replicateV2Webhook: v3_asset did not match prediction", pid);
+      return Response.json({ ok: true, status: "ignored", layer: "v3" });
+    }
 
     // This single webhook URL is shared by two different prediction flows —
     // BASE Mark V2 embeds AND generation jobs (BASE-Harmonix, BASE SoundForge).

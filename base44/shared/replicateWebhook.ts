@@ -15,3 +15,17 @@ export function generationWebhookUrl() {
   const sep = base.includes('?') ? '&' : '?';
   return `${base}${sep}sig=${secret}`;
 }
+
+// Drift Layer (V3) variant. Carries the asset id so the receiver knows which
+// of the three finalizers a prediction belongs to — V3 predictions are
+// otherwise indistinguishable from V2 embeds at the webhook, and handing one
+// to the V2 finalizer would corrupt the cascade.
+//
+// The asset id is a ROUTING HINT ONLY, never an authorisation: the receiver
+// re-checks that the asset's stored prediction_id matches the prediction that
+// actually settled, so a forged id resolves to nothing.
+export function driftWebhookUrl(assetId: string) {
+  const base = generationWebhookUrl();
+  if (!base || !assetId) return null;
+  return `${base}&v3_asset=${encodeURIComponent(assetId)}`;
+}

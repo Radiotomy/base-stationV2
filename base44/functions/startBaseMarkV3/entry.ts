@@ -21,6 +21,7 @@ import { startV3, slotHex, BASE_MARK_V3_VERSION, v3Model } from '../../shared/ba
 import { allocateSlot, releaseSlot } from '../../shared/baseMarkV3Slots.ts';
 import { parseWav } from '../../shared/baseMark.ts';
 import { consumeRateLimit, rateLimitResponse } from '../../shared/rateLimit.ts';
+import { driftWebhookUrl } from '../../shared/replicateWebhook.ts';
 
 // Record what the master looked like GOING IN, so finalization can prove the
 // band-split design actually preserved it. Read from the header only — a ranged
@@ -94,12 +95,14 @@ Deno.serve(async (req) => {
 
     let pred;
     try {
+      // Webhook finalizes the run the moment it settles; pollBaseMarkV3 stays
+      // as the safety net (and the only path when the webhook env is unset).
       pred = await startV3({
         audio: sourceUrl,
         mode: 'encode',
         slot_hex: slotHex(alloc.slot),
         max_seconds: Number(maxSeconds) || 0,
-      }, modelVersion);
+      }, modelVersion, driftWebhookUrl(asset.id));
     } catch (err) {
       // Hand the slot straight back — a slot reserved against a run that never
       // started is dead inventory in a pool of only 65,536.
