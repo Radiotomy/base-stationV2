@@ -12,7 +12,7 @@ const LAYERS = [
   {
     name: 'V2 — Neural Layer',
     carries: 'Full 32-bit registry payload',
-    engine: 'SilentCipher (Singh et al., Interspeech 2024)',
+    engine: 'Based on SilentCipher (Singh et al., Interspeech 2024)',
     when: 'Async on a private GPU, automatic after V1',
     strengths:
       'Trained against compression, time-jittering and additive noise, and it resolves independently of V1 — so a scan still returns the payload when the spectral layer is stripped or the file is re-encoded.',
@@ -22,7 +22,7 @@ const LAYERS = [
   {
     name: 'V3 — Drift Layer',
     carries: '16-bit slot pointer (not the payload)',
-    engine: 'WavMark, on our own private deployment',
+    engine: 'Based on WavMark, on our own private deployment',
     when: 'Opt-in per asset, chained after V2',
     strengths:
       'Targets the gap the other two share: re-timed and re-recorded audio. WavMark carries a low-band delta rather than broadband noise, so it survives handling that desynchronizes the chip-aligned spectral layer.',
