@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { resolveTier, startHarmonix, extractAudioUrl } from '../../shared/harmonix.ts';
+import { markGeneratedAudio, FORENSIC_AUDIO_FORMAT } from '../../shared/harmonixForensics.ts';
 
 async function checkCreditBalance(base44, user, requiredCredits) {
   const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -56,6 +57,10 @@ Deno.serve(async (req) => {
     const safeDuration = Math.min(Math.max(Number(duration) || 60, 5), tierConfig.max_duration);
     const hasLyrics = !!(lyrics && lyrics.trim());
 
+    // Vault is the forensic-native tier: ask the model for PCM WAV so the mark
+    // can be embedded in-memory before the single upload. Other tiers stay mp3.
+    const forensicNative = tier === 'vault';
+
     const replicateInput = {
       prompt: prompt.slice(0, 1000),
       lyrics: hasLyrics ? lyrics.slice(0, 3000) : '[Instrumental]',
@@ -63,7 +68,7 @@ Deno.serve(async (req) => {
       inference_steps: tierConfig.inference_steps,
       seed: -1,
       batch_size: 1,
-      audio_format: 'mp3',
+      audio_format: forensicNative ? FORENSIC_AUDIO_FORMAT : 'mp3',
     };
 
     let pred;
@@ -90,9 +95,22 @@ Deno.serve(async (req) => {
       if (!providerAudioUrl) return Response.json({ error: 'BASE-Harmonix did not return audio output' }, { status: 502 });
 
       const r = await fetch(providerAudioUrl);
-      const blob = await r.blob();
       const safeName = (title || 'harmonix-track').replace(/[^\w.\-]/g, '_');
-      const file = new File([blob], `${safeName}.mp3`, { type: 'audio/mpeg' });
+
+      // Forensic-native path: the generated master is marked in this function's
+      // memory and uploaded ONCE — no intermediate save, no second marking job.
+      let file;
+      let markProvenance = null;
+      let markSkipped = null;
+      if (forensicNative) {
+        const raw = new Uint8Array(await r.arrayBuffer());
+        const res = markGeneratedAudio(raw, `${user.id}|${contentHash}`);
+        markProvenance = res.provenance;
+        markSkipped = res.skipped;
+        file = new File([res.bytes], `${safeName}.wav`, { type: 'audio/wav' });
+      } else {
+        file = new File([await r.blob()], `${safeName}.mp3`, { type: 'audio/mpeg' });
+      }
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
       const job = await base44.entities.GenerationJob.create({
@@ -105,7 +123,11 @@ Deno.serve(async (req) => {
         output_metadata: {
           duration: safeDuration, tier, tier_name: tierConfig.name,
           model_version: 'ACE-Step v1.5', content_hash: contentHash,
-          needs_basemark: tier === 'vault',
+          // Marked inline at generation time — only still "needs" marking if the
+          // inline pass could not run (non-WAV output, unexpected container).
+          needs_basemark: forensicNative && !markProvenance,
+          ...(markProvenance ? { base_mark: markProvenance } : {}),
+          ...(markSkipped ? { base_mark_skipped: markSkipped } : {}),
         },
         credits_used: cost,
         started_at: generatedAt,
@@ -116,7 +138,9 @@ Deno.serve(async (req) => {
 
       return Response.json({
         status: 'completed', audio_url: file_url, job_id: job.id,
-        tier, tier_name: tierConfig.name, needs_basemark: tier === 'vault',
+        tier, tier_name: tierConfig.name,
+        needs_basemark: forensicNative && !markProvenance,
+        base_mark: markProvenance,
         content_hash: contentHash,
         credits_used: cost, credits_remaining: remaining,
       });
