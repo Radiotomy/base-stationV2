@@ -1,6 +1,16 @@
 // BASE SoundForge — our tiered loop/sample/SFX engine built on Stable Audio Open 1.0
-// (Stability AI's open-source, openly-licensed audio diffusion model), hosted on
-// Replicate (stackadoc/stable-audio-open-1.0). We load the open weights via Replicate,
+// (Stability AI's open-weights audio diffusion model), hosted on Replicate
+// (stackadoc/stable-audio-open-1.0).
+//
+// ⚠️ LICENSE (verified 2026-08-02): Stability AI Community License — NOT a
+// permissive open-source licence. Commercial use is free only while total annual
+// revenue stays under USD $1M (any source, not just this model), requires
+// registration with Stability AI, and the grant is REVOCABLE. Above $1M a paid
+// Enterprise Licence is required. Derivative works / fine-tunes inherit the same
+// terms, so do not train on these weights. Replacing this base model with an
+// Apache-2.0 alternative is tracked as a pre-scale task.
+//
+// We load the open weights via Replicate,
 // wrap them in our own prompt engineering, presets, and product identity so the
 // Loops & Samples Studio ships under the BASE Station brand rather than a raw
 // pass-through of a third-party tool — mirroring the BASE-Harmonix approach.

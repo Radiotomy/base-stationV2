@@ -1,5 +1,10 @@
-// BASE-Harmonix — our tiered product line built on ACE-Step v1.5 (MIT licensed
-// open-source music foundation model), hosted on Replicate (fishaudio/ace-step-1.5).
+// BASE-Harmonix — our tiered product line built on ACE-Step v1.5, hosted on
+// Replicate (fishaudio/ace-step-1.5).
+//
+// LICENSE (verified 2026-08-02): Apache 2.0 — see github.com/ace-step/ACE-Step.
+// Irrevocable, no revenue cap, no registration required. Commercial use,
+// modification, derivative works and fine-tunes (LoRA) are all permitted, so
+// this model is safe to fork, wrap, and train on top of.
 // Generates full songs — instrumental AND vocal — from a text prompt + optional lyrics.
 //
 // Three tiers, same base model, different inference budgets / feature set:
