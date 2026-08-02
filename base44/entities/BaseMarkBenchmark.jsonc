@@ -11,9 +11,10 @@
       "enum": [
         "spectral",
         "neural",
-        "drift"
+        "drift",
+        "speed"
       ],
-      "description": "Which BASE Mark layer this measurement is for. spectral = V1 DSP, neural = V2 SilentCipher, drift = V3 WavMark. A drift row records SLOT recovery, not payload recovery \u2014 V3 carries a 16-bit pointer, so 'survived' means the correct slot came back, which the registry then resolves to the asset."
+      "description": "Which BASE Mark layer this measurement is for. spectral = V1 DSP, neural = V2 SilentCipher, drift = V3 WavMark, speed = V4 audiowmark. A drift row records SLOT recovery, not payload recovery \u2014 V3 carries a 16-bit pointer, so 'survived' means the correct slot came back, which the registry then resolves to the asset. A speed row records FULL 32-bit payload recovery, because V4's 128-bit message carries the registry payload whole \u2014 so it is directly comparable to spectral and neural, and not to drift."
     },
     "attack": {
       "type": "string",
@@ -45,7 +46,11 @@
     },
     "confidence": {
       "type": "number",
-      "description": "Mean decoder confidence across trials (drift layer only) \u2014 WavMark reports its own confidence, which is not comparable to the spectral layer's correlation strength and is therefore kept in a separate field"
+      "description": "Mean decoder confidence across trials (drift and speed layers) \u2014 each detector reports its own confidence on its own scale, none of which are comparable to the spectral layer's correlation strength, which is why this is kept in a separate field"
+    },
+    "detected_speed": {
+      "type": "number",
+      "description": "Speed layer only \u2014 the playback ratio audiowmark estimated and corrected for before decoding. Comparing this to the attack's true ratio is how we tell a genuine speed recovery from a lucky one"
     },
     "source_kind": {
       "type": "string",

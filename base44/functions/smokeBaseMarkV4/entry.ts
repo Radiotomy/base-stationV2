@@ -35,10 +35,31 @@ export default async function (req: Request): Promise<Response> {
     const action = body.action || 'start';
 
     if (action === 'start') {
-      const seconds = Math.max(4, Math.min(30, body.seconds || 12));
-      const audio = synthesizeBenchmarkSource(seconds);
-      const file = new File([encodeWav(audio)], 'smoke-v4-source.wav', { type: 'audio/wav' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      // `source_url` runs the whole thing against a REAL master instead of the
+      // synthetic tone. That distinction has already burned us once: V3 looked
+      // fine on synthetic audio and then recovered nothing from an actual
+      // 48kHz/24-bit master, so a synthetic-only pass is not evidence.
+      let file_url = body.source_url || null;
+      let seconds = null;
+      if (file_url && body.trim_seconds) {
+        // Trim so a real master can be measured at the SAME duration V3 was
+        // (60s). Different lengths are not comparable — every one of these
+        // detectors gets more evidence from a longer file.
+        const src = await fetch(file_url);
+        if (!src.ok) return Response.json({ error: 'Could not download source_url' }, { status: 502 });
+        const b = new Uint8Array(await src.arrayBuffer());
+        const audio = decodeWav(isFlac(b) ? decodeFlacToWav(b) : b);
+        const n = Math.min(audio.channels[0].length, Math.round(body.trim_seconds * audio.sampleRate));
+        const trimmed = { sampleRate: audio.sampleRate, channels: audio.channels.map((c) => c.slice(0, n)) };
+        seconds = Number((n / audio.sampleRate).toFixed(2));
+        const f = new File([encodeWav(trimmed)], 'v4-master-trim.wav', { type: 'audio/wav' });
+        file_url = (await base44.integrations.Core.UploadFile({ file: f })).file_url;
+      } else if (!file_url) {
+        seconds = Math.max(4, Math.min(30, body.seconds || 12));
+        const audio = synthesizeBenchmarkSource(seconds);
+        const file = new File([encodeWav(audio)], 'smoke-v4-source.wav', { type: 'audio/wav' });
+        file_url = (await base44.integrations.Core.UploadFile({ file })).file_url;
+      }
 
       const payloadHex = body.payload_hex || TEST_PAYLOAD;
       const pred = await startV4({
@@ -55,6 +76,7 @@ export default async function (req: Request): Promise<Response> {
         message_hex: packV4Message(payloadHex),
         prediction_id: pred.id,
         source_url: file_url,
+        source_kind: body.source_url ? 'uploaded' : 'synthetic',
         source_seconds: seconds,
         note: 'Poll with action:"poll_encode" and this prediction_id.',
       });
@@ -185,7 +207,131 @@ export default async function (req: Request): Promise<Response> {
       });
     }
 
-    return Response.json({ error: 'action must be start, poll_encode, attack or poll_decode' }, { status: 400 });
+    // ── Grid runner ────────────────────────────────────────────────────────
+    // `attack` above measures one attack at a time, which is fine for a probe
+    // and impractical for the 19-attack grid. `grid` applies a BATCH of attacks
+    // to one marked file and starts every decode at once; `grid_poll` collects
+    // them and writes the BaseMarkBenchmark rows.
+    //
+    // Batched rather than all-19-in-one-shot deliberately: the attacks are
+    // applied locally on full-length audio and each result is uploaded, so a
+    // 60s master would blow the request budget somewhere in the middle and
+    // leave you unable to tell which attacks actually ran.
+    if (action === 'grid') {
+      const { marked_url } = body;
+      if (!marked_url) return Response.json({ error: 'marked_url is required' }, { status: 400 });
+
+      const requested = Array.isArray(body.attacks) && body.attacks.length
+        ? body.attacks
+        : Object.keys(ATTACKS);
+      const unknown = requested.filter((a) => a !== 'none' && !ATTACKS[a]);
+      if (unknown.length) {
+        return Response.json({ error: `Unknown attacks: ${unknown.join(', ')}`, available: Object.keys(ATTACKS) }, { status: 400 });
+      }
+      const batch = requested.slice(0, Math.max(1, Math.min(6, body.batch_size || 4)));
+
+      const dl = await fetch(marked_url);
+      if (!dl.ok) return Response.json({ error: 'Could not download marked file' }, { status: 502 });
+      const raw = new Uint8Array(await dl.arrayBuffer());
+      const wavBytes = isFlac(raw) ? decodeFlacToWav(raw) : raw;
+      const source = decodeWav(wavBytes);
+
+      const jobs = [];
+      for (const attack of batch) {
+        const attacked = attack === 'none' ? source : ATTACKS[attack].apply(source);
+        const f = new File([encodeWav(attacked)], `v4-${attack}.wav`, { type: 'audio/wav' });
+        const url = (await base44.integrations.Core.UploadFile({ file: f })).file_url;
+        const dec = await startV4({
+          audio: url,
+          mode: 'decode',
+          payload_hex: '0'.repeat(32),
+          key_hex: Deno.env.get('BASE_MARK_V4_KEY'),
+          // Speed search on for every attacked row. It costs more CPU, but the
+          // point of the grid is to measure what V4 can recover at its best.
+          detect_speed: body.detect_speed ?? (attack !== 'none' && attack !== 'control'),
+          patient: Boolean(body.patient),
+        });
+        jobs.push({
+          attack,
+          attack_label: attack === 'none' ? 'Clean round trip (no attack)' : ATTACKS[attack].label,
+          prediction_id: dec.id,
+          sample_rate: attacked.sampleRate,
+          source_seconds: Number((attacked.channels[0].length / attacked.sampleRate).toFixed(2)),
+        });
+      }
+
+      return Response.json({
+        started: jobs.length,
+        remaining: requested.filter((a) => !batch.includes(a)),
+        jobs,
+        note: 'Read with action:"grid_poll", passing these jobs and a run_id.',
+      });
+    }
+
+    if (action === 'grid_poll') {
+      const jobs = Array.isArray(body.jobs) ? body.jobs : [];
+      if (!jobs.length) return Response.json({ error: 'jobs is required' }, { status: 400 });
+      const runId = body.run_id;
+      const expected = body.payload_hex || TEST_PAYLOAD;
+      const sourceKind = body.source_kind === 'uploaded' ? 'uploaded' : 'synthetic';
+
+      const results = [];
+      const rows = [];
+      for (const job of jobs) {
+        const p = await getV4Prediction(job.prediction_id);
+        if (p.status === 'starting' || p.status === 'processing') {
+          results.push({ attack: job.attack, status: p.status });
+          continue;
+        }
+        if (p.status !== 'succeeded') {
+          results.push({ attack: job.attack, status: p.status, error: p.error || null });
+          continue;
+        }
+        const out = p.output || {};
+        const { valid, payload_hex: recovered } = unpackV4Message(out.payload_hex || null);
+        const survived = out.detected === true && valid && recovered === expected;
+        results.push({
+          attack: job.attack,
+          status: 'succeeded',
+          survived,
+          recovered_payload_hex: recovered,
+          speed: out.speed ?? null,
+          confidence: out.confidence ?? null,
+          note: out.note ?? null,
+        });
+        if (runId) {
+          rows.push({
+            run_id: runId,
+            layer: 'speed',
+            attack: job.attack,
+            attack_label: job.attack_label || job.attack,
+            trials: 1,
+            survived: survived ? 1 : 0,
+            survival_pct: survived ? 100 : 0,
+            confidence: typeof out.confidence === 'number' ? out.confidence : undefined,
+            detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
+            source_kind: sourceKind,
+            source_seconds: job.source_seconds ?? undefined,
+            sample_rate: job.sample_rate ?? undefined,
+            cascaded: false,
+            notes: out.note || '',
+          });
+        }
+      }
+
+      // Only written once every job in the batch has resolved, so a re-poll
+      // mid-flight cannot leave half a batch recorded and then duplicate it.
+      const pending = results.filter((r) => r.status === 'starting' || r.status === 'processing').length;
+      let recorded = 0;
+      if (runId && !pending && rows.length) {
+        await base44.asServiceRole.entities.BaseMarkBenchmark.bulkCreate(rows);
+        recorded = rows.length;
+      }
+
+      return Response.json({ pending, recorded, results });
+    }
+
+    return Response.json({ error: 'action must be start, poll_encode, attack, poll_decode, grid or grid_poll' }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
