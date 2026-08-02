@@ -28,6 +28,26 @@ async function persistUrl(base44, url, filename) {
   }
 }
 
+// Sonic exposes a FREE synchronous WAV conversion (POST /sonic/wav) that until
+// now was only called when a user manually clicked "Download WAV". Fetching it
+// at finalize time instead means every Sonic track lands with a lossless master
+// in wav_url — which is what the BASE Mark cascade embeds into. Without it,
+// Sonic tracks are MP3-only and silently skip the V1 spectral layer.
+async function fetchSonicWavUrl(clipId) {
+  if (!clipId) return null;
+  try {
+    const res = await fetch(`${AI_BASE}/sonic/wav`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clip_id: clipId }),
+    });
+    const data = await res.json();
+    return res.ok ? (data?.data?.wav_url || null) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Poll the provider's status endpoint for a given task_id.
  * Returns normalized: { status: 'completed'|'processing'|'failed', audio_url?, video_url?, error? }
@@ -342,6 +362,10 @@ export async function finalizeJob(base44, job) {
       providerData.audio_url = await persistUrl(base44, providerData.audio_url, `${baseName}.mp3`);
     }
     if (providerData.video_url) providerData.video_url = await persistUrl(base44, providerData.video_url, `${baseName}.mp4`);
+    // Sonic: pull the free lossless WAV so the watermark cascade gets PCM, not MP3.
+    if (job.provider === 'sonic' && !providerData.wav_url && providerData.clip_id) {
+      providerData.wav_url = await fetchSonicWavUrl(providerData.clip_id);
+    }
     if (providerData.wav_url) providerData.wav_url = await persistUrl(base44, providerData.wav_url, `${baseName}.wav`);
     if (providerData.cover_image_url) providerData.cover_image_url = await persistUrl(base44, providerData.cover_image_url, `${baseName}_cover.jpg`);
 
