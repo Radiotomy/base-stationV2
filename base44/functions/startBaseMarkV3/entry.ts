@@ -19,6 +19,22 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { startV3, slotHex, BASE_MARK_V3_VERSION, v3Model } from '../../shared/baseMarkV3.ts';
 import { allocateSlot, releaseSlot } from '../../shared/baseMarkV3Slots.ts';
+import { parseWav } from '../../shared/baseMark.ts';
+
+// Record what the master looked like GOING IN, so finalization can prove the
+// band-split design actually preserved it. Read from the header only — a ranged
+// fetch, not the whole file. Returns nulls for non-WAV sources, in which case
+// finalization simply has nothing to compare and skips that guard.
+async function sourceFormat(url) {
+  try {
+    const r = await fetch(url, { headers: { Range: 'bytes=0-8191' } });
+    if (!r.ok) return {};
+    const w = parseWav(new Uint8Array(await r.arrayBuffer()));
+    return w ? { source_sample_rate: w.sampleRate, source_channels: w.channels } : {};
+  } catch {
+    return {};
+  }
+}
 
 Deno.serve(async (req) => {
   try {
@@ -67,6 +83,7 @@ Deno.serve(async (req) => {
     // spending GPU time, not after.
     const payloadHex = v2.payload_hex || asset.metadata?.base_mark?.payload_hex || '';
     const alloc = await allocateSlot(base44, asset.id, payloadHex);
+    const srcFormat = await sourceFormat(sourceUrl);
 
     let pred;
     try {
@@ -97,6 +114,7 @@ Deno.serve(async (req) => {
           slot_record_id: alloc.record.id,
           payload_hex: payloadHex,
           source_file_url: sourceUrl,
+          ...srcFormat,
           max_seconds: Number(maxSeconds) || 0,
           started_at: new Date().toISOString(),
         },
