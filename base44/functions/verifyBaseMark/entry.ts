@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { verifyAudioBytes, registryMatches } from '../../shared/baseMarkVerify.ts';
+import { consumeRateLimit } from '../../shared/rateLimit.ts';
 
 // Public black-box verifier for the no-login /verify page.
 // Accepts a short base64 mono WAV snippet, runs it through the unified
@@ -25,12 +26,21 @@ Deno.serve(async (req) => {
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
 
-    let isAuthed = false;
-    try { await base44.auth.me(); isAuthed = true; } catch { /* public visitor */ }
+    let user = null;
+    try { user = await base44.auth.me(); } catch { /* public visitor */ }
+
+    // Only the GPU tier is metered. An anonymous visitor already never reaches
+    // it, and a signed-in user who exhausts their hourly GPU quota still gets a
+    // full spectral scan rather than an error — the free layer is not rationed.
+    let allowGpu = false;
+    if (user) {
+      const quota = await consumeRateLimit(base44, 'basemark_verify_gpu', user);
+      allowGpu = quota.allowed;
+    }
 
     let result;
     try {
-      result = await verifyAudioBytes(base44, bytes, { allowGpu: isAuthed });
+      result = await verifyAudioBytes(base44, bytes, { allowGpu });
     } catch (e) {
       return Response.json({ error: e.message }, { status: 400 });
     }

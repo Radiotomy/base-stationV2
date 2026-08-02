@@ -1,0 +1,56 @@
+{
+  "name": "RateLimitCounter",
+  "type": "object",
+  "properties": {
+    "bucket": {
+      "type": "string",
+      "description": "Identity of the thing being limited, as '<action>:<userId>'. One row per bucket per window."
+    },
+    "action": {
+      "type": "string",
+      "description": "The limited action, e.g. basemark_v3_embed. Stored separately so usage can be reported per action."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Who consumed the quota"
+    },
+    "window_start": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Start of the fixed window this row counts. A new window means a new row rather than a reset, so historical usage stays auditable."
+    },
+    "count": {
+      "type": "number",
+      "default": 0,
+      "description": "Calls consumed in this window"
+    }
+  },
+  "required": [
+    "bucket",
+    "action",
+    "user_id",
+    "window_start"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

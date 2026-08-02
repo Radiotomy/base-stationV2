@@ -20,6 +20,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { startV3, slotHex, BASE_MARK_V3_VERSION, v3Model } from '../../shared/baseMarkV3.ts';
 import { allocateSlot, releaseSlot } from '../../shared/baseMarkV3Slots.ts';
 import { parseWav } from '../../shared/baseMark.ts';
+import { consumeRateLimit, rateLimitResponse } from '../../shared/rateLimit.ts';
 
 // Record what the master looked like GOING IN, so finalization can prove the
 // band-split design actually preserved it. Read from the header only — a ranged
@@ -78,6 +79,12 @@ Deno.serve(async (req) => {
 
     const sourceUrl = v2.marked_file_url || asset.metadata?.wav_url || asset.file_url;
     if (!sourceUrl) return Response.json({ error: 'Asset has no audio file to mark' }, { status: 400 });
+
+    // Quota is checked here rather than at the top of the handler: every early
+    // return above is a cheap refusal that starts no GPU, and charging quota
+    // for those would let a client burn its hourly budget on no-ops.
+    const quota = await consumeRateLimit(base44, 'basemark_v3_embed', user);
+    if (!quota.allowed) return rateLimitResponse(quota, 'basemark_v3_embed');
 
     // Slot first: if the finite pool is exhausted we want to fail before
     // spending GPU time, not after.
