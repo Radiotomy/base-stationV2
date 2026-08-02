@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import LoopCard from './LoopCard';
 import LoopSpecBadges from './LoopSpecBadges';
+import { finishSoundForgeLoop } from '@/utils/finishSoundForgeLoop';
 
 const CATEGORY_OPTIONS = ['loop', 'one_shot', 'drum_loop', 'bass_loop', 'melodic_loop', 'vocal_chop', 'fx', 'sample'];
 
@@ -18,6 +19,24 @@ export default function GenerateLoopTab() {
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [finishing, setFinishing] = useState(false);
+
+  // Stable Audio hands back MP3; the finishing stage needs PCM. Decode in the
+  // browser and let the server finish it, so the loop is bar-locked and seamless
+  // before the user ever auditions or saves it.
+  const settle = async (audioUrl, jobId) => {
+    setResult({ audio_url: audioUrl, job_id: jobId, loop: null });
+    if (!/\.mp3(\?|$)/i.test(audioUrl)) return;
+    setFinishing(true);
+    try {
+      const done = await finishSoundForgeLoop({ audioUrl, jobId, bpm, category });
+      if (done?.audio_url) setResult({ audio_url: done.audio_url, job_id: jobId, loop: done.loop });
+    } catch {
+      toast.info('Loop is ready, but automatic finishing was skipped.');
+    } finally {
+      setFinishing(false);
+    }
+  };
 
   // Poll until the render lands (up to ~3 min), so the user never has to
   // manually retry a generation they already paid for.
@@ -41,14 +60,14 @@ export default function GenerateLoopTab() {
       });
       if (res.data?.error) throw new Error(res.data.error);
       if (res.data?.status === 'completed') {
-        setResult({ audio_url: res.data.audio_url, job_id: res.data.job_id, loop: res.data.loop });
         toast.success('Generated with BASE SoundForge!');
+        await settle(res.data.audio_url, res.data.job_id);
       } else if (res.data?.job_id) {
         // Cold GPU — keep waiting for the user instead of making them retry.
         const done = await waitForJob(res.data.job_id);
         if (done) {
-          setResult({ audio_url: done.audio_url, job_id: res.data.job_id, loop: done.loop });
           toast.success('Generated with BASE SoundForge!');
+          await settle(done.audio_url, res.data.job_id);
         } else {
           toast.info('Still rendering — check Studio History in a moment.');
         }
@@ -92,7 +111,7 @@ export default function GenerateLoopTab() {
       <p className="text-sm text-muted-foreground">
         Generate original loops, one-shots, and sound effects with <strong>BASE SoundForge</strong> —
         our own AI audio engine, built on an open-source foundation model and tuned for short-form
-        loop and sample generation. Every result is finished automatically: trimmed, locked to a whole
+        loop and sample generation, running Stable Audio 2.5. Every result is finished automatically: trimmed, locked to a whole
         number of bars, seamlessly crossfaded at the loop point and normalized to −1 dBFS, exported as
         WAV. 2 credits per generation.
       </p>
@@ -129,9 +148,16 @@ export default function GenerateLoopTab() {
             onAction={saveToLibrary}
             actionLabel="Save to My Loops"
             actionIcon={Save}
-            actionLoading={saving}
+            actionLoading={saving || finishing}
           />
-          <LoopSpecBadges info={result.loop} />
+          {finishing ? (
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Finishing — trimming, locking to the bar and normalizing…
+            </p>
+          ) : (
+            <LoopSpecBadges info={result.loop} />
+          )}
         </div>
       )}
     </div>

@@ -1,47 +1,71 @@
 // BASE SoundForge — our loop / one-shot / sample engine.
 //
-// LICENSE (verified 2026-08-02): runs on ACE-Step v1.5, Apache 2.0
-// (github.com/ace-step/ACE-Step). Irrevocable, no revenue cap, no registration,
-// no enterprise licence at any revenue level. Fine-tunes (LoRA) permitted.
+// Runs Stable Audio 2.5 via Replicate.
 //
-// Migrated 2026-08-02 off Stable Audio Open 1.0, which shipped under the
-// Stability AI Community License: free only under USD $1M total annual revenue,
-// registration required, and a negotiated (unpublished, quote-only) Enterprise
-// Licence above that. SoundForge now shares the same base model as
-// BASE-Harmonix, so the platform carries exactly one model licence.
+// Chosen 2026-08-02 on two grounds. Prompt adherence: ACE-Step 1.5 is a *song*
+// model and kept inventing synth melodies over briefs that asked for a bare
+// drum loop — unusable for sample-pack work. Cost: Replicate bills ~$0.20 per
+// generation, against ~$0.25 equivalent on Stability's direct API (25 credits
+// at $10 / 1,000), so the cheaper provider is also the better-sounding one here.
 //
-// Model + version are resolved from shared/harmonix.ts, with env overrides so a
-// loop-tuned LoRA can be swapped in later without a code change.
+// This endpoint returns MP3. That used to disqualify it, because the finishing
+// stage and BASE Mark V1 both need PCM — shared/mp3Decode.ts now decodes on
+// arrival, so loops still land bar-locked, seamless, normalized and markable.
+//
+// Songs stay on ACE-Step 1.5 (shared/harmonix.ts). The two engines are
+// deliberately split: song model for songs, audio model for loops.
 
-import {
-  HARMONIX_MODEL,
-  HARMONIX_VERSION,
-  startHarmonix,
-  getHarmonixPrediction,
-  extractAudioUrl,
-} from './harmonix.ts';
-
-export const SOUNDFORGE_MODEL =
-  Deno.env.get('SOUNDFORGE_MODEL') || HARMONIX_MODEL;
-export const SOUNDFORGE_VERSION =
-  Deno.env.get('SOUNDFORGE_VERSION') || HARMONIX_VERSION;
+const REPLICATE_MODEL = Deno.env.get('SOUNDFORGE_MODEL') || 'stability-ai/stable-audio-2.5';
 
 export const SOUNDFORGE_CREDIT_COST = 2;
 export const SOUNDFORGE_MAX_DURATION = 30;
 
-// Loops and one-shots are short and never sung — a low step count keeps them
-// fast and cheap, and ACE-Step treats "[instrumental]" as no-vocals.
-export const SOUNDFORGE_INFER_STEPS = 27;
-export const SOUNDFORGE_INSTRUMENTAL = '[instrumental]';
+// Stable Audio 2.5 is a distilled model — 8 steps is its intended operating
+// point and cfg_scale 1 is required at that step count.
+const SOUNDFORGE_STEPS = 8;
 
-export async function startSoundForge(input) {
-  return await startHarmonix(input);
+function token() {
+  const t = Deno.env.get('REPLICATE_API_TOKEN');
+  if (!t) throw new Error('REPLICATE_API_TOKEN is not set');
+  return t;
 }
 
-export async function getSoundForgePrediction(id) {
-  return await getHarmonixPrediction(id);
+export function buildSoundForgeInput(prompt: string, duration: number) {
+  return {
+    prompt: prompt.slice(0, 1000),
+    duration,
+    steps: SOUNDFORGE_STEPS,
+    cfg_scale: 1,
+  };
 }
 
-export function extractSoundForgeAudioUrl(output) {
-  return extractAudioUrl(output);
+export async function startSoundForge(input: unknown) {
+  const res = await fetch(`https://api.replicate.com/v1/models/${REPLICATE_MODEL}/predictions`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token()}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'wait=55',
+    },
+    body: JSON.stringify({ input }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.detail || 'BASE SoundForge request failed');
+  return data;
+}
+
+export async function getSoundForgePrediction(id: string) {
+  const res = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
+    headers: { 'Authorization': `Bearer ${token()}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data?.detail || 'BASE SoundForge poll failed');
+  return data;
+}
+
+export function extractSoundForgeAudioUrl(output: any) {
+  if (!output) return null;
+  if (typeof output === 'string') return output;
+  if (Array.isArray(output)) return output[0] || null;
+  return output.url || null;
 }

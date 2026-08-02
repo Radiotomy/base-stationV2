@@ -11,6 +11,8 @@
 // never resamples or re-encodes, so the audio stays bit-clean for BASE Mark.
 
 import { parseWav } from './baseMark.ts';
+import { encodeWav } from './wavEncode.ts';
+import { detectFormat } from './mp3Decode.ts';
 
 const SILENCE_THRESHOLD = 0.0015;   // ~-56 dBFS — below this is encoder noise floor
 const FOLD_MS = 30;                 // tail folded back over the head
@@ -43,37 +45,6 @@ function decode(bytes, wav) {
     }
   }
   return chans;
-}
-
-function encode(chans, sampleRate, bps) {
-  const ch = chans.length;
-  const frames = chans[0].length;
-  const dataLen = frames * ch * bps;
-  const out = new Uint8Array(44 + dataLen);
-  const dv = new DataView(out.buffer);
-  const str = (off, s) => { for (let i = 0; i < s.length; i++) out[off + i] = s.charCodeAt(i); };
-  str(0, 'RIFF'); dv.setUint32(4, 36 + dataLen, true); str(8, 'WAVE');
-  str(12, 'fmt '); dv.setUint32(16, 16, true);
-  dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
-  dv.setUint32(24, sampleRate, true);
-  dv.setUint32(28, sampleRate * ch * bps, true);
-  dv.setUint16(32, ch * bps, true); dv.setUint16(34, bps * 8, true);
-  str(36, 'data'); dv.setUint32(40, dataLen, true);
-
-  const maxV = bps === 2 ? 32767 : 8388607;
-  let off = 44;
-  for (let n = 0; n < frames; n++) {
-    for (let c = 0; c < ch; c++) {
-      let v = Math.round(chans[c][n] * (maxV + 1));
-      if (v > maxV) v = maxV; else if (v < -maxV - 1) v = -maxV - 1;
-      if (bps === 2) { dv.setInt16(off, v, true); off += 2; }
-      else {
-        out[off] = v & 0xff; out[off + 1] = (v >> 8) & 0xff; out[off + 2] = (v >> 16) & 0xff;
-        off += 3;
-      }
-    }
-  }
-  return out;
 }
 
 function peakOf(chans, from, to) {
@@ -211,7 +182,7 @@ export function polishLoop(bytes, { bpm, category = 'loop' } = {}) {
 
     const frames = chans[0].length;
     return {
-      bytes: encode(chans, sr, bps),
+      bytes: encodeWav(chans, sr, bps),
       info: {
         seamless: folded,
         bars,
@@ -240,9 +211,24 @@ export function polishLoop(bytes, { bpm, category = 'loop' } = {}) {
 export async function fetchPolishUpload(base44, url, baseName, opts = {}) {
   const r = await fetch(url);
   const raw = new Uint8Array(await r.arrayBuffer());
-  const { bytes, info, skipped } = polishLoop(raw, opts);
+
+  // Only PCM WAV can be polished. An MP3 provider payload is stored as-is and
+  // labelled as MP3 — silently renaming a lossy file to .wav would misrepresent
+  // it to both the user's DAW and the BASE Mark chain.
+  const format = detectFormat(raw);
+  const { bytes, info, skipped } =
+    format === 'wav'
+      ? polishLoop(raw, opts)
+      : { bytes: raw, info: null, skipped: `Provider returned ${format} — finishing stage needs PCM WAV` };
+
+  const ext = format === 'wav' ? 'wav' : 'mp3';
+  const mime = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
   const safeName = (baseName || 'soundforge').replace(/[^\w.\-]/g, '_').slice(0, 60) || 'soundforge';
-  const file = new File([bytes], `${safeName}.wav`, { type: 'audio/wav' });
+  const file = new File([bytes], `${safeName}.${ext}`, { type: mime });
   const up = await base44.integrations.Core.UploadFile({ file });
-  return { file_url: up.file_url, info, skipped };
+  return {
+    file_url: up.file_url,
+    info: info ? { ...info, source_format: format } : info,
+    skipped,
+  };
 }
