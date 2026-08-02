@@ -12,6 +12,7 @@ import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage 
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
+import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
 const TIERS = [
   { key: 'micro', name: 'Micro', tagline: 'Lite / Fast', icon: Zap, cost: 3, color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300', desc: 'Quick draft generation & real-time previewing' },
@@ -31,8 +32,8 @@ export default function HarmonixGenerateTab() {
   const [saving, setSaving] = useState(false);
   const [lastError, setLastError] = useState(null);
   const [markStatus, setMarkStatus] = useState(null); // null | 'queued'
-  const [sampleId, setSampleId] = useState(null);
   const [usedMasters, setUsedMasters] = useState(false);
+  const { sampleId, logGeneration, markRegenerated } = useTrainingTelemetry();
   const savedRef = useRef(false);
   const tierRef = useRef('pro');
 
@@ -89,19 +90,14 @@ export default function HarmonixGenerateTab() {
   }, [prompt, lyrics, title, duration]);
 
   // Opt-in telemetry — no-ops server-side when the user hasn't consented.
-  const logSample = useCallback(async () => {
-    try {
-      const res = await base44.functions.invoke('logTrainingSample', {
-        provider: 'harmonix',
-        model: tierRef.current,
-        prompt,
-        lyrics,
-        duration,
-        used_masters_engine: usedMasters,
-      });
-      if (res.data?.sample_id) setSampleId(res.data.sample_id);
-    } catch { /* telemetry must never block a generation */ }
-  }, [prompt, lyrics, duration, usedMasters]);
+  const logSample = useCallback(() => logGeneration({
+    provider: 'harmonix',
+    model: tierRef.current,
+    prompt,
+    lyrics,
+    duration,
+    used_masters_engine: usedMasters,
+  }), [prompt, lyrics, duration, usedMasters, logGeneration]);
 
   const onComplete = useCallback(async (data) => {
     setGenerating(false);
@@ -131,11 +127,7 @@ export default function HarmonixGenerateTab() {
     setMarkStatus(null);
     savedRef.current = false;
     tierRef.current = tier;
-    // Regenerating without saving is the clearest implicit "that wasn't it".
-    if (sampleId) {
-      base44.functions.invoke('logTrainingSample', { sample_id: sampleId, outcome: 'regenerated' }).catch(() => {});
-      setSampleId(null);
-    }
+    markRegenerated();
 
     try {
       const res = await base44.functions.invoke('generateMusicHarmonix', {

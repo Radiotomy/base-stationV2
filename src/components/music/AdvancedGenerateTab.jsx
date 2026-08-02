@@ -110,7 +110,11 @@ const PROMPT_TEMPLATES = [
   { label: '🏝️ Reggae', prompt: 'Laid-back skank guitar, deep dub bass, one-drop drums, sunny island groove' },
 ];
 
+import TrainingFeedback from '@/components/training/TrainingFeedback';
+import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
+
 export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initialGenre = '', initialTopic = '' }) {
+  const { sampleId, logGeneration, markRegenerated } = useTrainingTelemetry();
   const [provider, setProvider] = useState('sonic');
   const [importedFromStudio, setImportedFromStudio] = useState(false);
   const [sonicModel, setSonicModel] = useState('sonic-v4-5-plus');
@@ -351,6 +355,19 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : 'Lyria 3 Pro'),
       });
       if (savedAsset?.id) setSavedAssetId(savedAsset.id);
+      // Opt-in telemetry — same shape as Harmonix, so results are comparable
+      // across providers rather than siloed per tab.
+      logGeneration({
+        provider,
+        model: data.model_version || (provider === 'sonic' ? sonicModel : provider === 'tempcolor' ? temporlorModel : provider === 'elevenlabs' ? elevenModel : 'Lyria 3 Pro'),
+        prompt: soundPrompt || '',
+        lyrics: mergedLyrics,
+        genre, mood,
+        duration: data.duration || duration,
+        used_masters_engine: !!mastersBrief,
+        outcome: savedAsset?.id ? 'saved' : 'generated',
+        asset_id: savedAsset?.id || '',
+      });
       // Reflect provider-returned lyrics into UI so user can see them
       if (mergedLyrics && !lyrics?.trim()) {
         setLyrics(mergedLyrics);
@@ -359,7 +376,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       }
       toast.success('✅ Auto-saved to library with full metadata!');
     }
-  }, [mood, genre, provider, saveTrackToLibrary, lyrics, soundPrompt, duration, sonicModel, temporlorModel, elevenModel]);
+  }, [mood, genre, provider, saveTrackToLibrary, lyrics, soundPrompt, duration, sonicModel, temporlorModel, elevenModel, mastersBrief, customTitle, logGeneration]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -460,6 +477,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     setSavedAssetId(null);
     setLastError(null);
     savedRef.current = false; // reset guard for new generation
+    markRegenerated();
     // Read latest values directly from state refs to avoid stale closure issues
     const currentPrompt = soundPrompt;
     const currentLyrics = lyrics;
@@ -972,6 +990,8 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
 
                 {/* Primary track */}
                 <audio controls className="w-full rounded-xl" src={audioUrl} />
+
+                <TrainingFeedback sampleId={sampleId} />
 
                 {/* Lyrics preview — embedded into ID3 USLT frame */}
                 {(result?.lyrics || lyrics) && (
