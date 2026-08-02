@@ -67,10 +67,14 @@ Deno.serve(async (req) => {
     // `latest: true` deliberately ignores the pinned secret — after a push we
     // need the id of the build that was just uploaded, which is exactly the
     // thing the (still stale) pin cannot tell us.
-    const version = body?.latest ? null : (body?.version || v3Version());
+    // `model: "owner/name"` points the same diagnostic at any of our layers —
+    // V4 hit an input-validation error that could only be resolved against the
+    // real generated schema, exactly what this was built for.
+    const model = (body?.model || '').includes('/') ? body.model : v3Model();
+    const version = body?.latest ? null : (body?.version || (model === v3Model() ? v3Version() : null));
     const url = version
-      ? `https://api.replicate.com/v1/models/${v3Model()}/versions/${version}`
-      : `https://api.replicate.com/v1/models/${v3Model()}`;
+      ? `https://api.replicate.com/v1/models/${model}/versions/${version}`
+      : `https://api.replicate.com/v1/models/${model}`;
 
     const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     const d = await r.json();
@@ -79,7 +83,7 @@ Deno.serve(async (req) => {
 
     return Response.json({
       status: r.status,
-      model: v3Model(),
+      model,
       version,
       // The id to paste into BASE_MARK_V3_VERSION after a `cog push` — the
       // push output only prints the image digest, which is a different thing.

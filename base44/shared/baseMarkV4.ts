@@ -151,6 +151,10 @@ export async function decodeV4(audioUrl, { detectSpeed = false, patient = false 
   return await runV4({
     audio: audioUrl,
     mode: 'decode',
+    // Ignored on decode, but sent anyway: the deployed schema marks payload_hex
+    // required (Cog dropped its default), so omitting it is a 422 rather than a
+    // scan. Harmless to keep even once the container is rebuilt.
+    payload_hex: '0'.repeat(V4_MESSAGE_HEX_CHARS),
     key_hex: v4Key(),
     detect_speed: detectSpeed,
     patient,

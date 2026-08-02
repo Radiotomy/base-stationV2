@@ -191,13 +191,13 @@ class Predictor(BasePredictor):
             choices=["encode", "decode"],
             default="decode",
         ),
+        # The default MUST be a literal. Written as `"0" * PAYLOAD_HEX_CHARS` it
+        # was silently dropped from the generated schema, which then marked this
+        # input REQUIRED and made every decode call fail 422 — the constant was
+        # correct, but Cog could not serialize a computed default.
         payload_hex: str = Input(
-            description=(
-                "encode only — the 128-bit message as 32 hex chars. The app packs "
-                "our 32-bit registry payload into this; the container does not "
-                "invent or interpret the layout."
-            ),
-            default="0" * PAYLOAD_HEX_CHARS,
+            description="encode only — the 128-bit message as 32 hex chars, packed by the app.",
+            default="00000000000000000000000000000000",
         ),
         key_hex: str = Input(
             description="Shared secret key (hex). Must match between encode and decode.",
