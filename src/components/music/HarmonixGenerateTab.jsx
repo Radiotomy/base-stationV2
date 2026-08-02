@@ -10,6 +10,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
+import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel';
 
 const TIERS = [
   { key: 'micro', name: 'Micro', tagline: 'Lite / Fast', icon: Zap, cost: 3, color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300', desc: 'Quick draft generation & real-time previewing' },
@@ -184,6 +185,12 @@ export default function HarmonixGenerateTab() {
           placeholder="e.g. Uplifting synth-pop with bright plucks, punchy drums and a soaring chorus…"
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
       </div>
+
+      <HarmonixMastersPanel onApply={({ lyrics: l, prompt: p, title: t }) => {
+        setLyrics(l);
+        setPrompt(p);
+        if (t && !title.trim()) setTitle(t);
+      }} />
 
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
