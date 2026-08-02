@@ -1,0 +1,70 @@
+{
+  "name": "BaseMarkV3Slot",
+  "type": "object",
+  "properties": {
+    "slot": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 65535,
+      "description": "The 16-bit Drift Layer slot number. WavMark carries only 16 usable bits, so this is a POINTER to the asset, not the 32-bit registry payload V1/V2 carry. Hard ceiling of 65,536 concurrent allocations."
+    },
+    "slot_hex": {
+      "type": "string",
+      "description": "The slot as 4 lowercase hex chars, exactly as embedded and as returned by the decoder. Denormalized so decoder output can be looked up directly without conversion."
+    },
+    "asset_id": {
+      "type": "string",
+      "description": "UserAsset this slot points to. The whole reason the slot exists."
+    },
+    "payload_hex": {
+      "type": "string",
+      "description": "The 32-bit V1/V2 registry payload for the same asset. Stored here so a V3-only recovery (tempo-stretched or re-recorded audio, where V1/V2 are gone) can still be correlated to the other two layers."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "reserved",
+        "active",
+        "released"
+      ],
+      "default": "reserved",
+      "description": "reserved = allocated but the embed has not been confirmed; active = a marked file is live carrying this slot; released = the asset is gone and the slot may be recycled. Only released slots are ever reused."
+    },
+    "released_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the slot was returned to the pool. Recycling is deliberately delayed rather than immediate \u2014 a released slot may still be embedded in files already in the wild, so reuse risks a false attribution."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Operator notes, e.g. why a slot was force-released"
+    }
+  },
+  "required": [
+    "slot",
+    "slot_hex",
+    "asset_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
