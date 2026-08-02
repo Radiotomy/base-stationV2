@@ -103,6 +103,51 @@ def _to_wav(src: pathlib.Path) -> pathlib.Path:
     return out
 
 
+# Real lossy codecs, for measuring the ONE thing our Deno-side attack grid
+# structurally cannot: actual encoder behaviour. audioAttacks.ts is pure DSP by
+# design and says so — it approximates codec damage with an honest low-pass and
+# a bit-crush because no encoder can run in that runtime. ffmpeg is already in
+# this image, so the truthful measurement belongs here instead.
+#
+# A round trip, not a one-way encode: the marked audio is encoded to the lossy
+# format and decoded straight back to PCM, which is exactly what happens to a
+# track that gets distributed as MP3 and later scanned.
+CODECS = {
+    "mp3_320": ["-c:a", "libmp3lame", "-b:a", "320k"],
+    "mp3_192": ["-c:a", "libmp3lame", "-b:a", "192k"],
+    "mp3_128": ["-c:a", "libmp3lame", "-b:a", "128k"],
+    "aac_128": ["-c:a", "aac", "-b:a", "128k"],
+    "opus_128": ["-c:a", "libopus", "-b:a", "128k"],
+}
+
+# Container extension per codec — ffmpeg picks the muxer from the extension, and
+# AAC/Opus in a bare .mp3 would fail outright.
+CODEC_EXT = {"mp3_320": "mp3", "mp3_192": "mp3", "mp3_128": "mp3", "aac_128": "m4a", "opus_128": "ogg"}
+
+
+def _codec_roundtrip(wav_path: pathlib.Path, codec: str) -> pathlib.Path:
+    """Encode to a lossy format and decode back to PCM WAV.
+
+    Note the deliberate ordering consequence: a codec pass shifts the signal in
+    time (encoder padding/delay) as well as damaging it spectrally, so a codec
+    row measures BOTH at once. That is realistic, but it means a codec failure
+    does not by itself tell you which of the two caused it — run the existing
+    lowpass rows alongside to separate them.
+    """
+    work = pathlib.Path(tempfile.mkdtemp())
+    lossy = work / f"codec.{CODEC_EXT[codec]}"
+    e = _run(["ffmpeg", "-y", "-i", str(wav_path), *CODECS[codec], str(lossy)])
+    if e.returncode != 0 or not lossy.exists():
+        raise RuntimeError(f"{codec} encode failed: {e.stderr[-500:]}")
+
+    back = work / "decoded.wav"
+    d = _run(["ffmpeg", "-y", "-i", str(lossy), "-c:a", "pcm_s24le", str(back)])
+    if d.returncode != 0 or not back.exists():
+        raise RuntimeError(f"{codec} decode failed: {d.stderr[-500:]}")
+    _log(f"{codec} round trip: {lossy.stat().st_size/1e6:.2f}MB lossy -> PCM")
+    return back
+
+
 def _key_file(key_hex: str) -> Optional[pathlib.Path]:
     """Materialize the shared secret as an audiowmark key file.
 
@@ -219,9 +264,27 @@ class Predictor(BasePredictor):
             ),
             default=False,
         ),
+        codec: str = Input(
+            description=(
+                "decode only — run the audio through a real lossy encoder and back "
+                "to PCM before scanning. Benchmark instrument: this is how we "
+                "measure codec robustness honestly, since the app-side attack grid "
+                "cannot run an encoder. 'none' scans the file as given."
+            ),
+            choices=["none", "mp3_320", "mp3_192", "mp3_128", "aac_128", "opus_128"],
+            default="none",
+        ),
     ) -> Output:
         t0 = time.time()
         wav_path = _to_wav(pathlib.Path(str(audio)))
+
+        # Applied AFTER normalization and only on decode: encoding an already
+        # lossy input would stack two generations of damage and measure
+        # something nobody ships.
+        codec_applied = None
+        if mode == "decode" and codec != "none":
+            wav_path = _codec_roundtrip(wav_path, codec)
+            codec_applied = codec
         info = sf.info(str(wav_path))
         sr, n_ch = info.samplerate, info.channels
         _log(f"loaded {info.duration:.1f}s @ {sr}Hz / {n_ch}ch in {time.time()-t0:.1f}s")
@@ -249,6 +312,7 @@ class Predictor(BasePredictor):
                     channels=n_ch,
                     note=(
                         "No Speed Layer payload recovered."
+                        + (f" Scanned after a {codec_applied} round trip." if codec_applied else "")
                         + ("" if detect_speed else " Retry with detect_speed=true if re-timing is suspected.")
                     ),
                 )
@@ -268,6 +332,7 @@ class Predictor(BasePredictor):
                     f"quality {best['quality']:.3f}, bit-error {best['error']:.3f}, "
                     f"block {best['at']} {best['kind']}; {len(parsed['hits'])} pattern line(s). "
                     + (f"Corrected playback speed {parsed['speed']:.6f}. " if parsed["speed"] else "")
+                    + (f"Scanned after a {codec_applied} round trip. " if codec_applied else "")
                     + "Confirm the payload against the registry before reporting a match."
                 ),
             )

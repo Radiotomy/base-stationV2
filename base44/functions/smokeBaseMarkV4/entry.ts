@@ -163,10 +163,15 @@ export default async function (req: Request): Promise<Response> {
         key_hex: Deno.env.get('BASE_MARK_V4_KEY'),
         detect_speed: detectSpeed,
         patient: Boolean(body.patient),
+        // Real encoder pass, done inside the container where ffmpeg lives. Left
+        // as its own dimension rather than an ATTACKS entry because the attack
+        // registry is deliberately codec-free.
+        codec: body.codec || 'none',
       });
 
       return Response.json({
         attack,
+        codec: body.codec || 'none',
         label: attack === 'none' ? 'Clean round trip (no attack)' : ATTACKS[attack].label,
         detect_speed: detectSpeed,
         prediction_id: dec.id,
@@ -250,6 +255,7 @@ export default async function (req: Request): Promise<Response> {
           // point of the grid is to measure what V4 can recover at its best.
           detect_speed: body.detect_speed ?? (attack !== 'none' && attack !== 'control'),
           patient: Boolean(body.patient),
+          codec: body.codec || 'none',
         });
         jobs.push({
           attack,
@@ -314,7 +320,11 @@ export default async function (req: Request): Promise<Response> {
             source_seconds: job.source_seconds ?? undefined,
             sample_rate: job.sample_rate ?? undefined,
             cascaded: false,
-            notes: out.note || '',
+            // Codec is recorded in notes because the benchmark entity has no
+            // codec column — without it a codec row is indistinguishable from a
+            // clean one after the fact.
+            notes: [body.codec && body.codec !== 'none' ? `codec ${body.codec}` : '', out.note || '']
+              .filter(Boolean).join(' — '),
           });
         }
       }
