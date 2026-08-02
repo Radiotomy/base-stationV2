@@ -26,6 +26,11 @@ build:
     # directly instead of us shelling out to ffmpeg first.
     - "build-essential"
     - "autoconf"
+    # Provides AX_CXX_COMPILE_STDCXX_14. Like the gettext macro below, a missing
+    # macro package surfaces as an unexpanded macro in the generated configure
+    # script ("syntax error near unexpected token") rather than as a missing
+    # dependency, well after every real library check has already passed.
+    - "autoconf-archive"
     - "automake"
     - "libtool"
     # Supplies /usr/share/aclocal/lib-link.m4, which defines the
