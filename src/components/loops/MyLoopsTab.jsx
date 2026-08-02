@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LoopCard from './LoopCard';
 import LoopSpecBadges from './LoopSpecBadges';
+import ShareToCommunityToggle from './ShareToCommunityToggle';
 
 const CATEGORY_OPTIONS = ['loop', 'one_shot', 'drum_loop', 'bass_loop', 'melodic_loop', 'vocal_chop', 'fx', 'sample'];
 
@@ -61,6 +62,10 @@ export default function MyLoopsTab() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const setPublic = (id, is_public) => {
+    setLoops((prev) => prev.map((l) => (l.id === id ? { ...l, is_public } : l)));
   };
 
   const remove = async (id) => {
@@ -125,6 +130,7 @@ export default function MyLoopsTab() {
                   actionIcon={Trash2}
                 >
                   <LoopSpecBadges info={l.loop_spec} />
+                  <ShareToCommunityToggle loop={l} onChanged={setPublic} />
                 </LoopCard>
               ))}
             </div>
