@@ -245,9 +245,18 @@ class Predictor(BasePredictor):
         # bit-exactly and the detector sees identical samples, at roughly half
         # the bytes. Never switch this to a lossy codec: the mark lives in
         # 0-8kHz and would not survive.
+        #
+        # And when max_seconds bounds the run, only the marked REGION is
+        # returned. Uploading the untouched 4-minute tail of a master to prove
+        # a 30-second embed survived is pure dead weight — it was the entire
+        # multi-minute silent stall after the model loop, and what Replicate
+        # kept killing with "Prediction interrupted (code: PA)". The model loop
+        # itself takes ~4s. Full-length runs (max_seconds=0) still return the
+        # whole master, unchanged.
         t_w = time.time()
         out_path = pathlib.Path(tempfile.mkdtemp()) / "marked.flac"
-        sf.write(str(out_path), out, sr, format="FLAC", subtype="PCM_24")
+        emit = out if max_seconds <= 0 else out[:marked_len]
+        sf.write(str(out_path), emit, sr, format="FLAC", subtype="PCM_24")
         _log(
             f"wrote {out_path.stat().st_size/1e6:.1f}MB FLAC in {time.time()-t_w:.1f}s; "
             "handing to cog for upload"
@@ -262,7 +271,8 @@ class Predictor(BasePredictor):
             channels=n_ch,
             note=(
                 f"Slot embedded as a low-band delta over the first {marked_len/sr:.1f}s "
-                f"of {len(mono)/sr:.1f}s. Output kept at {sr}Hz / {n_ch}ch — "
-                "full bandwidth preserved, master not resampled."
+                f"of {len(mono)/sr:.1f}s; returned {len(emit)/sr:.1f}s. "
+                f"Output kept at {sr}Hz / {n_ch}ch — full bandwidth preserved, "
+                "master not resampled."
             ),
         )

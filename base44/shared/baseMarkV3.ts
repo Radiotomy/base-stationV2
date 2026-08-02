@@ -42,25 +42,27 @@ export function slotFromHex(hex) {
   return parseInt(hex, 16);
 }
 
-function endpoints() {
+function endpoints(version) {
   const [owner = '', name = ''] = v3Model().split('/');
   const out = [];
-  if (v3Version()) out.push({ url: 'https://api.replicate.com/v1/predictions', kind: 'generic' });
+  if (version) out.push({ url: 'https://api.replicate.com/v1/predictions', kind: 'generic' });
   out.push({ url: `https://api.replicate.com/v1/models/${owner}/${name}/predictions`, kind: 'models' });
   return out;
 }
 
-async function postPrediction(input, prefer) {
+// `version` overrides the pinned secret — used to A/B a freshly pushed build
+// against the last known-good one without editing the pin.
+async function postPrediction(input, prefer, version = v3Version()) {
   const token = Deno.env.get('REPLICATE_API_TOKEN');
   if (!token) throw new Error('REPLICATE_API_TOKEN is not set');
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
-  const list = endpoints();
+  const list = endpoints(version);
   let fallback;
   for (let i = 0; i < list.length; i++) {
     const { url, kind } = list[i];
     // Only the generic endpoint accepts an explicit version digest; the models
     // endpoint rejects it outright.
-    const body = kind === 'generic' ? { version: v3Version(), input } : { input };
+    const body = kind === 'generic' ? { version, input } : { input };
     const r = await fetch(url, {
       method: 'POST',
       headers: prefer ? { ...headers, Prefer: prefer } : headers,
@@ -98,8 +100,8 @@ export async function runV3(input, { timeoutMs = 300000 } = {}) {
 // Fire a prediction WITHOUT waiting. GPU cold start plus a full-length master
 // exceeds a single request's time budget, so long jobs are started here and
 // polled across separate invocations.
-export async function startV3(input) {
-  return await postPrediction(input);
+export async function startV3(input, version) {
+  return await postPrediction(input, undefined, version || v3Version());
 }
 
 export async function getV3Prediction(id) {
