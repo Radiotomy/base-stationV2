@@ -25,9 +25,9 @@ const LAYERS = [
     engine: 'Based on WavMark, on our own private deployment',
     when: 'Opt-in per asset, chained after V2',
     strengths:
-      'Targets the gap the other two share: re-timed and re-recorded audio. WavMark carries a low-band delta rather than broadband noise, so it survives handling that desynchronizes the chip-aligned spectral layer.',
+      'Recovers from very short excerpts, which is where the spectral layer abstains: measured 100% slot recovery from 2s, 3s and 5s crops, and through 15kHz/11kHz band-limiting, 8-bit quantization and 20dB-SNR noise.',
     weaknesses:
-      'Only 16 usable bits, so it points at an asset instead of carrying the registry payload — and the pool ceilings at 65,536 concurrent slots. Full-length throughput is still unproven, so it is not yet automatic on save.',
+      'It does NOT close the re-timing gap it was built for. Measured standalone on clean audio: 0% recovery under every pitch shift tested (±1 and +2 semitones, +37 cents, 44.1/48kHz mishandling), 0% under ±5% time stretch, and 0% at 10dB SNR. Only 16 usable bits, so it points at an asset rather than carrying the payload, and the pool ceilings at 65,536 concurrent slots.',
   },
 ];
 
@@ -40,7 +40,10 @@ export default function LayerCascadeGrid() {
           The three layers are different technologies with different failure modes, so stacking them
           gives forensic redundancy: an attack that defeats one usually leaves another intact. Order is
           forced — V1, then V2, then V3 — because V1 sprays broadband noise across the band V3 uses as
-          its carrier, so V3 must always go last.
+          its carrier, so V3 must always go last. One important exception to the redundancy claim:
+          benchmarking shows all three layers share the SAME blind spot for pitch-shifted and
+          time-stretched audio, so stacking does not help there. That gap is real and is not solved by
+          adding layers.
         </p>
       </div>
       <div className="grid lg:grid-cols-3 gap-3">

@@ -116,8 +116,10 @@ how BASE Mark robustness is already handled.
 
 ## Sequence
 
-1. Benchmark V3 first (harness now supports it). If WavMark already covers
-   moderate stretch, the urgency here drops significantly and this design should
-   be re-argued before anyone builds it.
+1. ~~Benchmark V3 first.~~ **Done.** V3 measured 0% slot recovery under every
+   pitch shift and time stretch tested, standalone on clean audio. It does not
+   cover the gap. All three watermark layers share the same blind spot, and no
+   fourth watermark layer is likely to change that — which promotes this design
+   from "nice to have" to the only remaining approach on the table.
 2. Prototype extraction + hashing offline; measure false positives and recall.
 3. Only then wire up storage, indexing and the deep-scan feedback loop.

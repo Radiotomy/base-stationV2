@@ -336,7 +336,18 @@ Deno.serve(async (req) => {
       const p = await getV3Prediction(body.prediction_id);
       if (p.status === 'starting' || p.status === 'processing') return Response.json({ status: p.status });
       if (p.status !== 'succeeded') return Response.json({ status: p.status, error: p.error || null });
-      return Response.json({ status: 'succeeded', marked_url: p.output?.audio || null, note: p.output?.note ?? null });
+      const out = p.output?.audio;
+      if (!out) return Response.json({ status: 'succeeded', marked_url: null, error: 'V3 returned no audio' });
+      // Cog hands small outputs back as a base64 data: URI. Rehost to real
+      // storage — a multi-megabyte data URI is unusable as a benchmark handle
+      // and cannot be passed to a later decode prediction.
+      const dl = await fetch(out);
+      if (!dl.ok) return Response.json({ status: 'succeeded', error: 'could not read V3 output' });
+      const bytes = new Uint8Array(await dl.arrayBuffer());
+      const flac = isFlac(bytes);
+      const file = new File([bytes], flac ? 'benchmark-v3-marked.flac' : 'benchmark-v3-marked.wav', { type: flac ? 'audio/flac' : 'audio/wav' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      return Response.json({ status: 'succeeded', marked_url: file_url, bytes: bytes.length, note: p.output?.note ?? null });
     }
 
     if (action === 'v3_attack') {
