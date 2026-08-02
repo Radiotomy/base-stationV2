@@ -32,6 +32,9 @@ export default function HarmonixGenerateTab() {
   const [saving, setSaving] = useState(false);
   const [lastError, setLastError] = useState(null);
   const [markStatus, setMarkStatus] = useState(null); // null | 'queued'
+  const [savedAssetId, setSavedAssetId] = useState(null);
+  const [coverUrl, setCoverUrl] = useState(null);
+  const [generatingCover, setGeneratingCover] = useState(false);
   const [usedMasters, setUsedMasters] = useState(false);
   const { sampleId, logGeneration, markRegenerated } = useTrainingTelemetry();
   const savedRef = useRef(false);
@@ -39,9 +42,10 @@ export default function HarmonixGenerateTab() {
 
   const tierConfig = TIERS.find(t => t.key === tier);
 
-  const saveToLibrary = useCallback(async (audioUrl, data) => {
+  const saveToLibrary = useCallback(async (audioUrl, data, coverImageUrl = null) => {
     if (!audioUrl || savedRef.current) return;
     savedRef.current = true;
+    setSaving(true);
     try {
       const user = await base44.auth.me();
       const usedTier = tierRef.current;
@@ -59,6 +63,7 @@ export default function HarmonixGenerateTab() {
         asset_type: 'track',
         title: title.trim() || prompt.slice(0, 40) || 'Harmonix Track',
         file_url: audioUrl,
+        thumbnail_url: coverImageUrl || '',
         is_public: false,
         ai_label: participation.label,
         ai_disclosure_label: participation.label,
@@ -77,6 +82,7 @@ export default function HarmonixGenerateTab() {
           ai_assisted: true,
         },
       });
+      setSavedAssetId(asset.id);
       toast.success('✅ Saved to library!');
 
       // Vault tier — fire the neural BASE Mark watermark embed in the background.
@@ -85,9 +91,27 @@ export default function HarmonixGenerateTab() {
         base44.functions.invoke('embedBaseMarkV2', { assetId: asset.id }).catch(() => {});
       }
     } catch (err) {
-      console.warn('Auto-save failed:', err.message);
+      savedRef.current = false;
+      toast.error(`Save failed: ${err.message}`);
     }
+    setSaving(false);
   }, [prompt, lyrics, title, duration]);
+
+  // Cover art — generated once per track, then attached to the saved asset.
+  const generateCover = useCallback(async () => {
+    setGeneratingCover(true);
+    try {
+      const res = await base44.integrations.Core.GenerateImage({
+        prompt: `Music album cover artwork. Theme: ${prompt.slice(0, 300)}. Bold composition, dramatic lighting, professional music industry aesthetic. No text overlays.`,
+      });
+      setCoverUrl(res.url || null);
+      return res.url || null;
+    } catch {
+      return null;
+    } finally {
+      setGeneratingCover(false);
+    }
+  }, [prompt]);
 
   // Opt-in telemetry — no-ops server-side when the user hasn't consented.
   const logSample = useCallback(() => logGeneration({
@@ -104,9 +128,10 @@ export default function HarmonixGenerateTab() {
     setResult(data);
     toast.success('🎵 Track ready!');
     const audioUrl = data.audio_url || data.output_url;
-    await saveToLibrary(audioUrl, data);
+    const cover = await generateCover();
+    await saveToLibrary(audioUrl, data, cover);
     logSample();
-  }, [saveToLibrary, logSample]);
+  }, [saveToLibrary, generateCover, logSample]);
 
   const onError = useCallback((msg) => {
     setGenerating(false);
@@ -125,6 +150,8 @@ export default function HarmonixGenerateTab() {
     setJobId('');
     setLastError(null);
     setMarkStatus(null);
+    setSavedAssetId(null);
+    setCoverUrl(null);
     savedRef.current = false;
     tierRef.current = tier;
     markRegenerated();
@@ -139,7 +166,8 @@ export default function HarmonixGenerateTab() {
         setGenerating(false);
         setResult(res.data);
         toast.success('🎵 Track ready!');
-        await saveToLibrary(res.data.audio_url, res.data);
+        const cover = await generateCover();
+        await saveToLibrary(res.data.audio_url, res.data, cover);
         logSample();
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
@@ -287,12 +315,28 @@ export default function HarmonixGenerateTab() {
                 </Badge>
               )}
             </div>
+            {/* Cover art — auto-generated once per track */}
+            <div className="flex items-center gap-3">
+              {generatingCover ? (
+                <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 border border-border">
+                  <div className="w-5 h-5 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+                </div>
+              ) : coverUrl ? (
+                <img src={coverUrl} alt="Cover" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-border" />
+              ) : null}
+              {(generatingCover || coverUrl) && (
+                <p className="text-xs text-muted-foreground">
+                  {generatingCover ? 'Generating cover art…' : 'Auto-generated cover art'}
+                </p>
+              )}
+            </div>
+
             <audio controls className="w-full rounded-xl" src={audioUrl} />
             <TrainingFeedback sampleId={sampleId} onOptIn={logSample} />
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={() => { savedRef.current = false; saveToLibrary(audioUrl, result); }} disabled={saving}
-                className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
-                <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save to Library'}
+              <Button onClick={() => saveToLibrary(audioUrl, result, coverUrl)} disabled={saving || !!savedAssetId}
+                className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold disabled:opacity-60">
+                <Save className="w-4 h-4" /> {saving ? 'Saving…' : savedAssetId ? 'Saved to Library' : 'Save to Library'}
               </Button>
               <a href={audioUrl} download className="flex-1">
                 <Button variant="outline" className="w-full gap-2 rounded-xl">
