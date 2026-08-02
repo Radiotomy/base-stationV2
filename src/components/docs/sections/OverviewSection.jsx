@@ -11,7 +11,7 @@ const PILLARS = [
   {
     icon: Shield,
     title: 'Provenance Manifests',
-    text: 'Cryptographically anchored manifests that travel with every asset — hashed metadata, DDEX AI attribution flags, and ID3v2 frames embedded directly into audio files.',
+    text: 'Cryptographically anchored manifests that travel with every asset — hashed metadata, DDEX AI attribution flags, and ID3v2 frames embedded directly into audio files, all cross-referencing the BASE Mark payload carried inside the waveform.',
   },
   {
     icon: Scale,
@@ -55,7 +55,7 @@ export default function OverviewSection() {
         </p>
         <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
           <li><span className="text-foreground font-medium">COS Engine 2.0 calculation</span> — the score, disclosure label (<code className="text-[#FFC98A] text-xs">ai_generated</code> / <code className="text-[#FFC98A] text-xs">ai_assisted</code>), graded signal breakdown, five-dimension roll-up, and telemetry-confidence metric.</li>
-          <li><span className="text-foreground font-medium">BASE Mark watermarking</span> — an inaudible acoustic watermark is automatically embedded on save; the marked file becomes the canonical audio used by every downstream step.</li>
+          <li><span className="text-foreground font-medium">BASE Mark watermarking</span> — an inaudible acoustic watermark cascade is embedded on save: the spectral layer (V1) synchronously, then the neural layer (V2) on GPU, with the drift layer (V3) available opt-in on top. The marked file becomes the canonical audio used by every downstream step.</li>
           <li><span className="text-foreground font-medium">DDEX AI attribution bundle</span> — granular boolean flags (lyrics, composition, instrumentation, vocals, post-production) plus the watermark payload, exportable to partner channels.</li>
           <li><span className="text-foreground font-medium">ID3v2 embedding</span> — TXXX and WXXX frames (including the BASE Mark payload) written into the MP3 container so provenance travels with the file itself.</li>
           <li><span className="text-foreground font-medium">On-chain anchoring</span> — a SHA-256 content hash of the marked audio bytes is registered on Base mainnet, verifiable against the file itself.</li>
