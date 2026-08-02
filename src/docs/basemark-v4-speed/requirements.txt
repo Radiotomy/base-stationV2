@@ -1,0 +1,6 @@
+# V4 does the actual watermarking in C++ (audiowmark), so Python here is only
+# glue: container normalization and reading back what the CLI reports.
+# Deliberately tiny — no torch, no wavmark, no CUDA stack. This is why the
+# image builds and cold-starts in a fraction of the time V3 needs.
+soundfile==0.12.1
+numpy==1.26.4

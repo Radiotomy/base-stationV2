@@ -1,0 +1,48 @@
+# BASE Mark V4 — Speed Layer (audiowmark-based)
+# Cog build definition. Push with:
+#   cog login
+#   cog push r8.im/<your-account>/basemark-speed
+#
+# Not part of the BASE Station app bundle — version-controlled here alongside
+# the code that calls it, same as the V3 drift container.
+#
+# `run` is deliberately the FIRST key, for the same reason as V3: a paste that
+# drops the last line of the file produces a Cog error that does not mention
+# truncation.
+run: "predict.py:Predictor"
+build:
+  # CPU ONLY. This is the headline operational difference from V2 and V3.
+  # audiowmark is C++ and runs comfortably faster than real time on a CPU, so
+  # there is no GPU to cold-start, no warm pool to babysit, and no $0.81/hr
+  # idle burn. Do not "upgrade" this to gpu: true — there is nothing here that
+  # would use it.
+  gpu: false
+  python_version: "3.11"
+  system_packages:
+    # Runtime + build deps for audiowmark. libgcrypt supplies the keyed PRNG
+    # (the watermark is key-dependent, which is what stops anyone who reads the
+    # public source from locating or forging our marks), zita-resampler is what
+    # --detect-speed uses to re-time candidates, and mpg123 lets it read MP3
+    # directly instead of us shelling out to ffmpeg first.
+    - "build-essential"
+    - "autoconf"
+    - "automake"
+    - "libtool"
+    - "pkg-config"
+    - "git"
+    - "libfftw3-dev"
+    - "libsndfile1-dev"
+    - "libgcrypt20-dev"
+    - "libzita-resampler-dev"
+    - "libmpg123-dev"
+    - "ffmpeg"
+  python_requirements: "requirements.txt"
+  run:
+    # Build audiowmark from source at a PINNED tag. There is no usable pip or
+    # apt package on this base image, and an unpinned checkout would let the
+    # watermarking algorithm shift under us on a rebuild — the same discipline
+    # as pinning the V2/V3 image digests.
+    - "git clone --depth 1 --branch 0.6.4 https://github.com/swesterfeld/audiowmark.git /src/audiowmark"
+    - "cd /src/audiowmark && ./autogen.sh && make -j4 && make install"
+    # Fail the BUILD, not the first prediction, if the binary did not land.
+    - "audiowmark --help > /dev/null"
