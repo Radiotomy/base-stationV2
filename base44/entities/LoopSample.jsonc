@@ -79,6 +79,10 @@
       "default": false,
       "description": "Visible in the shared community loop library"
     },
+    "loop_spec": {
+      "type": "object",
+      "description": "What the SoundForge finishing stage measured and applied \u2014 seamless flag, bar/beat count, sample rate, bit depth, normalization. Stored so the library can show DAW-readiness without re-analyzing the file."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000,

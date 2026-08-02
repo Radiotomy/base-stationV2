@@ -76,6 +76,7 @@ export default function GenerateLoopTab() {
         duration_seconds: result.loop?.duration_seconds || duration,
         collection_name: 'BASE SoundForge',
         license: 'AI Generated',
+        loop_spec: result.loop || undefined,
         is_public: false,
       });
       toast.success('Saved to My Loops');

@@ -5,6 +5,7 @@ import { Upload, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LoopCard from './LoopCard';
+import LoopSpecBadges from './LoopSpecBadges';
 
 const CATEGORY_OPTIONS = ['loop', 'one_shot', 'drum_loop', 'bass_loop', 'melodic_loop', 'vocal_chop', 'fx', 'sample'];
 
@@ -122,7 +123,9 @@ export default function MyLoopsTab() {
                   onAction={() => remove(l.id)}
                   actionLabel="Delete"
                   actionIcon={Trash2}
-                />
+                >
+                  <LoopSpecBadges info={l.loop_spec} />
+                </LoopCard>
               ))}
             </div>
           </div>

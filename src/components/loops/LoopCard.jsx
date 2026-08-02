@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
-import { Play, Pause, Plus } from 'lucide-react';
+import { Play, Pause, Plus, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 export default function LoopCard({
-  title, subtitle, audioUrl, tags = [], license, attribution,
+  title, subtitle, audioUrl, tags = [], license, attribution, children,
   onAction, actionLabel, actionIcon: ActionIcon = Plus, actionLoading,
 }) {
   const audioRef = useRef(null);
@@ -24,9 +24,16 @@ export default function LoopCard({
           {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
         </div>
         {audioUrl && (
-          <Button size="icon" variant="outline" className="h-8 w-8 shrink-0" onClick={toggle}>
-            {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-          </Button>
+          <div className="flex gap-1 shrink-0">
+            <Button size="icon" variant="outline" className="h-8 w-8" onClick={toggle}>
+              {playing ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            </Button>
+            <Button asChild size="icon" variant="outline" className="h-8 w-8" title="Download">
+              <a href={audioUrl} download target="_blank" rel="noreferrer">
+                <Download className="w-3.5 h-3.5" />
+              </a>
+            </Button>
+          </div>
         )}
       </div>
       {audioUrl && (
@@ -46,6 +53,7 @@ export default function LoopCard({
           ))}
         </div>
       )}
+      {children}
       {license && (
         <p className="text-[10px] text-muted-foreground truncate">
           {license}{attribution ? ` · ${attribution}` : ''}
