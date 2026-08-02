@@ -12,7 +12,7 @@ const LAYERS = [
   {
     name: 'V2 — Neural Layer',
     carries: 'Full 32-bit registry payload',
-    engine: 'Based on SilentCipher (Singh et al., Interspeech 2024)',
+    engine: 'Based on SilentCipher (Singh et al., Interspeech 2024), on our own private deployment',
     when: 'Async on a private GPU, automatic after V1',
     strengths:
       'Trained against compression, time-jittering and additive noise, and it resolves independently of V1 — so a scan still returns the payload when the spectral layer is stripped or the file is re-encoded.',
