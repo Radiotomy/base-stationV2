@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import MixdownButton from './MixdownButton';
 
 /**
  * MultitrackMixerPanel
@@ -146,6 +147,7 @@ export default function MultitrackMixerPanel() {
         <Button onClick={saveMixState} disabled={tracks.length === 0} variant="outline" className="rounded-xl gap-2">
           <Save className="w-4 h-4" /> Save Mix
         </Button>
+        <MixdownButton tracks={tracks} />
       </div>
 
       {/* Mixer */}
@@ -225,7 +227,8 @@ export default function MultitrackMixerPanel() {
         <Scissors className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
         <p>
           Tip: import stems from the Audio Remix Studio tab, then drop them here for full multitrack mixdown control.
-          Save your mix recipe — final rendering can be applied to any of your tracks later.
+          "Save Mix" stores the recipe; "Mix Down &amp; Mark" renders a real WAV master and BASE Marks it —
+          that's the file worth protecting, not the individual loops.
         </p>
       </div>
     </div>
