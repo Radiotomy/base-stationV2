@@ -188,6 +188,56 @@ detector is therefore built to abstain.
   recovered payload must additionally match a registered asset; a payload
   matching no asset is discarded rather than reported.
 
+### 8.1 Multi-window consensus, and the deliberate loosening of "agreement"
+
+A re-timed recovery is inherently marginal: a single 12-second window frequently
+decodes the correct payload while falling short of that window's own gate, and
+the detector correctly abstains. The remedy is **more evidence at the same window
+length**, not a lower bar — several non-overlapping windows are decoded at the
+same candidate re-timing and combined. Windows are independent, so this adds
+evidence without adding candidates, leaving the §8 search-discipline exposure
+untouched. Two combined statistics must both hold:
+
+1. **Payload consensus** across at least two windows.
+2. **Mean correlation strength** clearing the strictest per-window gate among the
+   agreeing windows, scaled by 1/√W for W agreeing windows — the standard
+   noise-reduction result for independent measurements, which is why averaging is
+   legitimate here while simply relaxing the gate is not.
+
+**The loosening, stated plainly.** Agreement is defined as proximity in Hamming
+space, **not byte equality**: two decoded payloads count as the same when they
+differ by **at most 2 of 32 bits**. This was forced by measurement. On a re-timed
+house master, one window decoded the payload exactly (the strongest window in the
+set) and another decoded it with a *single* bit flipped; under strict equality the
+tally split and the scan abstained on evidence that was plainly present. The same
+file marks and detects at 100% clean, so the failure was in the rule, not the
+watermark.
+
+The cost is exactly quantifiable, and is why the slack is 2 and not more.
+Allowing *d* bits widens the set of payloads treated as identical to Σ C(32,k)
+for k ≤ d — at d=2 that is 1 + 32 + 496 = **529 of 2³² values**. Two independent
+windows landing in one cluster is therefore a ~1.2 × 10⁻⁷ coincidence rather than
+a ~2.3 × 10⁻¹⁰ one. That remains far below the strength gate's own false-positive
+contribution, and **mandatory registry confirmation (§8) still applies on top**.
+At d=4 the set grows to ~36,000 payloads and the clustering, rather than the
+evidence, would be making the decision — so the tolerance is fixed in code and is
+deliberately **not configurable**.
+
+Cluster resolution is by per-bit majority across the agreeing windows, with ties
+broken toward the strongest window, since window strength is the only available
+evidence of which decode was less noisy.
+
+**Measured false-positive behavior.** Null-mode runs (identical code path, embed
+step skipped) across four masters and twelve candidate re-timings produced **zero
+accepted results**. Every null cluster stayed at a single window; the bit slack
+never manufactured agreement. Any accepted null row invalidates this rule and
+forces recalibration.
+
+**TPM relevance.** This rule governs when the Spectral Layer — a layer inside the
+TPM claim of §5.1 — will assert an attribution. It is recorded here so the
+acceptance criterion is documented at protocol level rather than existing only in
+implementation comments.
+
 ## 9. Deep scan (re-timed audio)
 
 Resampling and time-stretching do not erase the mark, they **desynchronize** it:
@@ -227,6 +277,39 @@ Scope and hard limits, all measured:
 
 An arbitrary, hand-dialed re-timing by an informed adversary remains out of
 reach, and no detection-time search changes that.
+
+### 9.1 Print-seeded recovery (measurement stage, not production)
+
+The exact-ratio limitation above assumes the ratio must be *guessed*. The Print
+Layer (`BASE_FINGERPRINT_DESIGN.md`) instead **estimates** it from the signal, and
+that estimate can be handed to the Spectral detector. Measured across seven marked
+masters (four uploaded, three generated) under three re-timing attacks:
+
+| Attack | Recovered | Windows agreeing |
+|---|---|---|
+| 44.1kHz master played at 48kHz | 7 / 7 | 2–4 of 4 |
+| 48kHz master played at 44.1kHz | 3 / 3 measured | 3–4 of 4 |
+| Pitch shift +1 / +2 semitones | 6 / 6 measured | 3–4 of 4 |
+
+Every recovery returned the exact payload and cleared its combined gate under
+§8.1. Null runs on the same pipeline: **0 false positives in 12 rows**.
+
+Two limits, both measured and both unresolved:
+
+- **The Print estimate is not precise enough to use directly.** Observed error
+  ranges from 7 to 1,266 parts per million of the ratio, while the Spectral
+  recovery peak is roughly 20 ppm wide. A short correction ladder of cheap
+  single-window probes locates the peak before the expensive multi-window
+  confirmation is spent; a *fixed* ladder range is provably wrong, having already
+  discarded a recoverable master whose correction sat at +1,270 ppm.
+- **Estimate quality is self-reporting.** The 1,266 ppm outlier came with a match
+  lift of 17.9 and a 10.28 ms residual, against 70.8 / 6.49 ms for a 12 ppm
+  estimate on the same attack. Scaling the search budget from those two figures is
+  the indicated fix; the trigger thresholds are **not yet calibrated** and must not
+  be set from this sample size.
+
+Until that calibration exists, Print-seeded recovery is a measurement instrument
+and may not back a creator-facing attribution.
 
 This behavior is regression-tested by the internal attack benchmark: an earlier
 build returned a confidently wrong payload from a 2-second excerpt, and the
