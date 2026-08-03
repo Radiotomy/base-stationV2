@@ -49,8 +49,16 @@ async function persistUrl(base44, url, filename) {
     if (!isSafeUrl(url)) return null; // never fetch or store internal/unsafe URLs
     const r = await fetch(url);
     if (!r.ok) return url;
-    const blob = await r.blob();
-    const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
+    const buf = await r.arrayBuffer();
+    const blob = new Blob([buf]);
+    let safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
+    // Tempolor's audio_hi_url is "lossless", not necessarily WAV — several models
+    // (Mureka, for one) return FLAC on that URL. Naming a FLAC ".wav" produced a
+    // library full of files whose extension lied about their container, so the
+    // extension is derived from the actual magic bytes instead of assumed.
+    const head = new Uint8Array(buf.slice(0, 4));
+    const magic = String.fromCharCode(...head);
+    if (magic === 'fLaC' && /\.wav$/i.test(safeName)) safeName = safeName.replace(/\.wav$/i, '.flac');
     const file = new File([blob], safeName, { type: blob.type || 'application/octet-stream' });
     const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
     return up?.file_url || url;
@@ -152,7 +160,20 @@ Deno.serve(async (req) => {
       // Persist generated files to Base44 storage upon creation
       const baseName = (mergedMeta.title || 'track').slice(0, 60);
       if (isFinal && audioUrl) audioUrl = await persistUrl(base44, audioUrl, `${baseName}.mp3`);
-      if (mergedMeta.wav_url) mergedMeta.wav_url = await persistUrl(base44, mergedMeta.wav_url, `${baseName}.wav`);
+      if (mergedMeta.wav_url) {
+      mergedMeta.wav_url = await persistUrl(base44, mergedMeta.wav_url, `${baseName}.wav`);
+      // persistUrl falls back to the ORIGINAL url when the download fails, and
+      // Tempolor's lossless link is only valid 3 days — so a silent fallback
+      // stores a URL that is guaranteed to rot. Flag it rather than pretending
+      // the file was kept, so a dead master is identifiable instead of just
+      // mysteriously 404ing later.
+      if (mergedMeta.wav_url && !/base44/i.test(mergedMeta.wav_url)) {
+        mergedMeta.wav_persist_failed = true;
+        console.warn(`Tempolor webhook: lossless master NOT persisted for item_id=${itemId} — link expires in ~3 days`);
+      } else {
+        delete mergedMeta.wav_persist_failed;
+      }
+    }
       if (mergedMeta.cover_image_url) mergedMeta.cover_image_url = await persistUrl(base44, mergedMeta.cover_image_url, `${baseName}_cover.jpg`);
       if (isFinal && audioUrl) mergedMeta.audio_url = audioUrl;
 
