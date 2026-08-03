@@ -27,6 +27,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { decodeWav, ATTACKS, synthesizeBenchmarkSource } from '../../shared/audioAttacks.ts';
 import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints, matchAgainstMany } from '../../shared/basePrintMatch.ts';
+import { toMono, trimFromStart, round } from '../../shared/audioBenchUtils.ts';
 
 // Attacks worth measuring for the Print Layer. The two stretch rows and the
 // off-grid pitch row are the entire point — those are the cells where every Mark
@@ -63,26 +64,6 @@ function expectedBeta(id) {
   return null;
 }
 
-function trim(audio, seconds) {
-  if (!seconds) return audio;
-  const want = Math.floor(seconds * audio.sampleRate);
-  if (audio.channels[0].length <= want) return audio;
-  return { sampleRate: audio.sampleRate, channels: audio.channels.map((c) => c.slice(0, want)) };
-}
-
-function toMono(audio) {
-  const ch = audio.channels;
-  if (ch.length === 1) return ch[0];
-  const n = ch[0].length;
-  const out = new Float32Array(n);
-  for (let i = 0; i < n; i++) {
-    let s = 0;
-    for (let c = 0; c < ch.length; c++) s += ch[c][i];
-    out[i] = s / ch.length;
-  }
-  return out;
-}
-
 // dither=true is for QUERY prints only. References are stored undithered so the
 // registry blob stays one size; the query pays the 2-4x hash cost in memory.
 function printOf(audio, dither = false) {
@@ -93,11 +74,7 @@ async function loadWav(url, seconds) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Could not fetch source (${r.status})`);
   const bytes = new Uint8Array(await r.arrayBuffer());
-  return trim(decodeWav(bytes), seconds);
-}
-
-function round(v, n = 4) {
-  return Number(Number(v).toFixed(n));
+  return trimFromStart(decodeWav(bytes), seconds);
 }
 
 export default async function (req) {
