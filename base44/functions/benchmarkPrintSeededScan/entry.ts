@@ -34,8 +34,24 @@ import { embedMark, detectMark, payloadFromId } from '../../shared/baseMark.ts';
 import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints } from '../../shared/basePrintMatch.ts';
 import { SEARCH_GATE_MULTIPLE, SEARCH_MIN_STRENGTH } from '../../shared/baseMarkSearch.ts';
-import { toMono, trimCentered, round } from '../../shared/audioBenchUtils.ts';
-import { detectAcrossWindows } from '../../shared/baseMarkMultiWindow.ts';
+import { toMono, trimCentered, round, sliceWindow } from '../../shared/audioBenchUtils.ts';
+
+// Bit distance between two 32-bit hex payloads. The ladder needs this because a
+// probe at the CORRECT alignment can still return a payload one bit off — that
+// is exactly the AnalogHouse failure mode the consensus clustering was built
+// for — and scoring such a probe as "not genuine" would send the ladder hunting
+// for a peak it had already found.
+function bitsOff(a, b) {
+  if (!a || !b) return 32;
+  let x = ((parseInt(a, 16) >>> 0) ^ (parseInt(b, 16) >>> 0)) >>> 0;
+  let n = 0;
+  while (x) {
+    x &= x - 1;
+    n++;
+  }
+  return n;
+}
+import { detectAcrossWindows, MAX_CLUSTER_HAMMING } from '../../shared/baseMarkMultiWindow.ts';
 
 // Attacks worth testing here are exactly the resample family — the class V1/V2/V3
 // all measure 0% on and V4 (the GPLv3 layer) currently owns. Tempo stretch is
@@ -215,27 +231,67 @@ export default async function (req) {
       const ratioEst = 1 / m.beta;
 
       const probeSeconds = Number(body.probe_seconds) || 8;
+      // MEASURED range, not a guess. The first four-track run used +/-40 and lost
+      // two genuine recoveries: Print's warp estimate was 41 ppm off on one master
+      // and 54 ppm off on another, so the correct correction sat outside the
+      // ladder entirely and the scan reported a clean miss on audio that was
+      // recoverable. +/-60 covers every error observed so far with headroom. The
+      // step stays at 10 because the recovery peak has measured ~5x contrast
+      // against its neighbours, so a 10 ppm grid cannot step over it.
       const offsets = Array.isArray(body.offsets_ppm) && body.offsets_ppm.length
         ? body.offsets_ppm
-        : [0, -10, -20, -30, -40, 10, 20, 30, 40];
+        : [0, -10, -20, -30, -40, -50, -60, 10, 20, 30, 40, 50, 60];
+
+      // MEASURED: a single centred probe is not safe. On a house master whose
+      // middle section is a sparse filtered breakdown, every probe returned flat
+      // ~0.011 noise and the ladder reported a clean miss — yet the multi-window
+      // confirm at the same seed recovered the payload from the 0s and 36s
+      // windows. The mark was there; the probe was looking at the one part of the
+      // track that could not evidence it.
+      //
+      // So probe several positions per offset and keep the STRONGEST. Watermark
+      // evidence is content-dependent and unevenly distributed across a master,
+      // so max-over-positions is the right reduction — an average would let one
+      // dead section veto the sections that do carry the mark. This multiplies
+      // probe cost by the number of positions, which is affordable precisely
+      // because probes are single-window and deliberately cheap.
+      const probeAt = [0.02, 0.35, 0.68];
 
       const rows = [];
       for (const ppm of offsets) {
-        const undone = trimCentered(pitchShiftResample(suspect, -semitonesOf(ratioEst * (1 + ppm / 1e6))), probeSeconds);
-        let res;
-        try {
-          res = detectMark(encodeWav(undone));
-        } catch (e) {
-          rows.push({ offset_ppm: ppm, error: e.message });
+        const undone = pitchShiftResample(suspect, -semitonesOf(ratioEst * (1 + ppm / 1e6)));
+        const dur = undone.channels[0].length / undone.sampleRate;
+        let best = null;
+        let err = null;
+        for (const frac of probeAt) {
+          const start = Math.min(Math.max(0, dur * frac), Math.max(0, dur - probeSeconds));
+          const slice = sliceWindow(undone, start, probeSeconds);
+          if (!slice) continue;
+          try {
+            const r = detectMark(encodeWav(slice));
+            if (!best || (r.mean_strength || 0) > best.mean_strength) {
+              best = { mean_strength: r.mean_strength || 0, payload_candidate: r.payload_candidate, at: round(start, 1) };
+            }
+          } catch (e) {
+            err = e.message;
+          }
+        }
+        if (!best) {
+          rows.push({ offset_ppm: ppm, error: err || 'no probe window available' });
           continue;
         }
+        const res = best;
         rows.push({
           offset_ppm: ppm,
+          probe_at_seconds: best.at,
           strength: round(res.mean_strength || 0),
           // Whether the probe decoded the right bits, ignoring the gate entirely.
           // This is how we confirm the strength peak is the genuine alignment and
-          // not just a loud patch of noise.
-          payload_exact: res.payload_candidate === payload,
+          // not just a loud patch of noise. Scored with the same 2-bit tolerance
+          // the consensus stage uses, so the two stages agree on what counts as
+          // the mark.
+          payload_bits_off: bitsOff(res.payload_candidate, payload),
+          payload_exact: bitsOff(res.payload_candidate, payload) <= MAX_CLUSTER_HAMMING,
         });
       }
 

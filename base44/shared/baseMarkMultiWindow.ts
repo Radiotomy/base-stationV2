@@ -48,6 +48,64 @@ export const WINDOW_SECONDS = 12;
 // not a consensus, it is the single-shot case this module exists to improve on.
 export const MIN_CONSENSUS_WINDOWS = 2;
 
+// ── WHY AGREEMENT IS NOT BYTE EQUALITY ─────────────────────────────────────
+// Measured on a re-timed house master: two windows carried the mark, one
+// decoding the payload EXACTLY (strength 0.0418, the strongest window in the
+// set) and one decoding it with a SINGLE bit flipped (0.0329). Under strict
+// equality those two counted as disagreeing, the tally split, and the scan
+// abstained on evidence that was plainly there. The failure was in this rule,
+// not in the watermark — the same file marks and detects at 100% clean.
+//
+// So agreement is defined as proximity in Hamming space rather than identity.
+// The cost of that is precisely quantifiable and is the reason 2 was chosen:
+// allowing d bits of slack widens the set of payloads that count as "the same"
+// to sum(C(32,k)) for k<=d, which at d=2 is 1+32+496 = 529 of 2^32. A pair of
+// independent windows landing in one cluster is therefore a ~1.2e-7
+// coincidence rather than a 2.3e-10 one. That is still far below the strength
+// gate's own false-positive contribution, and registry confirmation (owed by
+// the caller, unchanged) has to pass on top of it.
+//
+// Beyond 2 bits the argument stops holding — at d=4 the set is 36k payloads and
+// the clustering starts doing the deciding instead of the evidence — so this is
+// deliberately not configurable.
+export const MAX_CLUSTER_HAMMING = 2;
+
+const hexToU32 = (h) => (parseInt(h, 16) >>> 0);
+
+function hamming(a, b) {
+  let x = (hexToU32(a) ^ hexToU32(b)) >>> 0;
+  let n = 0;
+  while (x) {
+    x &= x - 1;
+    n++;
+  }
+  return n;
+}
+
+// Resolve a cluster to one payload by per-bit majority. Ties are broken toward
+// the strongest member rather than arbitrarily: window strength is our only
+// evidence of which decode was less noisy, and discarding it at the tie-break
+// would throw away the exact signal that distinguishes the clean decode from
+// the corrupted one.
+function resolveCluster(members) {
+  const strongest = members.reduce((a, b) => (b.mean_strength > a.mean_strength ? b : a));
+  const fallback = hexToU32(strongest.payload);
+  let out = 0;
+  for (let bit = 0; bit < 32; bit++) {
+    const mask = 1 << bit;
+    let ones = 0;
+    let weight = 0;
+    for (const m of members) {
+      if (hexToU32(m.payload) & mask) ones++;
+      weight++;
+    }
+    const zeros = weight - ones;
+    const set = ones === zeros ? (fallback & mask) !== 0 : ones > zeros;
+    if (set) out |= mask;
+  }
+  return (out >>> 0).toString(16).padStart(8, '0');
+}
+
 // Decode a fixed ratio across several non-overlapping windows and combine.
 // `audio` is expected to be ALREADY re-timed by the candidate ratio, so this
 // function is agnostic to how the seed was obtained.
@@ -88,21 +146,33 @@ export function detectAcrossWindows(audio, opts = {}) {
     return { windows: [], consensus_payload: null, agreeing_windows: 0, accepted: false, reason: 'no_decodes' };
   }
 
-  // Modal payload across windows.
-  const tally = new Map();
-  for (const w of windows) {
-    if (w.payload) tally.set(w.payload, (tally.get(w.payload) || 0) + 1);
-  }
-  let consensus = null;
-  let agree = 0;
-  for (const [p, n] of tally) {
-    if (n > agree) {
-      agree = n;
-      consensus = p;
+  // Cluster windows in Hamming space. Every decoded payload is tried as a seed
+  // and the largest resulting cluster wins; ties go to the cluster with more
+  // total strength. Seeding from each candidate rather than from the modal value
+  // matters because the exact payload is not necessarily the most common one —
+  // in the measured failure the single exact decode and the single 1-bit decode
+  // each occurred once.
+  const decoded = windows.filter((w) => w.payload);
+  let agreeing = [];
+  let clusterStrength = -1;
+  for (const seed of decoded) {
+    const members = decoded.filter((w) => hamming(w.payload, seed.payload) <= MAX_CLUSTER_HAMMING);
+    const strength = members.reduce((s, w) => s + w.mean_strength, 0);
+    if (members.length > agreeing.length || (members.length === agreeing.length && strength > clusterStrength)) {
+      agreeing = members;
+      clusterStrength = strength;
     }
   }
 
-  const agreeing = windows.filter((w) => w.payload === consensus);
+  if (!agreeing.length) {
+    return { windows, consensus_payload: null, agreeing_windows: 0, total_windows: windows.length, accepted: false, reason: 'no_payload_candidates' };
+  }
+
+  const consensus = resolveCluster(agreeing);
+  const agree = agreeing.length;
+  // Surfaced so a cluster held together by bit slack is visible rather than
+  // silently indistinguishable from a set of identical decodes.
+  const maxSpread = Math.max(...agreeing.map((w) => hamming(w.payload, consensus)));
   const meanStrength = agreeing.reduce((s, w) => s + w.mean_strength, 0) / Math.max(1, agreeing.length);
 
   // Per-window gate, scaled down by sqrt(number of agreeing windows). Uses the
@@ -124,6 +194,7 @@ export function detectAcrossWindows(audio, opts = {}) {
     windows,
     consensus_payload: consensus,
     agreeing_windows: agree,
+    cluster_max_hamming: maxSpread,
     total_windows: windows.length,
     mean_strength: meanStrength,
     per_window_gate: perWindowGate,
