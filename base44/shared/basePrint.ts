@@ -245,12 +245,32 @@ export function extractPeaks(samples, sampleRate) {
 // so a hash built only from ratios survives both, independently. Classic
 // (f1, f2, dt) hashing stores absolute values and therefore breaks under both,
 // which is exactly why naive fingerprinting would not close this gap.
-function quantizeSemitones(ratio) {
+// Returns the quantized bucket AND how close the true value sat to the boundary
+// between buckets. The distance matters: measurement showed that warping a real
+// track collapses genuine matched votes from ~2340 to ~60-170, and the mechanism
+// is this quantizer. A pitch shift or stretch nudges interpolated peak
+// frequencies slightly, and any ratio that was sitting near a bucket edge falls
+// into the NEXT bucket — a different hash, i.e. a miss. Coarsening the step does
+// not fix it (it just moves the edges), so the edges have to be handled directly.
+function quantizeSemitonesDetail(ratio) {
   const semis = 12 * Math.log2(ratio);
   const clamped = Math.max(-SEMITONE_RANGE, Math.min(SEMITONE_RANGE, semis));
-  const idx = Math.round(clamped / SEMITONE_STEP) + Math.round(SEMITONE_RANGE / SEMITONE_STEP);
-  return Math.max(0, Math.min((1 << FREQ_BITS) - 1, idx));
+  const raw = clamped / SEMITONE_STEP + Math.round(SEMITONE_RANGE / SEMITONE_STEP);
+  const idx = Math.round(raw);
+  const frac = raw - idx; // signed distance to the bucket centre, in [-0.5, 0.5]
+  const hi = (1 << FREQ_BITS) - 1;
+  const clampIdx = (v) => Math.max(0, Math.min(hi, v));
+  return {
+    idx: clampIdx(idx),
+    neighbor: clampIdx(idx + (frac >= 0 ? 1 : -1)),
+    absFrac: Math.abs(frac),
+  };
 }
+
+// How close to a bucket edge counts as "at risk". 0.25 means the outer half of
+// each bucket emits a second variant, so a value can move by up to a quarter
+// bucket in either direction and still be found.
+const DITHER_THRESHOLD = 0.25;
 
 function quantizeTimeRatio(r) {
   // r = (t3-t1)/(t2-t1) and is > 1 by construction. Quantized in log space so
@@ -260,7 +280,19 @@ function quantizeTimeRatio(r) {
 }
 
 // Returns [{ hash, t }] where t is the anchor time in seconds.
-export function hashPeaks(peaks, maxHashes = 400000) {
+//
+// `dither` emits extra boundary-straddling variants for the two FREQUENCY
+// dimensions. Use it for the QUERY side only, never when building a stored
+// reference print: it multiplies hash count 2-4x, and paying that on the query
+// (one file, in memory, once) recovers the warped-match rate without inflating
+// the registry blob for every asset. Asymmetry is safe because a match only
+// needs the two sides to meet in ONE bucket.
+//
+// The time-ratio dimension is deliberately NOT dithered. It is already exactly
+// invariant to both attacks in question — a stretch scales every interval by the
+// same factor, so the ratio does not move — meaning dithering it would add
+// spurious matches and buy nothing.
+export function hashPeaks(peaks, maxHashes = 400000, dither = false) {
   const out = [];
   for (let i = 0; i < peaks.length && out.length < maxHashes; i++) {
     const a = peaks[i];
@@ -279,20 +311,26 @@ export function hashPeaks(peaks, maxHashes = 400000) {
         const d12 = b.t - a.t;
         const d13 = c.t - a.t;
         if (d12 <= 0 || d13 <= d12) continue;
-        const h1 = quantizeSemitones(b.f / a.f);
-        const h2 = quantizeSemitones(c.f / a.f);
+        const q1 = quantizeSemitonesDetail(b.f / a.f);
+        const q2 = quantizeSemitonesDetail(c.f / a.f);
         const h3 = quantizeTimeRatio(d13 / d12);
-        const hash = (h1 << (FREQ_BITS + TIME_RATIO_BITS)) | (h2 << TIME_RATIO_BITS) | h3;
-        out.push({ hash, t: a.t });
-        if (out.length >= maxHashes) return out;
+        const opts1 = dither && q1.absFrac > DITHER_THRESHOLD ? [q1.idx, q1.neighbor] : [q1.idx];
+        const opts2 = dither && q2.absFrac > DITHER_THRESHOLD ? [q2.idx, q2.neighbor] : [q2.idx];
+        for (const h1 of opts1) {
+          for (const h2 of opts2) {
+            const hash = (h1 << (FREQ_BITS + TIME_RATIO_BITS)) | (h2 << TIME_RATIO_BITS) | h3;
+            out.push({ hash, t: a.t });
+            if (out.length >= maxHashes) return out;
+          }
+        }
       }
     }
   }
   return out;
 }
 
-export function computePrint(samples, sampleRate) {
-  return hashPeaks(extractPeaks(samples, sampleRate));
+export function computePrint(samples, sampleRate, dither = false) {
+  return hashPeaks(extractPeaks(samples, sampleRate), 400000, dither);
 }
 
 // ── Blob serialization ─────────────────────────────────────────────────────

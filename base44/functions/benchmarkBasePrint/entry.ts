@@ -83,8 +83,10 @@ function toMono(audio) {
   return out;
 }
 
-function printOf(audio) {
-  return computePrint(toMono(audio), audio.sampleRate);
+// dither=true is for QUERY prints only. References are stored undithered so the
+// registry blob stays one size; the query pays the 2-4x hash cost in memory.
+function printOf(audio, dither = false) {
+  return computePrint(toMono(audio), audio.sampleRate, dither);
 }
 
 async function loadWav(url, seconds) {
@@ -115,12 +117,13 @@ export default async function (req) {
       const ref = printOf(src);
       const rows = [];
       for (const id of ['control', 'pitch_up_2', 'stretch_105']) {
-        const q = printOf(ATTACKS[id].apply(src));
+        const q = printOf(ATTACKS[id].apply(src), true);
         const m = matchPrints(q, ref);
         rows.push({
           attack: id,
           query_hashes: q.length,
           votes: m.votes,
+          lift: round(m.lift, 2),
           score: round(m.score),
           beta: round(m.beta, 5),
           expected_beta: round(expectedBeta(id), 5),
@@ -152,30 +155,32 @@ export default async function (req) {
       const prints = [];
       for (const s of sources) {
         const audio = await loadWav(s.url, seconds);
-        prints.push({ id: s.id || s.url, hashes: printOf(audio) });
+        prints.push({ id: s.id || s.url, hashes: printOf(audio), query: printOf(audio, true) });
       }
 
       const rows = [];
       let worstUnrelated = 0;
-      let minSelf = 1;
+      let minSelf = Infinity;
       let falseAccepts = 0;
       for (const q of prints) {
         const others = prints.filter((p) => p.id !== q.id);
-        const self = matchPrints(q.hashes, q.hashes);
-        const ranked = matchAgainstMany(q.hashes, others);
-        const top = ranked[0] || { score: 0, votes: 0, beta: 1, accepted: false, id: null };
-        if (top.score > worstUnrelated) worstUnrelated = top.score;
-        if (self.score < minSelf) minSelf = self.score;
+        const self = matchPrints(q.query, q.hashes);
+        const ranked = matchAgainstMany(q.query, others);
+        const top = ranked[0] || { lift: 0, score: 0, votes: 0, beta: 1, accepted: false, id: null };
+        if (top.lift > worstUnrelated) worstUnrelated = top.lift;
+        if (self.lift < minSelf) minSelf = self.lift;
         if (top.accepted) falseAccepts++;
         rows.push({
           id: q.id,
-          hashes: q.hashes.length,
-          self_score: round(self.score),
+          ref_hashes: q.hashes.length,
+          query_hashes: q.query.length,
+          self_lift: round(self.lift, 2),
           self_votes: self.votes,
           top_unrelated_id: top.id,
-          top_unrelated_score: round(top.score),
+          top_unrelated_lift: round(top.lift, 2),
           top_unrelated_votes: top.votes,
           top_unrelated_beta: round(top.beta, 5),
+          top_unrelated_beta_at_boundary: top.beta_at_boundary,
           top_unrelated_accepted: top.accepted,
         });
       }
@@ -183,24 +188,20 @@ export default async function (req) {
       // The margin is the whole measurement. A large gap means a threshold
       // exists; a small or negative gap means no threshold can separate genuine
       // matches from unrelated audio and the design is dead as specified.
-      const margin = minSelf > 0 ? worstUnrelated / minSelf : null;
       return Response.json({
         action,
         sources: prints.length,
         seconds,
         rows,
         summary: {
-          weakest_self_score: round(minSelf),
-          strongest_unrelated_score: round(worstUnrelated),
-          unrelated_over_self_ratio: margin === null ? null : round(margin),
+          weakest_self_lift: round(minSelf, 2),
+          strongest_unrelated_lift: round(worstUnrelated, 2),
           false_accepts_at_provisional_threshold: falseAccepts,
         },
         note:
-          'Self-scores are an upper bound only (a print matched against itself). The number that decides ' +
-          'the design is strongest_unrelated_score: it is the floor any acceptance threshold must clear. ' +
-          'false_accepts_at_provisional_threshold counts unrelated pairs the PLACEHOLDER threshold would ' +
-          'have accepted — any non-zero value means the placeholder is unusable, which is expected and is ' +
-          'why it is not calibrated yet.',
+          'strongest_unrelated_lift is the number that decides the design: it is the floor any acceptance ' +
+          'threshold must clear, and it must be compared against the WARPED genuine lifts from a recall ' +
+          'run — not against self-match lift, which is a trivially perfect upper bound.',
       });
     }
 
@@ -219,7 +220,7 @@ export default async function (req) {
           rows.push({ attack: id, error: 'unknown attack id' });
           continue;
         }
-        const q = printOf(def.apply(src));
+        const q = printOf(def.apply(src), true);
         const m = matchPrints(q, ref);
         const exp = expectedBeta(id);
         rows.push({
@@ -228,7 +229,8 @@ export default async function (req) {
           query_hashes: q.length,
           pairs: m.pairs,
           votes: m.votes,
-          score: round(m.score),
+          lift: round(m.lift, 2),
+          beta_at_boundary: m.beta_at_boundary,
           beta: round(m.beta, 5),
           expected_beta: exp === null ? null : round(exp, 5),
           beta_error_pct: exp === null ? null : round(((m.beta - exp) / exp) * 100, 3),
