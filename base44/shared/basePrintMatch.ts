@@ -69,26 +69,37 @@ const BETA_MAX = 2.0;
 // bin in a sparse region — a high ratio built on no evidence.
 const MIN_LINE_VOTES = 8;
 
-// Calibrated from the first real-music run: 6 unrelated AI-generated masters
-// (30 cross-matched unrelated pairs) against 12 warped genuine cells across 3
-// tracks, 20s each.
+// MEASURED, and the measurement overturned the first calibration. Widening from
+// 3 tracks to 6 (20s each, 30 cross-matched unrelated pairs) collapsed the gap
+// that a lift-20 gate depended on:
 //
-//   strongest unrelated lift ............ 14.93
-//   weakest ACCEPTED genuine lift ....... 22.93
-//   genuine cells above 20 .............. 11 of 12
+//   strongest unrelated lift .................... 14.93
+//   AnalogHouse +2 semitones, beta error -0.06% .. 14.87  <-- genuine, rejected
+//   AnalogHouse 44.1->48kHz, beta error -0.02% ... 16.20  <-- genuine, rejected
 //
-// 20 sits inside that gap. The one genuine cell below it (LiquidRnB, +5% stretch,
-// lift 11.0) fitted a WRONG line — beta 1.879 against a true 1.05 — so rejecting
-// it is the correct outcome, not a lost recovery: accepting it would have handed
-// the spectral detector a warp factor off by 79%. That is abstention working as
-// specified rather than a threshold compromise.
+// Those two cells estimated the warp factor to within a quarter of one percent
+// and still scored at or below the null ceiling. The distributions overlap, so
+// NO lift threshold separates genuine warped matches from unrelated audio. The
+// ~1.5x margin seen at n=3 was a small-sample artifact — the same trap the V4
+// figures are annotated against, and the reason n gets raised before publishing.
 //
-// The margin is only ~1.5x, which is thin. This value is good enough to gate an
-// internal instrument and NOT good enough to publish a rate from — raising n
-// (more tracks, more durations, codec round trips) is required first, exactly as
-// with the V4 figures.
+// What the wider run DID establish is more useful than a threshold: beta accuracy
+// is bimodal and unambiguous. Every genuine cell recovered beta to within 0.25%,
+// while every spurious fit was wrong by 49-79% (AnalogHouse +5% stretch fitted
+// 1.569 against a true 1.05). Lift is a weak discriminator; the fitted geometry
+// is a strong one.
+//
+// This is therefore NOT an acceptance threshold and must not be used as one. It
+// is a candidate-generation floor: the Print Layer's job per
+// BASE_FINGERPRINT_DESIGN.md is to propose warp factors, and the decision belongs
+// to the spectral detector, which inverts the proposed beta, attempts a real
+// payload recovery, and applies its own calibrated gate plus mandatory registry
+// confirmation (BASE_MARK_FORENSIC_SPEC.md §8). Under that split a wrong beta
+// costs one failed recovery attempt instead of producing a false attribution,
+// which is why the floor is set permissively at 10 — below the 14.87 genuine cell
+// this run would otherwise have thrown away.
 export const PROVISIONAL_MIN_VOTES = 8;
-export const PROVISIONAL_MIN_LIFT = 20;
+export const PROVISIONAL_MIN_LIFT = 10;
 
 function buildIndex(refHashes) {
   const idx = new Map();
