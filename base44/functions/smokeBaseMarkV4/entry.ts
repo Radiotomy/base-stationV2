@@ -316,15 +316,13 @@ export default async function (req: Request): Promise<Response> {
             survival_pct: survived ? 100 : 0,
             confidence: typeof out.confidence === 'number' ? out.confidence : undefined,
             detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
+            codec: body.codec || 'none',
+            codec_bitrate_k: body.codec && body.codec !== 'none' ? body.codec_bitrate_k || 128 : undefined,
             source_kind: sourceKind,
             source_seconds: job.source_seconds ?? undefined,
             sample_rate: job.sample_rate ?? undefined,
             cascaded: false,
-            // Codec is recorded in notes because the benchmark entity has no
-            // codec column — without it a codec row is indistinguishable from a
-            // clean one after the fact.
-            notes: [body.codec && body.codec !== 'none' ? `codec ${body.codec}` : '', out.note || '']
-              .filter(Boolean).join(' — '),
+            notes: out.note || undefined,
           });
         }
       }
@@ -380,7 +378,15 @@ export default async function (req: Request): Promise<Response> {
       // Passthrough hands the URL straight to the container, whose ffmpeg
       // normalizes it to PCM before scanning, so no local decode is needed.
       const passthrough = Boolean(body.passthrough);
-      const sourceClass = body.source_class || (passthrough ? 'human_lossy_preview' : 'ai_generated_wav');
+      const codec = body.codec || 'none';
+      // Our own generated audio is overwhelmingly DELIVERED as a lossy format, so
+      // a lossless-only null figure would describe the rarest case. Once a real
+      // encoder is in the path the row belongs in its own class — codec damage is
+      // what eats the decision margin, and blending it with PCM hides the case
+      // most likely to produce a spurious hit.
+      const sourceClass =
+        body.source_class ||
+        (passthrough ? 'human_lossy_preview' : codec !== 'none' ? 'ai_generated_codec' : 'ai_generated_wav');
       const batch = sources.slice(0, Math.max(1, Math.min(6, body.batch_size || 4)));
 
       const jobs = [];
@@ -448,7 +454,7 @@ export default async function (req: Request): Promise<Response> {
           key_hex: Deno.env.get('BASE_MARK_V4_KEY'),
           detect_speed: true,
           patient: Boolean(body.patient),
-          codec: body.codec || 'none',
+          codec,
         });
         jobs.push({
           source_url: src.url,
@@ -456,6 +462,7 @@ export default async function (req: Request): Promise<Response> {
           sample_rate: sampleRate,
           source_seconds: seconds,
           source_class: sourceClass,
+          codec,
         });
       }
 
@@ -530,6 +537,11 @@ export default async function (req: Request): Promise<Response> {
             bit_error: bitError ?? undefined,
             false_positive: falsePositive,
             detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
+            // Delivery format is the primary reporting axis for this corpus, so it
+            // is a column. Left in notes it could not be grouped on.
+            codec: job.codec || body.codec || 'none',
+            codec_bitrate_k:
+              (job.codec || body.codec || 'none') !== 'none' ? body.codec_bitrate_k || 128 : undefined,
             source_kind: body.source_kind === 'synthetic' ? 'synthetic' : 'uploaded',
             // Carried per job so a mixed batch stays separable, and so the
             // false-positive rate can be reported per class rather than blended.
@@ -539,7 +551,6 @@ export default async function (req: Request): Promise<Response> {
             cascaded: false,
             notes: [
               'NULL ROW — unmarked audio; a detection here is a failure, not a success.',
-              body.codec && body.codec !== 'none' ? `codec ${body.codec}` : '',
               out.note || '',
             ].filter(Boolean).join(' — '),
           });

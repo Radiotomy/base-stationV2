@@ -251,6 +251,17 @@ robustness rate. Outstanding: higher n, additional source material across genres
 lower bitrates, and cascaded V1+V4 configurations (production would ship the
 cascade, and V1's noise floor is not in these numbers).
 
+**Corpus priority.** The material that matters is our own generative output in the
+formats we actually deliver — lossless PCM at the marking stage, then MP3, AAC and
+Opus/OGG on the way out. Lossless delivery is the minority case here, so a
+false-positive rate measured only on PCM would describe the format our content is
+least often distributed in. Codec damage is also what consumes the detector's
+decision margin (§10.1), which makes lossy delivery both the common case *and* the
+one most likely to produce a spurious hit. Null-corpus rows therefore record the
+codec and bitrate as first-class fields and are reported per delivery format, never
+blended. Outside human-produced material remains a secondary control for
+provenance-independence, not the primary corpus.
+
 ### 10.3 Security posture during benchmarking
 
 The audiowmark algorithm is public (GPLv3), so **the key is the only thing

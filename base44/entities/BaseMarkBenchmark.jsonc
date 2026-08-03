@@ -61,6 +61,21 @@
       "type": "number",
       "description": "Speed layer only \u2014 the playback ratio audiowmark estimated and corrected for before decoding. Comparing this to the attack's true ratio is how we tell a genuine speed recovery from a lucky one"
     },
+    "codec": {
+      "type": "string",
+      "enum": [
+        "none",
+        "mp3",
+        "aac",
+        "opus"
+      ],
+      "default": "none",
+      "description": "Real encoder round trip applied inside the container before scanning, using ffmpeg \u2014 not a DSP approximation. A first-class column rather than a note because the platform delivers most audio in a lossy format, so the false-positive rate has to be reportable PER DELIVERY FORMAT: codec damage is what consumes the detector's decision margin, and a blended figure across formats hides exactly the case most likely to produce a spurious hit. 'none' = lossless PCM scan."
+    },
+    "codec_bitrate_k": {
+      "type": "number",
+      "description": "Encoder bitrate in kbps for the codec round trip. Recorded because robustness and false-positive behavior are both bitrate-dependent, so a codec row without its bitrate is not reproducible."
+    },
     "source_kind": {
       "type": "string",
       "enum": [
@@ -74,11 +89,12 @@
       "type": "string",
       "enum": [
         "ai_generated_wav",
+        "ai_generated_codec",
         "human_lossy_preview",
         "human_lossless",
         "synthetic_tone"
       ],
-      "description": "Provenance and fidelity class of the null-corpus material, kept separate from source_kind so the false-positive rate can be reported per class instead of as one blended figure nobody can characterize. ai_generated_wav = our own engines, lossless. human_lossy_preview = outside human-produced recordings obtained as lossy previews, so codec damage and human provenance are confounded in that class and it CANNOT be quoted as a clean human-audio figure. human_lossless = outside human-produced lossless masters, the class a published claim actually needs. synthetic_tone = the benchmark's generated test signal."
+      "description": "Provenance and fidelity class of the null-corpus material, kept separate from source_kind so the false-positive rate can be reported per class instead of as one blended figure nobody can characterize. ai_generated_wav = our own engines, lossless PCM \u2014 the class our marking stage actually sees. ai_generated_codec = our own engines delivered through a real lossy encoder, which is how the VAST MAJORITY of our content is distributed and therefore the class that matters most for a production gate. human_lossy_preview = outside human-produced recordings obtained as lossy previews, so codec damage and human provenance are confounded and it CANNOT be quoted as a clean human-audio figure. human_lossless = outside human-produced lossless masters. synthetic_tone = the benchmark's generated test signal."
     },
     "source_seconds": {
       "type": "number",
