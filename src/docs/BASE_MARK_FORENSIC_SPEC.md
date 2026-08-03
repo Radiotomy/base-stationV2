@@ -1,8 +1,8 @@
 # BASE Mark — Forensic Integrity and Attribution Specification
 
 **Document class:** Public technical specification (protocol-level)
-**Engine:** BASE Mark — a unified two-layer signature (Spectral Layer + Neural Layer), stacked on every asset
-**Last updated:** 2026-07-27
+**Engine:** BASE Mark — a unified layered signature. Spectral Layer + Neural Layer are stacked on every asset; Drift Layer is opt-in; Speed Layer is in benchmarking
+**Last updated:** 2026-08-02
 
 ---
 
@@ -10,8 +10,8 @@
 
 BASE Mark is BASE Station's watermarking system: a single, inaudible, persistent
 provenance signature embedded directly into the audio waveform of every master
-(WAV/FLAC) saved on the platform. That signature is built from **two layers on
-the same file** — a Spectral Layer (acoustic spread-spectrum DSP), embedded
+(WAV/FLAC) saved on the platform. In production that signature is built from
+**two layers on the same file** — a Spectral Layer (acoustic spread-spectrum DSP), embedded
 first, and a Neural Layer (a learned neural-network watermark), layered on top.
 The two layers are complementary technologies, verified end-to-end (see §7) to
 not interfere with one another when stacked, giving forensic redundancy: an
@@ -48,7 +48,7 @@ layers, which the mark makes discoverable even after metadata stripping.
 | Inaudibility | Signature is shaped below perceptual masking thresholds of the program material |
 | Blind detection | No original/reference file is required to verify |
 | Localization | The identifier repeats through the file; measured recovery is reliable from ~5s excerpts. Below ~3s the detector **declines to answer** rather than guess (see §8) |
-| Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat both layers** (measured 0% recovery) — this is a stated limitation, not a degradation |
+| Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat the production layers** (V1/V2/V3, measured 0% recovery) — a stated limitation, not a degradation. The Speed Layer (§10) recovers resample-based re-timing but is not yet on the production path |
 | Non-repudiation | Payload is threaded through the cryptographic manifest and on-chain anchor at embed time |
 | Abstention | Detection thresholds scale with the evidence available, so the detector reports "insufficient evidence" instead of a low-confidence attribution |
 
@@ -96,7 +96,7 @@ client devices:
 Public repositories, client bundles, and API responses are audited to exclude
 these elements. Only outcome-level data crosses the trust boundary.
 
-## 7. Two-layer design & verification
+## 7. Layered design & verification (production layers)
 
 - **Spectral Layer:** pure-DSP spread-spectrum mark; instant, deterministic, no
   GPU dependency. Measured robust to band-limiting, 8-bit quantization and
@@ -112,9 +112,10 @@ these elements. Only outcome-level data crosses the trust boundary.
   finished cascaded file and re-runs both detectors independently, counting a
   trial as recovered only on an exact payload match. No published figure is an
   estimate. Current runs use synthetic broadband material at small sample sizes;
-  the benchmark environment cannot run a real MP3/AAC encoder, so no bitrate
-  figures are published — only the measurable components of codec damage
-  (band-limiting, quantization).
+  the benchmark environment cannot run a real MP3/AAC encoder for these layers,
+  so no bitrate figures are published for them — only the measurable components
+  of codec damage (band-limiting, quantization). Genuine encoder round trips are
+  measured on the Speed Layer, whose container carries ffmpeg (§10).
 - **Combined signature (current production behavior):** the Spectral Layer is
   embedded first, then the Neural Layer is embedded on top of that file, so
   the shipped audio always carries both. An internal end-to-end smoke test
@@ -187,3 +188,104 @@ This behavior is regression-tested by the internal attack benchmark: an earlier
 build returned a confidently wrong payload from a 2-second excerpt, and the
 benchmark now asserts that such inputs are declined while genuine 5-second
 excerpts, 11kHz low-pass and 10dB-SNR noise still resolve at 100%.
+
+## 10. Speed Layer (V4) — measured status
+
+**Not production. Admin-only, under active benchmarking.** Nothing in this
+section may be quoted in a creator-facing claim until the acceptance gate in §11
+is enforced.
+
+The Speed Layer is built on audiowmark and exists to close the one gap V1, V2 and
+V3 provably share: resample-based re-timing, where all three measure 0%. It does
+not have to be told what was done to the file — it **estimates the playback ratio
+from the signal**, re-times, then decodes. It also carries the full 32-bit
+registry payload inside a 128-bit message, so unlike the Drift Layer it points at
+nothing: there is no slot indirection and no 65,536-asset ceiling. It runs
+CPU-only, so there is no GPU cold start and no idle burn.
+
+Measured standalone on a 90-second 48kHz stereo master (unmarked before V4, so
+these are V4's own figures and not the cascade's):
+
+| Transform | V1 | V2 | V3 | V4 |
+|---|---|---|---|---|
+| Clean round trip | 100% | 100% | 100% | **100%** |
+| Pitch shift +1 semitone (resample) | 0% | 0% | 0% | **100%** |
+| 44.1kHz master played at 48kHz | 0% | 0% | 0% | **100%** |
+| Band-limiting / quantization / noise | 100% | 100% | 100% | **100%** |
+| Pitch-preserved tempo stretch | 0% | 0% | 0% | **0%** |
+| Crops under ~5s | declined | — | 100% (slot) | **0%** |
+
+### 10.1 Real codec round trips
+
+The Speed Layer container carries ffmpeg, so codec robustness is measured with an
+actual encoder rather than approximated. Each row is an encode-and-decode-back
+round trip — what happens to a track distributed as MP3 and scanned later. The
+payload was recovered **exactly in all six runs**, including with codec damage
+stacked on top of a pitch shift. Lower bit-error is better.
+
+| Codec (128k) | Bit-error, clean | Bit-error, +1 semitone | Ratio recovered |
+|---|---|---|---|
+| MP3 | 0.306 | 0.069 | 1.059478 |
+| AAC | 0.334 | 0.080 | 1.059477 |
+| Opus | 0.299 | 0.300 | 1.059487 |
+
+Three findings, stated as measured:
+
+1. **Codec robustness holds, including through Opus**, which resamples
+   internally, and holds when codec damage is combined with a speed change — with
+   the ratio still estimated to five decimal places.
+2. **Codec damage consumes most of the decision margin.** Genuine recoveries now
+   reach ~0.34 bit-error; every spurious result across four runs has stayed at
+   0.72 or worse. The conservative 0.45–0.50 acceptance band is therefore the
+   *measured* answer, not caution — a 0.35 cut would have rejected all three
+   genuine codec recoveries above.
+3. **One row must not be over-read.** The MP3/AAC speed rows scored better than
+   their clean counterparts (0.069 vs 0.306) because the speed search selected a
+   cleaner block. That is block-selection variance at n=1, not evidence that
+   codec-plus-speed is easier than codec alone.
+
+### 10.2 Confidence limits on these figures
+
+One master, one payload, 128k only, n=1 per cell. These are early figures, not a
+robustness rate. Outstanding: higher n, additional source material across genres,
+lower bitrates, and cascaded V1+V4 configurations (production would ship the
+cascade, and V1's noise floor is not in these numbers).
+
+### 10.3 Security posture during benchmarking
+
+The audiowmark algorithm is public (GPLv3), so **the key is the only thing
+separating our marks from marks anyone can read, locate or forge.** Accordingly:
+
+- The watermark key lives in a server-side secret and is passed per call. It is
+  never baked into a published container layer, never returned in an API
+  response, and never reaches a client bundle.
+- The container is pinned to an explicit version secret, so the marking algorithm
+  cannot shift under us on a rebuild.
+- Every benchmark entrypoint is admin-authenticated. Benchmark runs consume
+  platform compute and use the production key, so they are not creator-reachable.
+- Detector internals (bit-error, quality, block selection, estimated ratio) are
+  benchmark telemetry. Per §4 they stay behind the trust boundary; the public
+  verifier continues to return outcome-level data only.
+
+## 11. Next critical phase — production acceptance gate
+
+The container work is done; the remaining blocker is a decision rule. Until a
+bit-error gate is enforced, a V4 recovery is measurement, not evidence, and
+cannot back an attribution.
+
+1. **Codify the acceptance threshold in the registry lookup.** Enforce a gate in
+   the 0.45–0.50 bit-error band, in the lookup path itself rather than in each
+   caller, so no route can accept a payload the gate would reject. Registry
+   confirmation stays mandatory per §8: a payload matching no asset is discarded.
+2. **Attribute recovered payloads to assets.** A recovered 32-bit payload must
+   resolve to a `UserAsset` provenance record, so a V4 hit reads as an
+   attribution rather than a hex string.
+3. **Replace polling with webhook finalization**, consistent with V2/V3, so
+   verification latency is not bounded by a poll interval.
+4. **Then, and only then, promote V4 and publish.** Raise n, add source material
+   and lower bitrates, measure the cascaded V1+V4 configuration, and only after
+   that consider the default path and creator-facing claims.
+
+Explicitly out of scope: pitch-preserved tempo stretching. No watermark layer we
+have recovers it, and the honest answer is scale-invariant fingerprinting
+(`BASE_FINGERPRINT_DESIGN.md`), not a fifth layer.

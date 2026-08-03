@@ -29,24 +29,35 @@ const LAYERS = [
     weaknesses:
       'It does NOT close the re-timing gap it was built for. Measured standalone on clean audio: 0% recovery under every pitch shift tested (±1 and +2 semitones, +37 cents, 44.1/48kHz mishandling), 0% under ±5% time stretch, and 0% at 10dB SNR. Only 16 usable bits, so it points at an asset rather than carrying the payload, and the pool ceilings at 65,536 concurrent slots.',
   },
+  {
+    name: 'V4 — Speed Layer',
+    carries: 'Full 32-bit registry payload',
+    engine: 'Based on audiowmark (Westerfeld), on our own private CPU deployment',
+    when: 'Under active benchmarking — not yet on the default path',
+    strengths:
+      'The only layer measured to recover re-timed audio: it estimates the playback ratio from the signal, re-times, then decodes — recovering the payload under a one-semitone resample and 44.1/48kHz mishandling, where all three other layers measure 0%. Carries the payload whole (no slot pointer, no capacity ceiling), marks the master at full rate in stereo, and runs CPU-only, so there is no GPU cold start. Survived real MP3, AAC and Opus round trips at 128k, including stacked on top of a pitch shift.',
+    weaknesses:
+      'Codec damage consumes most of the decision margin, so acceptance depends on a bit-error threshold rather than a clean pass/fail. Still 0% against pitch-preserved tempo stretching and against crops under roughly 5 seconds. Figures so far are n=1 on a single master at one bitrate — early, and still being measured.',
+  },
 ];
 
 export default function LayerCascadeGrid() {
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-border bg-card p-4 text-sm">
-        <p className="font-semibold text-foreground mb-1">Why three layers instead of one?</p>
+        <p className="font-semibold text-foreground mb-1">Why several layers instead of one?</p>
         <p className="text-muted-foreground">
-          The three layers are different technologies with different failure modes, so stacking them
-          gives forensic redundancy: an attack that defeats one usually leaves another intact. Order is
-          forced — V1, then V2, then V3 — because V1 sprays broadband noise across the band V3 uses as
-          its carrier, so V3 must always go last. One important exception to the redundancy claim:
-          benchmarking shows all three layers share the SAME blind spot for pitch-shifted and
-          time-stretched audio, so stacking does not help there. That gap is real and is not solved by
-          adding layers.
+          Each layer is a different technology with a different failure mode, so stacking them gives
+          forensic redundancy: an attack that defeats one usually leaves another intact. Order is forced —
+          V1, then V2, then V3 — because V1 sprays broadband noise across the band V3 uses as its carrier,
+          so V3 must always go last. V1, V2 and V3 all share the SAME blind spot for re-timed audio, and
+          stacking them does not help there; that is exactly why the V4 Speed Layer was built, and it is
+          the first layer measured to recover a resampled file. The remaining shared gap —
+          pitch-<em>preserved</em> tempo stretching — is not solved by any layer we have, and we do not
+          claim otherwise.
         </p>
       </div>
-      <div className="grid lg:grid-cols-3 gap-3">
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
         {LAYERS.map((l) => (
           <div key={l.name} className="rounded-lg border border-border bg-card p-4 space-y-2">
             <p className="font-semibold text-foreground text-sm">{l.name}</p>

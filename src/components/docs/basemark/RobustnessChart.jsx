@@ -104,11 +104,13 @@ export default function RobustnessChart() {
         <p className="font-bold text-foreground text-sm mb-2">Honest caveats on these numbers</p>
         <ul className="text-xs text-muted-foreground space-y-1.5 list-disc pl-4">
           <li>
-            <strong className="text-foreground">Pitch and tempo changes defeat both layers on a normal scan.</strong> Neither
+            <strong className="text-foreground">Pitch and tempo changes defeat both of these layers on a normal scan.</strong> Neither
             the spectral nor the neural layer recovered the payload after a one-semitone pitch shift or a
-            5% time stretch. Resampling is the strongest attack we have measured against BASE Mark. A deep
-            scan re-times the audio to undo it and recovers exact-ratio shifts (whole semitones, 44.1/48kHz
-            mishandling) at 100%, but arbitrary shifts and tempo stretches stay unrecoverable.
+            5% time stretch. A deep scan re-times the audio to undo it and recovers exact-ratio shifts
+            (whole semitones, 44.1/48kHz mishandling) at 100%, but arbitrary hand-dialed shifts stay out of
+            reach for both layers. The V4 Speed Layer is what addresses this — it estimates the ratio
+            instead of guessing it, and is the first layer measured to recover a resampled file (figures
+            below). Pitch-<em>preserved</em> tempo stretching remains unrecoverable for every layer.
           </li>
           <li>
             <strong className="text-foreground">Crop survival is content-dependent, not a fixed floor.</strong> Survival
@@ -122,9 +124,11 @@ export default function RobustnessChart() {
             evidence and return no payload at all. A miss is honest; a wrong attribution is not.
           </li>
           <li>
-            <strong className="text-foreground">No real codec in the loop.</strong> We cannot run an MP3/AAC
-            encoder in our benchmark environment, so we measure the two measurable components of codec damage —
-            band-limiting and quantization — under their own names. We publish no MP3 bitrate figures.
+            <strong className="text-foreground">No real codec in the loop for these two layers.</strong> Our
+            benchmark runtime cannot run an MP3/AAC encoder, so for V1 and V2 we measure the two measurable
+            components of codec damage — band-limiting and quantization — under their own names, and publish
+            no bitrate figures for them. Genuine encoder round trips are measured on the V4 Speed Layer,
+            whose container can run ffmpeg; those results are reported separately below.
           </li>
           <li>
             <strong className="text-foreground">Synthetic test material.</strong> These runs use generated

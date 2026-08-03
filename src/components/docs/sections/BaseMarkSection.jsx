@@ -5,6 +5,7 @@ import FormatSupportChart from '@/components/docs/basemark/FormatSupportChart';
 import RobustnessChart from '@/components/docs/basemark/RobustnessChart';
 import TerminologyGlossary from '@/components/docs/basemark/TerminologyGlossary';
 import LayerCascadeGrid from '@/components/docs/basemark/LayerCascadeGrid';
+import SpeedLayerResults from '@/components/docs/basemark/SpeedLayerResults';
 
 export default function BaseMarkSection() {
   return (
@@ -16,14 +17,16 @@ export default function BaseMarkSection() {
         </div>
         <p className="text-muted-foreground">
           BASE Mark is BASE Station's own in-house audio watermark: a single forensic signature built from
-          up to three complementary layers embedded on the same file — a blind spread-spectrum
+          up to four complementary layers embedded on the same file — a blind spread-spectrum
           <strong className="text-foreground"> Spectral Layer (V1)</strong>, a learned
           <strong className="text-foreground"> Neural Layer (V2)</strong> built on SilentCipher (Singh et al.,
           Interspeech 2024), and a <strong className="text-foreground">Drift Layer (V3)</strong> built on
-          WavMark that targets re-timed audio. Unlike ID3 tags or C2PA manifests, the mark lives inside the
-          audio waveform itself, so it survives metadata stripping, band-limiting, quantization, cutting,
-          stem-splitting and remixing. Pitch- and tempo-shifted copies are the known gap in V1 and V2 — the
-          reason V3 exists — see the measured robustness figures below.
+          WavMark, and a <strong className="text-foreground">Speed Layer (V4)</strong> built on audiowmark that
+          targets re-timed playback. Unlike ID3 tags or C2PA manifests, the mark lives inside the audio
+          waveform itself, so it survives metadata stripping, band-limiting, quantization, cutting,
+          stem-splitting and remixing. Re-timed copies were the shared blind spot of V1, V2 and V3; V4 is the
+          first layer measured to recover them, and it is the layer we have measured against real MP3, AAC and
+          Opus encoders. Every figure below is measured, and benchmarking is still in progress.
         </p>
       </div>
 
@@ -43,6 +46,17 @@ export default function BaseMarkSection() {
         default path: full-length throughput is still unproven (the encode has been measured on bounded clips, not
         whole masters), and the slot pool has a hard ceiling of 65,536 concurrent assets. Canonical audio is never
         touched until a run finalizes and passes its integrity check.
+      </div>
+
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Status: V4 (Speed Layer) is in active benchmarking, admin-only.</strong> It
+        is not on the automatic path and is not offered to creators yet. Results so far are strong — it is the only
+        layer to recover a re-timed payload, and it held through real MP3, AAC and Opus round trips — but they come
+        from a single master and a single payload, so they are early figures rather than a robustness rate. The
+        remaining work is a production acceptance threshold, not more container work: codec damage narrows the gap
+        between a genuine recovery and a spurious one, so the registry lookup has to gate on measured bit-error
+        before this layer can back a real attribution. Benchmark runs are admin-authenticated and the watermark key
+        is held as a server-side secret, never shipped in a container layer or a client bundle.
       </div>
 
       <LayerCascadeGrid />
@@ -81,6 +95,7 @@ export default function BaseMarkSection() {
 
       <FormatSupportChart />
       <RobustnessChart />
+      <SpeedLayerResults />
 
       <section className="space-y-3">
         <h2 className="font-display text-lg">API Endpoints</h2>
@@ -120,8 +135,10 @@ export default function BaseMarkSection() {
         <h2 className="font-display text-lg">Limitations</h2>
         <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
           <li>Embedding accepts 16-bit or 24-bit PCM WAV files and FLAC (decoded to 16-bit PCM WAV before marking).</li>
-          <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — decoded to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the spectral layer and lowers detection confidence, which is exactly why the neural layer exists alongside it.</li>
-          <li><strong className="text-foreground">Pitch-shifting and time-stretching defeat V1 and V2 on a normal scan.</strong> Resampling a track — even by one semitone or 5% — broke the spectral <em>and</em> the neural layer in our benchmark (0% recovery on both). The Drift Layer was built to close this gap and, when measured, does not: it returns 0% under the same attacks. All three layers share this blind spot. This is BASE Mark's most significant known limitation, and we do not claim otherwise.</li>
+          <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — decoded to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the spectral layer and lowers detection confidence, which is exactly why the neural layer exists alongside it. The Speed Layer is the one layer measured against real encoders end to end, at 128k only so far.</li>
+          <li><strong className="text-foreground">Pitch-shifting and time-stretching defeat V1, V2 and V3 on a normal scan.</strong> Resampling a track — even by one semitone or 5% — broke the spectral <em>and</em> the neural layer in our benchmark (0% recovery on both). The Drift Layer was built to close this gap and, when measured, does not: it returns 0% under the same attacks. The Speed Layer (V4) does recover resample-based changes, by estimating the playback ratio from the signal rather than being told it — but V4 is still in benchmarking and is not on the automatic path, so for any track marked today this remains BASE Mark's most significant limitation in production.</li>
+          <li><strong className="text-foreground">Pitch-preserved tempo stretching is unrecovered by every layer, including V4.</strong> Overlap-add resynthesis discards the fine phase structure all four layers rely on, so it cannot be undone at detection time. This is a design limit, not a tuning problem, and scale-invariant fingerprinting — not another watermark layer — is the honest answer to it.</li>
+          <li><strong className="text-foreground">V4 acceptance is a threshold, not a clean pass/fail.</strong> Measured against real 128k MP3, AAC and Opus round trips the payload came back exactly every time, but bit-error on genuine recoveries reached ~0.34 where spurious results have stayed at 0.72 or worse. Attribution therefore depends on a published acceptance threshold sitting between those bands, and until that gate is enforced in the registry lookup, V4 results are treated as benchmark data rather than evidence.</li>
           <li><strong className="text-foreground">The Drift Layer does not close the re-timing gap it was built for.</strong> Measured standalone on clean audio — WavMark's best case, before V1's noise floor is added — it recovered the slot in 0% of trials under every pitch shift tested (±1 and +2 semitones, +37 cents, and 44.1/48kHz mishandling) and 0% under ±5% time stretch. It also returned 0% at 10dB SNR. What it does add is short-excerpt coverage: 100% slot recovery from 2-second crops, where the spectral layer abstains, plus 100% through band-limiting, 8-bit quantization and 20dB-SNR noise. We are publishing the negative result because it is the measured one.</li>
           <li><strong className="text-foreground">V3 points rather than carries, and the pool is finite.</strong> A recovered slot is only useful while it maps to a live asset: 65,536 concurrent slots exist, and recycling a released slot risks misattributing files already in circulation, which is why reuse is delayed rather than immediate.</li>
           <li><strong className="text-foreground">Deep scan recovers some of that, at exact ratios only.</strong> The mark isn't erased by re-timing, only knocked out of alignment, so the <Link to="/verify" className="text-[#FFC98A] underline underline-offset-2">verifier</Link> can re-time the audio to undo it. Measured 100% recovery for whole semitone shifts and for 44.1kHz/48kHz sample-rate mishandling. Tolerance is sub-sample: a candidate even 2 cents off recovers nothing, so arbitrary hand-dialed speed changes stay out of reach, and pitch-preserved tempo stretching is unrecoverable because overlap-add resynthesis isn't invertible. Requires at least 12 seconds of audio.</li>
