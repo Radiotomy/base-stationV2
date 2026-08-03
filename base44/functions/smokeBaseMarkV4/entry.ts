@@ -341,7 +341,175 @@ export default async function (req: Request): Promise<Response> {
       return Response.json({ pending, recorded, results });
     }
 
-    return Response.json({ error: 'action must be start, poll_encode, attack, poll_decode, grid or grid_poll' }, { status: 400 });
+    // ── Phase 0: null corpus (false-positive rate) ─────────────────────────
+    // Every V4 figure we have so far is a TRUE-positive rate. A forensic claim
+    // needs the other half: what the detector does with audio that carries no
+    // watermark at all. The "spurious floor 0.72" we currently cite was observed
+    // incidentally on failed recoveries of MARKED files — it has never been
+    // measured on a clean corpus, so it is not yet a false-positive rate and the
+    // acceptance threshold derived from it is not yet calibrated.
+    //
+    // Speed search is forced ON here. That is the point: --detect-speed re-times
+    // the audio and decodes repeatedly across a search space, which is by far the
+    // most likely path to a hallucinated pattern line. Measuring the null rate
+    // with speed search off would flatter the layer and measure a path we do not
+    // ship.
+    //
+    // A single structurally valid payload out of unmarked audio invalidates the
+    // threshold. That is the result this phase exists to find.
+    if (action === 'null_scan') {
+      const sources = Array.isArray(body.sources) ? body.sources.filter(Boolean) : [];
+      if (!sources.length) {
+        return Response.json({ error: 'sources must be a non-empty array of unmarked audio URLs' }, { status: 400 });
+      }
+      const batch = sources.slice(0, Math.max(1, Math.min(6, body.batch_size || 4)));
+
+      const jobs = [];
+      for (const url of batch) {
+        // Normalized to WAV at a fixed duration so every null row is comparable
+        // to every other one — audiowmark gets more evidence from longer audio,
+        // so mixed lengths would smear the distribution we are trying to measure.
+        const dl = await fetch(url);
+        if (!dl.ok) {
+          jobs.push({ source_url: url, error: 'could not download' });
+          continue;
+        }
+        const raw = new Uint8Array(await dl.arrayBuffer());
+        const audio = decodeWav(isFlac(raw) ? decodeFlacToWav(raw) : raw);
+        const wanted = Math.round((body.seconds || 60) * audio.sampleRate);
+        const n = Math.min(audio.channels[0].length, wanted);
+        const trimmed = { sampleRate: audio.sampleRate, channels: audio.channels.map((c) => c.slice(0, n)) };
+        const f = new File([encodeWav(trimmed)], 'v4-null.wav', { type: 'audio/wav' });
+        const scanUrl = (await base44.integrations.Core.UploadFile({ file: f })).file_url;
+
+        const dec = await startV4({
+          audio: scanUrl,
+          mode: 'decode',
+          payload_hex: '0'.repeat(32),
+          key_hex: Deno.env.get('BASE_MARK_V4_KEY'),
+          detect_speed: true,
+          patient: Boolean(body.patient),
+          codec: body.codec || 'none',
+        });
+        jobs.push({
+          source_url: url,
+          prediction_id: dec.id,
+          sample_rate: trimmed.sampleRate,
+          source_seconds: Number((n / trimmed.sampleRate).toFixed(2)),
+        });
+      }
+
+      return Response.json({
+        started: jobs.filter((j) => j.prediction_id).length,
+        remaining: sources.filter((s) => !batch.includes(s)),
+        jobs,
+        note: 'Read with action:"null_poll", passing these jobs and a run_id.',
+      });
+    }
+
+    if (action === 'null_poll') {
+      const jobs = (Array.isArray(body.jobs) ? body.jobs : []).filter((j) => j.prediction_id);
+      if (!jobs.length) return Response.json({ error: 'jobs is required' }, { status: 400 });
+      const runId = body.run_id;
+
+      const results = [];
+      const rows = [];
+      for (const job of jobs) {
+        const p = await getV4Prediction(job.prediction_id);
+        if (p.status === 'starting' || p.status === 'processing') {
+          results.push({ source_url: job.source_url, status: p.status });
+          continue;
+        }
+        if (p.status !== 'succeeded') {
+          results.push({ source_url: job.source_url, status: p.status, error: p.error || null });
+          continue;
+        }
+
+        const out = p.output || {};
+        const { valid, payload_hex: recovered } = unpackV4Message(out.payload_hex || null);
+        // A false positive is a payload that is STRUCTURALLY VALID — correct
+        // length with the zero tail intact. A garbage pattern line that fails
+        // that check is a near miss worth recording, not a false attribution,
+        // because the production gate would reject it on structure alone.
+        const falsePositive = out.detected === true && valid;
+        // Only meaningful when the detector actually returned a pattern line. On
+        // a clean miss the container reports confidence 0, which would otherwise
+        // be recorded as a bit-error of 1.0 — a fabricated data point that would
+        // drag the null distribution and make the threshold look safer than it is.
+        const bitError =
+          out.detected === true && typeof out.confidence === 'number'
+            ? Number((1 - out.confidence).toFixed(4))
+            : null;
+
+        results.push({
+          source_url: job.source_url,
+          status: 'succeeded',
+          any_pattern_line: out.detected === true,
+          false_positive: falsePositive,
+          spurious_payload_hex: out.detected === true ? recovered : null,
+          zero_tail_intact: valid,
+          bit_error: bitError,
+          speed: out.speed ?? null,
+          note: out.note ?? null,
+        });
+
+        if (runId) {
+          rows.push({
+            run_id: runId,
+            layer: 'speed',
+            attack: 'null_unmarked',
+            attack_label: 'Null corpus — unmarked audio, speed search on',
+            trials: 1,
+            survived: 0,
+            // Always 0: there is no payload in this audio to recover, so this
+            // field is meaningless here and false_positive carries the result.
+            survival_pct: 0,
+            confidence: typeof out.confidence === 'number' ? out.confidence : undefined,
+            bit_error: bitError ?? undefined,
+            false_positive: falsePositive,
+            detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
+            source_kind: body.source_kind === 'synthetic' ? 'synthetic' : 'uploaded',
+            source_seconds: job.source_seconds ?? undefined,
+            sample_rate: job.sample_rate ?? undefined,
+            cascaded: false,
+            notes: [
+              'NULL ROW — unmarked audio; a detection here is a failure, not a success.',
+              body.codec && body.codec !== 'none' ? `codec ${body.codec}` : '',
+              out.note || '',
+            ].filter(Boolean).join(' — '),
+          });
+        }
+      }
+
+      const pending = results.filter((r) => r.status === 'starting' || r.status === 'processing').length;
+      let recorded = 0;
+      if (runId && !pending && rows.length) {
+        await base44.asServiceRole.entities.BaseMarkBenchmark.bulkCreate(rows);
+        recorded = rows.length;
+      }
+
+      const resolved = results.filter((r) => r.status === 'succeeded');
+      const falsePositives = resolved.filter((r) => r.false_positive).length;
+      return Response.json({
+        pending,
+        recorded,
+        // Batch-level summary only. The corpus-wide rate is the aggregate across
+        // every batch of the run — read it back off the entity by run_id rather
+        // than treating any single batch as the answer.
+        batch_summary: {
+          scanned: resolved.length,
+          false_positives: falsePositives,
+          any_pattern_line: resolved.filter((r) => r.any_pattern_line).length,
+          min_bit_error: resolved.reduce((m, r) => (r.bit_error != null && (m == null || r.bit_error < m) ? r.bit_error : m), null),
+        },
+        results,
+      });
+    }
+
+    return Response.json(
+      { error: 'action must be start, poll_encode, attack, poll_decode, grid, grid_poll, null_scan or null_poll' },
+      { status: 400 },
+    );
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

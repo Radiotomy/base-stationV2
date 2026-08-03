@@ -18,7 +18,7 @@
     },
     "attack": {
       "type": "string",
-      "description": "Stable attack identifier from the ATTACKS registry, e.g. pitch_up_1"
+      "description": "Stable attack identifier from the ATTACKS registry, e.g. pitch_up_1. The reserved id 'null_unmarked' means NO attack and NO watermark: a null-corpus scan of unmarked audio, measured to establish the false-positive rate. Null rows are the only rows where a detection is a FAILURE."
     },
     "attack_label": {
       "type": "string",
@@ -38,7 +38,7 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100,
-      "description": "survived / trials as a percentage \u2014 the measured number"
+      "description": "survived / trials as a percentage \u2014 the measured number. ALWAYS 0 on null_unmarked rows, because there is no payload to recover; read false_positive instead, or a null row will be misread as a failed recovery."
     },
     "mean_strength": {
       "type": "number",
@@ -47,6 +47,15 @@
     "confidence": {
       "type": "number",
       "description": "Mean decoder confidence across trials (drift and speed layers) \u2014 each detector reports its own confidence on its own scale, none of which are comparable to the spectral layer's correlation strength, which is why this is kept in a separate field"
+    },
+    "bit_error": {
+      "type": "number",
+      "description": "Speed layer only \u2014 audiowmark's own bit-error estimate for the best pattern line (lower is better). Stored explicitly rather than derived from confidence because the acceptance threshold is defined in bit-error terms, and this is the field the production gate is calibrated from. Absent when the detector returned no pattern line at all."
+    },
+    "false_positive": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when a scan of audio that carries NO watermark returned a structurally valid payload. On a null_unmarked row this is the entire measurement: the false-positive rate is the count of these over trials. A single true value invalidates the acceptance threshold and forces recalibration, so this is deliberately a first-class field and not a note."
     },
     "detected_speed": {
       "type": "number",
