@@ -113,6 +113,13 @@ export default async function (req) {
         ratio_estimated: round(ratioEst, 6),
         ratio_true: round(attack.ratio, 6),
         ratio_error_ppm: ppmError === null ? null : round(ppmError, 1),
+        // Grid answer alongside the refit, so the improvement is measurable
+        // rather than asserted.
+        beta_grid: round(m.beta_grid, 6),
+        ratio_error_grid_ppm:
+          m.beta_grid > 0 ? round(((1 / m.beta_grid - attack.ratio) / attack.ratio) * 1e6, 1) : null,
+        inliers: m.inliers,
+        residual_rms_ms: m.residual_rms === null ? null : round(m.residual_rms * 1000, 2),
         lift: round(m.lift, 2),
         votes: m.votes,
         note:
@@ -176,6 +183,70 @@ export default async function (req) {
           'passes_search_gate applies the stricter multi-candidate bar, because a seeded search tries many ' +
           'candidates and keeping the best otherwise multiplies the false-positive rate. The recovered ' +
           'window width divided by the Print beta error is the candidate count a real seeded search needs.',
+      });
+    }
+
+    // ── seeded: the actual end-to-end loop ──────────────────────────────────
+    // Unlike `tolerance`, the offsets here are relative to the ratio PRINT
+    // ESTIMATED, not to the true one. Nothing in this path is told the answer, so
+    // it is the honest test of whether Print can hand the spectral detector a
+    // usable seed.
+    if (action === 'seeded') {
+      const ref = computePrint(toMono(markedAudio), markedAudio.sampleRate);
+      const q = computePrint(toMono(suspect), suspect.sampleRate, true);
+      const m = matchPrints(q, ref);
+      if (!(m.beta > 0)) return Response.json({ error: 'Print returned no usable beta' }, { status: 422 });
+      const ratioEst = 1 / m.beta;
+
+      // Beta precision improves with window length, but detection cost does not
+      // need to: estimate the warp from the long window, then decode from a short
+      // centred slice. That keeps each candidate cheap enough to sweep.
+      const detectSeconds = Number(body.detect_seconds) || 12;
+      const offsets = Array.isArray(body.offsets_ppm) && body.offsets_ppm.length
+        ? body.offsets_ppm
+        : [0, 3, -3, 6, -6];
+
+      const rows = [];
+      for (const ppm of offsets) {
+        const guess = ratioEst * (1 + ppm / 1e6);
+        const undone = trimCentered(pitchShiftResample(suspect, -semitonesOf(guess)), detectSeconds);
+        let res;
+        try {
+          res = detectMark(encodeWav(undone));
+        } catch (e) {
+          rows.push({ offset_ppm: ppm, error: e.message });
+          continue;
+        }
+        const strength = res.mean_strength || 0;
+        const searchGate = Math.max(
+          SEARCH_MIN_STRENGTH,
+          SEARCH_GATE_MULTIPLE * (res.strength_gate || SEARCH_MIN_STRENGTH),
+        );
+        rows.push({
+          offset_ppm: ppm,
+          detected: !!res.detected,
+          payload_exact: res.payload_hex === payload,
+          mean_strength: round(strength),
+          search_gate: round(searchGate),
+          passes_search_gate: strength >= searchGate,
+        });
+      }
+
+      const hits = rows.filter((r) => r.payload_exact && r.passes_search_gate);
+      return Response.json({
+        action,
+        attack: attackKey,
+        attack_label: attack.label,
+        print_seconds: seconds,
+        detect_seconds: detectSeconds,
+        expected_payload: payload,
+        ratio_estimated: round(ratioEst, 6),
+        ratio_true: round(attack.ratio, 6),
+        ratio_error_ppm: round(((ratioEst - attack.ratio) / attack.ratio) * 1e6, 1),
+        inliers: m.inliers,
+        rows,
+        recovered: hits.length > 0,
+        recovered_at_ppm: hits.map((h) => h.offset_ppm),
       });
     }
 

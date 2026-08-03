@@ -165,6 +165,82 @@ function rangeOf(pairs, i) {
   return Math.max(0, hi - lo);
 }
 
+// ── Inlier least-squares refit ─────────────────────────────────────────────
+// The grid vote finds WHICH line the matched pairs lie on; it is a terrible way
+// to measure that line's slope. Measured: the fine grid steps by
+// 2^(0.05/20) = 0.173% = 1730 ppm, and the observed beta error on a 44.1->48kHz
+// resample was 1562 ppm — i.e. the error WAS the grid step, not the data. The
+// spectral detector's recovery window is under 5 ppm wide, so a grid-quantized
+// beta is ~300x too coarse to seed a targeted retry with.
+//
+// So once the winning line is identified, throw the grid away and fit the slope
+// properly: take the pairs sitting on that line and least-squares regress
+// t_query = beta * t_ref + offset. Precision then comes from the number of
+// inliers and their time span rather than from how finely we were willing to
+// enumerate beta.
+//
+// Tolerance is tightened over successive passes. The first pass has to accept a
+// full offset bin because that is all the grid localized the line to; each
+// refit sharpens the estimate, which lets the next pass discard pairs that were
+// only borderline members — standard iterative reweighting, and it matters
+// because a handful of scattered collisions inside the initial bin would
+// otherwise bias the slope.
+const REFIT_TOLERANCES = [OFFSET_BIN, OFFSET_BIN / 2, OFFSET_BIN / 4];
+
+// A refit that moves beta more than this is not refining the grid answer, it is
+// fitting a different line — reject rather than trust it.
+const REFIT_MAX_DRIFT = 0.02;
+
+function refitLine(pairs, beta0, offset0) {
+  let beta = beta0;
+  let offset = offset0;
+  let inliers = 0;
+  let rms = 0;
+
+  for (const tol of REFIT_TOLERANCES) {
+    const inl = [];
+    for (const p of pairs) {
+      if (Math.abs(p[0] - beta * p[1] - offset) <= tol) inl.push(p);
+    }
+    if (inl.length < MIN_LINE_VOTES) break;
+
+    let sx = 0;
+    let sy = 0;
+    for (const p of inl) {
+      sx += p[1];
+      sy += p[0];
+    }
+    const mx = sx / inl.length;
+    const my = sy / inl.length;
+    let num = 0;
+    let den = 0;
+    for (const p of inl) {
+      const dx = p[1] - mx;
+      num += dx * (p[0] - my);
+      den += dx * dx;
+    }
+    // den == 0 means every inlier shares one reference time — no slope
+    // information at all, so keep the previous estimate.
+    if (den <= 0) break;
+
+    const b = num / den;
+    const c = my - b * mx;
+    if (!Number.isFinite(b) || Math.abs(b / beta0 - 1) > REFIT_MAX_DRIFT) break;
+
+    let sq = 0;
+    for (const p of inl) {
+      const r = p[0] - b * p[1] - c;
+      sq += r * r;
+    }
+    beta = b;
+    offset = c;
+    inliers = inl.length;
+    rms = Math.sqrt(sq / inl.length);
+  }
+
+  return inliers ? { beta, offset, inliers, rms } : null;
+}
+
 export function matchPrints(queryHashes, refHashes, opts = {}) {
   const minVotes = opts.minVotes === undefined ? PROVISIONAL_MIN_VOTES : opts.minVotes;
   const minLift = opts.minLift === undefined ? PROVISIONAL_MIN_LIFT : opts.minLift;
@@ -194,6 +270,11 @@ export function matchPrints(queryHashes, refHashes, opts = {}) {
   );
   const best = fine.lift >= coarse.lift ? fine : coarse;
 
+  // Refine the slope off the grid. Acceptance still uses the grid's lift — the
+  // refit improves the ESTIMATE, it does not add evidence, so letting it move
+  // the decision statistic would be double-counting.
+  const refit = refitLine(pairs, best.beta, best.offset);
+
   return {
     votes: best.votes,
     lift: best.lift,
@@ -201,8 +282,17 @@ export function matchPrints(queryHashes, refHashes, opts = {}) {
     // acceptance statistic — it penalizes warped queries, where most hashes
     // legitimately cannot match, so it conflates "damaged" with "unrelated".
     score: best.votes / Math.max(1, Math.min(queryHashes.length, refHashes.length)),
-    beta: best.beta,
-    offset: best.offset,
+    beta: refit ? refit.beta : best.beta,
+    offset: refit ? refit.offset : best.offset,
+    // Kept so a regression in the refit is visible rather than silent: if
+    // beta and beta_grid ever agree exactly, the refit stopped running.
+    beta_grid: best.beta,
+    inliers: refit ? refit.inliers : 0,
+    // Residual spread of the fitted line, in seconds. This is the honest
+    // confidence interval on beta — a tight line over a long span is a precise
+    // slope, a fat one is not, and the seeded search should widen its sweep
+    // accordingly instead of assuming a fixed precision.
+    residual_rms: refit ? refit.rms : null,
     pairs: pairs.length,
     // Still surfaced because a fit sitting exactly on the search boundary is
     // suspicious regardless of lift — it means the optimum may lie outside the
