@@ -65,16 +65,14 @@
       "type": "string",
       "enum": [
         "none",
-        "mp3",
-        "aac",
-        "opus"
+        "mp3_320",
+        "mp3_192",
+        "mp3_128",
+        "aac_128",
+        "opus_128"
       ],
       "default": "none",
-      "description": "Real encoder round trip applied inside the container before scanning, using ffmpeg \u2014 not a DSP approximation. A first-class column rather than a note because the platform delivers most audio in a lossy format, so the false-positive rate has to be reportable PER DELIVERY FORMAT: codec damage is what consumes the detector's decision margin, and a blended figure across formats hides exactly the case most likely to produce a spurious hit. 'none' = lossless PCM scan."
-    },
-    "codec_bitrate_k": {
-      "type": "number",
-      "description": "Encoder bitrate in kbps for the codec round trip. Recorded because robustness and false-positive behavior are both bitrate-dependent, so a codec row without its bitrate is not reproducible."
+      "description": "Real encoder round trip applied inside the container before scanning, using ffmpeg \u2014 not a DSP approximation. A first-class column rather than a note because the platform delivers most audio in a lossy format, so the false-positive rate has to be reportable PER DELIVERY FORMAT: codec damage is what consumes the detector's decision margin, and a blended figure across formats hides exactly the case most likely to produce a spurious hit. Values are bitrate-qualified and mirror the container's own enum EXACTLY, so a stored row names a reproducible encoder setting rather than a codec family \u2014 robustness and false-positive behavior are both bitrate-dependent, so a bare 'mp3' would not be reproducible. 'none' = lossless PCM scan."
     },
     "source_kind": {
       "type": "string",

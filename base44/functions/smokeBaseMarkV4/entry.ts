@@ -317,7 +317,6 @@ export default async function (req: Request): Promise<Response> {
             confidence: typeof out.confidence === 'number' ? out.confidence : undefined,
             detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
             codec: body.codec || 'none',
-            codec_bitrate_k: body.codec && body.codec !== 'none' ? body.codec_bitrate_k || 128 : undefined,
             source_kind: sourceKind,
             source_seconds: job.source_seconds ?? undefined,
             sample_rate: job.sample_rate ?? undefined,
@@ -540,8 +539,6 @@ export default async function (req: Request): Promise<Response> {
             // Delivery format is the primary reporting axis for this corpus, so it
             // is a column. Left in notes it could not be grouped on.
             codec: job.codec || body.codec || 'none',
-            codec_bitrate_k:
-              (job.codec || body.codec || 'none') !== 'none' ? body.codec_bitrate_k || 128 : undefined,
             source_kind: body.source_kind === 'synthetic' ? 'synthetic' : 'uploaded',
             // Carried per job so a mixed batch stays separable, and so the
             // false-positive rate can be reported per class rather than blended.
