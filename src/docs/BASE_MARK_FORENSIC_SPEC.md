@@ -2,7 +2,7 @@
 
 **Document class:** Public technical specification (protocol-level)
 **Engine:** BASE Mark — a unified layered signature. Spectral Layer + Neural Layer are stacked on every asset; Drift Layer is opt-in; Speed Layer is in benchmarking
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-03
 
 ---
 
@@ -16,9 +16,11 @@ first, and a Neural Layer (a learned neural-network watermark), layered on top.
 The two layers are complementary technologies, verified end-to-end (see §7) to
 not interfere with one another when stacked, giving forensic redundancy: an
 attack that defeats one layer typically leaves the other intact. It satisfies
-industry-standard forensic requirements for tamper-resistant media tracking and
-functions as a **technological protection measure (TPM)** under applicable
-anti-circumvention statutes (17 U.S.C. § 1201 and international equivalents).
+industry-standard forensic requirements for tamper-resistant media tracking. The
+production layers are asserted as a **technological protection measure (TPM)**
+under applicable anti-circumvention statutes (17 U.S.C. § 1201 and international
+equivalents) — a claim that is **layer-scoped, not protocol-wide**, for the
+licensing reason set out in §5.5.
 
 This document describes the *protocol* — what the mark asserts, how it is
 verified, and its legal standing. The embedding mathematics, detection
@@ -67,8 +69,9 @@ and mark-removal tooling.
 
 ## 5. Legal standing
 
-1. **Anti-circumvention.** BASE Mark is deployed as a technological protection
-   measure. Knowing removal, alteration, or circumvention of the mark — or
+1. **Anti-circumvention.** The Spectral, Neural and Drift Layers are deployed as
+   a technological protection measure. **The Speed Layer is excluded from this
+   claim** (§5.5). Knowing removal, alteration, or circumvention of the mark — or
    distribution of tools primarily designed to do so — may constitute a
    violation of anti-circumvention and copyright-management-information
    statutes (17 U.S.C. §§ 1201–1202; EU Directive 2001/29/EC arts. 6–7),
@@ -83,6 +86,47 @@ and mark-removal tooling.
    BASE Station does not certify compliance with any third-party labeling
    standard; disclosure labels remain the legal responsibility of the
    disclosing artist (see RIAA AI Labeling Policy).
+
+### 5.5 Engine licensing and the scope of the TPM claim
+
+Verified upstream licences for each layer's engine:
+
+| Layer | Engine | Licence | Effect |
+|---|---|---|---|
+| Spectral (V1) | BASE Station original | Proprietary — ours outright | No constraint |
+| Neural (V2) | SilentCipher (Sony Research Inc., 2024) | **MIT** | Closed derivatives and commercial use permitted; copyright notice must ship with substantial portions |
+| Drift (V3) | WavMark | **MIT** | Same as above |
+| Speed (V4) | audiowmark (Stefan Westerfeld, 2018–2020) | **GPLv3 or later** | See below |
+
+**The GPLv3 conflict.** GPLv3 §3 ("Protecting Users' Legal Rights From
+Anti-Circumvention Law") states that no covered work "shall be deemed part of an
+effective technological measure" under laws implementing WIPO Copyright Treaty
+art. 11, and that conveying a covered work waives any legal power to forbid
+circumvention. That clause exists specifically to prevent GPL software being used
+as a technological protection measure, and it is therefore incompatible with
+asserting TPM status over a cascade that includes the Speed Layer. The TPM claim
+in §1 and §5.1 is consequently scoped to the Spectral, Neural and Drift Layers
+only.
+
+Two limits on the exposure, both material:
+
+- GPLv3 has **no network-use clause** (that is AGPL). Running audiowmark
+  server-side as a hosted service is not "conveying," so no source-disclosure
+  obligation is triggered by current use, and BASE Station's own code is
+  unaffected.
+- The §3 waiver attaches on **conveying**. The container is not distributed to
+  customers, so the waiver is not presently engaged — but shipping the container,
+  an on-prem build, or a desktop tool would engage it.
+
+**Attribution obligation.** MIT requires the copyright notice and permission
+notice to accompany substantial portions of the software. A `NOTICES` file
+carrying Sony's and WavMark's notices must ship with any container or artifact
+that embeds them.
+
+**Status:** the licence facts above are verified from upstream sources. The legal
+characterisation is **not** legal advice and is flagged for counsel. Until
+reviewed, no creator-facing or published claim may describe the Speed Layer as a
+technological protection measure.
 
 ## 6. Trade-secret boundary
 
@@ -296,6 +340,36 @@ cannot back an attribution.
 4. **Then, and only then, promote V4 and publish.** Raise n, add source material
    and lower bitrates, measure the cascaded V1+V4 configuration, and only after
    that consider the default path and creator-facing claims.
+
+### 11.1 Open decisions raised by the licence and upstream-guidance audit
+
+These three precede the work above, because each changes what the gate is built
+around and would otherwise force a second migration.
+
+5. **Resolve the Speed Layer licence position (§5.5).** Either (a) keep V4 as an
+   internal forensic instrument permanently excluded from the TPM claim, or
+   (b) replace audiowmark's role with an owned playback-ratio estimator, giving a
+   fully owned cascade and an unqualified TPM claim. The existing deep scan (§9)
+   already recovers exact ratios with our own code; the gap is *unknown* ratio
+   estimation, which is the part audiowmark supplies.
+6. **Decide the payload format before more assets are marked.** The 128-bit
+   audiowmark message currently carries our 32-bit payload left-aligned with a
+   96-bit zero tail used as a structural check. Upstream's documented
+   recommendation is that the message be a **hash or HMAC**. Adopting a keyed
+   HMAC over the asset identifier would use the field as designed and resolve two
+   open problems at once: the 32-bit collision ceiling (FNV-1a payloads, currently
+   without collision detection) and payload forgeability, replacing the zero-tail
+   heuristic with a cryptographic validity check. This is a payload-format change
+   and therefore a migration — decide before the registry lookup is consolidated.
+7. **Look up every candidate pattern line, not just the best one.** Upstream
+   specifies a registry lookup per emitted pattern line, treating an unmatched
+   message as a decoding error. The container currently returns a single
+   candidate, and because it prefers the aggregate `all` row *exclusively* when
+   present, a correct individual block line is discarded whenever the merged row
+   decodes wrong. This is a recall limitation concentrated in low-evidence cases
+   and is the most likely explanation for the `crops under ~5s: 0%` row in §10;
+   re-measure that row after the container returns all candidates. It does not
+   affect the tempo-stretch result, which remains genuinely unrecoverable.
 
 Explicitly out of scope: pitch-preserved tempo stretching. No watermark layer we
 have recovers it, and the honest answer is scale-invariant fingerprinting
