@@ -7,7 +7,7 @@
 
 ## Where we stand
 
-**59 null scans. 0 false positives. 0 spurious pattern lines.**
+**60 null scans. 0 false positives. 0 spurious pattern lines.**
 
 Every scan is unmarked audio, ≥60s, speed search forced ON (`--detect-speed`), which is the
 path most likely to hallucinate a pattern line. A detection on any of these rows would be a
@@ -18,15 +18,21 @@ failure; none occurred.
 | `ai_generated_codec` | 27 | 0 | Primary class — how we actually deliver |
 | `ai_generated_wav` | 22 | 0 | Marking-stage class |
 | `human_lossy_preview` | 4 | 0 | Confounded (codec + human) — cannot be quoted as a human figure |
-| `human_lossless` | **2** | 0 | **OPEN — the publishing blocker** |
+| `human_lossless` | **3** | 0 | **OPEN — the publishing blocker** |
 | `unknown` (legacy) | 4 | 0 | Pre-dates `source_class`; excluded from per-class reporting |
 
 ## The one open cell
 
 `human_lossless` is the class a published false-positive rate needs, and it is **not filled**:
 
-- **n=2 bounds the rate at roughly 78%.** Statistically indistinguishable from knowing nothing.
-  It is a real data point in the right class, not yet a figure.
+- **n=3 bounds the rate at roughly 63%.** Still statistically indistinguishable from knowing
+  nothing. Real data points in the right class, not yet a figure.
+- **`RangerSong` (2007, owned outright) clears the licensing problem but not the fidelity one.**
+  Composed by the platform owner, uploaded directly, no attribution obligation — which is exactly
+  what a headline number needs. But the filename marks it as a ScreamTracker 3 (`.s3m`) module
+  render: human-*composed*, sample-based tracker synthesis, not a mic-recorded or CD-mastered
+  acoustic performance. A legitimate `human_lossless` row that does not on its own close the
+  "modern digital master" representativeness gap.
 - **Neither of the two files is CC0.** From `pdx-cs-sound/wavs`:
   - `collectathon.wav` — "Collectathon — Opening Theme" by Tovatronica — **CC-BY, attribution required**
   - `hindrance-of-a-fish.wav` — by Aidan Akenson — listed upstream only as **"CC 4.0"**, variant
@@ -36,6 +42,14 @@ failure; none occurred.
   This conflicts with our CC0-only rule for external benchmark material: fine for internal
   measurement, **needs a decision before either appears in a report.**
 
+### Scanned so far in this class
+
+| File | Provenance | License | Fidelity |
+|---|---|---|---|
+| `collectathon.wav` | Tovatronica, via pdx-cs-sound | CC-BY — attribution required | Human-produced music |
+| `hindrance-of-a-fish.wav` | Aidan Akenson, via pdx-cs-sound | "CC 4.0", variant unspecified | Human-performed song |
+| `01_756-RangerSong_s3m.wav` | Platform owner, 2007 | **Owned outright** | `.s3m` tracker render, not an acoustic master |
+
 ## Next step (agreed)
 
 Professional CD-ripped WAVs, held on a separate drive, **to be uploaded by the user.** These are the
@@ -44,6 +58,10 @@ preferred path because:
 - Lossless PCM, human-performed, modern digital masters — the acoustic profile the platform
   actually scans, which the 78rpm/Archive.org route explicitly does not provide.
 - Owned outright: no attribution string attached to the headline number.
+
+More of the owner's own 2007-era WAVs are welcome and will be scanned the same way, but they are
+tracker renders — they raise n in the class without addressing the acoustic-master gap. The CD rips
+are what address it.
 
 To scan them once uploaded, per file:
 
