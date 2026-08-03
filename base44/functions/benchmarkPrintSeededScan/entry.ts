@@ -61,20 +61,27 @@ const semitonesOf = (ratio) => 12 * Math.log2(ratio);
 // the point: a false-positive rate is only meaningful if the null path is the
 // exact same code as the real one. Any accepted consensus in null mode is a false
 // positive and invalidates the acceptance rule.
+async function loadSource(url, seconds) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Could not fetch source (${r.status})`);
+  return trimCentered(decodeWav(new Uint8Array(await r.arrayBuffer())), seconds);
+}
+
+// Mark the master, exactly as production would, THEN attack it. Printing an
+// unmarked master and attacking a marked one would silently measure a different
+// system than the one we ship.
+function buildMaster(audio, nullMode) {
+  const payload = payloadFromId('seeded-scan-experiment');
+  const marked = nullMode ? encodeWav(audio) : embedMark(encodeWav(audio), payload);
+  return { payload, markedAudio: decodeWav(marked) };
+}
+
 async function setup(url, seconds, attackKey, nullMode = false) {
   const attack = ATTACK_RATIOS[attackKey];
   if (!attack) throw new Error(`Unknown attack: ${attackKey}`);
 
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Could not fetch source (${r.status})`);
-  const audio = trimCentered(decodeWav(new Uint8Array(await r.arrayBuffer())), seconds);
-
-  // Mark the master, exactly as production would, THEN attack it. Printing an
-  // unmarked master and attacking a marked one would silently measure a different
-  // system than the one we ship.
-  const payload = payloadFromId('seeded-scan-experiment');
-  const marked = nullMode ? encodeWav(audio) : embedMark(encodeWav(audio), payload);
-  const markedAudio = decodeWav(marked);
+  const audio = await loadSource(url, seconds);
+  const { payload, markedAudio } = buildMaster(audio, nullMode);
   const suspect = pitchShiftResample(markedAudio, semitonesOf(attack.ratio));
 
   return { attack, payload, markedAudio, suspect };
@@ -94,6 +101,163 @@ export default async function (req) {
     if (!body.url) return Response.json({ error: 'url is required' }, { status: 400 });
 
     const nullMode = body.null_mode === true;
+
+    // ── sweep: every attack for one source, in one call ─────────────────────
+    // Widening the corpus is the whole point of this run, and doing it as one
+    // request per attack means re-fetching and re-marking the same master four
+    // times. This loads and marks ONCE, then walks the attack table. Strictly
+    // serial: concurrent window decoding has crashed the worker on memory
+    // pressure before, and this holds several minutes of audio at once.
+    if (action === 'sweep') {
+      if (!body.url) return Response.json({ error: 'url is required' }, { status: 400 });
+      const audio = await loadSource(body.url, seconds);
+      const { payload, markedAudio } = buildMaster(audio, nullMode);
+      const ref = computePrint(toMono(markedAudio), markedAudio.sampleRate);
+      const offsets = Array.isArray(body.offsets_ppm) && body.offsets_ppm.length ? body.offsets_ppm : [0];
+      const maxWindows = Number(body.max_windows) || 4;
+
+      const rows = [];
+      // Attack subsetting is not a convenience — a full four-attack sweep with
+      // three offsets exceeded the CPU limit (measured). Splitting the attack
+      // table across calls is how this stays inside the budget.
+      const keys = Array.isArray(body.attacks) && body.attacks.length ? body.attacks : Object.keys(ATTACK_RATIOS);
+      for (const key of keys) {
+        const atk = ATTACK_RATIOS[key];
+        if (!atk) {
+          rows.push({ attack: key, error: 'unknown attack' });
+          continue;
+        }
+        const suspect = pitchShiftResample(markedAudio, semitonesOf(atk.ratio));
+        const q = computePrint(toMono(suspect), suspect.sampleRate, true);
+        const m = matchPrints(q, ref);
+        if (!(m.beta > 0)) {
+          rows.push({ attack: key, label: atk.label, print_failed: true });
+          continue;
+        }
+        const ratioEst = 1 / m.beta;
+
+        let best = null;
+        for (const ppm of offsets) {
+          const undone = pitchShiftResample(suspect, -semitonesOf(ratioEst * (1 + ppm / 1e6)));
+          const r = detectAcrossWindows(undone, { maxWindows });
+          const exact = r.consensus_payload === payload;
+          const cand = {
+            offset_ppm: ppm,
+            agreeing_windows: r.agreeing_windows,
+            total_windows: r.total_windows,
+            mean_strength: round(r.mean_strength || 0),
+            combined_gate: round(r.combined_gate || 0),
+            consensus_exact: exact,
+            accepted: !!r.accepted,
+          };
+          // Keep the strongest ACCEPTED row; fall back to the strongest overall so
+          // a miss still reports how close it came.
+          const better =
+            !best ||
+            (cand.accepted && !best.accepted) ||
+            (cand.accepted === best.accepted && cand.mean_strength > best.mean_strength);
+          if (better) best = cand;
+        }
+
+        rows.push({
+          attack: key,
+          label: atk.label,
+          ratio_error_ppm: round(((ratioEst - atk.ratio) / atk.ratio) * 1e6, 1),
+          print_inliers: m.inliers,
+          ...best,
+          // In null mode an accepted row is a FALSE POSITIVE, not a success.
+          outcome: nullMode
+            ? best.accepted
+              ? 'FALSE_POSITIVE'
+              : 'correctly_abstained'
+            : best.accepted && best.consensus_exact
+              ? 'recovered'
+              : 'missed',
+        });
+      }
+
+      return Response.json({
+        action,
+        source: body.url,
+        seconds,
+        null_mode: nullMode,
+        offsets_ppm: offsets,
+        rows,
+        summary: nullMode
+          ? { false_positives: rows.filter((r) => r.outcome === 'FALSE_POSITIVE').length, attacks: rows.length }
+          : { recovered: rows.filter((r) => r.outcome === 'recovered').length, attacks: rows.length },
+      });
+    }
+
+    // ── ladder: find the correct alignment cheaply, before spending on windows ─
+    // The sweep exposed the real problem: Print's warp estimate can be 37 ppm off
+    // while V1's recovery window is only a few ppm wide, so a single seeded
+    // candidate misses. The fix is a micro-search around the estimate — but a
+    // 4-window decode per candidate blows the CPU budget immediately.
+    //
+    // The trick is that ALIGNMENT and CERTIFICATION need different amounts of
+    // evidence. Correlation strength peaks sharply at the correct ratio (measured:
+    // ~0.033 aligned vs ~0.007 misaligned, a 5x ratio) and that peak is visible in
+    // ONE short window, far below the gate. So: use cheap single-window probes to
+    // locate the peak, then spend the expensive multi-window combine ONCE, on the
+    // winner. Strength here is a steering signal only — it decides nothing.
+    if (action === 'ladder') {
+      if (!body.url) return Response.json({ error: 'url is required' }, { status: 400 });
+      const atk = ATTACK_RATIOS[attackKey];
+      if (!atk) return Response.json({ error: `Unknown attack: ${attackKey}` }, { status: 400 });
+
+      const audio = await loadSource(body.url, seconds);
+      const { payload, markedAudio } = buildMaster(audio, nullMode);
+      const suspect = pitchShiftResample(markedAudio, semitonesOf(atk.ratio));
+      const ref = computePrint(toMono(markedAudio), markedAudio.sampleRate);
+      const m = matchPrints(computePrint(toMono(suspect), suspect.sampleRate, true), ref);
+      if (!(m.beta > 0)) return Response.json({ error: 'Print returned no usable beta' }, { status: 422 });
+      const ratioEst = 1 / m.beta;
+
+      const probeSeconds = Number(body.probe_seconds) || 8;
+      const offsets = Array.isArray(body.offsets_ppm) && body.offsets_ppm.length
+        ? body.offsets_ppm
+        : [0, -10, -20, -30, -40, 10, 20, 30, 40];
+
+      const rows = [];
+      for (const ppm of offsets) {
+        const undone = trimCentered(pitchShiftResample(suspect, -semitonesOf(ratioEst * (1 + ppm / 1e6))), probeSeconds);
+        let res;
+        try {
+          res = detectMark(encodeWav(undone));
+        } catch (e) {
+          rows.push({ offset_ppm: ppm, error: e.message });
+          continue;
+        }
+        rows.push({
+          offset_ppm: ppm,
+          strength: round(res.mean_strength || 0),
+          // Whether the probe decoded the right bits, ignoring the gate entirely.
+          // This is how we confirm the strength peak is the genuine alignment and
+          // not just a loud patch of noise.
+          payload_exact: res.payload_candidate === payload,
+        });
+      }
+
+      const scored = rows.filter((r) => r.strength !== undefined).sort((a, b) => b.strength - a.strength);
+      return Response.json({
+        action,
+        attack: attackKey,
+        attack_label: atk.label,
+        null_mode: nullMode,
+        probe_seconds: probeSeconds,
+        ratio_error_ppm: round(((ratioEst - atk.ratio) / atk.ratio) * 1e6, 1),
+        rows: rows.sort((a, b) => a.offset_ppm - b.offset_ppm),
+        best_offset_ppm: scored.length ? scored[0].offset_ppm : null,
+        best_strength: scored.length ? scored[0].strength : null,
+        peak_is_genuine: scored.length ? !!scored[0].payload_exact : false,
+        note:
+          'best_offset_ppm is the correction to feed the multi-window confirm step. peak_is_genuine false ' +
+          'means the strength peak did NOT decode the right bits, i.e. the ladder is chasing noise and the ' +
+          'range or step needs revisiting.',
+      });
+    }
+
     const { attack, payload, markedAudio, suspect } = await setup(body.url, seconds, attackKey, nullMode);
 
     // ── beta: what does the Print Layer actually hand us? ───────────────────
