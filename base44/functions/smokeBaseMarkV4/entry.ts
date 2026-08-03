@@ -400,13 +400,31 @@ export default async function (req: Request): Promise<Response> {
         } else {
           // Normalized to WAV at a fixed duration so every null row in this class
           // is comparable to every other one.
-          const dl = await fetch(src.url);
-          if (!dl.ok) {
-            jobs.push({ source_url: src.url, error: 'could not download' });
+          //
+          // `range_bytes` downloads only the LEADING portion of the file. Real
+          // lossless masters are 24-bit/96kHz and minutes long; pulling one whole
+          // and decoding it would allocate hundreds of MB in this runtime for
+          // audio we then throw away down to 60s. The FLAC decoder tolerates the
+          // truncated tail and is additionally capped to the duration we want,
+          // so memory stays bounded regardless of how long the source is.
+          const dl = await fetch(
+            src.url,
+            body.range_bytes ? { headers: { Range: `bytes=0-${Math.max(1, body.range_bytes) - 1}` } } : undefined,
+          );
+          if (!dl.ok && dl.status !== 206) {
+            jobs.push({ source_url: src.url, error: `could not download (${dl.status})` });
             continue;
           }
           const raw = new Uint8Array(await dl.arrayBuffer());
-          const audio = decodeWav(isFlac(raw) ? decodeFlacToWav(raw) : raw);
+          let audio;
+          try {
+            // Decode a little past the target so the length gate below is judged
+            // on real available audio rather than on where the decode cap landed.
+            audio = decodeWav(isFlac(raw) ? decodeFlacToWav(raw, wantedSeconds * 1.05) : raw);
+          } catch (e) {
+            jobs.push({ source_url: src.url, error: `decode failed: ${e.message}` });
+            continue;
+          }
           const available = audio.channels[0].length / audio.sampleRate;
           if (available < minSeconds) {
             jobs.push({

@@ -123,7 +123,14 @@ const BS_TABLE = [0, 192, 576, 1152, 2304, 4608, -1, -2, 256, 512, 1024, 2048, 4
 const SS_TABLE = [0, 8, 12, -1, 16, 20, 24, 32];
 
 // Decode a FLAC file into a 16-bit PCM WAV (Uint8Array).
-export function decodeFlacToWav(bytes) {
+//
+// `maxSeconds` stops decoding once that much audio is in hand. Needed for the
+// null corpus: real lossless masters are 24-bit/96kHz and several minutes long,
+// and decoding one whole would allocate hundreds of MB in this runtime. Paired
+// with a ranged fetch it also means a TRUNCATED stream decodes fine — the tail
+// frame that runs off the end of the buffer is dropped rather than throwing
+// away every frame before it.
+export function decodeFlacToWav(bytes, maxSeconds = Infinity) {
   if (!isFlac(bytes)) throw new Error('Not a FLAC file');
   // --- metadata blocks ---
   let pos = 4;
@@ -147,11 +154,13 @@ export function decodeFlacToWav(bytes) {
   const br = new BitReader(bytes, pos);
   const chunks = [];
   let totalFrames = 0;
+  const maxFrames = maxSeconds === Infinity ? Infinity : Math.round(maxSeconds * sampleRate);
 
-  while (br.pos < bytes.length - 2) {
+  while (br.pos < bytes.length - 2 && totalFrames < maxFrames) {
     // frame sync (resync byte-by-byte if needed)
     if (!(bytes[br.pos] === 0xff && (bytes[br.pos + 1] & 0xfc) === 0xf8)) { br.pos++; br.bit = 0; continue; }
     br.bit = 0;
+    try {
     br.readBits(16); // sync + reserved + blocking strategy
     const bsCode = br.readBits(4);
     const srCode = br.readBits(4);
@@ -213,6 +222,12 @@ export function decodeFlacToWav(bytes) {
     }
     chunks.push(frame);
     totalFrames += blockSize;
+    } catch (e) {
+      // A partial frame at the end of a ranged fetch is expected. Anything
+      // thrown before a single frame decoded is a real format problem.
+      if (totalFrames === 0) throw e;
+      break;
+    }
   }
 
   if (totalFrames === 0) throw new Error('FLAC: no audio frames decoded');
