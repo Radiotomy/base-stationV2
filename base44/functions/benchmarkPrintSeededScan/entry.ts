@@ -35,6 +35,7 @@ import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints } from '../../shared/basePrintMatch.ts';
 import { SEARCH_GATE_MULTIPLE, SEARCH_MIN_STRENGTH } from '../../shared/baseMarkSearch.ts';
 import { toMono, trimCentered, round } from '../../shared/audioBenchUtils.ts';
+import { detectAcrossWindows } from '../../shared/baseMarkMultiWindow.ts';
 
 // Attacks worth testing here are exactly the resample family — the class V1/V2/V3
 // all measure 0% on and V4 (the GPLv3 layer) currently owns. Tempo stretch is
@@ -56,7 +57,11 @@ const semitonesOf = (ratio) => 12 * Math.log2(ratio);
 // Build the marked master and the re-timed suspect. Shared by both actions so
 // they describe the same file — comparing a beta measured on one pipeline against
 // a tolerance measured on another would be meaningless.
-async function setup(url, seconds, attackKey) {
+// nullMode skips the embed entirely. Everything downstream is IDENTICAL, which is
+// the point: a false-positive rate is only meaningful if the null path is the
+// exact same code as the real one. Any accepted consensus in null mode is a false
+// positive and invalidates the acceptance rule.
+async function setup(url, seconds, attackKey, nullMode = false) {
   const attack = ATTACK_RATIOS[attackKey];
   if (!attack) throw new Error(`Unknown attack: ${attackKey}`);
 
@@ -68,7 +73,7 @@ async function setup(url, seconds, attackKey) {
   // unmarked master and attacking a marked one would silently measure a different
   // system than the one we ship.
   const payload = payloadFromId('seeded-scan-experiment');
-  const marked = embedMark(encodeWav(audio), payload);
+  const marked = nullMode ? encodeWav(audio) : embedMark(encodeWav(audio), payload);
   const markedAudio = decodeWav(marked);
   const suspect = pitchShiftResample(markedAudio, semitonesOf(attack.ratio));
 
@@ -88,7 +93,8 @@ export default async function (req) {
     const attackKey = body.attack || 'resample_48_441';
     if (!body.url) return Response.json({ error: 'url is required' }, { status: 400 });
 
-    const { attack, payload, markedAudio, suspect } = await setup(body.url, seconds, attackKey);
+    const nullMode = body.null_mode === true;
+    const { attack, payload, markedAudio, suspect } = await setup(body.url, seconds, attackKey, nullMode);
 
     // ── beta: what does the Print Layer actually hand us? ───────────────────
     if (action === 'beta') {
@@ -244,6 +250,63 @@ export default async function (req) {
         ratio_true: round(attack.ratio, 6),
         ratio_error_ppm: round(((ratioEst - attack.ratio) / attack.ratio) * 1e6, 1),
         inliers: m.inliers,
+        rows,
+        recovered: hits.length > 0,
+        recovered_at_ppm: hits.map((h) => h.offset_ppm),
+      });
+    }
+
+    // ── seeded_multi: seeded scan + multi-window evidence combining ─────────
+    // The single-window seeded run recovered the exact payload but abstained on
+    // strength. This tests whether combining independent windows at the SAME
+    // seeded ratio clears the bar without weakening it.
+    if (action === 'seeded_multi') {
+      const ref = computePrint(toMono(markedAudio), markedAudio.sampleRate);
+      const q = computePrint(toMono(suspect), suspect.sampleRate, true);
+      const m = matchPrints(q, ref);
+      if (!(m.beta > 0)) return Response.json({ error: 'Print returned no usable beta' }, { status: 422 });
+      const ratioEst = 1 / m.beta;
+
+      const offsets = Array.isArray(body.offsets_ppm) && body.offsets_ppm.length ? body.offsets_ppm : [0];
+      const maxWindows = Number(body.max_windows) || 4;
+
+      const rows = [];
+      for (const ppm of offsets) {
+        const guess = ratioEst * (1 + ppm / 1e6);
+        const undone = pitchShiftResample(suspect, -semitonesOf(guess));
+        const r = detectAcrossWindows(undone, { maxWindows });
+        rows.push({
+          offset_ppm: ppm,
+          consensus_payload: r.consensus_payload,
+          consensus_exact: r.consensus_payload === payload,
+          agreeing_windows: r.agreeing_windows,
+          total_windows: r.total_windows,
+          mean_strength: round(r.mean_strength || 0),
+          per_window_gate: round(r.per_window_gate || 0),
+          combined_gate: round(r.combined_gate || 0),
+          accepted: !!r.accepted,
+          windows_alone: (r.windows || []).map((w) => ({
+            at: w.start_seconds,
+            payload: w.payload,
+            strength: round(w.mean_strength),
+            detected_alone: w.detected_alone,
+          })),
+        });
+      }
+
+      const hits = rows.filter((r) => r.accepted && r.consensus_exact);
+      return Response.json({
+        action,
+        attack: attackKey,
+        attack_label: attack.label,
+        print_seconds: seconds,
+        null_mode: nullMode,
+        expected_payload: nullMode ? null : payload,
+        // In null mode there is no payload to recover, so `accepted` is the entire
+        // measurement: every accepted row is a false positive.
+        false_positives: nullMode ? rows.filter((r) => r.accepted).length : null,
+        ratio_estimated: round(ratioEst, 6),
+        ratio_error_ppm: round(((ratioEst - attack.ratio) / attack.ratio) * 1e6, 1),
         rows,
         recovered: hits.length > 0,
         recovered_at_ppm: hits.map((h) => h.offset_ppm),

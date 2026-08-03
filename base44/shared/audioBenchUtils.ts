@@ -45,6 +45,20 @@ export function trimCentered(audio, seconds) {
   };
 }
 
+// Take `seconds` of audio starting at `startSeconds`. Returns null if the
+// requested window runs past the end — a short final window is not comparable to
+// a full one, and silently returning a stub would corrupt any per-window
+// statistic built on top of it.
+export function sliceWindow(audio, startSeconds, seconds) {
+  const start = Math.floor(startSeconds * audio.sampleRate);
+  const want = Math.floor(seconds * audio.sampleRate);
+  if (start + want > audio.channels[0].length) return null;
+  return {
+    sampleRate: audio.sampleRate,
+    channels: audio.channels.map((c) => c.slice(start, start + want)),
+  };
+}
+
 export function round(v, n = 4) {
   return Number(Number(v).toFixed(n));
 }

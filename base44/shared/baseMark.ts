@@ -286,6 +286,19 @@ export function detectMark(bytes) {
   return {
     detected,
     payload_hex: detected ? payloadHex : null,
+    // The decoded bits REGARDLESS of the gate decision. payload_hex stays gated
+    // and is what callers should trust on its own; this is deliberately separate
+    // and must never be reported to a user as a hit by itself, because on
+    // unmarked audio it is simply 32 bits of noise.
+    //
+    // It exists for multi-window evidence combining: a single short window can
+    // decode the correct payload while still failing its own gate (measured — a
+    // seeded re-timed recovery landed at 0.033 against a 0.0377 gate), and the
+    // only way to combine that with evidence from other windows is to see the
+    // per-window decode even when it individually abstains. Two independent
+    // windows agreeing on the same 32-bit value is a 2^-32 coincidence, which is
+    // far stronger evidence than either window's strength alone.
+    payload_candidate: payloadHex,
     pilot_score: Number(bestScore.toFixed(4)),
     mean_strength: Number(meanStrength.toFixed(4)),
     pilot_gate: Number(pilotGate.toFixed(4)),
