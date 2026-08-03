@@ -358,29 +358,70 @@ export default async function (req: Request): Promise<Response> {
     // A single structurally valid payload out of unmarked audio invalidates the
     // threshold. That is the result this phase exists to find.
     if (action === 'null_scan') {
-      const sources = Array.isArray(body.sources) ? body.sources.filter(Boolean) : [];
+      // Sources are either plain URLs (our own lossless masters) or
+      // { url, seconds } objects — the outside-sourced path knows each clip's
+      // duration up front and hands it through.
+      const sources = (Array.isArray(body.sources) ? body.sources : [])
+        .filter(Boolean)
+        .map((s) => (typeof s === 'string' ? { url: s, seconds: null } : { url: s.url, seconds: s.seconds ?? null }))
+        .filter((s) => s.url);
       if (!sources.length) {
         return Response.json({ error: 'sources must be a non-empty array of unmarked audio URLs' }, { status: 400 });
       }
+
+      const wantedSeconds = body.seconds || 60;
+      // Length gate. A shorter scan is a measurably EASIER scan, so letting an
+      // under-length clip through would quietly bias the null rate toward clean —
+      // the exact direction that would flatter the layer. Anything short is
+      // rejected and reported rather than scanned.
+      const minSeconds = wantedSeconds * 0.9;
+      // Outside material arrives as lossy MP3 previews, which this runtime cannot
+      // decode (see the mp3Decode dead end — the WASM decoders hang on Deno).
+      // Passthrough hands the URL straight to the container, whose ffmpeg
+      // normalizes it to PCM before scanning, so no local decode is needed.
+      const passthrough = Boolean(body.passthrough);
+      const sourceClass = body.source_class || (passthrough ? 'human_lossy_preview' : 'ai_generated_wav');
       const batch = sources.slice(0, Math.max(1, Math.min(6, body.batch_size || 4)));
 
       const jobs = [];
-      for (const url of batch) {
-        // Normalized to WAV at a fixed duration so every null row is comparable
-        // to every other one — audiowmark gets more evidence from longer audio,
-        // so mixed lengths would smear the distribution we are trying to measure.
-        const dl = await fetch(url);
-        if (!dl.ok) {
-          jobs.push({ source_url: url, error: 'could not download' });
-          continue;
+      for (const src of batch) {
+        let scanUrl = src.url;
+        let sampleRate = null;
+        let seconds = src.seconds;
+
+        if (passthrough) {
+          if (seconds == null || seconds < minSeconds) {
+            jobs.push({
+              source_url: src.url,
+              error: `rejected by the ${wantedSeconds}s length gate (${seconds ?? 'unknown'}s)`,
+            });
+            continue;
+          }
+        } else {
+          // Normalized to WAV at a fixed duration so every null row in this class
+          // is comparable to every other one.
+          const dl = await fetch(src.url);
+          if (!dl.ok) {
+            jobs.push({ source_url: src.url, error: 'could not download' });
+            continue;
+          }
+          const raw = new Uint8Array(await dl.arrayBuffer());
+          const audio = decodeWav(isFlac(raw) ? decodeFlacToWav(raw) : raw);
+          const available = audio.channels[0].length / audio.sampleRate;
+          if (available < minSeconds) {
+            jobs.push({
+              source_url: src.url,
+              error: `rejected by the ${wantedSeconds}s length gate (${available.toFixed(2)}s available)`,
+            });
+            continue;
+          }
+          const n = Math.min(audio.channels[0].length, Math.round(wantedSeconds * audio.sampleRate));
+          const trimmed = { sampleRate: audio.sampleRate, channels: audio.channels.map((c) => c.slice(0, n)) };
+          const f = new File([encodeWav(trimmed)], 'v4-null.wav', { type: 'audio/wav' });
+          scanUrl = (await base44.integrations.Core.UploadFile({ file: f })).file_url;
+          sampleRate = trimmed.sampleRate;
+          seconds = Number((n / trimmed.sampleRate).toFixed(2));
         }
-        const raw = new Uint8Array(await dl.arrayBuffer());
-        const audio = decodeWav(isFlac(raw) ? decodeFlacToWav(raw) : raw);
-        const wanted = Math.round((body.seconds || 60) * audio.sampleRate);
-        const n = Math.min(audio.channels[0].length, wanted);
-        const trimmed = { sampleRate: audio.sampleRate, channels: audio.channels.map((c) => c.slice(0, n)) };
-        const f = new File([encodeWav(trimmed)], 'v4-null.wav', { type: 'audio/wav' });
-        const scanUrl = (await base44.integrations.Core.UploadFile({ file: f })).file_url;
 
         const dec = await startV4({
           audio: scanUrl,
@@ -392,16 +433,19 @@ export default async function (req: Request): Promise<Response> {
           codec: body.codec || 'none',
         });
         jobs.push({
-          source_url: url,
+          source_url: src.url,
           prediction_id: dec.id,
-          sample_rate: trimmed.sampleRate,
-          source_seconds: Number((n / trimmed.sampleRate).toFixed(2)),
+          sample_rate: sampleRate,
+          source_seconds: seconds,
+          source_class: sourceClass,
         });
       }
 
       return Response.json({
         started: jobs.filter((j) => j.prediction_id).length,
-        remaining: sources.filter((s) => !batch.includes(s)),
+        rejected: jobs.filter((j) => j.error).length,
+        source_class: sourceClass,
+        remaining: sources.filter((s) => !batch.includes(s)).map((s) => ({ url: s.url, seconds: s.seconds })),
         jobs,
         note: 'Read with action:"null_poll", passing these jobs and a run_id.',
       });
@@ -469,6 +513,9 @@ export default async function (req: Request): Promise<Response> {
             false_positive: falsePositive,
             detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
             source_kind: body.source_kind === 'synthetic' ? 'synthetic' : 'uploaded',
+            // Carried per job so a mixed batch stays separable, and so the
+            // false-positive rate can be reported per class rather than blended.
+            source_class: job.source_class || body.source_class || undefined,
             source_seconds: job.source_seconds ?? undefined,
             sample_rate: job.sample_rate ?? undefined,
             cascaded: false,
