@@ -38,6 +38,11 @@ export default function PipelineFlowChart() {
           );
         })}
       </div>
+      <p className="text-[11px] text-muted-foreground mt-4 pt-3 border-t border-border/50">
+        The V4 Speed Layer is deliberately absent from this diagram: it is in benchmarking, admin-only, and
+        does not touch a creator&apos;s asset. It joins the pipeline only once the acceptance threshold is
+        enforced in the registry lookup.
+      </p>
     </div>
   );
 }

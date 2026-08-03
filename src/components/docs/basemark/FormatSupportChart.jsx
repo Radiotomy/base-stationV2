@@ -16,7 +16,9 @@ export default function FormatSupportChart() {
       <p className="font-bold text-foreground text-sm mb-1">File Format Capability</p>
       <p className="text-xs text-muted-foreground mb-4">
         Embedding requires lossless PCM (WAV / FLAC). Lossy formats are decoded to PCM in-browser for
-        detection only — reliability depends on encode quality. Estimates from internal testing.
+        detection only — reliability depends on encode quality. These lossy detect figures are
+        <strong className="text-foreground"> estimates</strong> for the spectral layer, because our benchmark
+        runtime cannot run an encoder.
       </p>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -35,6 +37,11 @@ export default function FormatSupportChart() {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <p className="text-[11px] text-muted-foreground mt-2">
+        Measured counterpart: the V4 Speed Layer container runs real encoders, and recovered the payload
+        through genuine MP3, AAC and Opus round trips at 128k — see the Speed Layer results below. Those are
+        the only encoder figures on this page that are measured rather than estimated.
+      </p>
     </div>
   );
 }
