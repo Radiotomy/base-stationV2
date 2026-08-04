@@ -33,6 +33,15 @@ export default function BaseMarkSection() {
         </p>
       </div>
 
+      <div className="rounded-xl border border-[#FF9A4D]/30 bg-[#FF9A4D]/10 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">BASE Mark is under continuous development.</strong> The protocol is
+        live and protecting tracks today, but it is not finished — development and adversarial testing are
+        consistently ongoing as we work toward the final form of the mark system. Layers are benchmarked against
+        real attacks, negative results are published alongside positive ones, and acceptance rules are tightened
+        or loosened only when measurement forces it. Figures on this page reflect the current measured state and
+        will change as the work continues.
+      </div>
+
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-muted-foreground">
         <strong className="text-foreground">Status: V1 + V2 are live and automatic on every saved track.</strong> The
         moment an audio asset is saved, BASE Station embeds the spectral layer (instant, no GPU needed) and then the

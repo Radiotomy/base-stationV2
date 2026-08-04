@@ -23,6 +23,11 @@ export default function V2RoadmapBanner() {
         stage — currently in measurement — that estimates how a file was re-timed and seeds the scan with it.
         Where evidence is insufficient, every stage reports "no result" rather than a low-confidence guess.
       </p>
+      <p className="text-xs text-muted-foreground/80 leading-relaxed">
+        Development and testing are consistently ongoing: BASE Mark protects tracks today, but the system is
+        actively being benchmarked, hardened and refined as we work toward its final form. Capabilities and
+        measured figures will continue to improve — check the documentation for the current measured state.
+      </p>
     </div>
   );
 }
