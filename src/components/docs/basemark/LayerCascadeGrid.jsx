@@ -39,6 +39,16 @@ const LAYERS = [
     weaknesses:
       'Codec damage consumes most of the decision margin, so acceptance depends on a bit-error threshold rather than a clean pass/fail. Still 0% against pitch-preserved tempo stretching and against crops under roughly 5 seconds. Figures so far are n=1 on a single master at one bitrate — early, and still being measured.',
   },
+  {
+    name: 'Print Layer — Fingerprint',
+    carries: 'Nothing — identifies by similarity, not payload',
+    engine: 'In-house scale-invariant landmark fingerprint',
+    when: 'In measurement — admin-only, not on any production path',
+    strengths:
+      'Not a watermark: hashes are built from frequency and time ratios, so the print survives the exact attacks that defeat every embedded layer — pitch shifts and pitch-preserved tempo stretches. Beyond identifying a re-timed copy, it estimates the warp factor, which seeds a targeted spectral recovery: measured exact-payload recovery on every re-timing cell tested across seven masters, with zero false positives in null runs.',
+    weaknesses:
+      'Identification only — a print match recovers no payload and asserts similarity, not provenance, so it can never back an attribution alone. The ratio estimate varies from ~7 to over 1,200 ppm of error against a ~20 ppm-wide recovery peak, and the search-budget calibration that bridges that gap is still open.',
+  },
 ];
 
 export default function LayerCascadeGrid() {
@@ -53,11 +63,12 @@ export default function LayerCascadeGrid() {
           so V3 must always go last. V1, V2 and V3 all share the SAME blind spot for re-timed audio, and
           stacking them does not help there; that is exactly why the V4 Speed Layer was built, and it is
           the first layer measured to recover a resampled file. The remaining shared gap —
-          pitch-<em>preserved</em> tempo stretching — is not solved by any layer we have, and we do not
-          claim otherwise.
+          pitch-<em>preserved</em> tempo stretching — is not solved by any watermark layer, and we do not
+          claim otherwise; the Print Layer fingerprint (below) is how a stretched copy is identified,
+          because its ratio-based hashes survive where every embedded payload does not.
         </p>
       </div>
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
         {LAYERS.map((l) => (
           <div key={l.name} className="rounded-lg border border-border bg-card p-4 space-y-2">
             <p className="font-semibold text-foreground text-sm">{l.name}</p>

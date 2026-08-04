@@ -22,8 +22,11 @@ export default function BaseMarkSection() {
           <strong className="text-foreground"> Neural Layer (V2)</strong> built on SilentCipher (Singh et al.,
           Interspeech 2024), and a <strong className="text-foreground">Drift Layer (V3)</strong> built on
           WavMark, and a <strong className="text-foreground">Speed Layer (V4)</strong> built on audiowmark that
-          targets re-timed playback. Unlike ID3 tags or C2PA manifests, the mark lives inside the audio
-          waveform itself, so it survives metadata stripping, band-limiting, quantization, cutting,
+          targets re-timed playback. Alongside the embedded layers, the protocol includes a
+          <strong className="text-foreground"> Print Layer</strong> — an in-house scale-invariant fingerprint
+          that carries nothing but can identify a re-timed copy and estimate <em>how</em> it was re-timed,
+          seeding a targeted watermark recovery. Unlike ID3 tags or C2PA manifests, the mark lives inside the
+          audio waveform itself, so it survives metadata stripping, band-limiting, quantization, cutting,
           stem-splitting and remixing. Re-timed copies were the shared blind spot of V1, V2 and V3; V4 is the
           first layer measured to recover them, and it is the layer we have measured against real MP3, AAC and
           Opus encoders. Every figure below is measured, and benchmarking is still in progress.
@@ -57,6 +60,19 @@ export default function BaseMarkSection() {
         between a genuine recovery and a spurious one, so the registry lookup has to gate on measured bit-error
         before this layer can back a real attribution. Benchmark runs are admin-authenticated and the watermark key
         is held as a server-side secret, never shipped in a container layer or a client bundle.
+      </div>
+
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-muted-foreground">
+        <strong className="text-foreground">Status: Print Layer + seeded recovery are in measurement, admin-only.</strong> The
+        Print Layer fingerprints a track's spectral geometry using ratios rather than absolute values, so the print
+        survives pitch-shifting and tempo-stretching — the attacks that defeat the embedded layers. Its job is not to
+        prove anything on its own: it proposes a playback-ratio estimate, the spectral detector inverts it and attempts
+        a real payload recovery across several independent 12-second windows, and acceptance requires both payload
+        consensus across windows and a combined strength gate. Measured so far: exact-payload recovery on every
+        re-timing cell tested across seven masters (resample both directions, ±2 semitone shifts), with zero false
+        positives in null runs. Two calibrations remain open — the ratio estimate's error varies by two orders of
+        magnitude and the search budget is not yet scaled to the estimate's self-reported quality — so this pipeline
+        backs no creator-facing attribution yet.
       </div>
 
       <LayerCascadeGrid />
@@ -137,7 +153,8 @@ export default function BaseMarkSection() {
           <li>Embedding accepts 16-bit or 24-bit PCM WAV files and FLAC (decoded to 16-bit PCM WAV before marking).</li>
           <li>Scanning also accepts MP3, OGG, and M4A/MP4 (AAC) — decoded to PCM in your browser before detection. Heavy compression (low bitrates, repeated re-encodes) weakens the spectral layer and lowers detection confidence, which is exactly why the neural layer exists alongside it. The Speed Layer is the one layer measured against real encoders end to end, at 128k only so far.</li>
           <li><strong className="text-foreground">Pitch-shifting and time-stretching defeat V1, V2 and V3 on a normal scan.</strong> Resampling a track — even by one semitone or 5% — broke the spectral <em>and</em> the neural layer in our benchmark (0% recovery on both). The Drift Layer was built to close this gap and, when measured, does not: it returns 0% under the same attacks. The Speed Layer (V4) does recover resample-based changes, by estimating the playback ratio from the signal rather than being told it — but V4 is still in benchmarking and is not on the automatic path, so for any track marked today this remains BASE Mark's most significant limitation in production.</li>
-          <li><strong className="text-foreground">Pitch-preserved tempo stretching is unrecovered by every layer, including V4.</strong> Overlap-add resynthesis discards the fine phase structure all four layers rely on, so it cannot be undone at detection time. This is a design limit, not a tuning problem, and scale-invariant fingerprinting — not another watermark layer — is the honest answer to it.</li>
+          <li><strong className="text-foreground">Pitch-preserved tempo stretching is unrecovered by every watermark layer, including V4.</strong> Overlap-add resynthesis discards the fine phase structure all four layers rely on, so the payload cannot be recovered at detection time. This is a design limit, not a tuning problem. The Print Layer is the honest answer: its ratio-based fingerprint survives tempo stretching, so a stretched copy can still be <em>identified</em> and its warp factor estimated — it just cannot yield the embedded payload back.</li>
+          <li><strong className="text-foreground">Print-seeded recovery is measurement, not production.</strong> The Print Layer's ratio estimate has been measured from 7 to over 1,200 parts-per-million off the true ratio, while the spectral recovery peak is only ~20 ppm wide — so recovery needs a correction search around the estimate, and the right search budget depends on the estimate's self-reported fit quality, which is not yet calibrated. Until it is, no Print-seeded result backs an attribution.</li>
           <li><strong className="text-foreground">V4 acceptance is a threshold, not a clean pass/fail.</strong> Measured against real 128k MP3, AAC and Opus round trips the payload came back exactly every time, but bit-error on genuine recoveries reached ~0.34 where spurious results have stayed at 0.72 or worse. Attribution therefore depends on a published acceptance threshold sitting between those bands, and until that gate is enforced in the registry lookup, V4 results are treated as benchmark data rather than evidence.</li>
           <li><strong className="text-foreground">The Drift Layer does not close the re-timing gap it was built for.</strong> Measured standalone on clean audio — WavMark's best case, before V1's noise floor is added — it recovered the slot in 0% of trials under every pitch shift tested (±1 and +2 semitones, +37 cents, and 44.1/48kHz mishandling) and 0% under ±5% time stretch. It also returned 0% at 10dB SNR. What it does add is short-excerpt coverage: 100% slot recovery from 2-second crops, where the spectral layer abstains, plus 100% through band-limiting, 8-bit quantization and 20dB-SNR noise. We are publishing the negative result because it is the measured one.</li>
           <li><strong className="text-foreground">V3 points rather than carries, and the pool is finite.</strong> A recovered slot is only useful while it maps to a live asset: 65,536 concurrent slots exist, and recycling a released slot risks misattributing files already in circulation, which is why reuse is delayed rather than immediate.</li>
