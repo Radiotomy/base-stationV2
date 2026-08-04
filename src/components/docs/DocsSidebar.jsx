@@ -8,10 +8,12 @@ export const DOC_SECTIONS = [
   { id: 'id3-compliance', label: 'ID3v2 Compliance', icon: Music4, group: 'Standards' },
   { id: 'onchain-registration', label: 'On-Chain Registration', icon: Link2, group: 'Standards' },
   { id: 'base-mark', label: 'BASE Mark Watermark', icon: Fingerprint, group: 'Standards' },
+  { id: 'base-mark-internal', label: 'BASE Mark — Internal', icon: Fingerprint, group: 'Internal', adminOnly: true },
 ];
 
-export default function DocsSidebar({ active, onSelect }) {
-  const groups = [...new Set(DOC_SECTIONS.map((s) => s.group))];
+export default function DocsSidebar({ active, onSelect, isAdmin = false }) {
+  const sections = DOC_SECTIONS.filter((s) => !s.adminOnly || isAdmin);
+  const groups = [...new Set(sections.map((s) => s.group))];
 
   return (
     <nav className="space-y-6">
@@ -25,7 +27,7 @@ export default function DocsSidebar({ active, onSelect }) {
             {group}
           </p>
           <ul className="space-y-0.5">
-            {DOC_SECTIONS.filter((s) => s.group === group).map((s) => {
+            {sections.filter((s) => s.group === group).map((s) => {
               const Icon = s.icon;
               const isActive = active === s.id;
               return (
