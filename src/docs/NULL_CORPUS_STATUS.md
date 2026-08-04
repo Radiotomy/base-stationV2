@@ -7,7 +7,7 @@
 
 ## Where we stand
 
-**64 null scans. 0 false positives. 0 spurious pattern lines.**
+**67 null scans. 0 false positives. 0 spurious pattern lines.**
 
 Every scan is unmarked audio, ≥60s, speed search forced ON (`--detect-speed`), which is the
 path most likely to hallucinate a pattern line. A detection on any of these rows would be a
@@ -18,7 +18,7 @@ failure; none occurred.
 | `ai_generated_codec` | 27 | 0 | Primary class — how we actually deliver |
 | `ai_generated_wav` | 22 | 0 | Marking-stage class |
 | `human_lossy_preview` | 4 | 0 | Confounded (codec + human) — cannot be quoted as a human figure |
-| `human_lossless` | **7** | 0 | **OPEN — filling; CD-rip ingest in progress** |
+| `human_lossless` | **10** | 0 | **Filling — CD-rip ingest in progress** |
 | `unknown` (legacy) | 4 | 0 | Pre-dates `source_class`; excluded from per-class reporting |
 
 ## The one open cell
@@ -49,7 +49,8 @@ failure; none occurred.
 | `collectathon.wav` | Tovatronica, via pdx-cs-sound | CC-BY — attribution required | Human-produced music |
 | `hindrance-of-a-fish.wav` | Aidan Akenson, via pdx-cs-sound | "CC 4.0", variant unspecified | Human-performed song |
 | `01_756-RangerSong_s3m.wav` | Platform owner, 2007 | **Owned outright** | `.s3m` tracker render, not an acoustic master |
-| `AudioTrack01–04` (CD rips, batch 1 of ~10) | Platform owner's CD rips, 2026-08-04 | Owned rips, no metadata | **16-bit/44.1kHz stereo CD masters — the acoustic profile the class needed.** Mix of metal/rock/pop/hip-hop. Run `null-cdrip-2026-08-04`; all 4 scanned clean (no pattern line at all). |
+| `AudioTrack01–04` (CD rips, batch 1) | Platform owner's CD rips, 2026-08-04 | Owned rips, no metadata | **16-bit/44.1kHz stereo CD masters — the acoustic profile the class needed.** Mix of metal/rock/pop/hip-hop. Run `null-cdrip-2026-08-04`; all 4 scanned clean (no pattern line at all). |
+| `AudioTrack05–07` (CD rips, batch 2) | Platform owner's CD rips, 2026-08-04 | Owned rips, no metadata | Rock / hair metal. Same run id, all 3 clean. Batch 2's Track01/Track04 were held back pending duplicate confirmation vs batch 1 (byte sizes within 8 bytes of batch-1 tracks of the same number); Track08 rejected by the 60s gate (4.2s). |
 
 ## Next step (agreed)
 
