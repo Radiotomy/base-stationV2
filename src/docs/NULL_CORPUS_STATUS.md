@@ -1,13 +1,13 @@
 # Null-Corpus Status — BASE Mark V4 False-Positive Measurement
 
-**Last updated:** 2026-08-03
+**Last updated:** 2026-08-04
 **Purpose:** running state of the false-positive (null) corpus, so work can resume without re-deriving context.
 
 ---
 
 ## Where we stand
 
-**60 null scans. 0 false positives. 0 spurious pattern lines.**
+**64 null scans. 0 false positives. 0 spurious pattern lines.**
 
 Every scan is unmarked audio, ≥60s, speed search forced ON (`--detect-speed`), which is the
 path most likely to hallucinate a pattern line. A detection on any of these rows would be a
@@ -18,7 +18,7 @@ failure; none occurred.
 | `ai_generated_codec` | 27 | 0 | Primary class — how we actually deliver |
 | `ai_generated_wav` | 22 | 0 | Marking-stage class |
 | `human_lossy_preview` | 4 | 0 | Confounded (codec + human) — cannot be quoted as a human figure |
-| `human_lossless` | **3** | 0 | **OPEN — the publishing blocker** |
+| `human_lossless` | **7** | 0 | **OPEN — filling; CD-rip ingest in progress** |
 | `unknown` (legacy) | 4 | 0 | Pre-dates `source_class`; excluded from per-class reporting |
 
 ## The one open cell
@@ -49,11 +49,13 @@ failure; none occurred.
 | `collectathon.wav` | Tovatronica, via pdx-cs-sound | CC-BY — attribution required | Human-produced music |
 | `hindrance-of-a-fish.wav` | Aidan Akenson, via pdx-cs-sound | "CC 4.0", variant unspecified | Human-performed song |
 | `01_756-RangerSong_s3m.wav` | Platform owner, 2007 | **Owned outright** | `.s3m` tracker render, not an acoustic master |
+| `AudioTrack01–04` (CD rips, batch 1 of ~10) | Platform owner's CD rips, 2026-08-04 | Owned rips, no metadata | **16-bit/44.1kHz stereo CD masters — the acoustic profile the class needed.** Mix of metal/rock/pop/hip-hop. Run `null-cdrip-2026-08-04`; all 4 scanned clean (no pattern line at all). |
 
 ## Next step (agreed)
 
-Professional CD-ripped WAVs, held on a separate drive, **to be uploaded by the user.** These are the
-preferred path because:
+Professional CD-ripped WAVs, held on a separate drive, **being uploaded by the user now** — the first
+4 of ~10 are ingested (see table above); more are coming and go through the identical recipe below.
+These are the preferred path because:
 
 - Lossless PCM, human-performed, modern digital masters — the acoustic profile the platform
   actually scans, which the 78rpm/Archive.org route explicitly does not provide.
