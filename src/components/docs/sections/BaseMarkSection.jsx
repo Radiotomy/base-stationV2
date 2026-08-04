@@ -16,20 +16,17 @@ export default function BaseMarkSection() {
           <h1 className="font-display text-2xl">BASE Mark — Unified Watermarking Standard</h1>
         </div>
         <p className="text-muted-foreground">
-          BASE Mark is BASE Station's own in-house audio watermark: a single forensic signature built from
-          up to four complementary layers embedded on the same file — a blind spread-spectrum
-          <strong className="text-foreground"> Spectral Layer (V1)</strong>, a learned
-          <strong className="text-foreground"> Neural Layer (V2)</strong> built on SilentCipher (Singh et al.,
-          Interspeech 2024), and a <strong className="text-foreground">Drift Layer (V3)</strong> built on
-          WavMark, and a <strong className="text-foreground">Speed Layer (V4)</strong> built on audiowmark that
-          targets re-timed playback. Alongside the embedded layers, the protocol includes a
-          <strong className="text-foreground"> Print Layer</strong> — an in-house scale-invariant fingerprint
-          that carries nothing but can identify a re-timed copy and estimate <em>how</em> it was re-timed,
-          seeding a targeted watermark recovery. Unlike ID3 tags or C2PA manifests, the mark lives inside the
-          audio waveform itself, so it survives metadata stripping, band-limiting, quantization, cutting,
-          stem-splitting and remixing. Re-timed copies were the shared blind spot of V1, V2 and V3; V4 is the
-          first layer measured to recover them, and it is the layer we have measured against real MP3, AAC and
-          Opus encoders. Every figure below is measured, and benchmarking is still in progress.
+          BASE Mark is BASE Station's audio watermarking standard: a single forensic signature made up of
+          several complementary layers carried on the same file, each built on a different underlying
+          technology so that they fail in different ways. Unlike ID3 tags or C2PA manifests, the signature
+          lives inside the audio waveform itself, so it survives metadata stripping, compression, cutting,
+          stem-splitting and remixing. Alongside the embedded layers, the protocol also derives a separate
+          identification signature that carries no payload but can recognize a copy whose speed or pitch has
+          been altered — historically the hardest case for any watermark — and hand that finding to the
+          detector. The specific engines, parameters and detection logic behind each layer are confidential
+          and run only inside BASE Station's secure server environment; what is published here is the
+          measured behaviour of the system, not its internals. Every figure below comes from our own attack
+          benchmarks, and testing is ongoing.
         </p>
       </div>
 
