@@ -11,21 +11,24 @@ export default function BaseMarkStudio() {
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#FF9A4D]/30 bg-[#FF9A4D]/10 px-4 py-1.5 text-sm text-[#FFC98A]">
-            <Fingerprint className="w-4 h-4" /> BASE Mark · Unified Dual-Layer Standard
+            <Fingerprint className="w-4 h-4" /> BASE Mark · Layered Forensic Protocol
           </div>
           <h1 className="font-display text-3xl md:text-4xl">Watermark & Trace Your Audio</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Embed an inaudible, sample-level watermark directly into your track's waveform.
             Even when metadata is stripped and the audio is cut into stems, sampled or remixed,
-            any ~2-second surviving chunk can be traced back to your original track.
+            a surviving excerpt of ~5 seconds or more can be traced back to your original track —
+            and below ~3 seconds the detector declines to answer rather than guess.
           </p>
           <Link to="/docs?section=base-mark" className="inline-flex items-center gap-1.5 text-sm text-[#FFC98A] hover:underline">
             <BookOpen className="w-4 h-4" /> Read the BASE Mark documentation
           </Link>
           <p className="text-xs text-muted-foreground max-w-xl mx-auto">
-            Every saved track is automatically stamped with both halves of BASE Mark on the same file: a
-            spectral layer embeds instantly, then a neural layer (robust to compression/pitch/time attacks)
+            Every saved track is automatically stamped with both production layers on the same file: a
+            spectral layer embeds instantly, then a neural layer (robust to compression, jitter and noise)
             is layered on top on our private GPU. Either layer alone can trace the file back to its registry record.
+            Re-timed copies — resampled or pitch-shifted playback — are handled by a separate deep-scan step
+            that realigns the audio before detection.
           </p>
         </div>
         <div className="grid md:grid-cols-2 gap-6">
