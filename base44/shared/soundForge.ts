@@ -15,7 +15,10 @@
 // Songs stay on ACE-Step 1.5 (shared/harmonix.ts). The two engines are
 // deliberately split: song model for songs, audio model for loops.
 
-const REPLICATE_MODEL = Deno.env.get('SOUNDFORGE_MODEL') || 'stability-ai/stable-audio-2.5';
+// Pinned model id. This was previously read from an unregistered SOUNDFORGE_MODEL
+// env var — a model slug is not a secret, and an unregistered env read is both a
+// scanner finding and a silent-misconfiguration risk, so it is a constant now.
+const REPLICATE_MODEL = 'stability-ai/stable-audio-2.5';
 
 export const SOUNDFORGE_CREDIT_COST = 2;
 export const SOUNDFORGE_MAX_DURATION = 30;

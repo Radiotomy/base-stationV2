@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { secrets } from 'base44:runtime';
 
 /**
  * Phase 4 — Streamr audio publisher (additive, optional).
@@ -7,8 +8,8 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
  * Payload: { roomId, audioChunk (base64), codec? }
  * Returns: { published: boolean, streamId, reason? }
  */
-const STREAMR_KEY = Deno.env.get('STREAMR_PRIVATE_KEY');
-const STREAMR_API = Deno.env.get('STREAMR_API_BASE') || 'https://api.streamr.network/v1';
+// Public API base — not a secret, so it is a constant rather than an env read.
+const STREAMR_API = 'https://api.streamr.network/v1';
 
 Deno.serve(async (req) => {
   try {
@@ -21,6 +22,9 @@ Deno.serve(async (req) => {
 
     const streamId = `${user.id}/basestation/live/${roomId}/audio`;
 
+    // Read through the runtime secret store (same path as streamrAcquireStream),
+    // never Deno.env — an unregistered env read is a scanner finding.
+    const STREAMR_KEY = secrets.get('STREAMR_PRIVATE_KEY');
     if (!STREAMR_KEY) {
       return Response.json({ published: false, streamId, reason: 'streamr_disabled' });
     }
