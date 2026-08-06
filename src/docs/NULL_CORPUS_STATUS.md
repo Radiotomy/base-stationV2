@@ -7,7 +7,7 @@
 
 ## Where we stand
 
-**109 null scans. 0 false positives. 0 spurious pattern lines.**
+**123 null scans. 0 false positives. 0 spurious pattern lines.**
 
 Every scan is unmarked audio, ≥60s, speed search forced ON (`--detect-speed`), which is the
 path most likely to hallucinate a pattern line. A detection on any of these rows would be a
@@ -18,17 +18,19 @@ failure; none occurred.
 | `ai_generated_codec` | 27 | 0 | Primary class — how we actually deliver |
 | `ai_generated_wav` | 22 | 0 | Marking-stage class |
 | `human_lossy_preview` | 4 | 0 | Confounded (codec + human) — cannot be quoted as a human figure |
-| `human_lossless` | **52** | 0 | **Filling — CD-rip ingest in progress** |
+| `human_lossless` | **66** | 0 | **n≈60 milestone passed — rate bounded under 5%** |
 | `unknown` (legacy) | 4 | 0 | Pre-dates `source_class`; excluded from per-class reporting |
 
 ## The one open cell
 
 `human_lossless` is the class a published false-positive rate needs, and it is **not filled**:
 
-- **n=52 bounds the rate at roughly 5.8%** (rule of three, 95% confidence). n≈60 bounds it under 5%,
-  n≈100 under 3%. The class now spans metal, hard rock, hip-hop, commercially mastered pop, and —
-  with the Prince ingest — funk/R&B, jazz-inflected and sparser arrangements. The remaining
-  representativeness gap is genuinely QUIET material: solo acoustic, classical, ambient, spoken-word.
+- **n=66 bounds the rate at roughly 4.5%** (rule of three, 95% confidence) — the n≈60 milestone is
+  passed and the class is now under 5%; n≈100 would bound it under 3%. The class spans metal, hard
+  rock, hip-hop, commercially mastered pop, funk/R&B, jazz-inflected arrangements, and — with the
+  2008 electropop ingest — synth-heavy dance production plus a few piano/ballad-leaning cuts. The
+  remaining representativeness gap is genuinely QUIET material: solo acoustic, classical, ambient,
+  spoken-word.
   Dense loud material is the easy case for a null scan; low-level audio is where a speed-search
   decoder is most likely to hallucinate a pattern line.
 - **`RangerSong` (2007, owned outright) clears the licensing problem but not the fidelity one.**
@@ -58,6 +60,7 @@ failure; none occurred.
 | Commercial pop album, 11 tracks | Platform owner's CD rip, 2026-08-05 | Owned rip, no metadata | **16-bit/44.1kHz stereo CD masters, 165–329s each — commercially mastered pop, a genre the class did not previously cover.** Run `null-abba-2026-08-05`; all 11 scanned clean (no pattern line at all). |
 | Mötley Crüe compilation, 19 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — commercially mastered hard rock / glam metal spanning 1981–2005 production eras, incl. one power ballad (Home Sweet Home) and one remix.** Run `null-crue-2026-08-06`; all 19 scanned clean (no pattern line at all). |
 | Prince album, 12 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — funk / R&B / jazz-inflected, incl. sparser and lower-density arrangements than the rock material.** Run `null-prince-2026-08-06`; all 12 scanned clean (no pattern line at all). |
+| Electropop album (2008), 14 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — heavily synth/loop-based dance-pop production, incl. a few piano-led and ballad-leaning cuts. Different production DNA from the rock/funk material: dense electronic, loudness-war era.** Run `null-gaga-2026-08-06`; all 14 scanned clean (no pattern line at all). |
 
 ## Next step (agreed)
 
