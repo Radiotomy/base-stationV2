@@ -1,13 +1,13 @@
 # Null-Corpus Status — BASE Mark V4 False-Positive Measurement
 
-**Last updated:** 2026-08-04
+**Last updated:** 2026-08-05
 **Purpose:** running state of the false-positive (null) corpus, so work can resume without re-deriving context.
 
 ---
 
 ## Where we stand
 
-**67 null scans. 0 false positives. 0 spurious pattern lines.**
+**78 null scans. 0 false positives. 0 spurious pattern lines.**
 
 Every scan is unmarked audio, ≥60s, speed search forced ON (`--detect-speed`), which is the
 path most likely to hallucinate a pattern line. A detection on any of these rows would be a
@@ -18,15 +18,15 @@ failure; none occurred.
 | `ai_generated_codec` | 27 | 0 | Primary class — how we actually deliver |
 | `ai_generated_wav` | 22 | 0 | Marking-stage class |
 | `human_lossy_preview` | 4 | 0 | Confounded (codec + human) — cannot be quoted as a human figure |
-| `human_lossless` | **10** | 0 | **Filling — CD-rip ingest in progress** |
+| `human_lossless` | **21** | 0 | **Filling — CD-rip ingest in progress** |
 | `unknown` (legacy) | 4 | 0 | Pre-dates `source_class`; excluded from per-class reporting |
 
 ## The one open cell
 
 `human_lossless` is the class a published false-positive rate needs, and it is **not filled**:
 
-- **n=3 bounds the rate at roughly 63%.** Still statistically indistinguishable from knowing
-  nothing. Real data points in the right class, not yet a figure.
+- **n=21 bounds the rate at roughly 13%.** Still not a publishable figure, but the class now spans
+  metal, rock, hip-hop and commercially mastered pop, so it is no longer a token sample.
 - **`RangerSong` (2007, owned outright) clears the licensing problem but not the fidelity one.**
   Composed by the platform owner, uploaded directly, no attribution obligation — which is exactly
   what a headline number needs. But the filename marks it as a ScreamTracker 3 (`.s3m`) module
@@ -51,6 +51,7 @@ failure; none occurred.
 | `01_756-RangerSong_s3m.wav` | Platform owner, 2007 | **Owned outright** | `.s3m` tracker render, not an acoustic master |
 | `AudioTrack01–04` (CD rips, batch 1) | Platform owner's CD rips, 2026-08-04 | Owned rips, no metadata | **16-bit/44.1kHz stereo CD masters — the acoustic profile the class needed.** Mix of metal/rock/pop/hip-hop. Run `null-cdrip-2026-08-04`; all 4 scanned clean (no pattern line at all). |
 | `AudioTrack05–07` (CD rips, batch 2) | Platform owner's CD rips, 2026-08-04 | Owned rips, no metadata | Rock / hair metal. Same run id, all 3 clean. Batch 2's Track01/Track04 were held back pending duplicate confirmation vs batch 1 (byte sizes within 8 bytes of batch-1 tracks of the same number); Track08 rejected by the 60s gate (4.2s). |
+| Commercial pop album, 11 tracks | Platform owner's CD rip, 2026-08-05 | Owned rip, no metadata | **16-bit/44.1kHz stereo CD masters, 165–329s each — commercially mastered pop, a genre the class did not previously cover.** Run `null-abba-2026-08-05`; all 11 scanned clean (no pattern line at all). |
 
 ## Next step (agreed)
 
