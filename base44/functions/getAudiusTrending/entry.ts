@@ -1,4 +1,6 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { annotateTracks } from '../../shared/audiusLicense.ts';
+import { consumeIpRateLimit, rateLimitResponse } from '../../shared/rateLimit.ts';
 
 const MANAGED_GATEWAY = 'https://api.audius.co/v1';
 const DEFAULT_DISCOVERY = 'https://discoveryprovider.audius.co';
@@ -21,6 +23,12 @@ async function resolveBase() {
 
 Deno.serve(async (req) => {
   try {
+    // Public by design (logged-out browsing), metered by IP so the Audius
+    // quota on our API key can't be drained by an unmetered caller.
+    const base44 = createClientFromRequest(req);
+    const rl = await consumeIpRateLimit(base44, 'audius_public_read', req);
+    if (!rl.allowed) return rateLimitResponse(rl, 'audius_public_read');
+
     const { genre, time = 'week' } = await req.json().catch(() => ({}));
     const { base, headers, useAppName } = await resolveBase();
     const url = new URL(`${base}/tracks/trending`);

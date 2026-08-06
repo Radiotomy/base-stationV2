@@ -17,6 +17,15 @@
 // protecting against is expensive, not dangerous, and silently blocking every
 // creator's marking because a bookkeeping write failed is the worse outcome.
 
+// Per-IP ceilings for the PUBLIC (unauthenticated) endpoints. These are not an
+// access control — the data they serve is public by design — they exist purely
+// as cost control: each call fans out to the Audius gateway on our API key, so
+// an unmetered endpoint is a quota-amplification target. Set generously enough
+// that a real person browsing the catalogue never notices.
+export const IP_LIMITS = {
+  audius_public_read: { max: 300, windowMs: 60 * 60 * 1000 },
+};
+
 export const LIMITS = {
   // A full-length drift embed is the single most expensive operation we run.
   basemark_v3_embed: { max: 10, windowMs: 60 * 60 * 1000 },
@@ -66,6 +75,52 @@ export async function consumeRateLimit(base44, action, user) {
     } else {
       await base44.asServiceRole.entities.RateLimitCounter.create({
         bucket, action, user_id: user.id, window_start: start, count: 1,
+      });
+    }
+    return { allowed: true, remaining: cfg.max - used - 1, limit: cfg.max };
+  } catch {
+    return { allowed: true, remaining: null, limit: cfg.max, degraded: true };
+  }
+}
+
+/**
+ * Consume one unit of quota keyed on the CALLER'S IP rather than a user id,
+ * for endpoints that are intentionally unauthenticated. Same fixed-window and
+ * fail-open behaviour as consumeRateLimit — a bookkeeping failure must never
+ * take the public radio player or verifier offline.
+ */
+export async function consumeIpRateLimit(base44, action, req) {
+  const cfg = IP_LIMITS[action];
+  if (!cfg) return { allowed: true, remaining: null, limit: null };
+
+  const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+    || req.headers.get('x-real-ip')
+    || 'unknown';
+  const start = windowStart(cfg.windowMs);
+  const bucket = `${action}:ip:${ip}`;
+
+  try {
+    const rows = await base44.asServiceRole.entities.RateLimitCounter.filter(
+      { bucket, window_start: start }, '-created_date', 1,
+    );
+    const row = rows?.[0];
+    const used = row?.count || 0;
+
+    if (used >= cfg.max) {
+      const resetsAt = new Date(start).getTime() + cfg.windowMs;
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: cfg.max,
+        retry_after_seconds: Math.max(1, Math.ceil((resetsAt - Date.now()) / 1000)),
+      };
+    }
+
+    if (row) {
+      await base44.asServiceRole.entities.RateLimitCounter.update(row.id, { count: used + 1 });
+    } else {
+      await base44.asServiceRole.entities.RateLimitCounter.create({
+        bucket, action, user_id: `ip:${ip}`, window_start: start, count: 1,
       });
     }
     return { allowed: true, remaining: cfg.max - used - 1, limit: cfg.max };

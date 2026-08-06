@@ -1,3 +1,6 @@
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { consumeIpRateLimit, rateLimitResponse } from '../../shared/rateLimit.ts';
+
 const MANAGED_GATEWAY = 'https://api.audius.co/v1';
 const DEFAULT_DISCOVERY = 'https://discoveryprovider.audius.co';
 const APP_NAME = 'BaseStation';
@@ -27,6 +30,12 @@ async function get(ctx, path) {
 
 Deno.serve(async (req) => {
   try {
+    // Public by design (logged-out browsing), metered by IP so the Audius
+    // quota on our API key can't be drained by an unmetered caller.
+    const base44 = createClientFromRequest(req);
+    const rl = await consumeIpRateLimit(base44, 'audius_public_read', req);
+    if (!rl.allowed) return rateLimitResponse(rl, 'audius_public_read');
+
     const { userId } = await req.json();
     if (!userId) return Response.json({ error: 'userId required' }, { status: 400 });
     const ctx = await resolveBase();
