@@ -25,9 +25,16 @@ import { assertSafeUrl } from '../../shared/safeUrl.ts';
 // so the existing replicateV2Webhook finalize completes the asset when GPU settles.
 const AUDIO_TYPES = ['track', 'stem', 'master', 'harmony', 'mashup', 'sfx'];
 
+// How recently an asset must have been created for the unauthenticated
+// automation shape to act on it.
+const AUTOMATION_MAX_AGE_MS = 30 * 60 * 1000;
+
 Deno.serve(async (req) => {
+  let base44;
+  let assetId;
+  let claimed = false;
   try {
-    const base44 = createClientFromRequest(req);
+    base44 = createClientFromRequest(req);
     const body = await req.json();
 
     const isAutomation = body?.event?.entity_name === 'UserAsset';
@@ -38,18 +45,39 @@ Deno.serve(async (req) => {
     // back-fill shape ({ assetId }) has no automation backing it, so we
     // require admin there to block external callers from triggering
     // Replicate GPU spend on arbitrary assets.
+    //
+    // SECURITY: the event shape is caller-supplied, so on its own it authorizes
+    // nothing — anyone can post it. What keeps the unauthenticated path safe is
+    // that it cannot cause work the automation would not already have done:
+    // every gate below is re-derived from the STORED record (never from the
+    // request body), the asset must be newly created, and the V2 slot is
+    // claimed before any GPU call, so a burst of concurrent requests for one
+    // asset still yields exactly one prediction.
     if (!isAutomation) {
       const user = await base44.auth.me().catch(() => null);
       if (!user || user.role !== 'admin') {
         return Response.json({ error: 'Forbidden: Admin access required for direct invocation' }, { status: 403 });
       }
     }
-    const assetId = isAutomation ? body.event.entity_id : body?.assetId;
+    assetId = isAutomation ? body.event.entity_id : body?.assetId;
     if (!assetId) return Response.json({ skipped: true, reason: 'No asset id' });
 
-    let data = body.data;
-    if (!data) data = await base44.asServiceRole.entities.UserAsset.get(assetId);
+    // Always read the canonical record. body.data is attacker-controllable on
+    // the unauthenticated path and it feeds the asset-type and idempotency
+    // gates below — trusting it would let a caller simply assert eligibility.
+    const data = await base44.asServiceRole.entities.UserAsset.get(assetId).catch(() => null);
     if (!data) return Response.json({ skipped: true, reason: 'Asset not found' });
+
+    // The automation fires on CREATE, so a legitimate event always refers to a
+    // just-created asset. Anything older reaching this path is a replay or an
+    // enumerated id; back-filling older assets is exactly what the admin-only
+    // { assetId } shape exists for.
+    if (isAutomation) {
+      const ageMs = Date.now() - new Date(data.created_date).getTime();
+      if (!(ageMs >= 0 && ageMs < AUTOMATION_MAX_AGE_MS)) {
+        return Response.json({ skipped: true, reason: 'Asset not newly created; use admin back-fill' });
+      }
+    }
 
     if (!AUDIO_TYPES.includes(data.asset_type)) {
       return Response.json({ skipped: true, reason: 'Not an audio asset' });
@@ -70,6 +98,21 @@ Deno.serve(async (req) => {
     } catch (e) {
       return Response.json({ skipped: true, reason: 'Unsafe url: ' + e.message });
     }
+
+    // CLAIM THE SLOT BEFORE SPENDING ANYTHING. The idempotency check above is a
+    // read; with no write between it and the GPU call, N concurrent requests for
+    // the same asset all read "unmarked" and all start a prediction. Writing the
+    // processing marker first means the next request in bails at that check, so
+    // the worst case for any single asset is one prediction. Released below if
+    // the work fails.
+    const baseMeta = data.metadata || {};
+    await base44.asServiceRole.entities.UserAsset.update(assetId, {
+      metadata: {
+        ...baseMeta,
+        base_mark_v2: { status: 'processing', engine: 'neural', claimed_at: new Date().toISOString() },
+      },
+    });
+    claimed = true;
 
     const payloadHex = payloadFromId(assetId);
 
@@ -121,7 +164,7 @@ Deno.serve(async (req) => {
 
     // Refetch fresh so a concurrent persistExternalMedia wav_url change isn't clobbered.
     const fresh = await base44.asServiceRole.entities.UserAsset.get(assetId).catch(() => null);
-    const meta = (fresh?.metadata || data.metadata || {});
+    const meta = (fresh?.metadata || baseMeta);
     await base44.asServiceRole.entities.UserAsset.update(assetId, {
       metadata: {
         ...meta,
@@ -139,6 +182,7 @@ Deno.serve(async (req) => {
         },
       },
     });
+    claimed = false; // superseded by the real record, nothing to release
 
     return Response.json({
       ok: true,
@@ -150,6 +194,18 @@ Deno.serve(async (req) => {
       cascade: !!v1Info,
     });
   } catch (error) {
+    // Release an unfulfilled claim so a later run can retry this asset. Only
+    // clears a marker with no prediction_id — never a real in-flight job.
+    if (claimed && base44 && assetId) {
+      try {
+        const cur = await base44.asServiceRole.entities.UserAsset.get(assetId);
+        const curMeta = { ...(cur?.metadata || {}) };
+        if (curMeta.base_mark_v2?.status === 'processing' && !curMeta.base_mark_v2?.prediction_id) {
+          delete curMeta.base_mark_v2;
+          await base44.asServiceRole.entities.UserAsset.update(assetId, { metadata: curMeta });
+        }
+      } catch { /* best effort */ }
+    }
     return Response.json({ error: error.message }, { status: 500 });
   }
 });
