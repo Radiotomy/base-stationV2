@@ -7,7 +7,7 @@
 
 ## Where we stand
 
-**133 null scans. 0 false positives. 0 spurious pattern lines.**
+**135 null scans. 0 false positives. 0 spurious pattern lines.**
 
 Every scan is unmarked audio, ≥60s, speed search forced ON (`--detect-speed`), which is the
 path most likely to hallucinate a pattern line. A detection on any of these rows would be a
@@ -18,7 +18,7 @@ failure; none occurred.
 | `ai_generated_codec` | 27 | 0 | Primary class — how we actually deliver |
 | `ai_generated_wav` | 22 | 0 | Marking-stage class |
 | `human_lossy_preview` | 4 | 0 | Confounded (codec + human) — cannot be quoted as a human figure |
-| `human_lossless` | **76** | 0 | **Rate bounded under 4%; acoustic gap now partly covered** |
+| `human_lossless` | **78** | 0 | **Rate bounded under 4%; acoustic gap partly covered. 76 at `codec: none`, 2 at `mp3_128`.** |
 | `unknown` (legacy) | 4 | 0 | Pre-dates `source_class`; excluded from per-class reporting |
 
 ## The one open cell
@@ -62,6 +62,25 @@ failure; none occurred.
 | Prince album, 12 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — funk / R&B / jazz-inflected, incl. sparser and lower-density arrangements than the rock material.** Run `null-prince-2026-08-06`; all 12 scanned clean (no pattern line at all). |
 | Electropop album (2008), 14 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — heavily synth/loop-based dance-pop production, incl. a few piano-led and ballad-leaning cuts. Different production DNA from the rock/funk material: dense electronic, loudness-war era.** Run `null-gaga-2026-08-06`; all 14 scanned clean (no pattern line at all). |
 | Country/bluegrass album, 10 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — ACOUSTIC: fiddle, banjo, dobro and close-mic'd vocal harmony, incl. sparse ballads and an acoustic cover. The quietest, least dense material in the corpus so far and the first real test of the low-level case where a speed-search decoder is most likely to hallucinate.** Run `null-dixie-2026-08-06`; all 10 scanned clean (no pattern line at all). |
+
+## Lossy re-scan of the human class — blocked on source URLs
+
+The human class is measured almost entirely at `codec: "none"`, which is the rarest delivery case.
+Re-scanning the SAME audio through a real encoder is the cheapest way to fill the cell that
+actually governs the production gate — no new sourcing required, the container's ffmpeg does the
+round trip.
+
+**Two tracks re-scanned at `mp3_128` (run `null-dixie-mp3128-2026-08-06`): both clean, no pattern
+line.** Encouraging but n=2.
+
+The rest cannot currently be re-run: **`BaseMarkBenchmark` does not store a source URL**, so once a
+batch's upload URLs leave the working session the audio is unaddressable even though the file is
+still in storage. Options, in order of preference:
+
+1. Add a `source_url` column to `BaseMarkBenchmark` so every future row is re-scannable at any
+   codec without re-uploading. This is the real fix and should land before the corpus grows further.
+2. Re-upload the CD rips and scan lossless + `mp3_128` + `aac_128` in the same pass, which is what
+   the ingest recipe should do from here on.
 
 ## Next step (agreed)
 
