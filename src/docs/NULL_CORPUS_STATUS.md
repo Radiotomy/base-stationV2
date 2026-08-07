@@ -1,6 +1,6 @@
 # Null-Corpus Status — BASE Mark V4 False-Positive Measurement
 
-**Last updated:** 2026-08-06
+**Last updated:** 2026-08-07
 **Purpose:** running state of the false-positive (null) corpus, so work can resume without re-deriving context.
 
 ---
@@ -66,7 +66,7 @@ failure; none occurred.
 | Audio Bible (Zondervan NT, Matthew), 17 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo — SPOKEN WORD: one unaccompanied narrator, no music bed, long near-silent gaps between phrases. The lowest-density, lowest-energy material in the corpus by a wide margin and the strongest available test of the hallucination case. Run `null-bible-2026-08-06`; all 17 scanned clean (no pattern line at all). An 18th track (disc conclusion, 24.57s) was rejected by the 60s gate rather than scanned short.** |
 | Country/bluegrass album, 10 tracks | Platform owner's CD rip, 2026-08-06 | Owned rip | **16-bit/44.1kHz stereo CD masters — ACOUSTIC: fiddle, banjo, dobro and close-mic'd vocal harmony, incl. sparse ballads and an acoustic cover. The quietest, least dense material in the corpus so far and the first real test of the low-level case where a speed-search decoder is most likely to hallucinate.** Run `null-dixie-2026-08-06`; all 10 scanned clean (no pattern line at all). |
 
-## Lossy re-scan of the human class — blocked on source URLs
+## Lossy re-scan of the human class — UNBLOCKED going forward (2026-08-07)
 
 The human class is measured almost entirely at `codec: "none"`, which is the rarest delivery case.
 Re-scanning the SAME audio through a real encoder is the cheapest way to fill the cell that
@@ -76,14 +76,12 @@ round trip.
 **Two tracks re-scanned at `mp3_128` (run `null-dixie-mp3128-2026-08-06`): both clean, no pattern
 line.** Encouraging but n=2.
 
-The rest cannot currently be re-run: **`BaseMarkBenchmark` does not store a source URL**, so once a
-batch's upload URLs leave the working session the audio is unaddressable even though the file is
-still in storage. Options, in order of preference:
-
-1. Add a `source_url` column to `BaseMarkBenchmark` so every future row is re-scannable at any
-   codec without re-uploading. This is the real fix and should land before the corpus grows further.
-2. Re-upload the CD rips and scan lossless + `mp3_128` + `aac_128` in the same pass, which is what
-   the ingest recipe should do from here on.
+**The `source_url` column has landed (2026-08-07).** `BaseMarkBenchmark` now stores the source URL
+on every new row, and the scan pipeline records it automatically — so every row written from here
+on is re-scannable at any codec without re-uploading. The 152 historical rows pre-date the column
+(0 carry a URL); those batches remain unaddressable and would need re-upload to re-scan. The
+ingest recipe from here on: scan lossless + `mp3_128` + `aac_128` in the same pass while the
+upload URLs are live.
 
 ## Next step (agreed)
 
@@ -99,7 +97,10 @@ More of the owner's own 2007-era WAVs are welcome and will be scanned the same w
 tracker renders — they raise n in the class without addressing the acoustic-master gap. The CD rips
 are what address it.
 
-To scan them once uploaded, per file:
+To scan them once uploaded: **use the admin benchmark dashboard (Admin → BASE Mark Benchmarks →
+Run tests)**, which dispatches, persists and polls batches — parameters, prediction ids and
+gate-rejected sources are all recorded in `BaseMarkRun`, so a run survives the browser tab and a
+published figure traces back to the batch that produced it. The underlying call, for reference:
 
 ```
 smokeBaseMarkV4  action: "null_scan"
@@ -120,9 +121,9 @@ then poll `action: "null_poll"` with the returned `jobs` and a `run_id` until `p
 - **Report FPR per class and per codec, never blended.** Codec damage consumes the detector's
   decision margin, so lossy delivery is both the common case and the likeliest source of a
   spurious hit.
-- **The rows do not store a source URL.** `BaseMarkBenchmark` has no such field, so per-row
-  provenance currently lives in `notes` and is identified by creation order within a batch. Worth a
-  first-class column if the corpus grows much further.
+- **Rows written before 2026-08-07 do not store a source URL.** The `source_url` column now exists
+  and is populated automatically on every new row; historical provenance lives in `notes` and
+  creation order within a batch.
 
 ## Blocker this unblocks
 
