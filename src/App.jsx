@@ -80,6 +80,7 @@ const AdminBlockchainWallets = lazy(() => import('./pages/admin/AdminBlockchainW
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const AdminAIIntegrations = lazy(() => import('./pages/admin/AdminAIIntegrations'));
 const AdminMarketing = lazy(() => import('./pages/admin/AdminMarketing'));
+const AdminBenchmarks = lazy(() => import('./pages/admin/AdminBenchmarks'));
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'));
 const Credits = lazy(() => import('./pages/Credits'));
 const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
@@ -225,6 +226,7 @@ const AuthenticatedApp = () => {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="ai-integrations" element={<AdminAIIntegrations />} />
             <Route path="marketing" element={<AdminMarketing />} />
+            <Route path="benchmarks" element={<AdminBenchmarks />} />
             <Route path="solana" element={<AdminSolana />} />
             <Route path="blockchain-wallets" element={<AdminBlockchainWallets />} />
           </Route>
