@@ -261,6 +261,7 @@ export default async function (req: Request): Promise<Response> {
           attack,
           attack_label: attack === 'none' ? 'Clean round trip (no attack)' : ATTACKS[attack].label,
           prediction_id: dec.id,
+          source_url: url,
           sample_rate: attacked.sampleRate,
           source_seconds: Number((attacked.channels[0].length / attacked.sampleRate).toFixed(2)),
         });
@@ -318,6 +319,7 @@ export default async function (req: Request): Promise<Response> {
             detected_speed: typeof out.speed === 'number' ? out.speed : undefined,
             codec: body.codec || 'none',
             source_kind: sourceKind,
+            source_url: job.source_url || undefined,
             source_seconds: job.source_seconds ?? undefined,
             sample_rate: job.sample_rate ?? undefined,
             cascaded: false,
@@ -543,6 +545,11 @@ export default async function (req: Request): Promise<Response> {
             // Carried per job so a mixed batch stays separable, and so the
             // false-positive rate can be reported per class rather than blended.
             source_class: job.source_class || body.source_class || undefined,
+            // Recorded so this exact measurement can be re-run at another codec
+            // later without re-uploading the audio — the lossy cell is the one
+            // that governs the production gate, and it was previously
+            // unreachable for any batch whose URLs had left the session.
+            source_url: job.source_url || undefined,
             source_seconds: job.source_seconds ?? undefined,
             sample_rate: job.sample_rate ?? undefined,
             cascaded: false,

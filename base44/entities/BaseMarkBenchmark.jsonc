@@ -94,6 +94,10 @@
       ],
       "description": "Provenance and fidelity class of the null-corpus material, kept separate from source_kind so the false-positive rate can be reported per class instead of as one blended figure nobody can characterize. ai_generated_wav = our own engines, lossless PCM \u2014 the class our marking stage actually sees. ai_generated_codec = our own engines delivered through a real lossy encoder, which is how the VAST MAJORITY of our content is distributed and therefore the class that matters most for a production gate. human_lossy_preview = outside human-produced recordings obtained as lossy previews, so codec damage and human provenance are confounded and it CANNOT be quoted as a clean human-audio figure. human_lossless = outside human-produced lossless masters. synthetic_tone = the benchmark's generated test signal."
     },
+    "source_url": {
+      "type": "string",
+      "description": "The audio this row was measured on. Added because without it a recorded row is UNADDRESSABLE: the file is still in storage, but nothing links the measurement back to it, so an existing lossless row cannot be re-scanned at a different codec without re-uploading the audio. Since the codec cell is the one that actually governs the production gate, that made the cheapest available measurement impossible. Absent on rows recorded before this field existed."
+    },
     "source_seconds": {
       "type": "number",
       "description": "Duration of the source material in seconds. Comparable only within a class: audiowmark gets more evidence from longer audio, so a short row is an easier scan and mixing lengths smears the distribution."

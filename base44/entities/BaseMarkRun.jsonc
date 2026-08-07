@@ -1,0 +1,119 @@
+{
+  "name": "BaseMarkRun",
+  "type": "object",
+  "description": "One dispatched benchmark batch. Exists so a run survives the browser tab: the Replicate prediction ids, the exact parameters used, and which sources were rejected are all persisted the moment the batch is started, rather than living in component state where a refresh loses them. This is what makes a published figure traceable back to the run that produced it.",
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "description": "Groups the BaseMarkBenchmark rows this batch will write. Matches BaseMarkBenchmark.run_id."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "null_scan",
+        "attack_grid"
+      ],
+      "description": "null_scan = unmarked audio, measuring false positives. attack_grid = marked audio under the attack registry, measuring recovery."
+    },
+    "layer": {
+      "type": "string",
+      "enum": [
+        "spectral",
+        "neural",
+        "drift",
+        "speed"
+      ],
+      "default": "speed",
+      "description": "Which BASE Mark layer this batch exercises"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed",
+        "failed"
+      ],
+      "default": "running",
+      "description": "running = predictions dispatched, rows not yet written. Rows are only written once every job in the batch resolves, so a batch is never half-recorded."
+    },
+    "params": {
+      "type": "object",
+      "description": "Exact parameters the batch was dispatched with \u2014 source_class, codec, seconds, batch_size, payload, attacks. Stored verbatim so a result can be reproduced rather than reconstructed from memory."
+    },
+    "jobs": {
+      "type": "array",
+      "description": "Dispatched jobs, each with its prediction_id and source. Jobs rejected before dispatch (e.g. by the duration gate) are kept here with their reason instead of being dropped silently.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source_url": {
+            "type": "string"
+          },
+          "prediction_id": {
+            "type": "string"
+          },
+          "attack": {
+            "type": "string"
+          },
+          "attack_label": {
+            "type": "string"
+          },
+          "source_class": {
+            "type": "string"
+          },
+          "codec": {
+            "type": "string"
+          },
+          "sample_rate": {
+            "type": "number"
+          },
+          "source_seconds": {
+            "type": "number"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "recorded": {
+      "type": "number",
+      "default": 0,
+      "description": "How many BaseMarkBenchmark rows this batch ultimately wrote"
+    },
+    "summary": {
+      "type": "object",
+      "description": "Batch outcome as reported at completion \u2014 scanned, false positives, survivals"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Operator notes: what this batch was for, and any caveat about the material"
+    }
+  },
+  "required": [
+    "run_id",
+    "kind"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

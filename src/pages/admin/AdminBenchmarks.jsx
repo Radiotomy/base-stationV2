@@ -5,16 +5,20 @@ import BenchmarkStatStrip from '@/components/admin/benchmarks/BenchmarkStatStrip
 import NullCorpusPanel from '@/components/admin/benchmarks/NullCorpusPanel';
 import RobustnessPanel from '@/components/admin/benchmarks/RobustnessPanel';
 import RunsTable from '@/components/admin/benchmarks/RunsTable';
+import NullScanForm from '@/components/admin/benchmarks/NullScanForm';
+import AttackGridForm from '@/components/admin/benchmarks/AttackGridForm';
+import JobMonitor from '@/components/admin/benchmarks/JobMonitor';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const LAYERS = ['speed', 'spectral', 'neural', 'drift'];
 
 export default function AdminBenchmarks() {
   const [rows, setRows] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     base44.entities.BaseMarkBenchmark.list('-created_date', 2000).then(setRows);
-  }, []);
+  }, [refreshKey]);
 
   if (!rows) {
     return (
@@ -52,10 +56,22 @@ export default function AdminBenchmarks() {
 
       <Tabs defaultValue="null">
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="run">Run tests</TabsTrigger>
           <TabsTrigger value="null">False positives</TabsTrigger>
           <TabsTrigger value="robustness">Robustness</TabsTrigger>
           <TabsTrigger value="runs">Runs</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="run" className="mt-4 space-y-4">
+          <div className="grid lg:grid-cols-2 gap-3">
+            <NullScanForm onStarted={() => setRefreshKey((k) => k + 1)} />
+            <AttackGridForm onStarted={() => setRefreshKey((k) => k + 1)} />
+          </div>
+          <div>
+            <p className="font-bold text-foreground text-sm mb-2">In-flight runs</p>
+            <JobMonitor refreshKey={refreshKey} onRecorded={() => setRefreshKey((k) => k + 1)} />
+          </div>
+        </TabsContent>
 
         <TabsContent value="null" className="mt-4">
           <NullCorpusPanel rows={rows} />
