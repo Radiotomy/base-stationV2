@@ -4,7 +4,7 @@ const PIPELINE = [
   {
     step: '1. Telemetry Collection',
     detail:
-      'As a creator generates and iterates in the studios, the orchestration layer records participation signals — own lyrics (+40), detailed prompts (+15), reference uploads (+15), personas (+10), style selections (+10), iteration (+10) — building the 0–100 Creative Ownership Score.',
+      'As a creator generates and iterates in the studios, the orchestration layer records participation signals — own lyrics (+35), graded prompt depth (+7 to +18), musical direction (+6), reference uploads (+12), personas (+9), style selections (+6 to +10), iteration (+8), human performance (+12) — building the 0–100 Creative Ownership Score via COS Engine 2.0.',
   },
   {
     step: '2. BASE Mark Watermarking',
