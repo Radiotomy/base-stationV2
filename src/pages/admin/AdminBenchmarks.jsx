@@ -8,6 +8,7 @@ import RunsTable from '@/components/admin/benchmarks/RunsTable';
 import NullScanForm from '@/components/admin/benchmarks/NullScanForm';
 import AttackGridForm from '@/components/admin/benchmarks/AttackGridForm';
 import JobMonitor from '@/components/admin/benchmarks/JobMonitor';
+import BackfillPanel from '@/components/admin/benchmarks/BackfillPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const LAYERS = ['speed', 'spectral', 'neural', 'drift'];
@@ -67,6 +68,7 @@ export default function AdminBenchmarks() {
             <NullScanForm onStarted={() => setRefreshKey((k) => k + 1)} />
             <AttackGridForm onStarted={() => setRefreshKey((k) => k + 1)} />
           </div>
+          <BackfillPanel />
           <div>
             <p className="font-bold text-foreground text-sm mb-2">In-flight runs</p>
             <JobMonitor refreshKey={refreshKey} onRecorded={() => setRefreshKey((k) => k + 1)} />

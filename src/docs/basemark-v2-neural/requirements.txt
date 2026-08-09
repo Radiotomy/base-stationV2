@@ -1,0 +1,17 @@
+# BASE Mark V2 — Neural Layer dependencies.
+#
+# Pinned rather than floating, for the same reason the V2 image digest is pinned
+# in BASE_MARK_V2_VERSION: a silent dependency bump can shift watermark behavior,
+# and a mark that no longer decodes is indistinguishable from a mark that was
+# never embedded.
+#
+# NOTE vs the previous revision: scipy is NEW. It supplies resample_poly, which
+# is what the band-split delta embedding uses to move between the master's rate
+# and SilentCipher's 44.1kHz. Without it the container builds and then fails on
+# import at the first prediction.
+silentcipher==1.0.5
+torch==2.4.1
+torchaudio==2.4.1
+numpy==1.26.4
+scipy==1.14.1
+soundfile==0.12.1

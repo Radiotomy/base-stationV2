@@ -1,0 +1,26 @@
+# BASE Mark V2 — Neural Layer (SilentCipher)
+# Cog build definition. Push with:
+#   cog login
+#   cog push r8.im/speedwolf2000/base-mark-v2
+#
+# Not part of the BASE Station app bundle — version-controlled here alongside
+# the code that calls it, same as the V3 drift and V4 speed containers.
+#
+# `run` is deliberately the FIRST key: a paste that drops the last line of the
+# file produces a Cog error that does not mention truncation.
+run: "predict.py:Predictor"
+build:
+  # GPU — SilentCipher is a torch model. This is the cost difference from V4
+  # (CPU-only) and the reason cold starts run to minutes, which is why the app
+  # fires embeds async and polls rather than blocking.
+  gpu: true
+  python_version: "3.11"
+  system_packages:
+    # Input containers are normalized to PCM WAV before anything touches the
+    # model, so the container accepts MP3/FLAC/M4A sources rather than only WAV.
+    - "ffmpeg"
+    # libsndfile is soundfile's backend — without it `import soundfile` imports
+    # fine and then fails at the first read, i.e. at prediction time rather than
+    # build time.
+    - "libsndfile1"
+  python_requirements: "requirements.txt"
