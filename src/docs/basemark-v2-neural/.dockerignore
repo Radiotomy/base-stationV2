@@ -1,0 +1,7 @@
+# Keep the Cog build context to just the three files that define the image.
+# A push was transferring 35MB of context, which is all stray local material —
+# it slows every attempt and adds nothing to the image.
+*
+!predict.py
+!cog.yaml
+!requirements.txt
