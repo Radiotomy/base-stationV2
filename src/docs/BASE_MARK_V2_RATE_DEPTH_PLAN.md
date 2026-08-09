@@ -87,8 +87,19 @@ So this is measured before it touches canonical audio, not after.
    figure means the band-edge ripple is real and the layer stays 44.1k-only.
 4. **Extend the grid to video-delivery audio** — AAC 48kHz demuxed from MP4. Currently
    unmeasured entirely, and it is the format most of our video output ships in.
-5. Re-dispatch the three known 48kHz assets that failed the guard (two from August, one
-   from the 2026-08-09 batch) once step 3 passes.
+5. Re-dispatch the blocked 48kHz assets once step 3 passes. Verified 2026-08-09 — the
+   complete list is **3 assets, all sample-rate, no bit-depth or channel failures anywhere
+   in the corpus**:
+
+   | Asset id | Title | Failed |
+   |---|---|---|
+   | `6a6f6b48c83d03cc449cb7c5` | Red Dirt Running Home | 2026-08-02 |
+   | `6a6f6aeeb28ba668864e7293` | Red Dirt Running Home | 2026-08-02 |
+   | `6a65294cdb3191db5ef6bc0e` | Coming Home | 2026-07-25 |
+
+   All three still carry the spectral layer and an unaltered master; only the neural layer
+   is missing. Re-dispatch is `embedBaseMarkV2` per asset, then `pollBaseMarkV2` — the same
+   path the 2026-08-09 re-embed batch used.
 
 ## Standing constraint
 
