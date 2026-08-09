@@ -1,4 +1,5 @@
 import { finalizeMashupAsset } from './mashupFinalize.ts';
+import { autoSaveJobAsset } from './autoSaveAsset.ts';
 import { getHarmonixPrediction, extractAudioUrl } from './harmonix.ts';
 import { getSoundForgePrediction, extractSoundForgeAudioUrl } from './soundForge.ts';
 import { fetchPolishUpload } from './loopPolish.ts';
@@ -524,6 +525,16 @@ export async function finalizeJob(base44, job) {
       const asset = await finalizeMashupAsset(base44, job.id);
       mashupAssetId = asset?.id || undefined;
     }
+
+    // Persist to the library server-side. A generation that finished must end up
+    // in the creator's library whether or not the studio page is still open.
+    try {
+      await autoSaveJobAsset(
+        base44, job,
+        { ...providerData, lyrics: finalLyrics, needs_basemark: job.provider === 'harmonix' && job.input_data?.tier === 'vault' },
+        outputUrl,
+      );
+    } catch (e) { console.warn('Auto-save to library failed:', e.message); }
 
     return {
       status: 'completed',
