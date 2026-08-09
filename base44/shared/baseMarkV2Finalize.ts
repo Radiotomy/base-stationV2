@@ -33,6 +33,12 @@ async function masterIntegrityError(srcUrl, outBytes) {
   if (src.channels !== out.channels) {
     return `Neural watermarking changed the channel count (${src.channels} to ${out.channels}) — the original master was kept unchanged.`;
   }
+  // Bit depth is checked in the same breath as rate and channels: a 24-bit master
+  // returned as 16-bit is a silent quality loss on the file we promote to canonical,
+  // and it would otherwise pass every other check here.
+  if (src.bitsPerSample !== out.bitsPerSample) {
+    return `Neural watermarking returned ${out.bitsPerSample}-bit audio for a ${src.bitsPerSample}-bit master — the original master was kept unchanged.`;
+  }
   return null;
 }
 
