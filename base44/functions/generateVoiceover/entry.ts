@@ -16,7 +16,8 @@ import { secrets } from 'base44:runtime';
  * }
  *
  * ElevenLabs path: fully wired (ELEVENLABS_API).
- * Inworld path: 501 stub — activated in Phase 3 by adding INWORLD_API_KEY and filling the stub.
+ * Inworld path: fully wired (INWORLD_API_KEY) — tts and llm_plus_tts.
+ * Realtime mode belongs to Phase 4 (OrvoLiveEvent) and is rejected here.
  */
 
 const HOURLY_LIMIT = 30;
@@ -49,15 +50,80 @@ export default async function(req: Request): Promise<Response> {
       return Response.json({ error: 'Voiceover rate limit reached — try again in an hour.' }, { status: 429 });
     }
 
-    // ── Inworld path — Phase 3 stub ──
-    // Phase 3 activation: add the Inworld API key secret, read it with the
-    // runtime secrets helper, and implement MODE_TTS / MODE_LLM_PLUS_TTS /
-    // MODE_REALTIME per src/lib/studios/orvo/inworldConfig.js.
+    // ── Inworld path — Phase 3 ──
     if (provider === 'inworld') {
+      const mode = inworld_mode || 'tts';
+      if (mode === 'realtime') {
+        return Response.json({
+          error: 'Realtime live host is a Phase 4 capability (OrvoLiveEvent) — use tts or llm_plus_tts here.',
+        }, { status: 400 });
+      }
+
+      const iwKey = secrets.get('INWORLD_API_KEY');
+      if (!iwKey) return Response.json({ error: 'INWORLD_API_KEY not configured' }, { status: 500 });
+
+      let speechText = text;
+
+      // llm_plus_tts: generate the spoken script first, then voice it.
+      if (mode === 'llm_plus_tts') {
+        const script = await base44.integrations.Core.InvokeLLM({
+          prompt: `You are scripting a podcast segment for spoken delivery. Write ONLY the words to be spoken — no headings, no stage directions, no speaker labels.
+Keep it natural, conversational, and under 900 characters.
+${emotion_tags?.length ? `Where it feels natural, insert these emotion steering tags inline: ${emotion_tags.join(', ')}.` : ''}
+
+Brief: ${text}`,
+        });
+        speechText = typeof script === 'string' ? script.trim() : text;
+      } else if (emotion_tags?.length && !/\[[a-z]+\]/i.test(speechText)) {
+        // Plain TTS: prefix requested emotion steering so the tag applies from the start.
+        speechText = `${emotion_tags.join(' ')} ${speechText}`;
+      }
+
+      const iwRes = await fetch('https://api.inworld.ai/tts/v1/voice', {
+        method: 'POST',
+        headers: { Authorization: `Basic ${iwKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: speechText,
+          voiceId: voice_id || 'Ashley',
+          modelId: model_id || 'inworld-tts-1',
+        }),
+      });
+      if (!iwRes.ok) {
+        const err = await iwRes.text();
+        return Response.json({ error: `Inworld TTS failed (${iwRes.status}): ${err.slice(0, 300)}` }, { status: 502 });
+      }
+
+      const iwJson = await iwRes.json();
+      const b64 = iwJson.audioContent || iwJson.result?.audioContent;
+      if (!b64) return Response.json({ error: 'Inworld returned no audio content' }, { status: 502 });
+
+      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const iwFile = new File([bin], 'orvo-voiceover.mp3', { type: 'audio/mpeg' });
+      const { file_url: iwUrl } = await base44.integrations.Core.UploadFile({ file: iwFile });
+
+      const iwAsset = await base44.entities.OrvoPodcastAsset.create({
+        user_id: user.id,
+        podcast_id: podcast_id || '',
+        asset_type: 'voiceover',
+        title: title || `Voiceover — ${speechText.slice(0, 40)}`,
+        file_url: iwUrl,
+        metadata: {
+          provider: 'inworld',
+          inworld_mode: mode,
+          voice_id: voice_id || 'Ashley',
+          model_id: model_id || 'inworld-tts-1',
+          emotion_tags: emotion_tags || [],
+          script: mode === 'llm_plus_tts' ? speechText : undefined,
+        },
+      });
+
       return Response.json({
-        error: 'Inworld activation pending INWORLD_API_KEY',
-        detail: `Requested mode '${inworld_mode || 'tts'}' is architected but not yet activated. Add the INWORLD_API_KEY secret and fill this stub to enable Phase 3.`,
-      }, { status: 501 });
+        file_url: iwUrl,
+        asset_id: iwAsset.id,
+        provider: 'inworld',
+        mode,
+        script: mode === 'llm_plus_tts' ? speechText : undefined,
+      });
     }
 
     // ── ElevenLabs path — fully wired ──

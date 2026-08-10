@@ -112,6 +112,7 @@ const OrvoUploadEpisode = lazy(() => import('./pages/studios/orvo/UploadEpisode'
 const OrvoPodcastDetail = lazy(() => import('./pages/studios/orvo/PodcastDetail'));
 const OrvoEpisodeDetail = lazy(() => import('./pages/studios/orvo/EpisodeDetail'));
 const OrvoGuestRecording = lazy(() => import('./pages/studios/orvo/GuestRecording'));
+const OrvoVoiceoverStudio = lazy(() => import('./pages/studios/orvo/VoiceoverStudio'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -229,6 +230,7 @@ const AuthenticatedApp = () => {
                 <Route path="/studios/orvo" element={<OrvoHome />} />
                 <Route path="/studios/orvo/create-podcast" element={<OrvoCreatePodcast />} />
                 <Route path="/studios/orvo/upload" element={<OrvoUploadEpisode />} />
+                <Route path="/studios/orvo/voiceover" element={<OrvoVoiceoverStudio />} />
                 <Route path="/studios/orvo/podcast/:id" element={<OrvoPodcastDetail />} />
                 <Route path="/studios/orvo/episode/:id" element={<OrvoEpisodeDetail />} />
               </Route>
