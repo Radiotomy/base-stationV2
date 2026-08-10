@@ -15,6 +15,7 @@ export default async function (req) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await req.json().catch(() => ({}));
+    const action = body.action || 'mark';
     const episodeId = String(body.episode_id || '');
     if (!episodeId) return Response.json({ error: 'Missing episode_id' }, { status: 400 });
 
@@ -24,6 +25,38 @@ export default async function (req) {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
     if (!episode.audio_url) return Response.json({ error: 'Episode has no audio yet' }, { status: 400 });
+
+    // ── anchor ── pin the provenance bundle to IPFS and write the anchor on
+    // Base mainnet, reusing the platform-paid registerOnBase flow so episodes
+    // and music share one registry. Solana is the planned second network.
+    if (action === 'anchor') {
+      if (episode.chain_status === 'registered') {
+        return Response.json({ ok: true, already: true, transaction_hash: episode.chain_tx_hash });
+      }
+      const res = await base44.functions.invoke('registerOnBase', {
+        action: 'register',
+        track: {
+          title: episode.title,
+          track_url: episode.audio_url,
+          cover_image_url: episode.thumbnail_url || '',
+          genre: 'podcast',
+          asset_id: episode.base_mark_asset_id || null,
+          ai_label: episode.ai_disclosure_label || undefined,
+          description: episode.description || '',
+          ai_tools_used: 'ORVO Studio',
+        },
+      });
+      const out = res.data || {};
+      const updated = await base44.asServiceRole.entities.Episode.update(episodeId, {
+        chain_registry_id: out.registry_id || episode.chain_registry_id,
+        chain_tx_hash: out.transaction_hash || '',
+        chain_metadata_uri: out.metadata_uri || '',
+        chain_network: 'base-mainnet',
+        chain_status: out.registration_status === 'registered' ? 'registered' : 'pending',
+      });
+      return Response.json({ ok: true, chain: out, episode: updated });
+    }
+
     if (episode.base_mark_asset_id) {
       return Response.json({ ok: true, already: true, asset_id: episode.base_mark_asset_id });
     }

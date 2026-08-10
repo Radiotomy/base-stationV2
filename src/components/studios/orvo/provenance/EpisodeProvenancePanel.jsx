@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
 import { ShieldCheck, Loader2, Fingerprint } from 'lucide-react';
+import EpisodeChainAnchor from './EpisodeChainAnchor';
 
 const LABELS = {
   human: 'Human recorded',
@@ -97,6 +98,8 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
           {v1?.payload_hex && (
             <p className="text-[11px] text-white/35 font-mono break-all">Mark ID · {v1.payload_hex}</p>
           )}
+
+          <EpisodeChainAnchor episode={episode} onUpdate={onUpdate} />
         </div>
       )}
     </div>

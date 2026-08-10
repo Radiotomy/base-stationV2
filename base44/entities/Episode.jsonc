@@ -121,6 +121,38 @@
     "participation_signals": {
       "type": "object",
       "description": "Breakdown of COS signals and points for this episode"
+    },
+    "chain_status": {
+      "type": "string",
+      "enum": [
+        "unregistered",
+        "pending",
+        "registered",
+        "failed"
+      ],
+      "default": "unregistered",
+      "description": "On-chain provenance anchor state for this episode"
+    },
+    "chain_network": {
+      "type": "string",
+      "enum": [
+        "base-mainnet",
+        "solana-mainnet"
+      ],
+      "default": "base-mainnet",
+      "description": "Chain the provenance anchor lives on (Solana support planned)"
+    },
+    "chain_registry_id": {
+      "type": "string",
+      "description": "BaseTrackRegistry record id for this episode's anchor"
+    },
+    "chain_tx_hash": {
+      "type": "string",
+      "description": "Anchor transaction hash"
+    },
+    "chain_metadata_uri": {
+      "type": "string",
+      "description": "IPFS URI of the pinned provenance bundle"
     }
   },
   "required": [
