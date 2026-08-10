@@ -29,6 +29,13 @@ const AUDIO_TYPES = ['track', 'stem', 'master', 'harmony', 'mashup', 'sfx'];
 // automation shape to act on it.
 const AUTOMATION_MAX_AGE_MS = 30 * 60 * 1000;
 
+// How long a 'processing' claim with no prediction_id stays authoritative.
+// The claim is written before the GPU call and released in the catch below,
+// but a function TIMEOUT kills the isolate outright — the catch never runs and
+// the claim persists forever, permanently excluding the asset from marking.
+// Past this age an unfulfilled claim is treated as stale and re-attempted.
+const STALE_CLAIM_MS = 15 * 60 * 1000;
+
 Deno.serve(async (req) => {
   let base44;
   let assetId;
@@ -84,9 +91,21 @@ Deno.serve(async (req) => {
     }
     // Idempotency — never re-embed a track that already carries a V2 mark
     // (completed or in-flight). Legacy V1-only assets are eligible (back-fill).
-    const v2status = data.metadata?.base_mark_v2?.status;
-    if (v2status === 'completed' || v2status === 'processing') {
+    // An in-flight job is one with a real prediction_id behind it. A
+    // 'processing' marker WITHOUT one is only a claim, and a claim that was
+    // never fulfilled must expire — otherwise a single timed-out run strands
+    // the asset permanently.
+    const v2meta = data.metadata?.base_mark_v2;
+    const v2status = v2meta?.status;
+    if (v2status === 'completed') {
       return Response.json({ skipped: true, reason: 'Already V2-marked' });
+    }
+    if (v2status === 'processing') {
+      const claimAge = Date.now() - new Date(v2meta.claimed_at || v2meta.embedded_at || 0).getTime();
+      const isStaleClaim = !v2meta.prediction_id && claimAge > STALE_CLAIM_MS;
+      if (!isStaleClaim) {
+        return Response.json({ skipped: true, reason: 'Already V2-marked' });
+      }
     }
 
     const originalUrl = data.metadata?.wav_url || data.file_url;
