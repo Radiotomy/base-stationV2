@@ -25,7 +25,7 @@ export const MODE_LLM_PLUS_TTS = {
 export const MODE_REALTIME = {
   id: 'realtime',
   label: 'Live AI Host (Realtime)',
-  description: 'WebSocket/WebRTC Realtime API for live AI-hosted podcast sessions. Activated with OrvoLiveEvent in Phase 4.',
+  description: 'WebSocket/WebRTC Realtime API for live AI-hosted podcast sessions. Activated with OrvoLiveEvent in Phase 4. Authenticates with the SEPARATE Real-Time key (INWORLD_REALTIME_API_KEY), not the Standard key used by TTS.',
   transport: 'websocket',
   endpoint: 'wss://api.inworld.ai/realtime/v1',
   supportsEmotionTags: true,
