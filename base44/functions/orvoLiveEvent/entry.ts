@@ -14,8 +14,7 @@ export default async function (req: Request): Promise<Response> {
     const { event_id, action } = await req.json();
     if (!event_id || !action) return Response.json({ error: 'event_id and action are required' }, { status: 400 });
 
-    const events = await base44.asServiceRole.entities.OrvoLiveEvent.filter({ id: event_id });
-    const event = events?.[0];
+    const event = await base44.asServiceRole.entities.OrvoLiveEvent.get(event_id).catch(() => null);
     if (!event) return Response.json({ error: 'Live event not found' }, { status: 404 });
 
     const isHost = event.host_id === user.id || user.role === 'admin';

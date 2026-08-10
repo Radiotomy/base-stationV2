@@ -15,11 +15,15 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
   const [asset, setAsset] = useState(null);
   const [busy, setBusy] = useState(false);
 
+  // Marking finishes asynchronously on Replicate, so poll until it settles.
   useEffect(() => {
-    if (!episode.base_mark_asset_id) return;
+    const assetId = episode.base_mark_asset_id;
+    if (!assetId) return;
     let alive = true;
-    (async () => {
-      const rows = await base44.entities.UserAsset.filter({ id: episode.base_mark_asset_id });
+    let timer;
+
+    const sync = async () => {
+      const rows = await base44.entities.UserAsset.filter({ id: assetId });
       const a = rows?.[0];
       if (!alive || !a) return;
       setAsset(a);
@@ -29,8 +33,11 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
         const updated = await base44.entities.Episode.update(episode.id, { provenance_status: next });
         onUpdate?.(updated);
       }
-    })();
-    return () => { alive = false; };
+      if (alive && next === 'processing') timer = setTimeout(sync, 15000);
+    };
+    sync();
+
+    return () => { alive = false; clearTimeout(timer); };
   }, [episode.base_mark_asset_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const register = async () => {
@@ -43,7 +50,7 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
   };
 
   const status = episode.provenance_status || 'unregistered';
-  const v1 = asset?.metadata?.base_mark;
+  const mark = asset?.metadata?.base_mark_v2 || asset?.metadata?.base_mark;
 
   return (
     <div className="merc-card rounded-2xl p-5 mt-6">
@@ -95,8 +102,8 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
             <p className="text-xs text-white/40">{episode.ai_disclosure_basis}</p>
           )}
 
-          {v1?.payload_hex && (
-            <p className="text-[11px] text-white/35 font-mono break-all">Mark ID · {v1.payload_hex}</p>
+          {mark?.payload_hex && (
+            <p className="text-[11px] text-white/35 font-mono break-all">Mark ID · {mark.payload_hex}</p>
           )}
 
           <EpisodeChainAnchor episode={episode} onUpdate={onUpdate} />
