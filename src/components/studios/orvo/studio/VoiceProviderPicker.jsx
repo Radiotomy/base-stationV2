@@ -25,10 +25,12 @@ export default function VoiceProviderPicker({
     <div className="merc-card rounded-xl p-4 space-y-4">
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-[#FF9A4D] mb-2">Voice Provider</p>
+        {/* ElevenLabs is hidden as a TTS provider — it stays reserved for music/SFX
+            generation elsewhere in BASE Station. Inworld handles voiceover. */}
         <div className="flex gap-2">
-          {['inworld', 'elevenlabs'].map((p) => (
+          {['inworld'].map((p) => (
             <button key={p} disabled={disabled} onClick={() => onProviderChange?.(p)} className={chip(provider === p)}>
-              {p === 'inworld' ? 'Inworld TTS-2' : 'ElevenLabs'}
+              Inworld TTS-2
             </button>
           ))}
         </div>
