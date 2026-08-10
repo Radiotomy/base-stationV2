@@ -8,8 +8,9 @@
 #
 # `predict` is deliberately the FIRST key: a paste that drops the last line of
 # the file produces a Cog error that does not mention truncation.
-# The key MUST be `predict` and the class method MUST be named `predict` —
-# Cog resolves the entrypoint by that exact name and fails the build otherwise.
+# The key MUST be `predict` — it points at the FILE and CLASS, not at a method
+# name. The class method itself is `run()`; Cog deprecated `predict()` and warns
+# on it. Do not rename this key to `run`, that is a different thing and fails.
 predict: "predict.py:Predictor"
 build:
   # GPU — SilentCipher is a torch model. This is the cost difference from V4

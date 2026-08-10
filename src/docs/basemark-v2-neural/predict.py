@@ -45,7 +45,13 @@ is a TOTAL loss, not a degraded one. Benchmark 48kHz recovery against the
 ── I/O CONTRACT — DO NOT CHANGE WITHOUT CHANGING THE APP ───────────────────────
 The app treats the output as a SINGLE FILE URL (it reads `pred.output` as a
 string, or `[0]`, or `.url`). Returning a multi-field object would break both
-callers, so `predict` returns exactly one `Path`:
+callers, so the entrypoint returns exactly one `Path`:
+
+The entrypoint method is named `run`. Cog deprecated `Predictor.predict()` in
+favour of `Predictor.run()`; the `predict:` key in cog.yaml is unrelated to the
+method name and still points at the CLASS (`predict.py:Predictor`), so it stays
+as it is. The public API on Replicate is unchanged — input and output schema are
+derived from this signature either way.
 
   action="encode"  -> a PCM WAV of the marked master.
                       Input `message` is a JSON string of 5 ints, e.g. "[181,0,...]"
@@ -136,7 +142,7 @@ class Predictor(BasePredictor):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = silentcipher.get_model(model_type="44.1k", device=self.device)
 
-    def predict(
+    def run(
         self,
         audio: Path = Input(description="Audio file to mark or scan."),
         action: str = Input(
