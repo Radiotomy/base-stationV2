@@ -83,6 +83,44 @@
     "like_count": {
       "type": "number",
       "default": 0
+    },
+    "base_mark_asset_id": {
+      "type": "string",
+      "description": "UserAsset id carrying this episode's BASE Mark cascade \u2014 the asset is the forensic record, the episode links to it"
+    },
+    "provenance_status": {
+      "type": "string",
+      "enum": [
+        "unregistered",
+        "processing",
+        "marked",
+        "failed"
+      ],
+      "default": "unregistered",
+      "description": "BASE Mark registration state for this episode's audio"
+    },
+    "human_participation_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "0-100 Creative Ownership Score for this episode"
+    },
+    "ai_disclosure_label": {
+      "type": "string",
+      "enum": [
+        "ai_generated",
+        "ai_assisted",
+        "human"
+      ],
+      "description": "Disclosure label derived from the episode's COS telemetry"
+    },
+    "ai_disclosure_basis": {
+      "type": "string",
+      "description": "Human-readable explanation of the assigned label"
+    },
+    "participation_signals": {
+      "type": "object",
+      "description": "Breakdown of COS signals and points for this episode"
     }
   },
   "required": [

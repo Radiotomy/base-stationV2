@@ -39,7 +39,11 @@ export default function PodcastDetail() {
       status: 'published',
       published_date: new Date().toISOString(),
     });
-    toast({ title: 'Episode published 🎙️' });
+    // Publishing is the moment provenance matters — kick off BASE Mark + COS.
+    if (!ep.base_mark_asset_id) {
+      base44.functions.invoke('registerEpisodeProvenance', { episode_id: ep.id }).catch(() => {});
+    }
+    toast({ title: 'Episode published 🎙️', description: 'BASE Mark registration started.' });
     load();
   };
 
