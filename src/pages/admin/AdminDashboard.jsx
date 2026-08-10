@@ -4,13 +4,15 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Music, Users, Trophy, Star, Shield,
-  TrendingUp, ChevronRight, Menu, X, LogOut, Zap, Wallet, UserCog, Megaphone, FlaskConical
+  TrendingUp, ChevronRight, Menu, X, LogOut, Zap, Wallet, UserCog, Megaphone, FlaskConical,
+  Flag, Bug, Activity, Radio
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/admin/users", label: "Users", icon: UserCog },
+  { to: "/admin/moderation", label: "Moderation", icon: Flag },
   { to: "/admin/tracks", label: "Tracks", icon: Music },
   { to: "/admin/artists", label: "Artists", icon: Users },
   { to: "/admin/challenges", label: "Challenges", icon: Trophy },
@@ -21,6 +23,14 @@ const NAV = [
   { to: "/admin/benchmarks", label: "BASE Mark Benchmarks", icon: FlaskConical },
   { to: "/admin/solana", label: "Solana Registry", icon: Shield },
   { to: "/admin/blockchain-wallets", label: "Blockchain Wallets", icon: Wallet },
+];
+
+// Admin-gated engineering tools that live outside the /admin router.
+const DEV_NAV = [
+  { to: "/dev/smoke-tests", label: "Smoke Tests", icon: FlaskConical },
+  { to: "/dev/error-log", label: "Error Log", icon: Bug },
+  { to: "/dev/live-regression", label: "Live Regression", icon: Activity },
+  { to: "/dev/live-multiclient", label: "Live Multiclient", icon: Radio },
 ];
 
 export default function AdminDashboard() {
@@ -67,6 +77,15 @@ export default function AdminDashboard() {
           {NAV.map(({ to, label, icon: Icon, exact }) => (
             <Link key={to} to={to} onClick={() => setSidebarOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${isActive(to, exact) ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}>
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {label}
+            </Link>
+          ))}
+
+          <p className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Dev Tools</p>
+          {DEV_NAV.map(({ to, label, icon: Icon }) => (
+            <Link key={to} to={to} onClick={() => setSidebarOpen(false)}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${location.pathname === to ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" : "text-muted-foreground hover:text-foreground hover:bg-muted/60"}`}>
               <Icon className="w-4 h-4 flex-shrink-0" />
               {label}
             </Link>

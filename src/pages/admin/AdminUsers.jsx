@@ -5,6 +5,7 @@ import { Users, Search, Shield, Music, Image as ImageIcon, FileText, Zap, Coins,
 import { Input } from "@/components/ui/input";
 import UserDetailPanel from "@/components/admin/UserDetailPanel";
 import BetaRequestsPanel from "@/components/admin/BetaRequestsPanel";
+import InviteUserDialog from "@/components/admin/InviteUserDialog";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -67,7 +68,8 @@ export default function AdminUsers() {
           <h1 className="text-3xl font-black text-foreground mb-1">Users</h1>
           <p className="text-muted-foreground text-sm">Registered accounts, their content, and activity</p>
         </div>
-        <div className="flex gap-2 flex-wrap text-xs">
+        <div className="flex gap-2 flex-wrap text-xs items-center">
+          <InviteUserDialog />
           <Stat label="Total" value={totals.users} />
           <Stat label="Admins" value={totals.admins} />
           <Stat label="Creators" value={totals.creators} />
@@ -169,6 +171,10 @@ export default function AdminUsers() {
           assets={assetsByUser[selectedUser.email] || []}
           xp={xpByUser[selectedUser.email]}
           credit={creditsByUser[selectedUser.email]}
+          onUserChange={(u) => {
+            setUsers(prev => prev.map(x => (x.id === u.id ? u : x)));
+            setSelectedUser(u);
+          }}
           onClose={() => setSelectedUser(null)}
         />
       )}

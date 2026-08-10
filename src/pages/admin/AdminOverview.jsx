@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
-import { Music, Users, Trophy, Star, Shield, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Music, Users, Trophy, Star, Shield, TrendingUp, Clock, CheckCircle, XCircle, AlertCircle, Flag } from "lucide-react";
 import { Link } from "react-router-dom";
 
 function StatCard({ label, value, icon: Icon, color, sub, to }) {
@@ -26,23 +26,30 @@ export default function AdminOverview() {
   const [recentTracks, setRecentTracks] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Counts are sampled up to PAGE rows. Anything that fills the page is shown
+  // as "N+" rather than silently reporting a wrong total.
+  const PAGE = 1000;
+  const count = (rows) => (rows.length >= PAGE ? `${PAGE}+` : rows.length);
+
   useEffect(() => {
     Promise.all([
-      base44.entities.TrackSubmission.list("-created_date", 100),
-      base44.entities.ArtistProfile.list("-created_date", 100),
-      base44.entities.Challenge.list("-created_date", 100),
+      base44.entities.TrackSubmission.list("-created_date", PAGE),
+      base44.entities.ArtistProfile.list("-created_date", PAGE),
+      base44.entities.Challenge.list("-created_date", PAGE),
       base44.entities.FeaturedArtistApplication.filter({ status: "pending" }),
-      base44.entities.SolanaTrackRegistry.list("-created_date", 100),
+      base44.entities.SolanaTrackRegistry.list("-created_date", PAGE),
       base44.entities.TrackSubmission.list("-created_date", 5),
-    ]).then(([tracks, artists, challenges, pendingApps, solana, recent]) => {
+      base44.entities.OrvoReport.filter({ status: "open" }).catch(() => []),
+    ]).then(([tracks, artists, challenges, pendingApps, solana, recent, openReports]) => {
       setStats({
-        totalTracks: tracks.length,
+        totalTracks: count(tracks),
         pendingTracks: tracks.filter(t => t.status === "pending").length,
         approvedTracks: tracks.filter(t => t.status === "approved").length,
-        totalArtists: artists.length,
+        totalArtists: count(artists),
         activeChallenges: challenges.filter(c => c.status === "active").length,
         pendingApps: pendingApps.length,
-        solanaRegistrations: solana.length,
+        solanaRegistrations: count(solana),
+        openReports: openReports.length,
       });
       setRecentTracks(recent);
       setLoading(false);
@@ -56,6 +63,7 @@ export default function AdminOverview() {
     { label: "Active Challenges", value: stats.activeChallenges, icon: Trophy, color: "bg-pink-600", to: "/admin/challenges" },
     { label: "Featured Applications", value: stats.pendingApps, icon: Star, color: "bg-yellow-600", to: "/admin/featured", sub: "pending" },
     { label: "Solana Registrations", value: stats.solanaRegistrations, icon: Shield, color: "bg-violet-600", to: "/admin/solana" },
+    { label: "Open Reports", value: stats.openReports, icon: Flag, color: "bg-red-600", to: "/admin/moderation", sub: "needs action" },
   ];
 
   return (

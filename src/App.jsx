@@ -21,6 +21,7 @@ import GlobalSearch from '@/components/search/GlobalSearch';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 import OfflineBanner from '@/components/layout/OfflineBanner';
 import MobileLayout from './components/layout/MobileLayout';
+import SuspendedScreen from '@/components/auth/SuspendedScreen';
 
 // Pages — lazy-loaded so each route only downloads its own code (big mobile perf win)
 const Login = lazy(() => import('./pages/Login'));
@@ -82,6 +83,7 @@ const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const AdminAIIntegrations = lazy(() => import('./pages/admin/AdminAIIntegrations'));
 const AdminMarketing = lazy(() => import('./pages/admin/AdminMarketing'));
 const AdminBenchmarks = lazy(() => import('./pages/admin/AdminBenchmarks'));
+const AdminModeration = lazy(() => import('./pages/admin/AdminModeration'));
 const CreatorDashboard = lazy(() => import('./pages/CreatorDashboard'));
 const Credits = lazy(() => import('./pages/Credits'));
 const CommunityTemplates = lazy(() => import('./pages/CommunityTemplates'));
@@ -137,6 +139,12 @@ const AuthenticatedApp = () => {
         </div>
       </div>
     );
+  }
+
+  // A suspended account stays signed in but is locked out of every app surface
+  // until an admin lifts it — the auth pages stay reachable so they can sign out.
+  if (user?.is_suspended && !isAuthPage) {
+    return <SuspendedScreen user={user} />;
   }
 
   return (
@@ -256,6 +264,7 @@ const AuthenticatedApp = () => {
             <Route path="ai-integrations" element={<AdminAIIntegrations />} />
             <Route path="marketing" element={<AdminMarketing />} />
             <Route path="benchmarks" element={<AdminBenchmarks />} />
+            <Route path="moderation" element={<AdminModeration />} />
             <Route path="solana" element={<AdminSolana />} />
             <Route path="blockchain-wallets" element={<AdminBlockchainWallets />} />
           </Route>

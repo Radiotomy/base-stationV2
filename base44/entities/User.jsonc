@@ -26,6 +26,20 @@
       "type": "string",
       "format": "date-time",
       "description": "When consent was given. Needed to prove which consent version applied at collection time."
+    },
+    "is_suspended": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin-set account suspension. A suspended user stays signed in but is blocked from every app surface until an admin lifts it."
+    },
+    "suspension_reason": {
+      "type": "string",
+      "description": "Reason shown to the suspended user and recorded for the admin audit trail"
+    },
+    "suspended_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the suspension was applied"
     }
   },
   "required": []
