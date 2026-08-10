@@ -5,8 +5,6 @@ const APP_NAME = 'BaseStation';
 const DEFAULT_NODE = 'https://discoveryprovider.audius.co';
 
 async function getNode() {
-  const override = Deno.env.get('AUDIUS_NODE_URL');
-  if (override) return override;
   try {
     const r = await fetch('https://api.audius.co');
     const j = await r.json();
