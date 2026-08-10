@@ -6,9 +6,11 @@
 # Not part of the BASE Station app bundle — version-controlled here alongside
 # the code that calls it, same as the V3 drift and V4 speed containers.
 #
-# `run` is deliberately the FIRST key: a paste that drops the last line of the
-# file produces a Cog error that does not mention truncation.
-run: "predict.py:Predictor"
+# `predict` is deliberately the FIRST key: a paste that drops the last line of
+# the file produces a Cog error that does not mention truncation.
+# The key MUST be `predict` and the class method MUST be named `predict` —
+# Cog resolves the entrypoint by that exact name and fails the build otherwise.
+predict: "predict.py:Predictor"
 build:
   # GPU — SilentCipher is a torch model. This is the cost difference from V4
   # (CPU-only) and the reason cold starts run to minutes, which is why the app

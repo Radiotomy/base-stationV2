@@ -45,7 +45,7 @@ is a TOTAL loss, not a degraded one. Benchmark 48kHz recovery against the
 ── I/O CONTRACT — DO NOT CHANGE WITHOUT CHANGING THE APP ───────────────────────
 The app treats the output as a SINGLE FILE URL (it reads `pred.output` as a
 string, or `[0]`, or `.url`). Returning a multi-field object would break both
-callers, so `run` returns exactly one `Path`:
+callers, so `predict` returns exactly one `Path`:
 
   action="encode"  -> a PCM WAV of the marked master.
                       Input `message` is a JSON string of 5 ints, e.g. "[181,0,...]"
@@ -112,15 +112,23 @@ def _resample(x: np.ndarray, src_rate: int, dst_rate: int) -> np.ndarray:
     return resample_poly(x, int(dst_rate // g), int(src_rate // g)).astype(np.float32)
 
 
-def _subtype_for(path: pathlib.Path) -> str:
+def _subtype_for(original: pathlib.Path, decoded: pathlib.Path) -> str:
     """Write the output at the SOURCE bit depth.
 
     The finalizer rejects a depth change outright, so defaulting to 16-bit here
-    would fail every 24-bit master. soundfile reports the source subtype; we
-    mirror it, falling back to 24-bit (never 16) if it is something exotic.
+    would fail every 24-bit master. Read the depth from the ORIGINAL upload, not
+    from the ffmpeg-normalized copy — that copy is always pcm_s24le, so reading
+    it would silently promote every 16-bit master to 24-bit and get the mark
+    discarded by the integrity guard.
     """
-    sub = sf.info(str(path)).subtype
-    return sub if sub in ("PCM_16", "PCM_24", "PCM_32", "FLOAT") else "PCM_24"
+    for candidate in (original, decoded):
+        try:
+            sub = sf.info(str(candidate)).subtype
+        except Exception:
+            continue
+        if sub in ("PCM_16", "PCM_24", "PCM_32", "FLOAT"):
+            return sub
+    return "PCM_24"
 
 
 class Predictor(BasePredictor):
@@ -128,7 +136,7 @@ class Predictor(BasePredictor):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = silentcipher.get_model(model_type="44.1k", device=self.device)
 
-    def run(
+    def predict(
         self,
         audio: Path = Input(description="Audio file to mark or scan."),
         action: str = Input(
@@ -154,7 +162,8 @@ class Predictor(BasePredictor):
     ) -> Path:
         t0 = time.time()
         _log(f"decoding container (action={action})")
-        wav_path = _decode_to_wav(pathlib.Path(str(audio)))
+        src_path = pathlib.Path(str(audio))
+        wav_path = _decode_to_wav(src_path)
         x, sr = sf.read(str(wav_path), dtype="float32", always_2d=True)
         n_ch = x.shape[1]
         mono = x.mean(axis=1)
@@ -210,7 +219,7 @@ class Predictor(BasePredictor):
         # the finalizer's integrity guard compares. Any mismatch here means the
         # mark is discarded and the master kept, which is the failure mode this
         # whole revision exists to remove.
-        subtype = _subtype_for(wav_path)
+        subtype = _subtype_for(src_path, wav_path)
         out_path = pathlib.Path(tempfile.mkdtemp()) / "marked.wav"
         sf.write(str(out_path), out, sr, format="WAV", subtype=subtype)
         _log(
