@@ -184,6 +184,50 @@ class Predictor(BasePredictor):
             _log(f"chunk {start//step + 1} of {-(-len(m441)//step)} marked")
         return np.concatenate(parts) if parts else np.zeros(0, dtype=np.float32)
 
+    def _scan_windows(self, m441: np.ndarray, phase_shift: bool):
+        """Scan the signal in overlapping windows and return the best hit.
+
+        WHY THIS EXISTS: encoding is chunked (see CHUNK_SEC), so a track longer
+        than one chunk is a SEQUENCE of independently-marked segments joined at
+        the seams. Handing that whole signal to `decode_wav` in one call — what
+        this method replaces — fails outright: the seams break the decoder's
+        frame lock and it reports nothing, even though every individual chunk
+        carries a perfectly intact 40-bit message. Measured: a 70s file scanned
+        whole -> not detected; its first 28s scanned alone -> exact message at
+        0.89 confidence. That is why marking looked healthy on short smoke
+        tests and failed on every real track.
+
+        Windows are CHUNK_SEC long with a half-chunk hop, so at least one window
+        lands inside a single encode chunk even when the file has been cropped
+        and the seams no longer sit on absolute 30s boundaries. Scanning stops
+        at the first strong hit, so the common case costs one window rather than
+        a full sweep — and peak memory tracks the window, not the track length.
+        """
+        win = int(CHUNK_SEC * SC_RATE)
+        hop = max(1, win // 2)
+        best = None
+        for start in range(0, max(1, len(m441)), hop):
+            seg = m441[start : start + win]
+            # A stub shorter than a few seconds cannot hold a full message.
+            if len(seg) < 5 * SC_RATE:
+                break
+            result = self.model.decode_wav(seg, SC_RATE, phase_shift_decoding=phase_shift)
+            if not result.get("status"):
+                continue
+            messages = result.get("messages") or []
+            confidences = result.get("confidences") or []
+            if not messages:
+                continue
+            conf = float(confidences[0]) if confidences else 0.0
+            hit = {"message": messages[0], "confidence": conf, "offset_sec": round(start / SC_RATE, 2)}
+            if best is None or conf > best["confidence"]:
+                best = hit
+            _log(f"window @{hit['offset_sec']}s -> {messages[0]} (conf {conf:.2f})")
+            # Strong, unambiguous hit — no value in scanning the rest.
+            if conf >= 0.8:
+                break
+        return best
+
     def run(
         self,
         audio: Path = Input(description="Audio file to mark or scan."),
@@ -220,14 +264,15 @@ class Predictor(BasePredictor):
         if action == "decode":
             m441 = _resample(mono, sr, SC_RATE)
             _log(f"scanning {len(m441)/SC_RATE:.1f}s on {self.device}")
-            result = self.model.decode_wav(m441, SC_RATE, phase_shift_decoding=phase_shift_decoding)
-            detected = bool(result.get("status"))
+            best = self._scan_windows(m441, phase_shift_decoding)
+            detected = best is not None
             payload = {
                 "detected": detected,
-                "messages": result.get("messages", []) if detected else [],
-                "confidences": result.get("confidences", []) if detected else [],
+                "messages": [best["message"]] if detected else [],
+                "confidences": [best["confidence"]] if detected else [],
                 "sample_rate": sr,
                 "channels": n_ch,
+                "matched_window_sec": best["offset_sec"] if detected else None,
             }
             _log(f"scan finished in {time.time()-t0:.1f}s (detected={detected})")
             out_path = pathlib.Path(tempfile.mkdtemp()) / "result.json"
