@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Mic, Upload, Globe, Play } from 'lucide-react';
+import CollaboratorPanel from '@/components/studios/orvo/collab/CollaboratorPanel';
 
 function fmtDur(s) {
   if (!s) return '';
@@ -103,6 +104,8 @@ export default function PodcastDetail() {
             </div>
           </div>
         </div>
+
+        {isOwner && <CollaboratorPanel podcastId={podcast.id} />}
 
         {/* Episodes */}
         <h2 className="font-display text-xl text-white mb-4">Episodes</h2>
