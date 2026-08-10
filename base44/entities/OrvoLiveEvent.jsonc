@@ -1,7 +1,7 @@
 {
   "name": "OrvoLiveEvent",
   "type": "object",
-  "description": "ORVO scheduled live podcast event (live recording / AI-hosted realtime session \u2014 activated Phase 4+).",
+  "description": "ORVO scheduled live podcast event \u2014 manually produced audio or video broadcast, optionally with an AI co-host, and archived to an episode when it ends.",
   "properties": {
     "host_id": {
       "type": "string"
@@ -28,6 +28,27 @@
         "cancelled"
       ],
       "default": "scheduled"
+    },
+    "media_type": {
+      "type": "string",
+      "enum": [
+        "audio",
+        "video"
+      ],
+      "default": "audio",
+      "description": "Whether the broadcast is audio-only or video"
+    },
+    "stream_url": {
+      "type": "string",
+      "description": "Live delivery URL the audience watches/listens to \u2014 YouTube/Twitch/Vimeo embed link or a direct stream URL"
+    },
+    "recording_url": {
+      "type": "string",
+      "description": "Archived recording captured in the broadcast console"
+    },
+    "archived_episode_id": {
+      "type": "string",
+      "description": "Episode created from the archived recording"
     },
     "is_ai_hosted": {
       "type": "boolean",

@@ -10,6 +10,8 @@ export default function ScheduleEventForm({ podcasts, onScheduled }) {
   const [podcastId, setPodcastId] = useState(podcasts[0]?.id || '');
   const [scheduledAt, setScheduledAt] = useState('');
   const [aiHosted, setAiHosted] = useState(true);
+  const [mediaType, setMediaType] = useState('audio');
+  const [streamUrl, setStreamUrl] = useState('');
   const [saving, setSaving] = useState(false);
 
   const submit = async () => {
@@ -25,6 +27,8 @@ export default function ScheduleEventForm({ podcasts, onScheduled }) {
         title: title.trim(),
         scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString(),
         is_ai_hosted: aiHosted,
+        media_type: mediaType,
+        stream_url: streamUrl.trim() || undefined,
         status: 'scheduled',
       });
       setTitle('');
@@ -44,6 +48,27 @@ export default function ScheduleEventForm({ podcasts, onScheduled }) {
         {podcasts.map((p) => <option key={p.id} value={p.id} className="bg-[#14100C]">{p.title}</option>)}
       </select>
       <input type="datetime-local" className={field} value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+      <div className="flex gap-2">
+        {['audio', 'video'].map((m) => (
+          <button
+            key={m}
+            onClick={() => setMediaType(m)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border capitalize ${
+              mediaType === m
+                ? 'text-[#2A1508] border-black bg-gradient-to-b from-[#FFC26E] to-[#FF9A4D]'
+                : 'text-white/55 border-white/10 bg-black/30'
+            }`}
+          >
+            {m} broadcast
+          </button>
+        ))}
+      </div>
+      <input
+        className={field}
+        placeholder="Live stream link (YouTube, Twitch, Vimeo or direct URL) — optional"
+        value={streamUrl}
+        onChange={(e) => setStreamUrl(e.target.value)}
+      />
       <label className="flex items-center gap-2 text-sm text-white/60">
         <input type="checkbox" checked={aiHosted} onChange={(e) => setAiHosted(e.target.checked)} />
         Enable AI co-host

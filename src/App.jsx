@@ -32,6 +32,7 @@ const Playlists = lazy(() => import('./pages/Playlists'));
 const PlaylistDetail = lazy(() => import('./pages/PlaylistDetail'));
 const Charts = lazy(() => import('./pages/Charts'));
 const Radio = lazy(() => import('./pages/Radio'));
+const Podcasts = lazy(() => import('./pages/Podcasts'));
 const FeaturedArtists = lazy(() => import('./pages/FeaturedArtists'));
 const Challenges = lazy(() => import('./pages/Challenges'));
 const Leaderboard = lazy(() => import('./pages/Leaderboard'));
@@ -159,6 +160,7 @@ const AuthenticatedApp = () => {
             <Route path="/playlists/:id" element={<PlaylistDetail />} />
             <Route path="/charts" element={<Charts />} />
             <Route path="/radio" element={<Radio />} />
+            <Route path="/podcasts" element={<Podcasts />} />
             <Route path="/featured-artists" element={<FeaturedArtists />} />
             <Route path="/challenges" element={<Challenges />} />
             <Route path="/leaderboard" element={<Leaderboard />} />

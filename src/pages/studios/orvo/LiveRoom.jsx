@@ -5,6 +5,9 @@ import { useAuth } from '@/lib/AuthContext';
 import { ArrowLeft, Users } from 'lucide-react';
 import HostConsole from '@/components/studios/orvo/live/HostConsole';
 import LiveTurnFeed from '@/components/studios/orvo/live/LiveTurnFeed';
+import LiveStagePlayer from '@/components/studios/orvo/live/LiveStagePlayer';
+import BroadcastConsole from '@/components/studios/orvo/live/BroadcastConsole';
+import ListenerToolbar from '@/components/studios/orvo/live/ListenerToolbar';
 
 export default function LiveRoom() {
   const { id } = useParams();
@@ -95,8 +98,19 @@ export default function LiveRoom() {
           </p>
         </div>
 
+        {!isHost && (
+          <div className="mb-4">
+            <LiveStagePlayer event={event} />
+          </div>
+        )}
+
+        <div className="mb-6">
+          <ListenerToolbar event={event} user={user} />
+        </div>
+
         {isHost && (
-          <div className="mb-6">
+          <div className="space-y-4 mb-6">
+            <BroadcastConsole event={event} onArchived={setEvent} />
             <HostConsole event={event} onStatusChange={setEvent} />
           </div>
         )}

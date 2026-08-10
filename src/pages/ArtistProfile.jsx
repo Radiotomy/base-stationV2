@@ -15,6 +15,7 @@ import TrackComments from "@/components/community/TrackComments";
 import TopFans from "@/components/community/TopFans";
 import CollectiblesGrid from "@/components/collectibles/CollectiblesGrid";
 import AILabelBadge from "@/components/common/AILabelBadge";
+import CreatorPodcastShowcase from "@/components/studios/orvo/CreatorPodcastShowcase";
 
 function StatBox({ value, label }) {
   return (
@@ -280,6 +281,9 @@ export default function ArtistProfile() {
           </h2>
           <CollectiblesGrid creatorId={id} />
         </div>
+
+        {/* Podcasts */}
+        <CreatorPodcastShowcase creatorId={id} />
 
         {/* Top Fans */}
         <TopFans artistId={id} />
