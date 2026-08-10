@@ -24,6 +24,9 @@ const STUDIOS = [
   { to: '/live-manager', label: '🗂️ Live Manager', keywords: 'sessions venues moderation' },
   { to: '/promo-studio', label: '📣 Promo Package', keywords: 'promo card bundle' },
   { to: '/social-automation', label: '📱 Social Automation', keywords: 'social cards instagram' },
+  { to: '/loop-studio', label: '🥁 Loops & Samples', keywords: 'loops samples drum kits one shots' },
+  { to: '/base-mark', label: '〰️ BASE Mark Studio', keywords: 'watermark forensic detection provenance' },
+  { to: '/rights', label: '🛡️ Rights Portal', keywords: 'catalog ddex rights verification' },
 ];
 
 const PAGES = [
@@ -45,6 +48,12 @@ const PAGES = [
   { to: '/creative-ownership', label: '🎖️ Creative Ownership (COS)', keywords: 'score ai label disclosure' },
   { to: '/governance', label: '🗳️ Community Governance', keywords: 'proposals vote tuning' },
   { to: '/help', label: '📚 Help & How-To', keywords: 'guide docs tutorial' },
+  { to: '/audius-trending', label: '🌐 Audius Network', keywords: 'audius trending decentralized discover' },
+  { to: '/audius-search', label: '🔎 Audius Search', keywords: 'search audius catalog tracks artists' },
+  { to: '/featured-artists', label: '⭐ Featured Artists', keywords: 'spotlight featured creators' },
+  { to: '/badges', label: '🎖️ Badges', keywords: 'badges achievements rewards earn' },
+  { to: '/verify', label: '🔍 Verify a Track', keywords: 'scan verify watermark base mark provenance' },
+  { to: '/trust', label: '🛡️ Trust & Provenance', keywords: 'trust provenance watermark labels' },
 ];
 
 export default function GlobalSearch() {

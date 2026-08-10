@@ -118,14 +118,14 @@ export default function Home() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                   {featuredArtists.map((a) => (
-                    <div key={a.id} className="group relative aspect-square rounded-lg overflow-hidden border border-black/70 bg-[#171310] cursor-pointer">
+                    <Link to="/featured-artists" key={a.id} className="group relative aspect-square rounded-lg overflow-hidden border border-black/70 bg-[#171310] cursor-pointer block">
                       {a.profile_image_url && <img src={a.profile_image_url} alt={a.artist_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-3">
                         <p className="text-white font-bold text-xs">{a.artist_name}</p>
                         <p className="text-white/60 text-[10px] capitalize">{a.genre}</p>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy, Star, Zap, TrendingUp, Crown, Medal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -89,13 +90,18 @@ export default function Leaderboard() {
         </div>
 
         {/* Period Tabs */}
-        <div className="flex gap-2 bg-muted/40 rounded-xl p-1 w-fit mb-8">
-          {PERIODS.map(({ key, label }) => (
-            <button key={key} onClick={() => setPeriod(key)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${period === key ? "bg-white dark:bg-zinc-800 shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-              {label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-8">
+          <div className="flex gap-2 bg-muted/40 rounded-xl p-1 w-fit">
+            {PERIODS.map(({ key, label }) => (
+              <button key={key} onClick={() => setPeriod(key)}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${period === key ? "bg-white dark:bg-zinc-800 shadow text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <Link to="/badges" className="text-sm font-semibold text-yellow-400 hover:text-yellow-300 transition-colors">
+            🎖️ Browse all badges →
+          </Link>
         </div>
 
         {/* Leaderboard */}

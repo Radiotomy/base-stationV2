@@ -18,6 +18,8 @@ const NAV_ITEMS = [
   { to: "/radio", label: "Radio", icon: Radio },
   { to: "/charts", label: "Charts", icon: TrendingUp },
   { to: "/playlists", label: "Playlists", icon: Music },
+  { to: "/featured-artists", label: "Featured Artists", icon: Star },
+  { to: "/audius-trending", label: "Audius Network", icon: Globe },
   { to: "/challenges", label: "Challenges", icon: Zap },
   { to: "/leaderboard", label: "Leaderboard", icon: Star },
   { to: "/fan-hub", label: "My Fan Hub", icon: Heart },
@@ -33,6 +35,8 @@ const DISCOVER_NAV = [
   { to: "/radio", label: "Radio", icon: Radio },
   { to: "/charts", label: "Charts", icon: TrendingUp },
   { to: "/playlists", label: "Playlists", icon: Music },
+  { to: "/featured-artists", label: "Featured Artists", icon: Star },
+  { to: "/audius-trending", label: "Audius Network", icon: Globe },
 ];
 
 const COMMUNITY_NAV = [
