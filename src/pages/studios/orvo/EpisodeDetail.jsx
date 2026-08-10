@@ -4,7 +4,6 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { ArrowLeft, Mic } from 'lucide-react';
 import OrvoAudioPlayer from '@/components/studios/orvo/player/OrvoAudioPlayer';
-import EpisodeIntelligencePanel from '@/components/studios/orvo/studio/EpisodeIntelligencePanel';
 
 export default function EpisodeDetail() {
   const { id } = useParams();
@@ -110,7 +109,6 @@ export default function EpisodeDetail() {
           </div>
         )}
 
-        {user?.id === episode.user_id && <EpisodeIntelligencePanel episode={episode} />}
       </div>
     </div>
   );
