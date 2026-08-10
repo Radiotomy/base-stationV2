@@ -9,9 +9,17 @@
 # is what the band-split delta embedding uses to move between the master's rate
 # and SilentCipher's 44.1kHz. Without it the container builds and then fails on
 # import at the first prediction.
+#
+# TORCH IS CAPPED BY SILENTCIPHER, NOT BY US: silentcipher 1.0.5 declares
+# `torch<=2.0.0,>=1.8.0`. Pinning torch 2.4.1 here made pip's resolver fail with
+# ResolutionImpossible at image build. Do not "upgrade" torch without first
+# checking silentcipher's requires_dist — the build will simply stop again.
+#
+# torchaudio is NOT listed: predict.py imports torch, soundfile and scipy only.
+# It was pulling an extra version-pinning constraint for nothing.
 silentcipher==1.0.5
-torch==2.4.1
-torchaudio==2.4.1
+torch==2.0.0
+# numpy must stay <2: torch 2.0.0 predates the numpy 2.x ABI break.
 numpy==1.26.4
 scipy==1.14.1
 soundfile==0.12.1
