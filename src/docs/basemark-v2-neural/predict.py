@@ -90,6 +90,19 @@ from scipy.signal import resample_poly
 SC_RATE = 44100
 MESSAGE_LEN = 5
 
+# Seconds of 44.1kHz audio handed to the model in one call.
+#
+# WHY THIS EXISTS: encoding a whole track in one shot allocates a tensor
+# proportional to its length. A 3-minute 48kHz master OOM'd a 14.5GB T4
+# ("tried to allocate 2.84 GiB"), and the failure scales with duration — so it
+# passed on short test clips and died on real tracks.
+#
+# 30s keeps peak allocation roughly constant regardless of track length. The
+# message is embedded in FULL in every chunk (SilentCipher repeats it across
+# frames anyway), so chunking does not split the payload and does not weaken
+# recovery — a decoder that sees any one intact chunk recovers all 40 bits.
+CHUNK_SEC = 30
+
 
 def _log(msg: str) -> None:
     """Unbuffered stderr so Replicate's log tail shows live progress.
@@ -141,6 +154,35 @@ class Predictor(BasePredictor):
     def setup(self):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = silentcipher.get_model(model_type="44.1k", device=self.device)
+
+    def _encode_delta(self, m441: np.ndarray, msg: list) -> np.ndarray:
+        """Watermark delta for the whole signal, computed CHUNK BY CHUNK.
+
+        Returns `w441 - m441` rather than the marked signal, because the caller
+        resamples the delta back to the master's rate and adds it to the
+        untouched original. Each chunk is released from the GPU before the next
+        is loaded, so peak VRAM tracks CHUNK_SEC, not track duration.
+
+        A trailing chunk shorter than a second cannot carry a mark, so it
+        contributes silence to the delta instead of being sent to the model —
+        the master's own samples come through untouched there.
+        """
+        step = int(CHUNK_SEC * SC_RATE)
+        parts = []
+        for start in range(0, len(m441), step):
+            seg = m441[start : start + step]
+            if len(seg) < SC_RATE:
+                parts.append(np.zeros(len(seg), dtype=np.float32))
+                continue
+            w, _ = self.model.encode_wav(seg, SC_RATE, msg)
+            w = np.asarray(w, dtype=np.float32)
+            if len(w) < len(seg):
+                w = np.pad(w, (0, len(seg) - len(w)))
+            parts.append(w[: len(seg)] - seg)
+            if self.device == "cuda":
+                torch.cuda.empty_cache()
+            _log(f"chunk {start//step + 1} of {-(-len(m441)//step)} marked")
+        return np.concatenate(parts) if parts else np.zeros(0, dtype=np.float32)
 
     def run(
         self,
@@ -202,11 +244,9 @@ class Predictor(BasePredictor):
         m441 = _resample(mono, sr, SC_RATE)
         _log(f"encoding {msg} over {len(m441)/SC_RATE:.1f}s on {self.device}")
         t_enc = time.time()
-        w441, _ = self.model.encode_wav(m441, SC_RATE, msg)
+        delta441 = self._encode_delta(m441, msg)
         _log(f"model encode finished in {time.time()-t_enc:.1f}s")
 
-        w441 = np.asarray(w441, dtype=np.float32)
-        delta441 = w441 - m441[: len(w441)]
         t_rs = time.time()
         delta = _resample(delta441, SC_RATE, sr)
         _log(f"delta upsampled {SC_RATE}->{sr} in {time.time()-t_rs:.1f}s")
