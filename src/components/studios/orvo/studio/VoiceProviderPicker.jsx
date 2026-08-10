@@ -1,7 +1,5 @@
-import { Input } from '@/components/ui/input';
 import { INWORLD_MODES } from '@/lib/studios/orvo/inworldConfig';
-
-const INWORLD_VOICES = ['Ashley', 'Alex', 'Deborah', 'Ronald', 'Sarah', 'Dennis', 'Elizabeth', 'Mark', 'Olivia', 'Hades'];
+import VoiceCatalogBrowser from '@/components/studios/orvo/studio/VoiceCatalogBrowser';
 
 const chip = (active) =>
   `px-3 py-1.5 rounded-md text-xs font-bold border transition-all ${
@@ -11,7 +9,8 @@ const chip = (active) =>
   }`;
 
 /**
- * VoiceProviderPicker — persona voice provider toggle (ElevenLabs | Inworld).
+ * VoiceProviderPicker — provider toggle + Inworld mode, with the live
+ * per-provider voice catalog for browsing, auditioning and selecting.
  */
 export default function VoiceProviderPicker({
   provider = 'inworld',
@@ -36,41 +35,27 @@ export default function VoiceProviderPicker({
       </div>
 
       {provider === 'inworld' && (
-        <>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Mode</p>
-            <div className="flex flex-wrap gap-2">
-              {INWORLD_MODES.filter((m) => m.id !== 'realtime').map((m) => (
-                <button key={m.id} disabled={disabled} onClick={() => onInworldModeChange?.(m.id)} className={chip(inworldMode === m.id)}>
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Voice</p>
-            <div className="flex flex-wrap gap-2">
-              {INWORLD_VOICES.map((v) => (
-                <button key={v} disabled={disabled} onClick={() => onVoiceIdChange?.(v)} className={chip((voiceId || 'Ashley') === v)}>
-                  {v}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-
-      {provider === 'elevenlabs' && (
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">ElevenLabs Voice ID</p>
-          <Input
-            value={voiceId}
-            disabled={disabled}
-            onChange={(e) => onVoiceIdChange?.(e.target.value)}
-            placeholder="e.g. 21m00Tcm4TlvDq8ikWAM"
-          />
+          <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Mode</p>
+          <div className="flex flex-wrap gap-2">
+            {INWORLD_MODES.filter((m) => m.id !== 'realtime').map((m) => (
+              <button key={m.id} disabled={disabled} onClick={() => onInworldModeChange?.(m.id)} className={chip(inworldMode === m.id)}>
+                {m.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
+
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-white/40 mb-2">Voice Catalog</p>
+        <VoiceCatalogBrowser
+          provider={provider}
+          voiceId={voiceId}
+          onVoiceIdChange={onVoiceIdChange}
+          disabled={disabled}
+        />
+      </div>
     </div>
   );
 }
