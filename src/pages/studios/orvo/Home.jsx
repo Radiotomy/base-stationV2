@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { Mic, Compass, Upload, Star, Wand2 } from 'lucide-react';
+import { Mic, Compass, Upload, Star, Wand2, Radio } from 'lucide-react';
 import PodcastCard from '@/components/studios/orvo/PodcastCard';
 
 export default function Home() {
@@ -57,6 +57,9 @@ export default function Home() {
             )}
             <Link to="/studios/orvo/voiceover" className="merc-button-dark rounded-full px-6 py-2.5 text-sm font-bold flex items-center gap-2">
               <Wand2 className="w-4 h-4" /> AI Voiceover
+            </Link>
+            <Link to="/studios/orvo/live" className="merc-button-dark rounded-full px-6 py-2.5 text-sm font-bold flex items-center gap-2">
+              <Radio className="w-4 h-4" /> Live Sessions
             </Link>
           </div>
         </div>

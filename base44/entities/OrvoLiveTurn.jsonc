@@ -1,0 +1,53 @@
+{
+  "name": "OrvoLiveTurn",
+  "type": "object",
+  "description": "A single spoken turn inside an ORVO live event. Written ONLY server-side (host console -> AI co-host); listeners subscribe to these in realtime and play the audio as it arrives.",
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "speaker": {
+      "type": "string",
+      "enum": [
+        "ai_cohost",
+        "host_note"
+      ],
+      "default": "ai_cohost"
+    },
+    "text": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "voice_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "text"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
