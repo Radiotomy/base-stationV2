@@ -1,0 +1,43 @@
+{
+  "name": "OrvoBadge",
+  "type": "object",
+  "description": "ORVO achievement badge awarded to a creator or listener. Awarded server-side only.",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "badge_slug": {
+      "type": "string",
+      "description": "e.g. first_episode, 100_plays, top_creator"
+    },
+    "label": {
+      "type": "string"
+    },
+    "awarded_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "user_id",
+    "badge_slug"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

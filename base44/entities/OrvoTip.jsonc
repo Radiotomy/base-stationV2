@@ -1,0 +1,79 @@
+{
+  "name": "OrvoTip",
+  "type": "object",
+  "description": "ORVO fiat tip (v2.0 \u2014 no chain/token fields). Written ONLY server-side by the payment webhook handler; clients have no create permission.",
+  "properties": {
+    "tipper_id": {
+      "type": "string"
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "episode_id": {
+      "type": "string"
+    },
+    "amount_cents": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "payment_ref": {
+      "type": "string",
+      "description": "Payment provider transaction reference"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "succeeded",
+        "refunded"
+      ],
+      "default": "succeeded"
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 500
+    }
+  },
+  "required": [
+    "tipper_id",
+    "creator_id",
+    "amount_cents"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.tipper_id": "{{user.id}}"
+        },
+        {
+          "data.creator_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

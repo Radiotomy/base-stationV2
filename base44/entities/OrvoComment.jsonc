@@ -1,0 +1,53 @@
+{
+  "name": "OrvoComment",
+  "type": "object",
+  "description": "ORVO episode comment. Namespaced to avoid clash with BASE Station Comment.",
+  "properties": {
+    "episode_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "timestamp_seconds": {
+      "type": "number",
+      "description": "Optional timestamped comment position"
+    }
+  },
+  "required": [
+    "episode_id",
+    "user_id",
+    "body"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

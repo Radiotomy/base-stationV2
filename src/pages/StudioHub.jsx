@@ -56,6 +56,15 @@ const CATEGORIES = [
     ],
   },
   {
+    title: "Podcast Studio",
+    subtitle: "Record, voice & publish",
+    icon: Radio,
+    accent: "bg-gradient-to-br from-orange-600 to-amber-600",
+    studios: [
+      { to: "/studios/orvo", emoji: "🎙️", label: "ORVO Podcast Studio", desc: "AI-native podcast recording, voiceovers & distribution" },
+    ],
+  },
+  {
     title: "Publish & Promote",
     subtitle: "Get heard",
     icon: Send,

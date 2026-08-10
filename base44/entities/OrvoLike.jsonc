@@ -1,0 +1,41 @@
+{
+  "name": "OrvoLike",
+  "type": "object",
+  "description": "ORVO episode like.",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "episode_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "episode_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

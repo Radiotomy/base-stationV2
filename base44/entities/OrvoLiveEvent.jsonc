@@ -1,0 +1,76 @@
+{
+  "name": "OrvoLiveEvent",
+  "type": "object",
+  "description": "ORVO scheduled live podcast event (live recording / AI-hosted realtime session \u2014 activated Phase 4+).",
+  "properties": {
+    "host_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "scheduled_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "live",
+        "ended",
+        "cancelled"
+      ],
+      "default": "scheduled"
+    },
+    "is_ai_hosted": {
+      "type": "boolean",
+      "default": false
+    },
+    "listener_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "host_id",
+    "podcast_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.host_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "data.host_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.host_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

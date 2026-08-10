@@ -1,0 +1,52 @@
+{
+  "name": "OrvoListenLater",
+  "type": "object",
+  "description": "ORVO listen-later queue entry.",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "episode_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "episode_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

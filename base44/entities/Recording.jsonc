@@ -1,0 +1,95 @@
+{
+  "name": "Recording",
+  "type": "object",
+  "description": "ORVO Studio raw recording session (browser capture / async collab takes). Private to owner.",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "episode_id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "audio_url": {
+      "type": "string"
+    },
+    "ipfs_hash": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "browser",
+        "upload",
+        "guest_link",
+        "ai_voiceover"
+      ],
+      "default": "upload"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "ready",
+        "failed"
+      ],
+      "default": "ready"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

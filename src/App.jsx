@@ -104,6 +104,14 @@ const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
 const VerifyMark = lazy(() => import('./pages/VerifyMark'));
 const RightsPortal = lazy(() => import('./pages/RightsPortal'));
+// ORVO Podcast Studio (additive module)
+import OrvoStudioLayoutBoundary from '@/components/studios/orvo/performance/StudioLayoutBoundary';
+const OrvoHome = lazy(() => import('./pages/studios/orvo/Home'));
+const OrvoCreatePodcast = lazy(() => import('./pages/studios/orvo/CreatePodcast'));
+const OrvoUploadEpisode = lazy(() => import('./pages/studios/orvo/UploadEpisode'));
+const OrvoPodcastDetail = lazy(() => import('./pages/studios/orvo/PodcastDetail'));
+const OrvoEpisodeDetail = lazy(() => import('./pages/studios/orvo/EpisodeDetail'));
+const OrvoGuestRecording = lazy(() => import('./pages/studios/orvo/GuestRecording'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -213,6 +221,19 @@ const AuthenticatedApp = () => {
               <Route path="/dev/error-log" element={<AdminGate><ErrorLogViewer /></AdminGate>} />
               <Route path="/dev/live-regression" element={<AdminGate><LiveRegression /></AdminGate>} />
               <Route path="/dev/live-multiclient" element={<AdminGate><LiveMulticlient /></AdminGate>} />
+            </Route>
+
+            {/* ── ORVO Podcast Studio — additive module ── */}
+            <Route element={<OrvoStudioLayoutBoundary />}>
+              <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
+                <Route path="/studios/orvo" element={<OrvoHome />} />
+                <Route path="/studios/orvo/create-podcast" element={<OrvoCreatePodcast />} />
+                <Route path="/studios/orvo/upload" element={<OrvoUploadEpisode />} />
+                <Route path="/studios/orvo/podcast/:id" element={<OrvoPodcastDetail />} />
+                <Route path="/studios/orvo/episode/:id" element={<OrvoEpisodeDetail />} />
+              </Route>
+              {/* Public guest recording link (Phase 5 activation) */}
+              <Route path="/studios/orvo/guest/:projectId" element={<OrvoGuestRecording />} />
             </Route>
           </Route>
           <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>

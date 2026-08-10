@@ -1,0 +1,95 @@
+{
+  "name": "OrvoPodcastTemplate",
+  "type": "object",
+  "description": "ORVO episode structure template (segment skeleton for the AI podcast agent).",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "segments": {
+      "type": "array",
+      "description": "Ordered segment skeleton: {segment_type, default_persona, target_seconds}",
+      "items": {
+        "type": "object",
+        "properties": {
+          "segment_type": {
+            "type": "string",
+            "enum": [
+              "intro",
+              "interview_qa",
+              "commentary",
+              "outro"
+            ]
+          },
+          "default_persona": {
+            "type": "string"
+          },
+          "target_seconds": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_id",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_public": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

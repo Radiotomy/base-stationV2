@@ -1,0 +1,79 @@
+{
+  "name": "OrvoSubscription",
+  "type": "object",
+  "description": "ORVO fiat premium subscription to a podcast (v2.0 \u2014 no chain/token fields). Written ONLY server-side by the payment webhook handler; clients have no create permission.",
+  "properties": {
+    "subscriber_id": {
+      "type": "string"
+    },
+    "creator_id": {
+      "type": "string"
+    },
+    "podcast_id": {
+      "type": "string"
+    },
+    "tier": {
+      "type": "string",
+      "default": "premium"
+    },
+    "amount_cents": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "payment_ref": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "cancelled",
+        "past_due"
+      ],
+      "default": "active"
+    },
+    "current_period_end": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "subscriber_id",
+    "podcast_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.subscriber_id": "{{user.id}}"
+        },
+        {
+          "data.creator_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

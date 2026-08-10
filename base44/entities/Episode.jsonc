@@ -1,0 +1,137 @@
+{
+  "name": "Episode",
+  "type": "object",
+  "description": "ORVO Studio podcast episode. Audio pinned to Pinata IPFS.",
+  "properties": {
+    "podcast_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Creator/owner id"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 4000
+    },
+    "episode_number": {
+      "type": "number"
+    },
+    "season_number": {
+      "type": "number",
+      "default": 1
+    },
+    "audio_url": {
+      "type": "string",
+      "description": "Pinata gateway URL"
+    },
+    "ipfs_hash": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "thumbnail_ipfs_hash": {
+      "type": "string"
+    },
+    "duration_seconds": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "published",
+        "archived"
+      ],
+      "default": "draft"
+    },
+    "published_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "is_premium": {
+      "type": "boolean",
+      "default": false
+    },
+    "chapters": {
+      "type": "array",
+      "description": "Chapter markers: {title, start_seconds}",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "start_seconds": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "transcript": {
+      "type": "string",
+      "description": "Full transcript text (AssemblyAI, Phase 3+)"
+    },
+    "play_count": {
+      "type": "number",
+      "default": 0
+    },
+    "like_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "podcast_id",
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.status": "published"
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

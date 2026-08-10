@@ -1,0 +1,126 @@
+{
+  "name": "Podcast",
+  "type": "object",
+  "description": "ORVO Studio podcast show. Namespace: ORVO podcast module.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Creator/owner id"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "orvo_studio_id": {
+      "type": "string",
+      "default": "orvo"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "music",
+        "technology",
+        "culture",
+        "comedy",
+        "news",
+        "education",
+        "business",
+        "arts",
+        "sports",
+        "health",
+        "true_crime",
+        "other"
+      ],
+      "default": "other"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "cover_image": {
+      "type": "string",
+      "description": "Pinata gateway URL"
+    },
+    "cover_ipfs_hash": {
+      "type": "string"
+    },
+    "website_url": {
+      "type": "string"
+    },
+    "twitter_handle": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "episode_count": {
+      "type": "number",
+      "default": 0
+    },
+    "subscriber_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_active": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
