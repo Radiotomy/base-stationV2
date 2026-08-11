@@ -116,8 +116,7 @@ export async function registryMatches(base44, { payload_hex, asset_id }) {
       title: a.title,
       asset_type: a.asset_type,
       created_date: a.created_date,
-      marked_at: a.metadata?.base_mark_v3?.embedded_at
-        || a.metadata?.base_mark_v2?.embedded_at
+      marked_at: a.metadata?.base_mark_v2?.embedded_at
         || a.metadata?.base_mark?.embedded_at
         || null,
     }));
