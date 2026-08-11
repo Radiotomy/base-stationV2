@@ -1,4 +1,4 @@
-// BASE Mark — unified three-layer verification funnel (Phase 4).
+// BASE Mark — unified two-layer verification funnel (Phase 4).
 //
 // Until now each layer had its own detector and each caller wired them up by
 // hand, which meant the answer to "is this ours?" depended on which endpoint
@@ -11,25 +11,19 @@
 //      everyday handling but dies to heavy lossy compression.
 //   2. V2 neural  — GPU, seconds, real money. Closes exactly the codec gap V1
 //      loses to.
-//   3. V3 drift   — GPU, and the ONLY layer that survives tempo stretch and
-//      close-range re-recording. Last because it is both the most expensive and
-//      the most indirect: it recovers a 16-bit slot, not a payload, so it costs
-//      an extra registry lookup to turn into an identity.
 //
-// WHY V3 IS WORTH THE EXTRA HOP: when a file has been re-recorded or re-timed,
-// V1 and V2 are simply gone. A slot hit is then the only surviving evidence,
-// and because the slot record stores the sibling 32-bit payload, a V3-only
-// recovery still resolves to the same registry identity the other layers would
-// have produced. The funnel returns that payload so downstream callers cannot
-// tell which layer saved them.
+// A third layer (V3 drift / WavMark) previously sat behind these. It was
+// decommissioned after failing robustness benchmarks on real masterings, with
+// zero slots ever allocated and zero assets ever marked — so removing it could
+// not lose a recoverable identity. See src/docs/BASE_MARK_V3_ARCHIVE.md for the
+// full record and the rebuild path. Tempo-stretch coverage is now the Print
+// Layer's problem (basePrint.ts), which identifies rather than protects.
 //
 // GPU LAYERS ARE OPT-IN. Anonymous public traffic is overwhelmingly misses, and
 // each miss would cold-start a GPU. Callers pass allowGpu explicitly.
 
 import { detectMark } from './baseMark.ts';
 import { decodeV2, unpackMessage } from './baseMarkV2.ts';
-import { decodeV3 } from './baseMarkV3.ts';
-import { findAssetForSlotHex } from './baseMarkV3Slots.ts';
 
 // Replicate models return either an inline object or a URL to a JSON file,
 // depending on how the container declares its output. Accept both.
@@ -94,30 +88,6 @@ export async function verifyAudioBytes(base44, bytes, { allowGpu = false } = {})
           slot_hex: null, asset_id: null, reason: null, too_short: false, layers_tried: layersTried,
         };
       }
-    }
-  } catch { /* best effort */ }
-
-  // Layer 3 — drift. The last line: re-recorded and tempo-stretched audio.
-  layersTried.push('drift');
-  try {
-    const v3 = await resolveJson(await decodeV3(uploadedUrl));
-    const hex = v3?.slot_hex || (Array.isArray(v3?.slots) ? v3.slots[0] : null);
-    if (v3?.detected && hex) {
-      // A slot is a pointer, not an identity — resolve it, and recover the
-      // sibling 32-bit payload so the caller gets the same answer V1/V2 give.
-      const slot = await findAssetForSlotHex(base44, hex);
-      return {
-        detected: true,
-        payload_hex: slot?.payload_hex || null,
-        engine: 'drift',
-        slot_hex: hex,
-        asset_id: slot?.asset_id || null,
-        // An unregistered slot is a real signal, not a clean miss: the audio
-        // demonstrably carries a BASE Mark the registry cannot currently name.
-        reason: slot ? null : 'Recovered a Drift Layer slot with no registry entry',
-        too_short: false,
-        layers_tried: layersTried,
-      };
     }
   } catch { /* best effort */ }
 
