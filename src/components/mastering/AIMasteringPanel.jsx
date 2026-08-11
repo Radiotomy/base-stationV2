@@ -59,6 +59,7 @@ export default function AIMasteringPanel() {
   const [librarySelection, setLibrarySelection] = useState([]);
   const [libraryAssets, setLibraryAssets] = useState([]);
   const [sourceMetadata, setSourceMetadata] = useState(null);
+  const [loadError, setLoadError] = useState(null);
   const [abMode, setAbMode] = useState('mastered'); // 'original' | 'mastered'
 
   // Stereo controls
@@ -124,12 +125,14 @@ export default function AIMasteringPanel() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setLoadError(null);
     try {
       const r = await base44.integrations.Core.UploadFile({ file });
       setAudioUrl(r.file_url);
       setUploadedFile(file);
       setTitle(file.name.replace(/\.[^/.]+$/, ''));
       setResult(null);
+      setAbMode('mastered');
       toast.success('Audio loaded!');
       fetchSourceMetadata(r.file_url);
     } catch (err) { toast.error(err.message); }
@@ -159,6 +162,13 @@ export default function AIMasteringPanel() {
     }
     setLibraryOpen(false);
     setUploading(true);
+    setLoadError(null);
+    // A library pick must land in exactly the same state as a fresh upload:
+    // any previous render is cleared and the player is torn down, so the
+    // preview plays the newly chosen track rather than a stale master.
+    setResult(null);
+    setAbMode('mastered');
+    setAudioUrl('');
     try {
       // Proxy external CDN URLs through Base44 storage so Web Audio + waveform
       // analysis work (CORS headers required for fetch + MediaElementSource).
@@ -170,8 +180,7 @@ export default function AIMasteringPanel() {
       setAudioUrl(url);
       setUploadedFile({ name: asset.title || 'Library Track' });
       setTitle(asset.title || 'Library Track');
-      setResult(null);
-      toast.success('Track loaded from library!');
+      toast.success('Track loaded — scrub and play to preview live');
       fetchSourceMetadata(url);
     } catch (err) {
       toast.error('Failed to load library track: ' + (err?.message || 'unknown'));
@@ -442,11 +451,19 @@ export default function AIMasteringPanel() {
             audioContext={ctxRef.current}
             onAudioReady={handleAudioReady}
             onPlayingChange={setIsPlaying}
+            onLoadError={setLoadError}
           />
         ) : (
           <div className="bg-card rounded-2xl border border-dashed border-border p-10 flex flex-col items-center justify-center">
             <Music className="w-10 h-10 text-muted-foreground mb-2 opacity-30" />
-            <p className="text-sm text-muted-foreground">Upload a track to see the waveform</p>
+            <p className="text-sm text-muted-foreground">Upload a track or pick one from your library to see the waveform</p>
+          </div>
+        )}
+
+        {loadError && (
+          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-muted-foreground">
+            <strong className="text-foreground">This track&apos;s audio could not be read for preview.</strong>{' '}
+            Playback and the live sliders need decodable audio — try re-uploading the file directly. ({loadError})
           </div>
         )}
 

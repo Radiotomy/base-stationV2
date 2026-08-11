@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
  *  - onAudioReady: (HTMLAudioElement, MediaElementAudioSourceNode) => void
  *  - onPlayingChange: (boolean) => void
  */
-export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioReady, onPlayingChange }) {
+export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioReady, onPlayingChange, onLoadError }) {
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
   const sourceRef = useRef(null);
@@ -120,7 +120,10 @@ export default function ScrubWaveformPlayer({ audioUrl, audioContext, onAudioRea
         }
         setPeaks(result);
       } catch (e) {
+        // A blank waveform with no explanation is the worst outcome here — the
+        // track looks loaded but nothing is actually readable. Report it.
         console.warn('Peak decode failed:', e.message);
+        if (!cancelled) onLoadError?.(e.message);
       }
       if (!cancelled) setIsLoading(false);
     })();
