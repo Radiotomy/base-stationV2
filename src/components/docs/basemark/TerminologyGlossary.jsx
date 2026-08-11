@@ -10,10 +10,9 @@ const BASE_MARK_TERMS = [
 ];
 
 const CASCADE_TERMS = [
-  { term: 'Cascade', def: 'The stack of watermark layers carried by one file. Order is forced — V1 spectral, then V2 neural, then V3 drift — because V1\u2019s broadband noise sits on the band V3 uses as its carrier, so V3 must always be applied last.' },
-  { term: 'Drift Layer (V3)', def: 'A WavMark-based layer added on top of the finished cascade to cover re-timed and re-recorded audio, the gap V1 and V2 share. Opt-in per asset rather than automatic on save.' },
-  { term: 'Slot', def: 'The 16-bit value V3 embeds. WavMark has only 16 usable bits, so instead of the 32-bit payload it carries a pointer that the registry resolves back to an asset — capped at 65,536 concurrent allocations.' },
-  { term: 'Slot Lifecycle', def: 'reserved (allocated, embed unconfirmed) → active (a marked file is live carrying it) → released (asset gone, slot may eventually be recycled). Reuse is deliberately delayed, since a released slot may still exist in files already distributed.' },
+  { term: 'Cascade', def: 'The stack of watermark layers carried by one file. Production is a two-layer funnel: V1 spectral embedded first, then V2 neural layered on top of that file, so the shipped master carries both and either can resolve alone.' },
+  { term: 'Drift Layer (V3) — retired', def: 'A WavMark-based layer intended to cover re-timed audio. Decommissioned August 2026 after measuring 0% against every re-timing attack tested. Pre-flight audit found zero allocated slots and zero marked assets, so no identity was lost. Kept in the glossary so historic benchmark rows still read correctly.' },
+  { term: 'Slot — retired', def: 'The 16-bit pointer V3 embedded in place of the 32-bit payload, resolved back to an asset by the registry. Removed with the layer; no production file ever carried one.' },
   { term: 'Deep Scan', def: 'A detection-time search that re-times suspect audio by inverse ratios to undo resampling. Recovers exact-ratio shifts (whole semitones, 44.1/48kHz mishandling) at 100%; arbitrary shifts and tempo stretches remain unrecoverable.' },
   { term: 'Abstention', def: 'The detector returning "insufficient evidence" instead of a low-confidence guess. Thresholds scale with the amount of audio supplied, and below roughly 3 seconds no payload is returned at all.' },
 ];
@@ -52,7 +51,7 @@ export default function TerminologyGlossary() {
         <h2 className="font-display text-lg">Terminology</h2>
       </div>
       <TermList title="BASE Mark concepts (Spectral Layer)" terms={BASE_MARK_TERMS} />
-      <TermList title="Cascade & Drift Layer concepts" terms={CASCADE_TERMS} />
+      <TermList title="Cascade & detection concepts" terms={CASCADE_TERMS} />
       <TermList title="Audio watermarking field terms" terms={FIELD_TERMS} />
     </section>
   );

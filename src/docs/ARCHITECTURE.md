@@ -57,7 +57,8 @@ problem.
 | --- | --- |
 | `baseMark.ts` | V1 spectral embed/detect, duration-aware thresholds |
 | `baseMarkV2.ts` | V2 neural layer — payload packing, Replicate routing, polling |
-| `baseMarkV3.ts` | V3 drift layer — slot encoding, prediction start/poll |
+| `baseMarkVerify.ts` | Unified two-layer verification funnel — spectral first, neural only when GPU is explicitly allowed |
+| `basePrint.ts` | Print Layer — scale-invariant fingerprint (identification, admin-only) |
 | `baseMarkSearch.ts` | Desynchronization search, curated deep-scan ratios |
 | `baseMarkV2Finalize.ts` | Single completion path for V2, used by webhook **and** poller |
 | `audioAttacks.ts` | Pure-DSP attack suite + synthetic test signals for benchmarks |
@@ -91,9 +92,16 @@ wait:
               older than 90s whose studio page was closed
 ```
 
-Some tests are stepped even further — `testBaseMarkV3` takes a cursor
-(`{stage, predictionId}`) and advances one step per call, because a full encode
-*and* decode of a master exceeds one request no matter how it's arranged.
+Some tests are stepped even further — `smokeBaseMarkCascade` takes an action
+(`start` / `poll`) and advances one step per call, because a full encode *and*
+decode of a master exceeds one request no matter how it's arranged. Its poll step
+is also the cascade's correctness proof: it re-runs BOTH detectors against the
+final combined file and asserts each still resolves to the same payload.
+
+**Retired path.** The V3 drift layer and its seven backend functions, shared
+modules, slot entity and Replicate deployments were removed in August 2026 (see
+`BASE_MARK_V3_ARCHIVE.md`). Nothing under `base44/` should reference `baseMarkV3`
+or `BaseMarkV3Slot`; if it does, it is dead code.
 
 **Treat the execution budget as an architectural input, not an annoyance.**
 

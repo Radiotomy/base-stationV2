@@ -39,7 +39,7 @@ export default function SpeedLayerResults() {
           V4 Speed Layer — the first measured recovery of re-timed audio
         </p>
         <p className="text-xs text-muted-foreground mb-4">
-          V1, V2 and V3 all measured 0% against resample-based pitch and speed changes. The Speed Layer
+Both production layers (and the retired V3) measured 0% against resample-based pitch and speed changes. The Speed Layer
           estimates the playback ratio from the signal itself, re-times the audio, and then decodes — so it
           does not need to be told what was done to the file. Measured standalone on a real 48kHz stereo
           master carrying the full 32-bit registry payload.

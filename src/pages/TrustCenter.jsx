@@ -30,7 +30,7 @@ const PILLARS = [
     accent: '#FFC98A',
     label: 'Forensics',
     title: 'BASE Mark',
-    body: 'An inaudible watermark woven into the waveform itself. Measured to survive stripped metadata, re-encoding, compression, cutting and stem-splitting — and to trace any derivative back to its origin. Re-timed copies are handled by a newer layer still in testing; the measured limits are published in full.',
+    body: 'Two independent inaudible signatures woven into the waveform itself, applied automatically to every master on save. Measured to survive stripped metadata, re-encoding, compression, cutting and stem-splitting — and to trace any derivative back to its origin. Re-timed copies are handled by dedicated stages still in measurement; every limit we have measured is published in full.',
     to: '/verify',
     linkLabel: 'Verify a track',
   },

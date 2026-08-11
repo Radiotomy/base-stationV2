@@ -1,8 +1,13 @@
 # BASE Mark V3 (Drift Layer) — Archive & Decommission Record
 
-Status: **CANCELLED as a rollout target, STILL WIRED into the live verification
-funnel.** This document is the archive index and the decommission plan. Nothing
-has been deleted. Read the "Adverse effects" section before removing anything.
+Status: **FULLY DECOMMISSIONED — all eight steps executed, nothing outstanding.**
+This document is now a historical record and the rebuild path. The code, the
+entity, the secrets and the Replicate deployments are gone; only the container
+source under `src/docs/basemark-v3-drift/` is retained, deliberately, so the layer
+can be rebuilt if re-timing leakage is ever observed in the wild.
+
+The "Adverse effects" section below is preserved **as executed history**, not as
+pending guidance — it documents the ordering constraint that made removal safe.
 
 The Drift Layer (WavMark on Replicate) was cancelled after it failed robustness
 benchmarks on real masterings and could not deliver the re-timing resilience it
@@ -148,6 +153,35 @@ No V3 UI affordance existed to remove — BASE Mark Studio, the dev smoke pages
 and the benchmark panels never exposed one. `RobustnessPanel` keeps its `drift`
 layer label so any historic `BaseMarkBenchmark` rows still render honestly.
 
-**Still outstanding (owner action, outside this codebase):**
-- Clear the `BASE_MARK_V3_VERSION` and `BASE_MARK_V3_MODEL` secrets.
-- Delete the `basemark-drift` and `basemark-drift-warm` Replicate deployments.
+**Steps 7–8 are also DONE.** The `BASE_MARK_V3_VERSION` and `BASE_MARK_V3_MODEL`
+secrets have been cleared, and the `basemark-drift` and `basemark-drift-warm`
+Replicate deployments have been deleted. Nothing V3 remains in the app, the
+secret store or the inference provider.
+
+## 5. Post-removal verification (2026-08-11)
+
+The two-layer funnel was re-verified end-to-end after the removal, not assumed:
+
+- **Cascade smoke, real GPU** — spectral embedded, neural layered on top, both
+  detectors re-run against the finished file: both resolved to the matching
+  payload, `cascade_viable: true`.
+- **Public verifier** — the cascaded file was submitted through the live
+  no-login path and resolved on the free spectral layer without escalating to a
+  GPU, exactly as the funnel's cost ordering intends.
+- **Platform smoke suite** — 25/25 checks passing across studio tools, live
+  studio, Audius, fan economy, provider router and the origin-separation gates.
+- **Security probes** — SSRF guard rejected a link-local metadata host; the
+  marking automation refused a forged asset id by re-deriving every gate from the
+  stored record; benchmark and webhook endpoints rejected unknown actions and
+  unsigned calls.
+
+No regression was attributable to the V3 removal.
+
+## 6. Rebuild trigger
+
+Do **not** rebuild this layer speculatively. The rebuild trigger is a measured
+one: re-timed copies of BASE Station masters observed circulating in the wild at a
+rate the Print Layer cannot attribute. If that happens, the container source plus
+§2's inventory is sufficient to reconstitute the layer — but note that V3 measured
+0% against re-timing, so the correct response to that trigger is almost certainly
+the Speed Layer or the Print Layer, not this one.

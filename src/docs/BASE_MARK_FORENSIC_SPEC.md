@@ -1,8 +1,12 @@
 # BASE Mark — Forensic Integrity and Attribution Specification
 
-**Document class:** Public technical specification (protocol-level)
-**Engine:** BASE Mark — a unified layered signature. Spectral Layer + Neural Layer are stacked on every asset; Drift Layer is opt-in; Speed Layer is in benchmarking
-**Last updated:** 2026-08-03
+**Document class:** INTERNAL specification. Contains acceptance criteria, tolerance
+values and calibration figures that sit inside the trade-secret boundary of §6 and
+**must not be republished verbatim on a public surface.** The creator-facing
+description of this system is the public BASE Mark documentation, which is written
+from measured behaviour only.
+**Engine:** BASE Mark — a unified layered signature. Spectral Layer + Neural Layer are stacked on every asset (production). Drift Layer is DECOMMISSIONED. Speed Layer and Print Layer are internal forensic reserve
+**Last updated:** 2026-08-11
 
 ---
 
@@ -50,7 +54,7 @@ layers, which the mark makes discoverable even after metadata stripping.
 | Inaudibility | Signature is shaped below perceptual masking thresholds of the program material |
 | Blind detection | No original/reference file is required to verify |
 | Localization | The identifier repeats through the file; measured recovery is reliable from ~5s excerpts. Below ~3s the detector **declines to answer** rather than guess (see §8) |
-| Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat the production layers** (V1/V2/V3, measured 0% recovery) — a stated limitation, not a degradation. The Speed Layer (§10) recovers resample-based re-timing but is not yet on the production path |
+| Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat the production layers** (V1/V2, measured 0% recovery) — a stated limitation, not a degradation. The Speed Layer (§10) recovers resample-based re-timing but is held as internal reserve, not on the production path |
 | Non-repudiation | Payload is threaded through the cryptographic manifest and on-chain anchor at embed time |
 | Abstention | Detection thresholds scale with the evidence available, so the detector reports "insufficient evidence" instead of a low-confidence attribution |
 
@@ -69,9 +73,10 @@ and mark-removal tooling.
 
 ## 5. Legal standing
 
-1. **Anti-circumvention.** The Spectral, Neural and Drift Layers are deployed as
-   a technological protection measure. **The Speed Layer is excluded from this
-   claim** (§5.5). Knowing removal, alteration, or circumvention of the mark — or
+1. **Anti-circumvention.** The Spectral and Neural Layers — the two production
+   layers — are deployed as a technological protection measure. **The Speed Layer
+   is excluded from this claim** (§5.5), and the retired Drift Layer no longer
+   forms part of it. Knowing removal, alteration, or circumvention of the mark — or
    distribution of tools primarily designed to do so — may constitute a
    violation of anti-circumvention and copyright-management-information
    statutes (17 U.S.C. §§ 1201–1202; EU Directive 2001/29/EC arts. 6–7),
@@ -95,7 +100,7 @@ Verified upstream licences for each layer's engine:
 |---|---|---|---|
 | Spectral (V1) | BASE Station original | Proprietary — ours outright | No constraint |
 | Neural (V2) | SilentCipher (Sony Research Inc., 2024) | **MIT** | Closed derivatives and commercial use permitted; copyright notice must ship with substantial portions |
-| Drift (V3) | WavMark | **MIT** | Same as above |
+| Drift (V3) | WavMark — **RETIRED 2026-08** | MIT | Removed from the codebase; no longer a licence surface |
 | Speed (V4) | audiowmark (Stefan Westerfeld, 2018–2020) | **GPLv3 or later** | See below |
 
 **The GPLv3 conflict.** GPLv3 §3 ("Protecting Users' Legal Rights From
@@ -105,8 +110,11 @@ art. 11, and that conveying a covered work waives any legal power to forbid
 circumvention. That clause exists specifically to prevent GPL software being used
 as a technological protection measure, and it is therefore incompatible with
 asserting TPM status over a cascade that includes the Speed Layer. The TPM claim
-in §1 and §5.1 is consequently scoped to the Spectral, Neural and Drift Layers
-only.
+in §1 and §5.1 is consequently scoped to the Spectral and Neural Layers only —
+which, since the Drift Layer's removal, is exactly the production cascade. The
+scoping is therefore no longer a caveat about a shipped layer: **everything in
+production is inside the claim, and everything outside the claim is internal
+reserve.**
 
 Two limits on the exposure, both material:
 
@@ -142,6 +150,14 @@ these elements. Only outcome-level data crosses the trust boundary.
 
 ## 7. Layered design & verification (production layers)
 
+> **Decommissioned:** the Drift Layer (V3) was removed from the funnel in August
+> 2026. It measured 0% against every re-timing attack — the gap it existed to
+> close — and a pre-flight audit found **0 allocated slots and 0 assets carrying
+> V3 metadata in any state**, so its removal could not cost a recoverable
+> identity. Shared modules, backend functions, the slot entity, both Replicate
+> deployments and the version secrets are removed. Container source is retained
+> for rebuild. Full record: `BASE_MARK_V3_ARCHIVE.md`.
+
 - **Spectral Layer:** pure-DSP spread-spectrum mark; instant, deterministic, no
   GPU dependency. Measured robust to band-limiting, 8-bit quantization and
   additive noise down to 10dB SNR; broken by pitch-shifting and time-stretching.
@@ -169,6 +185,35 @@ these elements. Only outcome-level data crosses the trust boundary.
   applied, and the Neural Layer resolves independently, with matching payloads
   on both. Assets marked before this standard remain fully traceable; payload
   semantics are unchanged across all layers.
+
+### 7.1 Verification funnel and the async completion path
+
+Verification runs **cheapest-first and stops at the first confident hit**, in
+`baseMarkVerify.ts`. Order is cost, not preference:
+
+1. **Spectral** — in-memory, free, milliseconds. Always runs.
+2. **Neural** — GPU, seconds, real money. **Opt-in per caller** (`allowGpu`).
+   Anonymous public traffic is overwhelmingly misses, and each miss would
+   cold-start a GPU, so the public verifier does not escalate by default.
+
+A layer failure never fails the verification: a transient GPU error degrades the
+funnel to the layers that did answer. Inputs the spectral layer declares too
+short to analyse skip the GPU escalation entirely — no GPU layer can rescue audio
+that contains insufficient evidence.
+
+**Embedding completion is start → persist → finalize, never a blocking wait.**
+The neural embed is asynchronous: the slot is claimed on the asset *before* the
+prediction is started (so N concurrent requests yield at most one prediction),
+the prediction id is stamped on the record, and completion arrives via a signed
+webhook or a safety-net poller — both converging on one shared finalize module.
+An unfulfilled claim expires after 15 minutes so a timed-out isolate cannot
+strand an asset permanently.
+
+**Cascade correctness is asserted, not assumed.** `smokeBaseMarkCascade` embeds
+the spectral layer, layers the neural layer on top, downloads the finished file
+and re-runs *both* detectors against it, requiring both to return the originally
+embedded payload. A cascade is only viable when each layer resolves independently
+on the combined output.
 
 ## 8. Abstention over guessing (false-positive discipline)
 
@@ -322,8 +367,9 @@ excerpts, 11kHz low-pass and 10dB-SNR noise still resolve at 100%.
 section may be quoted in a creator-facing claim until the acceptance gate in §11
 is enforced.
 
-The Speed Layer is built on audiowmark and exists to close the one gap V1, V2 and
-V3 provably share: resample-based re-timing, where all three measure 0%. It does
+The Speed Layer is built on audiowmark and exists to close the one gap the
+production layers provably share: resample-based re-timing, where both measure 0%
+(as did the retired V3). It does
 not have to be told what was done to the file — it **estimates the playback ratio
 from the signal**, re-times, then decodes. It also carries the full 32-bit
 registry payload inside a 128-bit message, so unlike the Drift Layer it points at
@@ -333,14 +379,14 @@ CPU-only, so there is no GPU cold start and no idle burn.
 Measured standalone on a 90-second 48kHz stereo master (unmarked before V4, so
 these are V4's own figures and not the cascade's):
 
-| Transform | V1 | V2 | V3 | V4 |
-|---|---|---|---|---|
-| Clean round trip | 100% | 100% | 100% | **100%** |
-| Pitch shift +1 semitone (resample) | 0% | 0% | 0% | **100%** |
-| 44.1kHz master played at 48kHz | 0% | 0% | 0% | **100%** |
-| Band-limiting / quantization / noise | 100% | 100% | 100% | **100%** |
-| Pitch-preserved tempo stretch | 0% | 0% | 0% | **0%** |
-| Crops under ~5s | declined | — | 100% (slot) | **0%** |
+| Transform | V1 (prod) | V2 (prod) | V4 (reserve) |
+|---|---|---|---|
+| Clean round trip | 100% | 100% | **100%** |
+| Pitch shift +1 semitone (resample) | 0% | 0% | **100%** |
+| 44.1kHz master played at 48kHz | 0% | 0% | **100%** |
+| Band-limiting / quantization / noise | 100% | 100% | **100%** |
+| Pitch-preserved tempo stretch | 0% | 0% | **0%** |
+| Crops under ~5s | declined | — | **0%** |
 
 ### 10.1 Real codec round trips
 
@@ -429,12 +475,14 @@ cannot back an attribution.
 These three precede the work above, because each changes what the gate is built
 around and would otherwise force a second migration.
 
-5. **Resolve the Speed Layer licence position (§5.5).** Either (a) keep V4 as an
-   internal forensic instrument permanently excluded from the TPM claim, or
-   (b) replace audiowmark's role with an owned playback-ratio estimator, giving a
-   fully owned cascade and an unqualified TPM claim. The existing deep scan (§9)
-   already recovers exact ratios with our own code; the gap is *unknown* ratio
-   estimation, which is the part audiowmark supplies.
+5. **Speed Layer licence position (§5.5) — DECIDED.** Option (a): V4 is kept as an
+   **internal forensic instrument, permanently excluded from the TPM claim**, and
+   is not promoted to the default path. The owned-estimator migration (option b)
+   and the HMAC payload migration below are **deferred until re-timed leakage is
+   actually observed in the wild** — building either now would be speculative work
+   against a threat we have not measured in production. Because the production
+   cascade is now V1+V2 only, the TPM claim over everything we ship is already
+   unqualified, which removes the urgency that made (b) attractive.
 6. **Decide the payload format before more assets are marked.** The 128-bit
    audiowmark message currently carries our 32-bit payload left-aligned with a
    96-bit zero tail used as a structural check. Upstream's documented

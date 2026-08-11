@@ -20,14 +20,14 @@ const LAYERS = [
       'Cold starts can take minutes and detection costs real compute per scan. It does not rescue pitch-shifted or time-stretched audio — measured 0%, same as V1.',
   },
   {
-    name: 'V3 — Drift Layer',
-    carries: '16-bit slot pointer (not the payload)',
-    engine: 'Based on WavMark, on our own private deployment',
-    when: 'Opt-in per asset, chained after V2',
+    name: 'V3 — Drift Layer (RETIRED)',
+    carries: 'Nothing — decommissioned 2026-08',
+    engine: 'Was WavMark-based; deployments and secrets removed',
+    when: 'Never on the default path; now fully removed from the funnel',
     strengths:
-      'Recovers from very short excerpts, which is where the spectral layer abstains: measured 100% slot recovery from 2s, 3s and 5s crops, and through 15kHz/11kHz band-limiting, 8-bit quantization and 20dB-SNR noise.',
+      'Its one measured advantage was short-excerpt coverage (100% slot recovery from 2s crops, where the spectral layer abstains). That advantage never reached production.',
     weaknesses:
-      'It does NOT close the re-timing gap it was built for. Measured standalone on clean audio: 0% recovery under every pitch shift tested (±1 and +2 semitones, +37 cents, 44.1/48kHz mishandling), 0% under ±5% time stretch, and 0% at 10dB SNR. Only 16 usable bits, so it points at an asset rather than carrying the payload, and the pool ceilings at 65,536 concurrent slots.',
+      'Retired after failing the gap it was built for: 0% recovery under every pitch shift and time stretch tested. Pre-flight audit before removal found 0 allocated slots and 0 assets carrying V3 metadata in any state, so no identity was ever recoverable through it. Retained here for the record only — see BASE_MARK_V3_ARCHIVE.md for the rebuild path.',
   },
   {
     name: 'V4 — Speed Layer',
@@ -58,10 +58,11 @@ export default function LayerCascadeGrid() {
         <p className="font-semibold text-foreground mb-1">Why several layers instead of one?</p>
         <p className="text-muted-foreground">
           Each layer is a different technology with a different failure mode, so stacking them gives
-          forensic redundancy: an attack that defeats one usually leaves another intact. Order is forced —
-          V1, then V2, then V3 — because V1 sprays broadband noise across the band V3 uses as its carrier,
-          so V3 must always go last. V1, V2 and V3 all share the SAME blind spot for re-timed audio, and
-          stacking them does not help there; that is exactly why the V4 Speed Layer was built, and it is
+          forensic redundancy: an attack that defeats one usually leaves another intact. Production is now a
+          two-layer funnel — V1 spectral, then V2 neural — after the V3 Drift Layer was decommissioned in
+          August 2026 for failing the re-timing gap it existed to close (it had zero production adoption and
+          zero recoverable identities, so removing it cost nothing). V1 and V2 share the SAME blind spot for
+          re-timed audio, and stacking them does not help there; that is exactly why the V4 Speed Layer was built, and it is
           the first layer measured to recover a resampled file. The remaining shared gap —
           pitch-<em>preserved</em> tempo stretching — is not solved by any watermark layer, and we do not
           claim otherwise; the Print Layer fingerprint (below) is how a stretched copy is identified,
