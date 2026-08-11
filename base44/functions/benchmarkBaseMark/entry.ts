@@ -3,8 +3,7 @@ import { embedMark, detectMark, payloadFromId } from '../../shared/baseMark.ts';
 import { packMessage, unpackMessage, startV2, getV2Prediction, decodeV2 } from '../../shared/baseMarkV2.ts';
 import { ATTACKS, decodeWav, encodeWav, synthesizeBenchmarkSource } from '../../shared/audioAttacks.ts';
 import { buildCandidates, detectMarkDesync, CURATED_CANDIDATES } from '../../shared/baseMarkSearch.ts';
-import { startV3, getV3Prediction, slotHex } from '../../shared/baseMarkV3.ts';
-import { decodeFlacToWav, isFlac } from '../../shared/flacDecoder.ts';
+
 
 // BASE Mark robustness benchmark — produces MEASURED per-layer survival numbers
 // so public robustness claims can be sourced to real data instead of estimates.
@@ -284,153 +283,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── Drift layer (V3) ─────────────────────────────────────────────────────
-    //
-    // Measured in four steps rather than one, because BOTH the encode and the
-    // decode are GPU jobs that cold-start — an inline round trip would blow the
-    // request budget long before the numbers came back.
-    //
-    //   v3_start        -> encode the drift mark, return prediction id
-    //   v3_poll         -> resolve the marked (FLAC) file
-    //   v3_attack       -> apply ONE attack locally, start the decode
-    //   v3_attack_result-> read the decode, record the row
-    //
-    // Pass `source_url` (the V1+V2 file from v2_poll) to measure V3 UNDER the
-    // other two layers — the configuration production ships. Omit it to measure
-    // WavMark standalone on clean audio. Both are worth having: the standalone
-    // number is WavMark's own ceiling, and the gap between them is the cost of
-    // V1's noise sitting on V3's carrier band.
-    if (action === 'v3_start') {
-      const runId = body.run_id || crypto.randomUUID();
-      const seconds = Math.max(4, Math.min(30, body.seconds || 12));
-      // Random 16-bit slot. Benchmark files are never registered, so this
-      // deliberately does NOT go through allocateSlot — burning real slots from
-      // a 65,536 pool on throwaway test audio would be indefensible.
-      const slot = Math.floor(Math.random() * 0x10000);
-
-      let sourceUrl = body.source_url || null;
-      let kind = sourceUrl ? 'uploaded' : 'synthetic';
-      if (!sourceUrl) {
-        const { audio } = await loadSource(base44, body.fileUrl, seconds);
-        kind = body.fileUrl ? 'uploaded' : 'synthetic';
-        const file = new File([encodeWav(audio)], 'benchmark-v3-source.wav', { type: 'audio/wav' });
-        const up = await base44.integrations.Core.UploadFile({ file });
-        sourceUrl = up.file_url;
-      }
-
-      const pred = await startV3({ audio: sourceUrl, mode: 'encode', slot_hex: slotHex(slot), max_seconds: 0 });
-      return Response.json({
-        run_id: runId,
-        layer: 'drift',
-        slot,
-        slot_hex: slotHex(slot),
-        prediction_id: pred.id,
-        source_url: sourceUrl,
-        source_kind: kind,
-        cascaded: Boolean(body.source_url),
-        note: 'Poll with action:"v3_poll" and this prediction_id to get the marked file URL.',
-      });
-    }
-
-    if (action === 'v3_poll') {
-      const p = await getV3Prediction(body.prediction_id);
-      if (p.status === 'starting' || p.status === 'processing') return Response.json({ status: p.status });
-      if (p.status !== 'succeeded') return Response.json({ status: p.status, error: p.error || null });
-      const out = p.output?.audio;
-      if (!out) return Response.json({ status: 'succeeded', marked_url: null, error: 'V3 returned no audio' });
-      // Cog hands small outputs back as a base64 data: URI. Rehost to real
-      // storage — a multi-megabyte data URI is unusable as a benchmark handle
-      // and cannot be passed to a later decode prediction.
-      const dl = await fetch(out);
-      if (!dl.ok) return Response.json({ status: 'succeeded', error: 'could not read V3 output' });
-      const bytes = new Uint8Array(await dl.arrayBuffer());
-      const flac = isFlac(bytes);
-      const file = new File([bytes], flac ? 'benchmark-v3-marked.flac' : 'benchmark-v3-marked.wav', { type: flac ? 'audio/flac' : 'audio/wav' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      return Response.json({ status: 'succeeded', marked_url: file_url, bytes: bytes.length, note: p.output?.note ?? null });
-    }
-
-    if (action === 'v3_attack') {
-      const { marked_url, attack } = body;
-      if (!marked_url || !attack) {
-        return Response.json({ error: 'marked_url and attack are required' }, { status: 400 });
-      }
-      if (!ATTACKS[attack]) return Response.json({ error: `Unknown attack: ${attack}` }, { status: 400 });
-
-      const dl = await fetch(marked_url);
-      if (!dl.ok) return Response.json({ error: 'Could not download marked file' }, { status: 502 });
-      const raw = new Uint8Array(await dl.arrayBuffer());
-
-      // V3 emits FLAC. The attack functions operate on decoded PCM, so decode
-      // first — and note that re-encoding the result as WAV is itself a format
-      // change the real world would also apply, so it is not a distortion of
-      // the measurement.
-      let wavBytes = raw;
-      if (isFlac(raw)) {
-        try { wavBytes = decodeFlacToWav(raw); }
-        catch (e) { return Response.json({ error: `FLAC decode failed: ${e.message}` }, { status: 500 }); }
-      }
-
-      const audio = decodeWav(wavBytes);
-      const attackedBytes = encodeWav(ATTACKS[attack].apply(audio));
-      const file = new File([attackedBytes], 'benchmark-v3-attacked.wav', { type: 'audio/wav' });
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const dec = await startV3({ audio: file_url, mode: 'decode' });
-
-      return Response.json({
-        attack,
-        label: ATTACKS[attack].label,
-        prediction_id: dec.id,
-        attacked_url: file_url,
-        source_seconds: Number((audio.channels[0].length / audio.sampleRate).toFixed(2)),
-        sample_rate: audio.sampleRate,
-        note: 'Read the result with action:"v3_attack_result".',
-      });
-    }
-
-    if (action === 'v3_attack_result') {
-      const { prediction_id, slot_hex, attack, run_id } = body;
-      if (!prediction_id || !slot_hex || !attack) {
-        return Response.json({ error: 'prediction_id, slot_hex and attack are required' }, { status: 400 });
-      }
-      const p = await getV3Prediction(prediction_id);
-      if (p.status === 'starting' || p.status === 'processing') return Response.json({ status: p.status });
-
-      const scan = p.status === 'succeeded' ? (p.output || {}) : {};
-      const recovered = scan.payload_hex ?? null;
-      const ok = scan.detected === true && recovered === slot_hex;
-      const note = p.status !== 'succeeded'
-        ? `decode ${p.status}: ${p.error || ''}`
-        : ok ? '' : (scan.detected ? `wrong slot ${recovered}` : (scan.note || 'not detected'));
-
-      await base44.asServiceRole.entities.BaseMarkBenchmark.bulkCreate([{
-        run_id: run_id || crypto.randomUUID(),
-        layer: 'drift',
-        attack,
-        attack_label: ATTACKS[attack]?.label || attack,
-        trials: 1,
-        survived: ok ? 1 : 0,
-        survival_pct: ok ? 100 : 0,
-        confidence: Number((scan.confidence || 0).toFixed(4)),
-        source_kind: body.source_kind || 'synthetic',
-        source_seconds: body.source_seconds ?? null,
-        sample_rate: body.sample_rate ?? null,
-        cascaded: Boolean(body.cascaded),
-        notes: note,
-      }]);
-
-      return Response.json({
-        attack,
-        label: ATTACKS[attack]?.label || attack,
-        expected_slot_hex: slot_hex,
-        recovered_slot_hex: recovered,
-        survived: ok,
-        confidence: scan.confidence ?? 0,
-        note,
-      });
-    }
-
-    return Response.json({ error: 'action must be v1_sweep, v1_search, v2_start, v2_poll, v2_attack, v3_start, v3_poll, v3_attack or v3_attack_result' }, { status: 400 });
+    // The drift layer (V3) benchmark actions were removed with the layer itself
+    // — see src/docs/BASE_MARK_V3_ARCHIVE.md for the measured results that
+    // ended it and the rebuild path if it is ever revisited.
+    return Response.json({ error: 'action must be v1_sweep, v1_search, v2_start, v2_poll or v2_attack' }, { status: 400 });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

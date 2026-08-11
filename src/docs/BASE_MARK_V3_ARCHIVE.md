@@ -124,3 +124,30 @@ layer 3 has any remaining evidentiary value:
 
 `src/docs/basemark-v3-drift/` stays. Historic `base_mark_v3` metadata on assets
 stays; it is a factual record of what was applied and costs nothing.
+
+---
+
+## 4. Executed
+
+Steps 1–6 are DONE.
+
+Pre-flight measurement taken before anything was removed: `BaseMarkV3Slot` held
+**0 rows**, and **0 assets** carried `base_mark_v3` metadata in any state
+(`completed` / `embedding` / `failed`). No identity was recoverable through the
+drift layer at any point, so its removal cannot have cost a single lookup —
+that is the fact that made this safe, not the code audit.
+
+Removed: the layer-3 block and its imports in `baseMarkVerify.ts` (funnel is now
+spectral → neural); the seven V3 backend functions; `baseMarkV3.ts`,
+`baseMarkV3Slots.ts`, `baseMarkV3Finalize.ts`; the `BaseMarkV3Slot` entity;
+`driftWebhookUrl` and the `?v3_asset` routing branch in `replicateV2Webhook`
+(V2 embeds and generation jobs route exactly as before); and the four
+`v3_*` actions in `benchmarkBaseMark`.
+
+No V3 UI affordance existed to remove — BASE Mark Studio, the dev smoke pages
+and the benchmark panels never exposed one. `RobustnessPanel` keeps its `drift`
+layer label so any historic `BaseMarkBenchmark` rows still render honestly.
+
+**Still outstanding (owner action, outside this codebase):**
+- Clear the `BASE_MARK_V3_VERSION` and `BASE_MARK_V3_MODEL` secrets.
+- Delete the `basemark-drift` and `basemark-drift-warm` Replicate deployments.
