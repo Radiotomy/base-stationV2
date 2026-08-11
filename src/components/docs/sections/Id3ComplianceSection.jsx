@@ -55,7 +55,7 @@ export default function Id3ComplianceSection() {
           { name: 'DDEX_AI_METADATA', type: 'TXXX', required: true, description: 'JSON-serialized DDEX AI attribution flags.' },
           { name: 'C2PA_PROVENANCE_HASH', type: 'TXXX', required: false, description: 'SHA-256 checksum anchoring the manifest to this file.' },
           { name: 'BASE_MARK_PAYLOAD', type: 'TXXX', required: false, description: 'Hex payload of the BASE Mark acoustic watermark embedded in this asset\u2019s audio waveform.' },
-          { name: 'BASE_MARK_VERSION', type: 'TXXX', required: false, description: 'BASE Mark engine version used for embedding.' },
+          { name: 'BASE_MARK_VERSION', type: 'TXXX', required: false, description: 'BASE Mark engine version of the spectral layer used for embedding. The payload is shared with the neural layer, so this frame identifies the engine, not which layers are present \u2014 query the Provenance Manifest for the full layer state.' },
         ]}
       />
 

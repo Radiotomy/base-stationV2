@@ -25,7 +25,13 @@ const RESPONSE = `{
   "ai_disclosure_label": "ai_assisted",
   "human_participation_score": 72,
   "cos_engine": "2.0",
-  "base_mark_watermark": { "version": "1.0", "payload_hex": "dff13efe" },
+  "base_mark_watermark": {
+    "payload_hex": "dff13efe",
+    "layers": [
+      { "version": "1.0", "layer": "spectral", "status": "embedded" },
+      { "version": "2.0", "layer": "neural",   "status": "embedded" }
+    ]
+  },
   "manifest_url": "https://basestation.live/api/v1/cos/manifest/ua_9f83bd21",
   "export_url": "https://cdn.basestation.live/ddex/ua_9f83bd21.xml",
   "exported_at": "2026-07-19T15:26:04Z"
@@ -85,10 +91,12 @@ export default function DdexExportSection() {
       <div className="rounded-xl border border-[#FF9A4D]/20 bg-[#FF9A4D]/5 p-5">
         <p className="font-bold text-foreground text-sm mb-1.5">Watermark cross-reference</p>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          When the asset carries a BASE Mark acoustic watermark, the export XML includes a{' '}
+          When the asset carries a BASE Mark watermark, the export XML includes a{' '}
           <code className="text-[#FFC98A] text-xs">&lt;BaseMarkWatermark&gt;</code> element with the embedded
           payload — letting downstream partners verify that the delivered audio physically contains the
-          identifier declared in the disclosure bundle.
+          identifier declared in the disclosure bundle. The payload is a single value shared by both embedded
+          layers, so a partner recovering it with either detector is confirming the same record; the per-layer
+          entries only report which layers are present on the delivered file.
         </p>
       </div>
     </div>
