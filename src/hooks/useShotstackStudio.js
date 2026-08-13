@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
  * Returns { edit, ready, error } — `edit` is the live Edit instance
  * (edit.getEdit(), edit.addClip(), edit.play(), edit.undo() …).
  */
-export function useShotstackStudio(template, timelineWidth = 1000) {
+export function useShotstackStudio(template) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   const editRef = useRef(null);
@@ -23,19 +23,17 @@ export function useShotstackStudio(template, timelineWidth = 1000) {
         // Loaded dynamically — the SDK touches the DOM/WebGL at module scope
         const { Edit, Canvas, Controls, Timeline } = await import('@shotstack/shotstack-studio');
 
-        const edit = new Edit(template.output.size, template.timeline.background);
-        await edit.load();
-        if (disposed) { edit.dispose?.(); return; }
-
-        const canvas = new Canvas(template.output.size, edit);
+        const edit = new Edit(template);
+        const canvas = new Canvas(edit);
         await canvas.load();
-
-        await edit.loadEdit(template);
+        await edit.load();
+        if (disposed) { canvas.dispose?.(); edit.dispose?.(); return; }
 
         const controls = new Controls(edit);
         await controls.load();
 
-        const timeline = new Timeline(edit, { width: timelineWidth, height: 300 });
+        const timelineContainer = document.querySelector('[data-shotstack-timeline]');
+        const timeline = new Timeline(edit, timelineContainer, { resizable: true });
         await timeline.load();
 
         instances = [timeline, controls, canvas, edit];

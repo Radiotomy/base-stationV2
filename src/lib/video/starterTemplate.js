@@ -12,13 +12,15 @@ export function buildStarterTemplate(size = { width: 1280, height: 720 }) {
           clips: [
             {
               asset: {
-                type: 'text',
+                type: 'rich-text',
                 text: 'BASE STATION',
-                font: { family: 'Montserrat ExtraBold', size: 64, color: '#ffffff' },
-                alignment: { horizontal: 'center', vertical: 'center' },
+                font: { family: 'Work Sans', size: 64, weight: 600, color: '#ffffff', opacity: 1 },
+                align: { horizontal: 'center', vertical: 'middle' },
               },
               start: 0,
               length: 4,
+              width: 900,
+              height: 200,
               transition: { in: 'fade', out: 'fade' },
             },
           ],

@@ -26,24 +26,28 @@ export default function TimelineEditorTab() {
   const { status, progress } = useJobPolling(jobId, onComplete, onError);
   const rendering = !!jobId && status === 'processing';
 
-  const addClip = (kind, value) => {
+  const addClip = async (kind, value) => {
     const e = edit.current;
     if (!e) return;
     try {
+      const start = e.totalDuration || 0;
       if (kind === 'audio') {
-        e.addClip(1, { asset: { type: 'audio', src: value }, start: 0, length: 10 });
+        // audio lives on its own track so it never collides with visual clips
+        await e.addTrack(1, { clips: [{ asset: { type: 'audio', src: value }, start: 0, length: Math.max(10, e.totalDuration || 10) }] });
       } else if (kind === 'video') {
-        e.addClip(0, { asset: { type: 'video', src: value }, start: 0, length: 5 });
+        await e.addClip(0, { asset: { type: 'video', src: value }, start, length: 5 });
       } else {
-        e.addClip(0, {
+        await e.addClip(0, {
           asset: {
-            type: 'text',
+            type: 'rich-text',
             text: value,
-            font: { family: 'Montserrat ExtraBold', size: 48, color: '#ffffff' },
-            alignment: { horizontal: 'center', vertical: 'center' },
+            font: { family: 'Work Sans', size: 48, weight: 600, color: '#ffffff', opacity: 1 },
+            align: { horizontal: 'center', vertical: 'middle' },
           },
-          start: 0,
+          start,
           length: 3,
+          width: 900,
+          height: 200,
         });
       }
       toast.success('Clip added — drag it on the timeline to position it');
