@@ -51,11 +51,16 @@ export async function resolvePexelsClip(query, orientation = 'landscape') {
   };
 }
 
+// Animated rich-text presets exposed in the composer UI
+const TEXT_ANIMATIONS = new Set(['ascend', 'shift', 'typewriter']);
+
 /**
  * Build a Shotstack `Edit` from a flat scene list.
- * scenes: [{ kind: 'broll'|'video'|'solid', query?, src?, color?, durationSeconds, transitionOut?, text? }]
+ * scenes: [{ kind: 'broll'|'video'|'solid', query?, src?, color?, durationSeconds, transitionOut?, text?, textAnimation? }]
+ * captions: { enabled: boolean, style?: 'karaoke'|'clean' } — auto-transcribed from the audio track
  */
-export function buildEdit(scenes, { width, height, fps, audioUrl, audioVolume = 1 }) {
+export function buildEdit(scenes, { width, height, fps, audioUrl, audioVolume = 1, captions = null }) {
+  const captionsOn = !!(captions?.enabled && audioUrl);
   const videoClips = [];
   const textClips = [];
   let cursor = 0;
@@ -87,16 +92,31 @@ export function buildEdit(scenes, { width, height, fps, audioUrl, audioVolume = 
     videoClips.push(clip);
 
     if (scene.text?.trim()) {
+      const asset = {
+        type: 'rich-text',
+        text: scene.text.trim(),
+        font: { family: 'Montserrat', size: Math.round(height / 14), weight: 800, color: '#ffffff' },
+        style: { letterSpacing: 2 },
+        stroke: { width: 3, color: '#000000', opacity: 1 },
+        shadow: { offsetX: 4, offsetY: 4, blur: 10, color: '#000000', opacity: 0.6 },
+        align: { horizontal: 'center', vertical: 'middle' },
+      };
+      if (TEXT_ANIMATIONS.has(scene.textAnimation)) {
+        asset.animation = {
+          preset: scene.textAnimation,
+          duration: Math.min(1.5, Math.max(0.5, length / 3)),
+          style: scene.textAnimation === 'typewriter' ? 'character' : 'word',
+        };
+      }
       textClips.push({
-        asset: {
-          type: 'text',
-          text: scene.text.trim(),
-          font: { family: 'Montserrat ExtraBold', size: Math.round(height / 14), color: '#ffffff' },
-          alignment: { horizontal: 'center', vertical: 'bottom' },
-          stroke: { color: '#000000', width: 2 },
-        },
+        asset,
         start: cursor,
         length,
+        width: Math.round(width * 0.8),
+        height: Math.round(height * 0.3),
+        // captions own the lower third — push scene titles up when they're on
+        position: captionsOn ? 'top' : 'bottom',
+        offset: { y: captionsOn ? -0.06 : 0.06 },
         transition: { in: 'fade', out: 'fade' },
       });
     }
@@ -105,11 +125,41 @@ export function buildEdit(scenes, { width, height, fps, audioUrl, audioVolume = 
   });
 
   const tracks = [];
-  if (textClips.length) tracks.push({ clips: textClips }); // top track renders above video
+
+  // Auto-captions: the audio must live on a track (not the soundtrack) so it can
+  // carry an alias for Shotstack's transcription engine to reference.
+  if (captionsOn) {
+    const caption = {
+      type: 'rich-caption',
+      src: 'alias://vocals',
+      font: { family: 'Montserrat', size: Math.round(height / 18), weight: 700, color: '#ffffff' },
+      align: { vertical: 'bottom' },
+      stroke: { width: 3, color: '#000000', opacity: 1 },
+      style: { textTransform: 'uppercase' },
+    };
+    if (captions.style !== 'clean') {
+      caption.animation = { style: 'highlight' };
+      caption.active = { font: { background: '#FF9A4D', color: '#14100C' } };
+    }
+    tracks.push({ clips: [{ asset: caption, start: 0, length: 'end' }] });
+  }
+
+  if (textClips.length) tracks.push({ clips: textClips }); // above video
   tracks.push({ clips: videoClips });
 
+  if (captionsOn) {
+    tracks.push({
+      clips: [{
+        alias: 'vocals',
+        asset: { type: 'audio', src: audioUrl, volume: audioVolume, effect: 'fadeOut' },
+        start: 0,
+        length: cursor,
+      }],
+    });
+  }
+
   const timeline = { background: '#000000', tracks };
-  if (audioUrl) timeline.soundtrack = { src: audioUrl, effect: 'fadeOut', volume: audioVolume };
+  if (audioUrl && !captionsOn) timeline.soundtrack = { src: audioUrl, effect: 'fadeOut', volume: audioVolume };
 
   return {
     edit: { timeline, output: { format: 'mp4', size: { width, height }, fps } },

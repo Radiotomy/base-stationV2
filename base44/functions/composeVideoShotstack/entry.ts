@@ -34,7 +34,10 @@ export default async function(req) {
     }
 
     const hasAudio = !!body.audioUrl;
-    const cost = 5 + scenes.length + (hasAudio ? 3 : 0);
+    const captions = body.captions?.enabled && hasAudio
+      ? { enabled: true, style: body.captions.style === 'clean' ? 'clean' : 'karaoke' }
+      : null;
+    const cost = 5 + scenes.length + (hasAudio ? 3 : 0) + (captions ? 4 : 0);
 
     const creditRows = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
     const balance = creditRows[0]?.balance ?? 0;
@@ -42,7 +45,7 @@ export default async function(req) {
       return Response.json({
         error: 'Insufficient credits',
         required: cost, balance,
-        message: `This music video costs ${cost} credits (5 base + ${scenes.length} scenes${hasAudio ? ' + 3 audio mux' : ''}). You have ${balance}.`,
+        message: `This music video costs ${cost} credits (5 base + ${scenes.length} scenes${hasAudio ? ' + 3 audio mux' : ''}${captions ? ' + 4 auto-captions' : ''}). You have ${balance}.`,
       }, { status: 402 });
     }
 
@@ -71,6 +74,7 @@ export default async function(req) {
     const { edit, totalSeconds } = buildEdit(resolved, {
       width, height, fps,
       audioUrl: body.audioUrl,
+      captions,
     });
 
     const job = await base44.entities.GenerationJob.create({
@@ -79,8 +83,9 @@ export default async function(req) {
       status: 'processing',
       input_data: {
         scene_count: scenes.length,
-        scenes: scenes.map(s => ({ kind: s.kind, query: s.query, duration: s.durationSeconds, text: s.text })),
+        scenes: scenes.map(s => ({ kind: s.kind, query: s.query, duration: s.durationSeconds, text: s.text, text_animation: s.textAnimation })),
         has_audio: hasAudio,
+        captions: captions || undefined,
         width, height, fps,
         duration: totalSeconds,
         attribution,

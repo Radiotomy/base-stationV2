@@ -15,6 +15,8 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import LibraryTrackPickerModal from './LibraryTrackPickerModal';
 import SceneTransitionPicker from './SceneTransitionPicker';
 import SceneTextOverlayInput from './SceneTextOverlayInput';
+import TextAnimationPicker from './TextAnimationPicker';
+import CaptionsToggle from './CaptionsToggle';
 import SceneTemplatesPicker from './SceneTemplatesPicker';
 import ScenePreviewThumb from './ScenePreviewThumb';
 import VibePromptBar from './VibePromptBar';
@@ -35,6 +37,7 @@ const newScene = (q = '') => ({
   durationSeconds: 4,
   transitionOut: null,
   text: '',
+  textAnimation: 'ascend',
 });
 
 export default function MusicVideoComposer() {
@@ -43,6 +46,8 @@ export default function MusicVideoComposer() {
   const [audioTitle, setAudioTitle] = useState('');
   const [audioDuration, setAudioDuration] = useState(0); // seconds
   const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [captionsOn, setCaptionsOn] = useState(false);
+  const [captionStyle, setCaptionStyle] = useState('karaoke');
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [composing, setComposing] = useState(false);
   const [jobId, setJobId] = useState('');
@@ -200,8 +205,9 @@ export default function MusicVideoComposer() {
 
   const totalDuration = scenes.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
 
-  // Credit cost matches backend: 5 base + 1/scene + 3 if audio
-  const creditCost = 5 + scenes.length + (audioUrl ? 3 : 0);
+  // Credit cost matches backend: 5 base + 1/scene + 3 if audio + 4 if captions
+  const useCaptions = captionsOn && !!audioUrl;
+  const creditCost = 5 + scenes.length + (audioUrl ? 3 : 0) + (useCaptions ? 4 : 0);
 
   const updateScene = (id, patch) => {
     setScenes((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
@@ -251,8 +257,10 @@ export default function MusicVideoComposer() {
           durationSeconds: s.durationSeconds,
           transitionOut: s.transitionOut || undefined,
           text: s.text || undefined,
+          textAnimation: s.text ? (s.textAnimation || undefined) : undefined,
         })),
         audioUrl: audioUrl || undefined,
+        captions: useCaptions ? { enabled: true, style: captionStyle } : undefined,
         ...dims,
         fps: 30,
       });
@@ -390,6 +398,15 @@ export default function MusicVideoComposer() {
         )}
       </div>
 
+      {/* Auto-captions from the vocal track */}
+      <CaptionsToggle
+        enabled={captionsOn}
+        style={captionStyle}
+        onToggle={setCaptionsOn}
+        onStyleChange={setCaptionStyle}
+        disabled={!audioUrl}
+      />
+
       {/* Aspect ratio */}
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Aspect Ratio</p>
@@ -503,6 +520,12 @@ export default function MusicVideoComposer() {
                 value={scene.text}
                 onChange={(v) => updateScene(scene.id, { text: v })}
               />
+              {scene.text?.trim() && (
+                <TextAnimationPicker
+                  value={scene.textAnimation}
+                  onChange={(v) => updateScene(scene.id, { textAnimation: v })}
+                />
+              )}
               <SceneTransitionPicker
                 value={scene.transitionOut}
                 onChange={(v) => updateScene(scene.id, { transitionOut: v })}
@@ -559,7 +582,7 @@ export default function MusicVideoComposer() {
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">
-        {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}. Rendered in full HD on Shotstack · Pexels footage included free.
+        {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}{useCaptions ? ' + 4 auto-captions' : ''}. Rendered in full HD on Shotstack · Pexels footage included free.
       </p>
 
       {audioDuration > 0 && Math.abs(totalDuration - audioDuration) > 1 && (
