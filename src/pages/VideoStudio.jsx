@@ -15,6 +15,7 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import MusicVideoComposer from '@/components/video/MusicVideoComposer';
+import TimelineEditorTab from '@/components/video/TimelineEditorTab';
 import LtxControls from '@/components/video/LtxControls';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
@@ -34,7 +35,8 @@ const MODES = [
   { id: 'text', label: '✍️ Text to Video', desc: 'Generate from a text prompt' },
   { id: 'image', label: '🖼️ Image to Video', desc: 'Animate a reference image' },
   { id: 'audio', label: '🎵 Audio to Video', desc: 'Visual synced to your track' },
-  { id: 'musicvideo', label: '🎬 Music Video', desc: 'Stitch scenes + audio (NEW)' },
+  { id: 'musicvideo', label: '🎬 Music Video', desc: 'Stitch scenes + audio' },
+  { id: 'timeline', label: '🎚️ Timeline Editor', desc: 'Drag & drop editor (NEW)' },
 ];
 
 export default function VideoStudio() {
@@ -247,6 +249,9 @@ export default function VideoStudio() {
         {/* Music Video Mode (NextCut multi-scene composer) */}
         {mode === 'musicvideo' && <MusicVideoComposer />}
 
+        {/* Drag-and-drop timeline editor (Shotstack Studio SDK) */}
+        {mode === 'timeline' && <TimelineEditorTab />}
+
         {/* Reference Upload for Image/Audio modes */}
         {mode === 'image' && (
           <div className="p-4 rounded-xl bg-card border border-border space-y-2">
@@ -277,7 +282,7 @@ export default function VideoStudio() {
         )}
 
         {/* LTX Mode UI (text / image / audio) */}
-        {mode !== 'musicvideo' && <>
+        {mode !== 'musicvideo' && mode !== 'timeline' && <>
 
         {/* Prompt Templates */}
         <div>
