@@ -15,6 +15,7 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import LibraryTrackPickerModal from './LibraryTrackPickerModal';
 import SceneTransitionPicker from './SceneTransitionPicker';
 import SceneTextOverlayInput from './SceneTextOverlayInput';
+import SceneMediaSource from './SceneMediaSource';
 import TextAnimationPicker from './TextAnimationPicker';
 import CaptionsToggle from './CaptionsToggle';
 import SceneTemplatesPicker from './SceneTemplatesPicker';
@@ -241,9 +242,9 @@ export default function MusicVideoComposer() {
   };
 
   const compose = async () => {
-    const validScenes = scenes.filter((s) => s.query?.trim() && s.durationSeconds > 0);
+    const validScenes = scenes.filter((s) => (s.src || s.query?.trim()) && s.durationSeconds > 0);
     if (validScenes.length === 0) {
-      toast.error('Add at least one scene with a query');
+      toast.error('Add at least one scene with a query or your own media');
       return;
     }
     setComposing(true);
@@ -252,8 +253,9 @@ export default function MusicVideoComposer() {
     try {
       const res = await base44.functions.invoke('composeVideoShotstack', {
         scenes: validScenes.map((s) => ({
-          kind: s.kind,
-          query: s.query,
+          kind: s.src ? (s.mediaKind || 'video') : s.kind,
+          src: s.src || undefined,
+          query: s.src ? undefined : s.query,
           durationSeconds: s.durationSeconds,
           transitionOut: s.transitionOut || undefined,
           text: s.text || undefined,
@@ -489,12 +491,13 @@ export default function MusicVideoComposer() {
                 </div>
                 <span className="text-xs font-bold text-muted-foreground w-6">#{idx + 1}</span>
                 <ScenePreviewThumb
-                  url={previewCache[scene.query?.trim()]?.thumbnail_url}
-                  loading={!!loadingPreviews[scene.query?.trim()]}
+                  url={scene.src && scene.mediaKind === 'image' ? scene.src : previewCache[scene.query?.trim()]?.thumbnail_url}
+                  loading={!scene.src && !!loadingPreviews[scene.query?.trim()]}
                 />
                 <Input
-                  value={scene.query}
+                  value={scene.src ? (scene.mediaLabel || 'My media') : scene.query}
                   onChange={(e) => updateScene(scene.id, { query: e.target.value })}
+                  disabled={!!scene.src}
                   placeholder="e.g. neon city street rain"
                   className="flex-1 text-xs"
                 />
@@ -516,6 +519,13 @@ export default function MusicVideoComposer() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+              <SceneMediaSource
+                src={scene.src}
+                mediaKind={scene.mediaKind}
+                mediaLabel={scene.mediaLabel}
+                onSet={(patch) => updateScene(scene.id, patch)}
+                onClear={() => updateScene(scene.id, { src: '', mediaKind: undefined, mediaLabel: undefined })}
+              />
               <SceneTextOverlayInput
                 value={scene.text}
                 onChange={(v) => updateScene(scene.id, { text: v })}

@@ -78,6 +78,8 @@ export function buildEdit(scenes, { width, height, fps, audioUrl, audioVolume = 
         rectangle: { width, height },
         fill: { color: scene.color || '#000000' },
       };
+    } else if (scene.kind === 'image') {
+      asset = { type: 'image', src: scene.src };
     } else {
       // 'broll' queries are resolved to Pexels sources before this call
       asset = { type: 'video', src: scene.src, volume: 0 };

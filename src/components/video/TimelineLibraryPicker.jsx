@@ -15,10 +15,10 @@ const GROUPS = [
 const ICONS = { video: Film, audio: Music, image: ImageIcon };
 
 /** Browses every usable asset in the user's library and drops it on the timeline. */
-export default function TimelineLibraryPicker({ onPick, disabled }) {
+export default function TimelineLibraryPicker({ onPick, disabled, only = null }) {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [group, setGroup] = useState('all');
+  const [group, setGroup] = useState(only?.length === 1 ? only[0] : 'all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
@@ -38,14 +38,17 @@ export default function TimelineLibraryPicker({ onPick, disabled }) {
     const types = GROUPS.find(g => g.id === group)?.types;
     return assets.filter(a =>
       (!types || types.includes(a.asset_type)) &&
+      (!only || only.includes(kindFromAsset(a))) &&
       (!search || a.title?.toLowerCase().includes(search.toLowerCase()))
     );
-  }, [assets, group, search]);
+  }, [assets, group, search, only?.join(',')]);
+
+  const visibleGroups = only ? GROUPS.filter(g => g.id === 'all' || only.includes(g.id)) : GROUPS;
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-1.5 flex-wrap">
-        {GROUPS.map(g => (
+      <div className={`flex gap-1.5 flex-wrap ${visibleGroups.length < 3 ? 'hidden' : ''}`}>
+        {visibleGroups.map(g => (
           <button key={g.id} type="button" onClick={() => setGroup(g.id)}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${group === g.id ? 'bg-indigo-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
             {g.label}

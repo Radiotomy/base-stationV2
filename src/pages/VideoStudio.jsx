@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Film, Zap, Download, ArrowLeft, Save, RotateCcw,
-  CheckCircle, Sparkles, Clock, Image, Music, Upload, Loader2, X
+  CheckCircle, Sparkles, Clock, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,7 @@ import InfoTip from '@/components/common/InfoTip';
 import MusicVideoComposer from '@/components/video/MusicVideoComposer';
 import TimelineEditorTab from '@/components/video/TimelineEditorTab';
 import LtxControls from '@/components/video/LtxControls';
+import ReferenceMediaInput from '@/components/video/ReferenceMediaInput';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
 const PROMPT_TEMPLATES = [
@@ -57,7 +58,6 @@ export default function VideoStudio() {
   const [versions, setVersions] = useState([]);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
-  const [uploadingRef, setUploadingRef] = useState(false);
 
   // Load recent video versions from the user's library so history survives refresh
   useEffect(() => {
@@ -111,19 +111,6 @@ export default function VideoStudio() {
     setGenerating(false);
     toast.info('Generation cancelled');
   }, [jobId]);
-
-  const handleRefUpload = async (e, type) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingRef(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      if (type === 'image') setReferenceImageUrl(file_url);
-      else setReferenceAudioUrl(file_url);
-      toast.success(`${type === 'image' ? 'Image' : 'Audio'} uploaded!`);
-    } catch (err) { toast.error(err.message); }
-    setUploadingRef(false);
-  };
 
   const generate = async () => {
     if (!prompt && mode === 'text') { toast.error('Enter a prompt'); return; }
@@ -252,33 +239,13 @@ export default function VideoStudio() {
         {/* Drag-and-drop timeline editor (Shotstack Studio SDK) */}
         {mode === 'timeline' && <TimelineEditorTab />}
 
-        {/* Reference Upload for Image/Audio modes */}
+        {/* Reference media (upload / library / URL) for Image & Audio modes */}
         {mode === 'image' && (
-          <div className="p-4 rounded-xl bg-card border border-border space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5"><Image className="w-3.5 h-3.5" /> Reference Image</p>
-            <label className="block cursor-pointer">
-              <input type="file" accept="image/*" onChange={e => handleRefUpload(e, 'image')} className="hidden" />
-              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${referenceImageUrl ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-indigo-500'}`}>
-                {uploadingRef ? <Loader2 className="w-5 h-5 mx-auto text-indigo-400 animate-spin" /> :
-                  referenceImageUrl ? <><img src={referenceImageUrl} className="w-24 h-24 object-cover rounded-lg mx-auto mb-1" alt="ref" /><p className="text-xs text-emerald-400">Image ready</p></> :
-                  <><Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" /><p className="text-xs text-muted-foreground">Click to upload image</p></>}
-              </div>
-            </label>
-          </div>
+          <ReferenceMediaInput kind="image" value={referenceImageUrl} onChange={setReferenceImageUrl} />
         )}
 
         {mode === 'audio' && (
-          <div className="p-4 rounded-xl bg-card border border-border space-y-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5"><Music className="w-3.5 h-3.5" /> Reference Audio Track</p>
-            <label className="block cursor-pointer">
-              <input type="file" accept="audio/*" onChange={e => handleRefUpload(e, 'audio')} className="hidden" />
-              <div className={`border-2 border-dashed rounded-xl p-4 text-center transition-colors ${referenceAudioUrl ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-indigo-500'}`}>
-                {uploadingRef ? <Loader2 className="w-5 h-5 mx-auto text-indigo-400 animate-spin" /> :
-                  referenceAudioUrl ? <><audio controls src={referenceAudioUrl} className="w-full mb-1" /><p className="text-xs text-emerald-400">Audio ready</p></> :
-                  <><Upload className="w-5 h-5 mx-auto text-muted-foreground mb-1" /><p className="text-xs text-muted-foreground">Click to upload audio (MP3, WAV)</p></>}
-              </div>
-            </label>
-          </div>
+          <ReferenceMediaInput kind="audio" value={referenceAudioUrl} onChange={setReferenceAudioUrl} />
         )}
 
         {/* LTX Mode UI (text / image / audio) */}
