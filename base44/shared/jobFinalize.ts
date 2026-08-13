@@ -3,6 +3,7 @@ import { autoSaveJobAsset } from './autoSaveAsset.ts';
 import { getHarmonixPrediction, extractAudioUrl } from './harmonix.ts';
 import { getSoundForgePrediction, extractSoundForgeAudioUrl } from './soundForge.ts';
 import { fetchPolishUpload } from './loopPolish.ts';
+import { getRender as getShotstackRender } from './shotstack.ts';
 
 // Both aimusicapi.ai providers (Sonic, Producer) share one API key.
 const AIMUSICAPI_KEY    = Deno.env.get('SONIC_API_KEY');
@@ -172,33 +173,33 @@ export async function pollProvider(provider, providerTaskId, job) {
   }
 
   if (provider === 'ltx') {
-    url = `https://api.ltx.video/v1/tasks/${providerTaskId}`;
-    headers = { 'Authorization': `Bearer ${LTX_API_KEY}` };
-    res = await fetch(url, { headers });
-    data = await res.json();
-    const state = data?.status || data?.state || '';
+    // LTX async (V2) API — GET https://api.ltx.io/v2/{endpoint}/{id}.
+    // Results are retained for 24h after completion; 404 means expired/unknown.
+    const endpointMap = { text: 'text-to-video', image: 'image-to-video', audio: 'audio-to-video' };
+    const endpoint = job.input_data?.ltx_endpoint || endpointMap[job.input_data?.mode] || 'text-to-video';
+    res = await fetch(`https://api.ltx.io/v2/${endpoint}/${providerTaskId}`, {
+      headers: { 'Authorization': `Bearer ${LTX_API_KEY}` },
+    });
+    data = await res.json().catch(() => ({}));
 
-    if (!state || data?.error?.includes('not found') || res.status === 404) {
-      console.log('LTX: task not found, attempting recovery via list...');
-      const listRes = await fetch('https://api.ltx.video/v1/tasks?limit=20', { headers: { 'Authorization': `Bearer ${LTX_API_KEY}` } });
-      const listData = await listRes.json();
-      const listItems = listData?.tasks || listData?.data || listData || [];
-      const jobCreatedAt = job.started_at ? new Date(job.started_at).getTime() : Date.now();
-      const recovered = (Array.isArray(listItems) ? listItems : []).find(item => {
-        if (!item.video_url && !item.url) return false;
-        const t = item.created_at ? new Date(item.created_at).getTime() : 0;
-        return Math.abs(t - jobCreatedAt) < 10 * 60 * 1000;
-      });
-      if (recovered) {
-        console.log('LTX: recovered via list:', recovered.id);
-        return { status: 'completed', video_url: recovered.video_url || recovered.url };
-      }
+    if (res.status === 404) {
+      return { status: 'failed', error: 'LTX job not found or expired (results are kept for 24 hours). Please regenerate.' };
     }
+    if (data?.status === 'completed') {
+      const videoUrl = data?.result?.video_url;
+      if (!videoUrl) return { status: 'failed', error: 'LTX completed without a video URL' };
+      return { status: 'completed', video_url: videoUrl };
+    }
+    if (data?.status === 'failed') {
+      return { status: 'failed', error: data?.error?.message || 'LTX generation failed' };
+    }
+    return { status: 'processing' };
+  }
 
-    if (state === 'completed' || state === 'succeeded' || data?.video_url) {
-      return { status: 'completed', video_url: data.video_url || data.url };
-    }
-    if (state === 'failed' || state === 'error') return { status: 'failed', error: data.error || 'LTX failed' };
+  if (provider === 'shotstack') {
+    const r = await getShotstackRender(providerTaskId, job.input_data?.shotstack_base);
+    if (r.status === 'completed') return { status: 'completed', video_url: r.video_url, cover_image_url: r.poster || undefined, duration: r.duration };
+    if (r.status === 'failed') return { status: 'failed', error: r.error };
     return { status: 'processing' };
   }
 
@@ -480,7 +481,8 @@ export async function finalizeJob(base44, job) {
 
     const modelVersionMap = {
       sonic: 'sonic-v4-5', producer: 'FUZZ-2.0',
-      tempcolor: 'TemPolor v4.6', loudly: 'VEGA_2', ltx: 'ltx-video-v1',
+      tempcolor: 'TemPolor v4.6', loudly: 'VEGA_2', ltx: 'ltx-2.5',
+      shotstack: 'shotstack-edit-v1',
     };
     const modelVersion = job.input_data?.model || modelVersionMap[job.provider] || job.provider;
 

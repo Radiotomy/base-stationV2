@@ -22,7 +22,10 @@
         "ltx",
         "core",
         "nextcut",
-        "elevenlabs"
+        "shotstack",
+        "elevenlabs",
+        "harmonix",
+        "soundforge"
       ]
     },
     "task": {

@@ -15,10 +15,11 @@ export default function VideoAssetCard({ asset, onDelete }) {
   const videoRef = useRef(null);
 
   const provider = asset.metadata?.provider || 'unknown';
-  const providerLabel = provider === 'ltx' ? 'LTX' : provider === 'nextcut' ? 'NextCut' : provider;
+  const PROVIDER_LABELS = { ltx: 'LTX', shotstack: 'Shotstack', nextcut: 'NextCut (legacy)' };
+  const providerLabel = PROVIDER_LABELS[provider] || provider;
   const providerColor = provider === 'ltx'
     ? 'bg-violet-500/15 text-violet-300 border-violet-500/30'
-    : provider === 'nextcut'
+    : provider === 'shotstack' || provider === 'nextcut'
     ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
     : 'bg-muted text-muted-foreground border-border';
 

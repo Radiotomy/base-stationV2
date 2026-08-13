@@ -30,11 +30,12 @@
         "tempcolor",
         "ltx",
         "nextcut",
+        "shotstack",
         "elevenlabs",
         "harmonix",
         "soundforge"
       ],
-      "description": "Which provider handled the generation"
+      "description": "Which provider handled the generation. 'nextcut' is retired and kept only for historical rows \u2014 video composition now runs on 'shotstack'."
     },
     "status": {
       "type": "string",

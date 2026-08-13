@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,10 +14,12 @@ import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import LibraryTrackPickerModal from './LibraryTrackPickerModal';
 import SceneTransitionPicker from './SceneTransitionPicker';
+import SceneTextOverlayInput from './SceneTextOverlayInput';
 import SceneTemplatesPicker from './SceneTemplatesPicker';
 import ScenePreviewThumb from './ScenePreviewThumb';
 import VibePromptBar from './VibePromptBar';
 import { analyzeAudioOnsets, onsetsToSceneDurations } from '@/utils/audioOnsetDetection';
+import { useJobPolling } from '@/hooks/useJobPolling';
 
 const QUERY_SUGGESTIONS = [
   'city traffic timelapse', 'ocean waves sunset', 'neon lights night',
@@ -32,6 +34,7 @@ const newScene = (q = '') => ({
   query: q,
   durationSeconds: 4,
   transitionOut: null,
+  text: '',
 });
 
 export default function MusicVideoComposer() {
@@ -42,6 +45,8 @@ export default function MusicVideoComposer() {
   const [aspectRatio, setAspectRatio] = useState('16:9');
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [composing, setComposing] = useState(false);
+  const [jobId, setJobId] = useState('');
+  const [pendingMeta, setPendingMeta] = useState(null);
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -168,11 +173,30 @@ export default function MusicVideoComposer() {
     })));
   };
 
+  // Shotstack renders full HD — no 1080px longest-side cap
   const dims = aspectRatio === '9:16'
-    ? { width: 720, height: 1080 }
+    ? { width: 1080, height: 1920 }
     : aspectRatio === '1:1'
-    ? { width: 720, height: 720 }
-    : { width: 1080, height: 720 };
+    ? { width: 1080, height: 1080 }
+    : { width: 1920, height: 1080 };
+
+  // Shotstack renders asynchronously — poll the job until the MP4 is ready
+  const onRenderComplete = useCallback((data) => {
+    setComposing(false);
+    setJobId('');
+    if (data?.video_url) {
+      setResult({ ...(pendingMeta || {}), ...data });
+      toast.success('🎬 Music video composed!');
+    }
+  }, [pendingMeta]);
+
+  const onRenderError = useCallback((msg) => {
+    setComposing(false);
+    setJobId('');
+    toast.error(msg || 'Composition failed');
+  }, []);
+
+  const { status: renderStatus } = useJobPolling(jobId, onRenderComplete, onRenderError);
 
   const totalDuration = scenes.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
 
@@ -218,29 +242,37 @@ export default function MusicVideoComposer() {
     }
     setComposing(true);
     setResult(null);
+    setJobId('');
     try {
-      const res = await base44.functions.invoke('composeVideoNextCut', {
+      const res = await base44.functions.invoke('composeVideoShotstack', {
         scenes: validScenes.map((s) => ({
           kind: s.kind,
           query: s.query,
           durationSeconds: s.durationSeconds,
           transitionOut: s.transitionOut || undefined,
+          text: s.text || undefined,
         })),
         audioUrl: audioUrl || undefined,
         ...dims,
         fps: 30,
       });
-      if (res.data?.video_url) {
-        setResult(res.data);
+      if (res.data?.job_id) {
+        setPendingMeta({
+          scene_count: res.data.scene_count,
+          duration_s: res.data.duration_s,
+          attribution: res.data.attribution,
+        });
+        setJobId(res.data.job_id);
         refreshCreditsFromResponse(res.data);
-        toast.success('🎬 Music video composed!');
+        toast.success('Rendering on Shotstack — this takes a minute…');
       } else {
+        setComposing(false);
         toast.error(res.data?.error || 'Composition failed');
       }
     } catch (err) {
+      setComposing(false);
       if (!handleCreditError(err)) toast.error(err?.response?.data?.error || err.message);
     }
-    setComposing(false);
   };
 
   const saveToLibrary = async () => {
@@ -256,7 +288,7 @@ export default function MusicVideoComposer() {
         file_url: result.video_url,
         is_public: false,
         metadata: {
-          provider: 'nextcut',
+          provider: 'shotstack',
           scenes: scenes.map((s) => ({ query: s.query, duration: s.durationSeconds })),
           aspectRatio,
           audioUrl,
@@ -467,6 +499,10 @@ export default function MusicVideoComposer() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+              <SceneTextOverlayInput
+                value={scene.text}
+                onChange={(v) => updateScene(scene.id, { text: v })}
+              />
               <SceneTransitionPicker
                 value={scene.transitionOut}
                 onChange={(v) => updateScene(scene.id, { transitionOut: v })}
@@ -511,7 +547,7 @@ export default function MusicVideoComposer() {
         {composing ? (
           <>
             <Loader2 className="w-5 h-5 animate-spin" />
-            Composing… (~{Math.ceil(totalDuration * 3)}s)
+            {renderStatus === 'processing' ? 'Rendering on Shotstack…' : 'Submitting render…'}
           </>
         ) : (
           <>
@@ -523,7 +559,7 @@ export default function MusicVideoComposer() {
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">
-        {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}. Pexels footage included free.
+        {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}. Rendered in full HD on Shotstack · Pexels footage included free.
       </p>
 
       {audioDuration > 0 && Math.abs(totalDuration - audioDuration) > 1 && (

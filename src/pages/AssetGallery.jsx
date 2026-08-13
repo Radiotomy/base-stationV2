@@ -11,7 +11,7 @@ import VideoAssetCard from '@/components/gallery/VideoAssetCard';
 const PROVIDER_FILTERS = [
   { id: 'all', label: 'All Providers' },
   { id: 'ltx', label: '✨ LTX' },
-  { id: 'nextcut', label: '🎬 NextCut' },
+  { id: 'shotstack', label: '🎬 Shotstack' },
 ];
 
 const DATE_FILTERS = [
@@ -29,7 +29,7 @@ const SORT_OPTIONS = [
 
 // Heuristic: an asset is a "video" if asset_type === 'project' and file_url ends in a video extension,
 // OR metadata.provider is a known video provider.
-const VIDEO_PROVIDERS = new Set(['ltx', 'nextcut']);
+const VIDEO_PROVIDERS = new Set(['ltx', 'shotstack', 'nextcut']);
 const isVideoAsset = (a) => {
   if (VIDEO_PROVIDERS.has(a.metadata?.provider)) return true;
   const url = (a.file_url || '').toLowerCase();
@@ -102,7 +102,7 @@ export default function AssetGallery() {
 
   // Provider counts (for badge display)
   const counts = useMemo(() => {
-    const c = { all: assets.length, ltx: 0, nextcut: 0 };
+    const c = { all: assets.length, ltx: 0, shotstack: 0 };
     for (const a of assets) {
       const p = a.metadata?.provider;
       if (p && c[p] !== undefined) c[p]++;
