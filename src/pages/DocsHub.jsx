@@ -9,6 +9,7 @@ import Id3ComplianceSection from '@/components/docs/sections/Id3ComplianceSectio
 import OnChainRegistrationSection from '@/components/docs/sections/OnChainRegistrationSection';
 import BaseMarkSection from '@/components/docs/sections/BaseMarkSection';
 import BaseMarkPublicSection from '@/components/docs/sections/BaseMarkPublicSection';
+import CreditsSection from '@/components/docs/sections/CreditsSection';
 import { useAuth } from '@/lib/AuthContext';
 
 const SECTION_COMPONENTS = {
@@ -20,6 +21,7 @@ const SECTION_COMPONENTS = {
   'onchain-registration': OnChainRegistrationSection,
   'base-mark': BaseMarkPublicSection,
   'base-mark-internal': BaseMarkSection,
+  'credits': CreditsSection,
 };
 
 export default function DocsHub() {

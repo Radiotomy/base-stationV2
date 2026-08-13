@@ -1,4 +1,4 @@
-import { BookOpen, Calculator, FileOutput, FileCheck, Music4, Braces, Link2, Fingerprint } from 'lucide-react';
+import { BookOpen, Calculator, FileOutput, FileCheck, Music4, Braces, Link2, Fingerprint, Heart } from 'lucide-react';
 
 export const DOC_SECTIONS = [
   { id: 'overview', label: 'Overview', icon: BookOpen, group: 'Getting Started' },
@@ -9,6 +9,7 @@ export const DOC_SECTIONS = [
   { id: 'onchain-registration', label: 'On-Chain Registration', icon: Link2, group: 'Standards' },
   { id: 'base-mark', label: 'BASE Mark Watermark', icon: Fingerprint, group: 'Standards' },
   { id: 'base-mark-internal', label: 'BASE Mark — Internal', icon: Fingerprint, group: 'Internal', adminOnly: true },
+  { id: 'credits', label: 'Credits & Partners', icon: Heart, group: 'About' },
 ];
 
 export default function DocsSidebar({ active, onSelect, isAdmin = false }) {
