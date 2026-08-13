@@ -7,7 +7,7 @@ import { useShotstackStudio } from '@/hooks/useShotstackStudio';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 import { buildStarterTemplate } from '@/lib/video/starterTemplate';
-import AddClipBar from './AddClipBar';
+import TimelineAssetPanel from './TimelineAssetPanel';
 import InfoTip from '@/components/common/InfoTip';
 
 /**
@@ -34,8 +34,8 @@ export default function TimelineEditorTab() {
       if (kind === 'audio') {
         // audio lives on its own track so it never collides with visual clips
         await e.addTrack(1, { clips: [{ asset: { type: 'audio', src: value }, start: 0, length: Math.max(10, e.totalDuration || 10) }] });
-      } else if (kind === 'video') {
-        await e.addClip(0, { asset: { type: 'video', src: value }, start, length: 5 });
+      } else if (kind === 'video' || kind === 'image') {
+        await e.addClip(0, { asset: { type: kind, src: value }, start, length: 5 });
       } else {
         await e.addClip(0, {
           asset: {
@@ -108,7 +108,7 @@ export default function TimelineEditorTab() {
 
       <div data-shotstack-timeline className="w-full rounded-xl overflow-x-auto border border-border bg-card" />
 
-      <AddClipBar onAdd={addClip} disabled={!ready} />
+      <TimelineAssetPanel onAdd={addClip} disabled={!ready} />
 
       <Button onClick={render} disabled={!ready || submitting || rendering}
         className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-base py-5 gap-2">

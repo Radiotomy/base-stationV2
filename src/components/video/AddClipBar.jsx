@@ -1,29 +1,29 @@
 import { useState } from 'react';
-import { Video, Music, Type, Plus } from 'lucide-react';
+import { Link2, Type, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { kindFromUrl } from '@/lib/video/assetKind';
 
 const KINDS = [
-  { id: 'video', label: 'Video URL', icon: Video, placeholder: 'https://…mp4' },
-  { id: 'audio', label: 'Audio URL', icon: Music, placeholder: 'https://…mp3' },
+  { id: 'url', label: 'Media URL', icon: Link2, placeholder: 'https://…mp4 / .mp3 / .jpg' },
   { id: 'title', label: 'Title Text', icon: Type, placeholder: 'Your on-screen text' },
 ];
 
-/** Adds a clip to the live Studio edit — video/audio by URL, or a text title. */
+/** Adds a clip by external URL (video/audio/image, auto-detected) or as a text title. */
 export default function AddClipBar({ onAdd, disabled }) {
-  const [kind, setKind] = useState('video');
+  const [kind, setKind] = useState('url');
   const [value, setValue] = useState('');
   const active = KINDS.find(k => k.id === kind);
 
   const submit = () => {
-    if (!value.trim()) return;
-    onAdd(kind, value.trim());
+    const v = value.trim();
+    if (!v) return;
+    onAdd(kind === 'title' ? 'title' : kindFromUrl(v), v);
     setValue('');
   };
 
   return (
-    <div className="p-4 rounded-xl bg-card border border-border space-y-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase">Add to timeline</p>
+    <div className="space-y-3">
       <div className="flex gap-1.5 flex-wrap">
         {KINDS.map(k => (
           <button key={k.id} type="button" onClick={() => setKind(k.id)}
