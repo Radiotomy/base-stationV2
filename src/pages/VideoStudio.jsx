@@ -15,16 +15,8 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import MusicVideoComposer from '@/components/video/MusicVideoComposer';
+import LtxControls from '@/components/video/LtxControls';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
-
-const ASPECT_RATIOS = [
-  { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
-  { value: '9:16', label: '9:16', desc: 'Portrait / Reels' },
-  { value: '1:1',  label: '1:1',  desc: 'Square / Instagram' },
-  { value: '4:3',  label: '4:3',  desc: 'Classic' },
-];
-
-const DURATIONS = [3, 5, 8, 10, 15, 20, 30];
 
 const PROMPT_TEMPLATES = [
   { label: '🌌 Cosmic Journey',  prompt: 'A journey through a neon-lit cosmos, vibrant nebulae swirling, stars exploding in slow motion, cinematic' },
@@ -48,8 +40,13 @@ const MODES = [
 export default function VideoStudio() {
   const [mode, setMode] = useState('text');
   const [prompt, setPrompt] = useState('');
-  const [duration, setDuration] = useState(5);
+  const [duration, setDuration] = useState(8);
   const [aspectRatio, setAspectRatio] = useState('16:9');
+  const [model, setModel] = useState('ltx-2-5-fast');
+  const [resolutionTier, setResolutionTier] = useState('1080p');
+  const [fps, setFps] = useState(24);
+  const [cameraMotion, setCameraMotion] = useState('');
+  const [generateAudio, setGenerateAudio] = useState(true);
   const [style, setStyle] = useState('');
   const [generating, setGenerating] = useState(false);
   const [jobId, setJobId] = useState('');
@@ -140,6 +137,11 @@ export default function VideoStudio() {
         duration,
         aspect_ratio: aspectRatio,
         mode,
+        model,
+        resolution_tier: resolutionTier,
+        fps,
+        camera_motion: cameraMotion,
+        generate_audio: generateAudio,
         reference_image_url: mode === 'image' ? referenceImageUrl : undefined,
         reference_audio_url: mode === 'audio' ? referenceAudioUrl : undefined,
       });
@@ -186,7 +188,7 @@ export default function VideoStudio() {
         ai_disclosure_basis: participation.basis,
         human_participation_score: participation.score,
         participation_signals: participation.signals,
-        metadata: { prompt, duration, aspectRatio, style, provider: 'ltx' },
+        metadata: { prompt, duration, aspectRatio, style, provider: 'ltx', model, resolution_tier: resolutionTier, fps, camera_motion: cameraMotion, generate_audio: generateAudio },
       });
       toast.success('Saved to library!');
     } catch (err) {
@@ -195,7 +197,19 @@ export default function VideoStudio() {
     setSaving(false);
   };
 
-  const estimatedSeconds = duration * 12; // rough estimate: ~12s processing per second of video
+  // Pro caps at 1080p / 10s and 24fps — keep the selection valid when switching models
+  useEffect(() => {
+    if (model !== 'ltx-2-5-pro') return;
+    setFps(24);
+    if (resolutionTier === '1440p' || resolutionTier === '4k') setResolutionTier('1080p');
+    setDuration(d => (d !== null && d > 10 ? 10 : d));
+  }, [model, resolutionTier]);
+
+  // Auto duration and audio-driven clips are billed against the model's max length
+  const maxDuration = model === 'ltx-2-5-pro' ? 10 : 20;
+  const billedSeconds = (mode === 'audio' || duration === null) ? maxDuration : duration;
+  const creditCost = Math.max(2, Math.round(billedSeconds * 2));
+  const estimatedSeconds = billedSeconds * 12; // rough estimate: ~12s processing per second of video
 
   return (
     <div className="min-h-screen bg-background">
@@ -282,38 +296,16 @@ export default function VideoStudio() {
           {/* Left: Controls */}
           <div className="lg:col-span-1 space-y-5">
 
-            {/* Aspect Ratio */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-                Aspect Ratio
-                <InfoTip text="9:16 for TikTok / Reels. 16:9 for YouTube. 1:1 for IG feed. 4:3 for vintage/classic looks." />
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {ASPECT_RATIOS.map(ar => (
-                  <button key={ar.value} type="button" onClick={() => setAspectRatio(ar.value)}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${aspectRatio === ar.value ? 'border-indigo-500 bg-indigo-500/10' : 'border-border bg-card hover:border-indigo-500/40'}`}>
-                    <p className="text-sm font-bold text-foreground">{ar.label}</p>
-                    <p className="text-xs text-muted-foreground">{ar.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Duration */}
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-                Duration: <span className="text-foreground">{duration}s</span>
-                <InfoTip text="5s for quick previews. 10–15s for proper visualizers. Render time ≈ 12s per second of video." />
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {DURATIONS.map(d => (
-                  <button key={d} type="button" onClick={() => setDuration(d)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${duration === d ? 'bg-indigo-600 text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                    {d}s
-                  </button>
-                ))}
-              </div>
-            </div>
+            <LtxControls
+              model={model} setModel={setModel}
+              aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
+              resolutionTier={resolutionTier} setResolutionTier={setResolutionTier}
+              duration={duration} setDuration={setDuration}
+              fps={fps} setFps={setFps}
+              cameraMotion={cameraMotion} setCameraMotion={setCameraMotion}
+              generateAudio={generateAudio} setGenerateAudio={setGenerateAudio}
+              mode={mode}
+            />
 
             {/* Style Chips */}
             <div>
@@ -360,11 +352,11 @@ export default function VideoStudio() {
               <p className="text-xs text-muted-foreground mt-1">Tip: Be specific about motion, lighting, and atmosphere for best results.</p>
             </div>
 
-            <Button onClick={generate} disabled={isProcessing || !prompt}
+            <Button onClick={generate} disabled={isProcessing || (!prompt && !(mode === 'audio' && referenceImageUrl))}
               className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-base py-5 gap-2">
               <Zap className="w-5 h-5" />
               {isProcessing ? `Generating… ${progress || 0}%` : 'Generate Video'}
-              {!isProcessing && <CostBadge cost={15} />}
+              {!isProcessing && <CostBadge cost={creditCost} />}
             </Button>
 
             {/* Progress */}
@@ -402,7 +394,7 @@ export default function VideoStudio() {
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
                     <span className="text-sm font-bold text-emerald-400">Video Ready</span>
                     <Badge variant="outline" className="text-xs">{aspectRatio}</Badge>
-                    <Badge variant="outline" className="text-xs">{duration}s</Badge>
+                    <Badge variant="outline" className="text-xs">{duration === null ? 'Auto' : `${duration}s`}</Badge>
                   </div>
                   <video controls className="w-full rounded-xl" src={result.video_url} />
                   <div className="flex gap-2 flex-wrap">
