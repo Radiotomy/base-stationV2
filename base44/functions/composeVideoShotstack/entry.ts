@@ -54,6 +54,12 @@ export default async function(req) {
     const fps = body.fps || 30;
     const orientation = height > width ? 'portrait' : width === height ? 'square' : 'landscape';
 
+    // Creator-supplied media must be a plain https URL (blocks data:/javascript: injection)
+    const badSrc = scenes.find(s => s.src && !/^https:\/\//i.test(String(s.src)));
+    if (badSrc) {
+      return Response.json({ error: 'Scene media must be an https URL' }, { status: 400 });
+    }
+
     // Resolve b-roll queries into concrete Pexels video sources
     const attribution = [];
     const resolved = [];

@@ -9,7 +9,7 @@ const IMAGE = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'avif'];
 // asset_type values that are always audio / always visual
 const AUDIO_TYPES = ['track', 'master', 'stem', 'sfx', 'mashup', 'harmony'];
 const IMAGE_TYPES = ['coverart'];
-const VIDEO_TYPES = ['video', 'visualizer'];
+const VIDEO_TYPES = ['video', 'visualizer', 'project'];
 
 export function kindFromUrl(url = '', fallback = 'video') {
   const ext = String(url).split('?')[0].split('.').pop()?.toLowerCase() || '';
@@ -24,6 +24,15 @@ export function kindFromAsset(asset) {
   if (IMAGE_TYPES.includes(asset.asset_type)) return kindFromUrl(asset.file_url, 'image');
   if (VIDEO_TYPES.includes(asset.asset_type)) return kindFromUrl(asset.file_url, 'video');
   return kindFromUrl(asset.file_url, 'video');
+}
+
+/** Only https media links are accepted — blocks javascript:, data: and mixed content. */
+export function isSafeMediaUrl(url) {
+  try {
+    return new URL(String(url).trim()).protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 export function kindFromFile(file) {

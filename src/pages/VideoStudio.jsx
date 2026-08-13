@@ -34,10 +34,10 @@ const PROMPT_TEMPLATES = [
 const STYLE_CHIPS = ['Cinematic', 'Dreamlike', 'Dark & Moody', 'Vibrant', 'Abstract', 'Realistic', 'Vintage', 'Futuristic'];
 const MODES = [
   { id: 'text', label: '✍️ Text to Video', desc: 'Generate from a text prompt' },
-  { id: 'image', label: '🖼️ Image to Video', desc: 'Animate a reference image' },
-  { id: 'audio', label: '🎵 Audio to Video', desc: 'Visual synced to your track' },
-  { id: 'musicvideo', label: '🎬 Music Video', desc: 'Stitch scenes + audio' },
-  { id: 'timeline', label: '🎚️ Timeline Editor', desc: 'Drag & drop editor (NEW)' },
+  { id: 'image', label: '🖼️ Image to Video', desc: 'Animate an image — upload, library or URL' },
+  { id: 'audio', label: '🎵 Audio to Video', desc: 'Visual synced to any track you own' },
+  { id: 'musicvideo', label: '🎬 Music Video', desc: 'Stock or your own clips + audio' },
+  { id: 'timeline', label: '🎚️ Timeline Editor', desc: 'Drag & drop — library, uploads, URLs' },
 ];
 
 export default function VideoStudio() {
@@ -216,7 +216,7 @@ export default function VideoStudio() {
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-indigo-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-3 tracking-tight">🎬 Video Studio</h1>
-          <p className="text-white/60 text-lg">Generate cinematic AI videos with LTX — music visualizers, promos & more.</p>
+          <p className="text-white/60 text-base md:text-lg">Generate cinematic AI videos, cut multi-scene music videos, or edit on a timeline — using stock footage, your library, or your own uploads.</p>
         </div>
       </div>
 

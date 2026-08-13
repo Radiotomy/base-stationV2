@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { Link2, Type, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { kindFromUrl } from '@/lib/video/assetKind';
+import { toast } from 'sonner';
+import { kindFromUrl, isSafeMediaUrl } from '@/lib/video/assetKind';
 
 const KINDS = [
   { id: 'url', label: 'Media URL', icon: Link2, placeholder: 'https://…mp4 / .mp3 / .jpg' },
@@ -18,6 +19,10 @@ export default function AddClipBar({ onAdd, disabled }) {
   const submit = () => {
     const v = value.trim();
     if (!v) return;
+    if (kind === 'url' && !isSafeMediaUrl(v)) {
+      toast.error('Enter a full https:// media link');
+      return;
+    }
     onAdd(kind === 'title' ? 'title' : kindFromUrl(v), v);
     setValue('');
   };

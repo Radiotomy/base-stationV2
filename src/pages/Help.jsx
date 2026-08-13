@@ -155,24 +155,37 @@ const SECTIONS = [
   },
   {
     id: 'video',
-    title: 'Video Studio — AI music videos (beta-locked)',
+    title: 'Video Studio — AI videos, music videos & timeline editor (beta-locked)',
     icon: Film,
-    keywords: 'video ltx text image audio cinematic visualizer beta locked access request',
+    keywords: 'video ltx text image audio cinematic visualizer beta locked access request music video timeline editor upload library assets captions scenes shotstack',
     body: (
       <>
         <div className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/20 mb-2">
           <p className="text-orange-300 font-bold text-sm mb-1">🔒 Beta-locked feature</p>
           <p>Video Studio is currently in limited beta. Open it from the Studios hub and hit <strong className="text-foreground">Request Access</strong> — an admin will approve your request.</p>
         </div>
-        <p>Three modes:</p>
+        <p><strong className="text-foreground">Five modes:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Text to Video</strong> — describe the scene; LTX renders it.</li>
-          <li><strong>Image to Video</strong> — upload a reference still, animate it.</li>
-          <li><strong>Audio to Video</strong> — upload a track, get a synced visual.</li>
+          <li><strong>Image to Video</strong> — animate a reference still.</li>
+          <li><strong>Audio to Video</strong> — a visual synced to your track.</li>
+          <li><strong>Music Video</strong> — a storyboard of scenes stitched to your song, with transitions, title text and auto-captions.</li>
+          <li><strong>Timeline Editor</strong> — a drag-and-drop editor: move clips, trim edges, layer audio and text, then render.</li>
         </ul>
+        <div className="p-3 rounded-xl bg-indigo-500/5 border border-indigo-500/20">
+          <p className="text-indigo-300 font-bold text-sm mb-1">📦 Assets can come from anywhere</p>
+          <p>Every mode accepts material from three sources: <strong className="text-foreground">Upload</strong> (a file from your phone or computer), <strong className="text-foreground">My Library</strong> (anything you've already made here — tracks, masters, stems, SFX, visualizers, rendered videos, cover art), or an external <strong className="text-foreground">https URL</strong>.</p>
+          <ul className="list-disc pl-5 space-y-1 mt-1.5">
+            <li><strong>Image / Audio to Video</strong> — pick the reference from upload, library, or URL.</li>
+            <li><strong>Music Video</strong> — each scene either searches free Pexels stock footage <em>or</em> uses your own clip/image; the soundtrack comes from an upload or your library.</li>
+            <li><strong>Timeline Editor</strong> — the "Add to timeline" panel has Library / Upload / URL-and-Text tabs; audio always lands on its own track.</li>
+          </ul>
+        </div>
         <p><strong className="text-foreground">Aspect ratio matters:</strong> 9:16 for Reels/TikTok, 16:9 for YouTube, 1:1 for IG feed.</p>
         <p>Prompts should describe <strong className="text-foreground">motion, lighting, and atmosphere</strong>, not just objects. "Slow zoom through neon city rain at 3 AM" beats "city at night".</p>
         <p>Duration: 5s for quick tests, 10–15s for proper visualizers. Render time ≈ 12s per second of video.</p>
+        <p><strong className="text-foreground">Costs:</strong> LTX generation ≈ 2 credits per second. Music Video &amp; Timeline renders are 5 credits base + 1 per scene/clip, +3 if a soundtrack is attached, +4 for auto-captions.</p>
+        <p>Using your own footage, images and audio also <strong className="text-foreground">raises your Creative Ownership Score</strong> — uploaded reference material counts as human participation.</p>
       </>
     ),
   },
@@ -233,7 +246,8 @@ const SECTIONS = [
           <li>Lyrics: 2 credits</li>
           <li>Music (Sonic/Tempolor/Producer): 10 credits per track</li>
           <li>Cover art: 1 (Cheap) / 3 (Modest)</li>
-          <li>Video (LTX): 15 credits</li>
+          <li>Video (LTX): ~2 credits per second of video</li>
+          <li>Music Video / Timeline render: 5 base + 1 per scene or clip (+3 audio, +4 captions)</li>
           <li>Visualizer: 12 credits</li>
         </ul>
         <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
@@ -382,7 +396,7 @@ const SECTIONS = [
         <p>BASE Station is in <strong className="text-foreground">open beta</strong>. Two features remain gated while we scale them:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Live Studio</strong> — live co-listening sessions with chat, reactions, quests, and drops.</li>
-          <li><strong>Video Studio</strong> — AI music video generation (text, image, and audio to video).</li>
+          <li><strong>Video Studio</strong> — AI video generation (text, image, audio), multi-scene music videos, and the drag-and-drop timeline editor.</li>
         </ul>
         <p>Opening either page shows a <strong className="text-foreground">Request Access</strong> screen — submit it once and an admin will review your request. Everything else on the platform is fully open.</p>
       </>

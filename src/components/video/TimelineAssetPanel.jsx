@@ -3,6 +3,7 @@ import { Library, UploadCloud, Link2 } from 'lucide-react';
 import TimelineLibraryPicker from './TimelineLibraryPicker';
 import TimelineUploadDrop from './TimelineUploadDrop';
 import AddClipBar from './AddClipBar';
+import InfoTip from '@/components/common/InfoTip';
 
 const TABS = [
   { id: 'library', label: 'My Library', icon: Library },
@@ -20,7 +21,10 @@ export default function TimelineAssetPanel({ onAdd, disabled }) {
 
   return (
     <div className="p-4 rounded-xl bg-card border border-border space-y-3">
-      <p className="text-xs font-semibold text-muted-foreground uppercase">Add to timeline</p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+        Add to timeline
+        <InfoTip text="Pull material from anywhere: My Library (your generated videos, visualizers, tracks, stems, SFX and cover art), Upload (a video/audio/image from this device), or URL / Text (an external https media link, or an on-screen title card). Audio always lands on its own track so it never covers your visuals." />
+      </p>
       <div className="flex gap-1.5 flex-wrap">
         {TABS.map(t => (
           <button key={t.id} type="button" onClick={() => setTab(t.id)}

@@ -7,7 +7,7 @@ import { kindFromAsset } from '@/lib/video/assetKind';
 
 const GROUPS = [
   { id: 'all', label: 'All' },
-  { id: 'video', label: 'Video', types: ['video', 'visualizer'] },
+  { id: 'video', label: 'Video', types: ['video', 'visualizer', 'project'] },
   { id: 'audio', label: 'Audio', types: ['track', 'master', 'stem', 'mashup', 'harmony', 'sfx'] },
   { id: 'image', label: 'Images', types: ['coverart'] },
 ];
@@ -15,19 +15,26 @@ const GROUPS = [
 const ICONS = { video: Film, audio: Music, image: ImageIcon };
 
 /** Browses every usable asset in the user's library and drops it on the timeline. */
+// Short-lived cache so re-opening the picker doesn't refetch the whole library
+let cache = { rows: null, at: 0 };
+const CACHE_MS = 60_000;
+
 export default function TimelineLibraryPicker({ onPick, disabled, only = null }) {
-  const [assets, setAssets] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [assets, setAssets] = useState(cache.rows || []);
+  const [loading, setLoading] = useState(!cache.rows);
   const [group, setGroup] = useState(only?.length === 1 ? only[0] : 'all');
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     let cancelled = false;
+    if (cache.rows && Date.now() - cache.at < CACHE_MS) return;
     (async () => {
       const user = await base44.auth.me();
       const rows = await base44.entities.UserAsset.filter({ user_id: user.id }, '-created_date', 200);
+      const usable = rows.filter(a => a.file_url && a.asset_type !== 'lyric');
+      cache = { rows: usable, at: Date.now() };
       if (!cancelled) {
-        setAssets(rows.filter(a => a.file_url && a.asset_type !== 'lyric' && a.asset_type !== 'project'));
+        setAssets(usable);
         setLoading(false);
       }
     })();

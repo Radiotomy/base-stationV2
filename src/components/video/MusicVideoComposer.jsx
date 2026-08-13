@@ -333,7 +333,7 @@ export default function MusicVideoComposer() {
       <div className="p-4 rounded-xl bg-card border border-border space-y-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
           <Music className="w-3.5 h-3.5" /> Audio Track
-          <InfoTip text="Optional. Upload an MP3/WAV or pick a track from your library. If omitted, the video will be silent." />
+          <InfoTip text="Optional. Upload an MP3/WAV or pick any track, master or stem from your library. If omitted, the video will be silent." />
         </p>
 
         {audioUrl ? (
@@ -435,7 +435,7 @@ export default function MusicVideoComposer() {
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
             <Film className="w-3.5 h-3.5" /> Scenes ({scenes.length})
-            <InfoTip text="Each scene fetches a Pexels stock clip matching your query. Order them like a storyboard. Total length should roughly match your audio." />
+            <InfoTip text="Each scene either fetches a free Pexels stock clip matching your query, or uses your own media — hit Upload media / From library / URL under a scene to swap in your footage or an image. Order them like a storyboard; total length should roughly match your audio." />
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -474,7 +474,7 @@ export default function MusicVideoComposer() {
               exit={{ opacity: 0, y: -10 }}
               className="p-3 rounded-xl bg-card border border-border space-y-1"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                 <div className="flex flex-col gap-0.5">
                   <button
                     type="button"

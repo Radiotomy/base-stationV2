@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import LibraryAssetModal from './LibraryAssetModal';
+import { isSafeMediaUrl } from '@/lib/video/assetKind';
 
 /**
  * Reference media input for the LTX studios — the same asset can come from an
@@ -52,7 +53,7 @@ export default function ReferenceMediaInput({ kind, value, onChange }) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <label className="cursor-pointer">
               <input type="file" accept={isImage ? 'image/*' : 'audio/*'} onChange={upload} className="hidden" />
               <div className="border-2 border-dashed rounded-xl p-3 text-center border-border hover:border-indigo-500 transition-colors">
@@ -78,7 +79,12 @@ export default function ReferenceMediaInput({ kind, value, onChange }) {
               <Input value={urlDraft} onChange={e => setUrlDraft(e.target.value)}
                 placeholder={isImage ? 'https://…jpg' : 'https://…mp3'} className="rounded-xl" />
               <Button className="rounded-xl bg-indigo-600 hover:bg-indigo-500"
-                onClick={() => { if (urlDraft.trim()) { onChange(urlDraft.trim()); setUrlDraft(''); setUrlOpen(false); } }}>
+                onClick={() => {
+                  const v = urlDraft.trim();
+                  if (!v) return;
+                  if (!isSafeMediaUrl(v)) { toast.error('Enter a full https:// media link'); return; }
+                  onChange(v); setUrlDraft(''); setUrlOpen(false);
+                }}>
                 Use
               </Button>
             </div>

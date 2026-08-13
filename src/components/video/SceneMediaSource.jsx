@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import LibraryAssetModal from './LibraryAssetModal';
-import { kindFromFile, kindFromUrl } from '@/lib/video/assetKind';
+import { kindFromFile, kindFromUrl, isSafeMediaUrl } from '@/lib/video/assetKind';
 
 /**
  * Lets one storyboard scene use the creator's own footage/image instead of a
@@ -34,7 +34,7 @@ export default function SceneMediaSource({ src, mediaKind, mediaLabel, onSet, on
 
   if (src) {
     return (
-      <div className="flex items-center gap-2 pl-8">
+      <div className="flex items-center gap-2 pl-0 sm:pl-8">
         <Badge variant="outline" className="text-xs capitalize">{mediaKind || 'video'}</Badge>
         <span className="text-xs text-muted-foreground truncate flex-1">{mediaLabel || src}</span>
         <button type="button" onClick={onClear} className="text-muted-foreground hover:text-rose-400">
@@ -45,7 +45,7 @@ export default function SceneMediaSource({ src, mediaKind, mediaLabel, onSet, on
   }
 
   return (
-    <div className="pl-8 space-y-1.5">
+    <div className="pl-0 sm:pl-8 space-y-1.5">
       <div className="flex gap-1.5 flex-wrap">
         <input ref={fileRef} type="file" accept="video/*,image/*" className="hidden" onChange={upload} />
         <button type="button" onClick={() => fileRef.current?.click()}
@@ -70,6 +70,7 @@ export default function SceneMediaSource({ src, mediaKind, mediaLabel, onSet, on
             onClick={() => {
               const v = urlDraft.trim();
               if (!v) return;
+              if (!isSafeMediaUrl(v)) { toast.error('Enter a full https:// media link'); return; }
               const kind = kindFromUrl(v);
               onSet({ src: v, mediaKind: kind === 'audio' ? 'video' : kind, mediaLabel: v });
               setUrlDraft(''); setUrlOpen(false);
