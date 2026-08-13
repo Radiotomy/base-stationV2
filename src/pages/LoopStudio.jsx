@@ -6,7 +6,7 @@ import CommunityLoopsTab from '@/components/loops/CommunityLoopsTab';
 import GenerateLoopTab from '@/components/loops/GenerateLoopTab';
 
 const TABS = [
-  { key: 'generate', label: 'Generate (BASE SoundForge)' },
+  { key: 'generate', label: 'Generate (BASE Forge)' },
   { key: 'discover', label: 'Discover Free Loops' },
   { key: 'mine', label: 'My Loops' },
   { key: 'community', label: 'Community Library' },

@@ -60,13 +60,13 @@ export default function GenerateLoopTab() {
       });
       if (res.data?.error) throw new Error(res.data.error);
       if (res.data?.status === 'completed') {
-        toast.success('Generated with BASE SoundForge!');
+        toast.success('Generated with BASE Forge!');
         await settle(res.data.audio_url, res.data.job_id);
       } else if (res.data?.job_id) {
         // Cold GPU — keep waiting for the user instead of making them retry.
         const done = await waitForJob(res.data.job_id);
         if (done) {
-          toast.success('Generated with BASE SoundForge!');
+          toast.success('Generated with BASE Forge!');
           await settle(done.audio_url, res.data.job_id);
         } else {
           toast.info('Still rendering — check Studio History in a moment.');
@@ -93,7 +93,7 @@ export default function GenerateLoopTab() {
         source: 'soundforge',
         bpm: result.loop?.bpm || (bpm ? Number(bpm) : undefined),
         duration_seconds: result.loop?.duration_seconds || duration,
-        collection_name: 'BASE SoundForge',
+        collection_name: 'BASE Forge',
         license: 'AI Generated',
         loop_spec: result.loop || undefined,
         is_public: false,
@@ -109,7 +109,7 @@ export default function GenerateLoopTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Generate original loops, one-shots, and sound effects with <strong>BASE SoundForge</strong> —
+        Generate original loops, one-shots, and sound effects with <strong>BASE Forge</strong> —
         our own AI audio engine, built on an open-source foundation model and tuned for short-form
         loop and sample generation, running Stable Audio 2.5. Every result is finished automatically: trimmed, locked to a whole
         number of bars, seamlessly crossfaded at the loop point and normalized to −1 dBFS, exported as
@@ -135,7 +135,7 @@ export default function GenerateLoopTab() {
         </div>
         <Button onClick={generate} disabled={generating} className="w-full">
           {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-          {generating ? 'Generating…' : 'Generate with BASE SoundForge'}
+          {generating ? 'Generating…' : 'Generate with BASE Forge'}
         </Button>
       </div>
 
@@ -143,7 +143,7 @@ export default function GenerateLoopTab() {
         <div className="space-y-2">
           <LoopCard
             title={prompt.slice(0, 60)}
-            subtitle={`${category} · BASE SoundForge`}
+            subtitle={`${category} · BASE Forge`}
             audioUrl={result.audio_url}
             onAction={saveToLibrary}
             actionLabel="Save to My Loops"
