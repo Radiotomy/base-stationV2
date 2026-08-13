@@ -20,6 +20,7 @@ const RESPONSE = `{
     "persona_used": true,
     "iteration":    true
   },
+
   "dimensions": {
     "content_authorship": { "label": "Content Authorship",  "pct": 100 },
     "creative_direction": { "label": "Creative Direction",  "pct": 40  },
@@ -36,17 +37,13 @@ const RESPONSE = `{
   },
   "c2pa_provenance_hash": "sha256:7c1e4a9b0d…",
   "base_mark": {
-    "version": "1.0",
-    "layer": "spectral",
-    "payload_hex": "dff13efe",
+    "status": "embedded",
+    "mark_id": "dff13efe",
     "embedded_at": "2026-07-19T15:24:31Z"
   },
-  "base_mark_v2": {
-    "version": "2.0",
-    "layer": "neural",
-    "payload_hex": "dff13efe",
-    "status": "embedded",
-    "embedded_at": "2026-07-19T15:25:12Z"
+  "base_mark_layers": {
+    "primary":   { "status": "embedded" },
+    "secondary": { "status": "embedded" }
   },
   "provenance_chain": [
     { "parent_asset_id": null, "operation": "generate" },
@@ -118,17 +115,15 @@ export default function ManifestSection() {
           metrics to the audio container. To verify an audio file, recompute the checksum over the manifest payload and
           compare it with the hash stored in the file's embedded <code className="text-[#FFC98A] text-xs">TXXX</code> frames —
           see the <span className="text-foreground font-medium">ID3v2 Compliance</span> section. The{' '}
-          <code className="text-[#FFC98A] text-xs">base_mark</code> and{' '}
-          <code className="text-[#FFC98A] text-xs">base_mark_v2</code> objects describe the two watermark layers
-          embedded in the asset's audio waveform — the spectral layer, written synchronously on save, and the
-          neural layer, layered on top of that same file asynchronously. They carry the{' '}
-          <span className="text-foreground font-medium">identical 32-bit payload</span> and resolve independently,
-          so scanning the file with either detector should recover the same{' '}
-          <code className="text-[#FFC98A] text-xs">payload_hex</code>, proving the audio and this manifest belong
-          together even when all metadata has been stripped. A missing{' '}
-          <code className="text-[#FFC98A] text-xs">base_mark_v2</code> object, or one with a non-embedded status,
-          simply means the neural layer has not finished for that asset yet — the spectral layer is already
-          authoritative on its own.
+          <code className="text-[#FFC98A] text-xs">base_mark</code> object reports the asset&apos;s in-waveform
+          forensic signature and its opaque{' '}
+          <code className="text-[#FFC98A] text-xs">mark_id</code>. Scanning the audio returns the same{' '}
+          <code className="text-[#FFC98A] text-xs">mark_id</code>, proving the audio and this manifest belong
+          together even when all metadata has been stripped. Multiple layers carry the mark and each resolves
+          independently, so a layer still reported as pending in{' '}
+          <code className="text-[#FFC98A] text-xs">base_mark_layers</code> does not weaken the record — the
+          signature is already authoritative. Layer technologies, payload structure and detection thresholds are
+          confidential and never exposed through partner endpoints.
         </p>
       </div>
 

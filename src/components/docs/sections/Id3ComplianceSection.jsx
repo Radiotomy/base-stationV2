@@ -8,8 +8,8 @@ TXXX (User-defined text frames)
 ├─ AI_DISCLOSURE_LABEL    → "ai_assisted"
 ├─ DDEX_AI_METADATA       → '{"ai_lyrical_content":false,...}'
 ├─ C2PA_PROVENANCE_HASH   → "sha256:7c1e4a9b0d…"
-├─ BASE_MARK_PAYLOAD      → "dff13efe"
-└─ BASE_MARK_VERSION      → "1.0"
+├─ BASE_MARK_PAYLOAD      → "dff13efe"   (opaque mark identifier)
+└─ BASE_MARK_VERSION      → "1.0"        (BASE Mark standard version)
 
 WXXX (User-defined URL frame)
 └─ PROVENANCE_MANIFEST    → https://basestation.live/api/v1/cos/manifest/{asset_id}`;
@@ -54,8 +54,8 @@ export default function Id3ComplianceSection() {
           { name: 'AI_DISCLOSURE_LABEL', type: 'TXXX', required: true, description: 'RIAA/IFPI-style label: "ai_generated" or "ai_assisted".' },
           { name: 'DDEX_AI_METADATA', type: 'TXXX', required: true, description: 'JSON-serialized DDEX AI attribution flags.' },
           { name: 'C2PA_PROVENANCE_HASH', type: 'TXXX', required: false, description: 'SHA-256 checksum anchoring the manifest to this file.' },
-          { name: 'BASE_MARK_PAYLOAD', type: 'TXXX', required: false, description: 'Hex payload of the BASE Mark acoustic watermark embedded in this asset\u2019s audio waveform.' },
-          { name: 'BASE_MARK_VERSION', type: 'TXXX', required: false, description: 'BASE Mark engine version of the spectral layer used for embedding. The payload is shared with the neural layer, so this frame identifies the engine, not which layers are present \u2014 query the Provenance Manifest for the full layer state.' },
+          { name: 'BASE_MARK_PAYLOAD', type: 'TXXX', required: false, description: 'Opaque identifier of the BASE Mark forensic signature embedded in this asset\u2019s audio waveform.' },
+          { name: 'BASE_MARK_VERSION', type: 'TXXX', required: false, description: 'BASE Mark standard version this asset was marked under. It identifies the standard, not which layers are present \u2014 query the Provenance Manifest for the asset\u2019s layer state.' },
         ]}
       />
 

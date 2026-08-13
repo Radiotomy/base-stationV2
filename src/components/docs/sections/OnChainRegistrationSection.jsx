@@ -9,7 +9,7 @@ const PIPELINE = [
   {
     step: '2. BASE Mark Watermarking',
     detail:
-      'Before registration, the asset has already been watermarked on save — the spectral layer synchronously, then the neural layer on top of that same file. The marked file is the canonical audio, so the identifier being anchored on-chain is physically embedded in the waveform being registered, and either layer alone can prove the link later.',
+      'Before registration, the asset has already been marked on save with BASE Mark\u2019s multi-layer forensic signature. The marked file is the canonical audio, so the identifier being anchored on-chain is physically embedded in the waveform being registered, and any single layer can prove the link later.',
   },
   {
     step: '3. Content Fingerprint + Manifest Compilation',
