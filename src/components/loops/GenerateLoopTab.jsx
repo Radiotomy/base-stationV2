@@ -126,9 +126,11 @@ export default function GenerateLoopTab() {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
           >
-            {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+            {CATEGORY_OPTIONS.map((c) => (
+              <option key={c} value={c} className="bg-[#14100C] text-white">{c.replace('_', ' ')}</option>
+            ))}
           </select>
           <Input placeholder="BPM (optional)" type="number" value={bpm} onChange={(e) => setBpm(e.target.value)} />
           <Input placeholder="Duration (sec)" type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 8)} />
