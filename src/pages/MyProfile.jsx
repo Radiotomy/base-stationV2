@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import MyCreatorActions from "@/components/fan/MyCreatorActions";
 import ProfileModeChooser from "@/components/profile/ProfileModeChooser";
 import FanProfileView from "@/components/profile/FanProfileView";
+import { useAuth } from "@/lib/AuthContext";
 
 const BASE_GENRES = [
   "hip-hop", "trap", "drill", "afrobeats", "afro-trap",
@@ -87,6 +88,7 @@ export default function MyProfile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingBanner, setUploadingBanner] = useState(false);
   const navigate = useNavigate();
+  const { checkUserAuth } = useAuth();
 
   const [form, setForm] = useState({
     display_name: "",
@@ -200,9 +202,11 @@ export default function MyProfile() {
         toast.success("Profile created!");
       }
 
-      // If user marked themselves as creator, update user record
+      // If user marked themselves as creator, update user record and refresh
+      // the auth context so the header nav updates without a page reload
       if (!user.is_creator) {
-        await base44.auth.updateMe({ is_creator: true });
+        await base44.auth.updateMe({ is_creator: true, profile_choice: "creator" });
+        checkUserAuth();
       }
 
       setMode("view");
@@ -225,6 +229,7 @@ export default function MyProfile() {
       setChoosing(true);
       try {
         await base44.auth.updateMe({ profile_choice: "fan" });
+        checkUserAuth(); // refresh header nav immediately
       } catch { /* non-fatal — fan view still works this session */ }
       setChoosing(false);
       setMode("fan");

@@ -58,7 +58,10 @@ export default function Header({ user }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
-  const isCreator = user?.is_creator || false;
+  // Show creator nav to every signed-in user unless they explicitly chose
+  // fan-only mode. New accounts have no flag yet — they must still see
+  // Studios / My Workspace right after login.
+  const isCreator = !!user && user.is_creator !== false && user.profile_choice !== "fan";
 
   return (
     <header
