@@ -38,6 +38,11 @@
     "guest_link_token": {
       "type": "string",
       "description": "Token for the public guest recording route"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

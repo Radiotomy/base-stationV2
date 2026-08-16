@@ -23,6 +23,11 @@
       "type": "number",
       "default": 0,
       "description": "Calls consumed in this window"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

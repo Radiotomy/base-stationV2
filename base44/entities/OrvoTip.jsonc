@@ -37,6 +37,11 @@
     "message": {
       "type": "string",
       "maxLength": 500
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [

@@ -74,6 +74,11 @@
     "consent_version": {
       "type": "string",
       "description": "Which consent text the user agreed to when this row was written. Consent terms change; a row is only usable under the terms it was collected under."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [
