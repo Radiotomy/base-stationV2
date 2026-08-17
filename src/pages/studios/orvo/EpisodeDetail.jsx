@@ -6,6 +6,7 @@ import { ArrowLeft, Mic } from 'lucide-react';
 import OrvoAudioPlayer from '@/components/studios/orvo/player/OrvoAudioPlayer';
 import EpisodeIntelligencePanel from '@/components/studios/orvo/studio/EpisodeIntelligencePanel';
 import EpisodeProvenancePanel from '@/components/studios/orvo/provenance/EpisodeProvenancePanel';
+import ReuploadAudioCard from '@/components/studios/orvo/studio/ReuploadAudioCard';
 
 export default function EpisodeDetail() {
   const { id } = useParams();
@@ -113,6 +114,7 @@ export default function EpisodeDetail() {
 
         {user?.id === episode.user_id && (
           <>
+            <ReuploadAudioCard episode={episode} onUpdate={setEpisode} />
             <EpisodeProvenancePanel episode={episode} onUpdate={setEpisode} />
             <EpisodeIntelligencePanel episode={episode} />
           </>
