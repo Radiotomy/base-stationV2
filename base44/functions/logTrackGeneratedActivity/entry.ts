@@ -18,9 +18,26 @@ Deno.serve(async (req) => {
     if (!event || (event.entity_name !== 'UserAsset' && event.entity_name !== 'LoopSample')) {
       return Response.json({ error: 'Forbidden: automation event payload required' }, { status: 403 });
     }
-    if (payload?.payload_too_large || !data) {
-      data = await base44.asServiceRole.entities[event.entity_name].get(event.entity_id);
+    // Never trust caller-supplied record data — always read the record
+    // server-side so a forged payload can't invent feed content.
+    data = await base44.asServiceRole.entities[event.entity_name]
+      .get(event.entity_id)
+      .catch(() => null);
+    if (!data) return Response.json({ skipped: true, reason: 'record not found' });
+
+    // Freshness gate: only genuinely just-created records produce feed items,
+    // so replaying an old id can't resurface it.
+    const createdMs = Date.parse(data.created_date || '');
+    if (!createdMs || Date.now() - createdMs > 10 * 60 * 1000) {
+      return Response.json({ skipped: true, reason: 'record not recent' });
     }
+
+    // Idempotency: one feed item per record, however many times this fires.
+    const existing = await base44.asServiceRole.entities.ActivityFeedItem.filter({
+      entity_type: event.entity_name,
+      entity_id: event.entity_id,
+    }, '-created_date', 1).catch(() => []);
+    if (existing?.length) return Response.json({ skipped: true, reason: 'already logged' });
 
     const isLoop = event.entity_name === 'LoopSample';
     if (!isLoop && data?.asset_type !== 'track') {
