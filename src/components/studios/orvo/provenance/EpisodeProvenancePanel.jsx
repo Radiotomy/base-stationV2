@@ -24,8 +24,20 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
 
     const sync = async () => {
       const rows = await base44.entities.UserAsset.filter({ id: assetId });
-      const a = rows?.[0];
+      let a = rows?.[0];
       if (!alive || !a) return;
+      // Actively finalize: if the neural embed is in flight, poll Replicate
+      // server-side so a missed webhook can never strand an episode in
+      // "processing" forever.
+      const inflight = a.metadata?.base_mark_v2;
+      if (inflight?.status === 'processing' && inflight.prediction_id) {
+        const res = await base44.functions.invoke('pollBaseMarkV2', { assetId }).catch(() => null);
+        if (res?.data?.status && res.data.status !== 'processing') {
+          const fresh = await base44.entities.UserAsset.filter({ id: assetId });
+          a = fresh?.[0] || a;
+        }
+      }
+      if (!alive) return;
       setAsset(a);
       const v2 = a.metadata?.base_mark_v2?.status;
       const next = v2 === 'completed' ? 'marked' : v2 === 'failed' ? 'failed' : 'processing';
@@ -40,9 +52,12 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
     return () => { alive = false; clearTimeout(timer); };
   }, [episode.base_mark_asset_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const register = async () => {
+  const register = async (retry = false) => {
     setBusy(true);
-    const res = await base44.functions.invoke('registerEpisodeProvenance', { episode_id: episode.id });
+    const res = await base44.functions.invoke('registerEpisodeProvenance', {
+      episode_id: episode.id,
+      ...(retry ? { action: 'retry' } : {}),
+    });
     setBusy(false);
     if (res.data?.error) return toast({ title: 'Could not register', description: res.data.error, variant: 'destructive' });
     toast({ title: 'BASE Mark started', description: 'Forensic marking runs in the background.' });
@@ -63,7 +78,7 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
           <p className="text-sm text-white/60 mb-4">
             Register this episode to embed its BASE Mark forensic watermark and lock in a Creative Ownership Score.
           </p>
-          <button onClick={register} disabled={busy} className="merc-button rounded-full px-5 py-2 text-sm font-black flex items-center gap-2 disabled:opacity-50">
+          <button onClick={() => register()} disabled={busy} className="merc-button rounded-full px-5 py-2 text-sm font-black flex items-center gap-2 disabled:opacity-50">
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />} Register provenance
           </button>
         </>
@@ -104,6 +119,12 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
 
           {mark?.payload_hex && (
             <p className="text-[11px] text-white/35 font-mono break-all">Mark ID · {mark.payload_hex}</p>
+          )}
+
+          {status === 'failed' && (
+            <button onClick={() => register(true)} disabled={busy} className="merc-button rounded-full px-5 py-2 text-sm font-black flex items-center gap-2 disabled:opacity-50">
+              {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />} Retry BASE Mark
+            </button>
           )}
 
           <EpisodeChainAnchor episode={episode} onUpdate={onUpdate} />

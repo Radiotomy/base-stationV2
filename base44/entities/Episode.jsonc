@@ -28,6 +28,10 @@
       "type": "string",
       "description": "Pinata gateway URL"
     },
+    "storage_audio_url": {
+      "type": "string",
+      "description": "Reliable Base44 storage copy of the episode audio \u2014 the forensic marking source. IPFS gateways are rate-limited and cannot be trusted as the only copy."
+    },
     "ipfs_hash": {
       "type": "string"
     },

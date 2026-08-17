@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { calculateHumanParticipationScore } from '../../shared/cosEngine.ts';
+import { persistUrl } from '../../shared/persistMedia.ts';
 
 // ORVO — BASE Mark + COS for a podcast episode.
 //
@@ -57,7 +58,9 @@ export default async function (req) {
       return Response.json({ ok: true, chain: out, episode: updated });
     }
 
-    if (episode.base_mark_asset_id) {
+    // 'retry' re-mints the asset after a failed mark (e.g. a gateway timeout on
+    // the first attempt) — a fresh UserAsset create re-triggers the cascade.
+    if (episode.base_mark_asset_id && action !== 'retry') {
       return Response.json({ ok: true, already: true, asset_id: episode.base_mark_asset_id });
     }
 
@@ -83,6 +86,25 @@ export default async function (req) {
     // Fully human-recorded episodes with no synthetic voice are labelled human.
     const label = humanRecordings.length > 0 && (voiceovers || []).length === 0 ? 'human' : cos.label;
 
+    // The marking source must be reliable: Replicate's input downloader has a
+    // 10s read timeout and public IPFS gateways (gateway.pinata.cloud) are
+    // rate-limited — marking straight from a gateway URL fails the neural
+    // embed. Prefer the Base44 storage copy captured at upload; otherwise
+    // rehost the gateway audio into storage before minting. The Pinata pin
+    // remains the canonical IPFS copy.
+    let markSourceUrl = episode.storage_audio_url || '';
+    if (!markSourceUrl) {
+      const { url: persistedUrl } = await persistUrl(
+        base44,
+        episode.audio_url,
+        `${(episode.title || 'episode').slice(0, 60)}.audio`,
+      );
+      markSourceUrl = persistedUrl || episode.audio_url;
+      if (persistedUrl) {
+        await base44.asServiceRole.entities.Episode.update(episodeId, { storage_audio_url: persistedUrl });
+      }
+    }
+
     // Minting the asset triggers the existing BASE Mark cascade automation.
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id,
@@ -90,7 +112,7 @@ export default async function (req) {
       asset_type: 'master',
       title: `${episode.title} — ORVO episode`,
       description: `Podcast episode audio registered from ORVO Studio.`,
-      file_url: episode.audio_url,
+      file_url: markSourceUrl,
       thumbnail_url: episode.thumbnail_url,
       origin: 'creator',
       ai_label: label,
@@ -104,6 +126,7 @@ export default async function (req) {
         episode_id: episodeId,
         podcast_id: episode.podcast_id,
         ipfs_hash: episode.ipfs_hash,
+        ipfs_gateway_url: episode.audio_url,
         duration_seconds: episode.duration_seconds,
       },
     });

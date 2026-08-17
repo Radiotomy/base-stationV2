@@ -62,7 +62,14 @@ export default function UploadEpisode() {
     if (!podcastId || !title.trim() || !audioFile) return;
     setPhase('uploading');
     try {
-      const { cid, gateway_url } = await uploadToPinata(audioFile, `${title}-audio`);
+      // Pin to IPFS AND keep a reliable Base44 storage copy in parallel.
+      // Public IPFS gateways are rate-limited — the storage copy is what the
+      // BASE Mark forensic pipeline downloads from, so marking never depends
+      // on gateway availability.
+      const [{ cid, gateway_url }, storageUpload] = await Promise.all([
+        uploadToPinata(audioFile, `${title}-audio`),
+        base44.integrations.Core.UploadFile({ file: audioFile }).catch(() => null),
+      ]);
       setPhase('saving');
       const episode = await base44.entities.Episode.create({
         podcast_id: podcastId,
@@ -72,6 +79,7 @@ export default function UploadEpisode() {
         episode_number: episodeNumber ? Number(episodeNumber) : undefined,
         season_number: seasonNumber ? Number(seasonNumber) : 1,
         audio_url: gateway_url,
+        storage_audio_url: storageUpload?.file_url || undefined,
         ipfs_hash: cid,
         thumbnail_url: thumbUrl,
         thumbnail_ipfs_hash: thumbCid,
@@ -85,7 +93,10 @@ export default function UploadEpisode() {
       if (pod) {
         await base44.entities.Podcast.update(podcastId, { episode_count: (pod.episode_count || 0) + 1 });
       }
-      toast({ title: publish ? 'Episode published 🎙️' : 'Draft saved' });
+      // Auto-register provenance: COS score + BASE Mark cascade kick off in the
+      // background so every uploaded episode is marked without a manual step.
+      base44.functions.invoke('registerEpisodeProvenance', { episode_id: episode.id }).catch(() => {});
+      toast({ title: publish ? 'Episode published 🎙️' : 'Draft saved', description: 'COS scoring & BASE Mark registration started in the background.' });
       navigate(`/studios/orvo/episode/${episode.id}`);
     } catch (err) {
       toast({ title: 'Upload failed', description: err.message, variant: 'destructive' });
