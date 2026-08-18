@@ -5,6 +5,7 @@ import { Mic } from 'lucide-react';
 import PodcastCard from '@/components/studios/orvo/PodcastCard';
 import PodcastDirectoryFilters from '@/components/studios/orvo/PodcastDirectoryFilters';
 import LiveNowStrip from '@/components/studios/orvo/LiveNowStrip';
+import LatestEpisodesFeed from '@/components/podcasts/LatestEpisodesFeed';
 
 /** Public community directory of every published podcast on BASE Station. */
 export default function Podcasts() {
@@ -50,6 +51,8 @@ export default function Podcasts() {
         </p>
 
         <LiveNowStrip events={liveEvents} />
+
+        <LatestEpisodesFeed podcasts={podcasts} />
 
         <PodcastDirectoryFilters query={query} onQuery={setQuery} category={category} onCategory={setCategory} />
 
