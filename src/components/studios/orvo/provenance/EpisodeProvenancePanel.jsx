@@ -5,6 +5,7 @@ import { ShieldCheck, Loader2, Fingerprint } from 'lucide-react';
 import EpisodeChainAnchor from './EpisodeChainAnchor';
 import ForeignProvenanceCard from './ForeignProvenanceCard';
 import AdvisoryReviewCard from './AdvisoryReviewCard';
+import C2paCredentialsCard from './C2paCredentialsCard';
 
 const LABELS = {
   human: 'Human recorded',
@@ -131,6 +132,8 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
           )}
 
           <ForeignProvenanceCard episode={episode} onUpdate={onUpdate} />
+
+          <C2paCredentialsCard episode={episode} onUpdate={onUpdate} />
 
           <AdvisoryReviewCard episode={episode} onUpdate={onUpdate} />
 

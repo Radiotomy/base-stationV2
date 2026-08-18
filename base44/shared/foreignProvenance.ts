@@ -152,7 +152,7 @@ export function parseForeignProvenance(headBuf, tailBuf) {
 // Redirects are followed manually, one hop at a time, with the destination
 // re-validated — a storage URL legitimately redirects, but an unchecked
 // redirect is an SSRF hole.
-async function rangeFetch(url, range) {
+export async function rangeFetch(url, range) {
   let target = url;
   for (let hop = 0; hop < 3; hop++) {
     const res = await fetch(target, { headers: { Range: range }, redirect: 'manual' });
