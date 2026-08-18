@@ -91,6 +91,8 @@ async function prepareRecord(base44, user, body) {
     ai_tools_used: t.ai_tools_used || '',
     ai_label: t.ai_label || undefined,
     description: t.description || '',
+    supersedes_tx_hash: body.supersedes_tx_hash || undefined,
+    correction_reason: body.correction_reason || undefined,
     wallet_address: body.wallet_address || '',
     fingerprint_hash: fingerprint,
     metadata_uri: pin?.metadata_uri || '',
@@ -174,8 +176,16 @@ Deno.serve(async (req) => {
         const provider = new ethers.JsonRpcProvider(rpcUrl, 8453, { staticNetwork: true });
         const wallet = new ethers.Wallet(pk, provider);
 
-        // 0-value self-transaction carrying the provenance anchor in calldata
-        const anchorData = toHex(`BSTN1|${fingerprint}|${pin?.metadata_uri || ''}`);
+        // 0-value self-transaction carrying the provenance anchor in calldata.
+        // A correction uses the BSTN1C prefix and names the transaction it
+        // supersedes, so the retraction is provable on-chain rather than only
+        // in our database — an existing anchor can never be edited or removed.
+        const supersedes = body.supersedes_tx_hash || '';
+        const anchorData = toHex(
+          supersedes
+            ? `BSTN1C|${fingerprint}|${pin?.metadata_uri || ''}|supersedes:${supersedes}`
+            : `BSTN1|${fingerprint}|${pin?.metadata_uri || ''}`,
+        );
         const tx = await wallet.sendTransaction({
           to: wallet.address,
           value: 0n,
@@ -193,6 +203,18 @@ Deno.serve(async (req) => {
           transaction_hash: tx.hash,
           wallet_address: wallet.address,
         });
+
+        // Point the superseded record at its replacement so the bad anchor
+        // always resolves to the authoritative one.
+        if (supersedes) {
+          const prior = await base44.asServiceRole.entities.BaseTrackRegistry
+            .filter({ transaction_hash: supersedes }, '-created_date', 1).catch(() => []);
+          if (prior?.[0]) {
+            await base44.asServiceRole.entities.BaseTrackRegistry.update(prior[0].id, {
+              superseded_by_tx_hash: tx.hash,
+            }).catch(() => {});
+          }
+        }
 
         await base44.asServiceRole.entities.ActivityFeedItem.create({
           type: 'track_submitted',

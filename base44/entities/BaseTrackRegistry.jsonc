@@ -31,9 +31,10 @@
       "enum": [
         "ai_generated",
         "ai_assisted",
-        "human"
+        "human",
+        "unverified"
       ],
-      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard) embedded in the on-chain provenance record. ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording."
+      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard) embedded in the on-chain provenance record. ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording; unverified = origin never declared and no AI use observed."
     },
     "description": {
       "type": "string"
@@ -74,6 +75,18 @@
     "network": {
       "type": "string",
       "default": "base-mainnet"
+    },
+    "supersedes_tx_hash": {
+      "type": "string",
+      "description": "Transaction hash of an earlier anchor that this record corrects. A blockchain anchor cannot be edited or deleted, so a bad anchor is remedied by publishing a correction anchor that explicitly names the transaction it supersedes. Present only on correction records."
+    },
+    "superseded_by_tx_hash": {
+      "type": "string",
+      "description": "Set on the ORIGINAL record once a correction anchor replaces it, so anyone reading the old anchor is led to the authoritative one."
+    },
+    "correction_reason": {
+      "type": "string",
+      "description": "Why this correction anchor was published"
     },
     "tags": {
       "type": "array",
