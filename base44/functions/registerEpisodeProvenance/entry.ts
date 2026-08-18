@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { calculateHumanParticipationScore } from '../../shared/cosEngine.ts';
 import { persistUrl } from '../../shared/persistMedia.ts';
 import { scanForeignProvenanceFromUrl } from '../../shared/foreignProvenance.ts';
+import { scanC2paFromUrl, SOURCE_ORIGINAL } from '../../shared/c2paProvenance.ts';
 
 // ORVO — BASE Mark + COS for a podcast episode.
 //
@@ -200,6 +201,21 @@ export default async function (req) {
     // machine and software behind it. Never fatal: a file with no such metadata
     // is a legitimate outcome, not an error.
     const foreign = await scanForeignProvenanceFromUrl(markSourceUrl).catch(() => null);
+
+    // Tier 2 (Content Credentials) must be captured on the SAME pristine pass.
+    // Minting the asset below starts the BASE Mark cascade, which rewrites the
+    // audio — after that, no scan can ever see the source file again. This is
+    // the only moment the original manifest state is observable, so it is read
+    // here and kept, rather than left to an on-demand scan that would arrive
+    // too late.
+    if (!episode.c2pa_provenance) {
+      const c2pa = await scanC2paFromUrl(markSourceUrl, SOURCE_ORIGINAL).catch(() => null);
+      if (c2pa) {
+        c2pa.scanned_source = markSourceUrl;
+        await base44.asServiceRole.entities.Episode.update(episodeId, { c2pa_provenance: c2pa }).catch(() => {});
+      }
+    }
+
     if (foreign) {
       await base44.asServiceRole.entities.Episode.update(episodeId, { external_provenance: foreign }).catch(() => {});
       if (label === 'unverified' && foreign.signal_count > 0) {

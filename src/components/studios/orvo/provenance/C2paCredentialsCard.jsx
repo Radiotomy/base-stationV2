@@ -15,6 +15,21 @@ const ACTION_LABELS = {
   'c2pa.drawing': 'Drawing',
 };
 
+// Whether the bytes examined were the creator's original upload or a copy this
+// platform had already processed decides whether the finding says anything
+// about the source at all — so it is always stated, never implied.
+function SourceStateNote({ scan }) {
+  if (!scan.source_state) return null;
+  const original = scan.source_state === 'original_upload';
+  return (
+    <p className={`text-[10px] ${original ? 'text-emerald-300/70' : 'text-amber-300/70'}`}>
+      {original
+        ? 'Read from the original upload, before BASE Mark processing.'
+        : 'Read from a BASE Mark–processed copy — describes this platform\'s output, not the source file.'}
+    </p>
+  );
+}
+
 export default function C2paCredentialsCard({ episode, onUpdate }) {
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -26,6 +41,9 @@ export default function C2paCredentialsCard({ episode, onUpdate }) {
     setBusy(false);
     if (res.data?.error) {
       return toast({ title: 'Scan failed', description: res.data.error, variant: 'destructive' });
+    }
+    if (res.data?.preserved) {
+      return toast({ title: 'Original scan kept', description: res.data.note });
     }
     onUpdate?.(res.data.episode);
   };
@@ -50,6 +68,7 @@ export default function C2paCredentialsCard({ episode, onUpdate }) {
       ) : !scan.present ? (
         <div className="space-y-2">
           <p className="text-xs text-white/50">{scan.summary}</p>
+          <SourceStateNote scan={scan} />
           <button onClick={run} disabled={busy} className="text-[11px] text-[#FF9A4D] hover:underline disabled:opacity-50">
             {busy ? 'Re-scanning…' : 'Re-scan'}
           </button>
@@ -96,6 +115,7 @@ export default function C2paCredentialsCard({ episode, onUpdate }) {
             </div>
           )}
 
+          <SourceStateNote scan={scan} />
           <p className="text-[10px] text-white/30 leading-relaxed">{scan.caveat}</p>
           <button onClick={run} disabled={busy} className="text-[11px] text-[#FF9A4D] hover:underline disabled:opacity-50">
             {busy ? 'Re-scanning…' : 'Re-scan'}

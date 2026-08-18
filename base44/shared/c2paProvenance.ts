@@ -71,6 +71,14 @@ function valueAfterKey(view, text, key) {
   return '';
 }
 
+// Which copy of the audio a scan looked at. This matters more than it sounds:
+// BASE Mark embeds into the audio AFTER a Tier 2 read, so once an episode is
+// marked, a re-scan can only ever describe OUR pipeline's output. A Tier 2
+// finding is only evidence about the source if it was taken from the pristine
+// upload — so every result records which state it saw.
+export const SOURCE_ORIGINAL = 'original_upload';
+export const SOURCE_POST_BASEMARK = 'post_basemark';
+
 /** Parse a C2PA manifest store out of raw container bytes. */
 export function parseC2pa(headBuf, tailBuf) {
   const parts = [new Uint8Array(headBuf)];
@@ -161,8 +169,12 @@ export function parseC2pa(headBuf, tailBuf) {
   };
 }
 
-/** Fetch the header/footer bytes a manifest store can live in and parse them. */
-export async function scanC2paFromUrl(url) {
+/**
+ * Fetch the header/footer bytes a manifest store can live in and parse them.
+ * `sourceState` records whether these bytes are the untouched upload or a
+ * post-BASE Mark copy — a post-mark read is not evidence about the source.
+ */
+export async function scanC2paFromUrl(url, sourceState = SOURCE_ORIGINAL) {
   const headRes = await rangeFetch(url, 'bytes=0-524287');
   if (!headRes.ok && headRes.status !== 206) throw new Error(`Could not read audio (${headRes.status})`);
   const headBuf = await headRes.arrayBuffer();
@@ -175,5 +187,10 @@ export async function scanC2paFromUrl(url) {
     if (tailRes?.ok || tailRes?.status === 206) tailBuf = await tailRes.arrayBuffer();
   }
 
-  return parseC2pa(headBuf, tailBuf);
+  const scan = parseC2pa(headBuf, tailBuf);
+  scan.source_state = sourceState;
+  if (sourceState === SOURCE_POST_BASEMARK) {
+    scan.caveat = `${scan.caveat ? scan.caveat + ' ' : ''}Taken AFTER BASE Mark processing, so it describes this platform's output copy — not the file as the creator supplied it. Only a scan of the original upload is evidence about the source tool.`;
+  }
+  return scan;
 }
