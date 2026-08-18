@@ -116,6 +116,10 @@
       "type": "object",
       "description": "Tier 1 foreign-provenance scan: provenance the SOURCE TOOL declared inside the uploaded container (originating workstation, encoder software, coding history, origination date). Read-only evidence about an outside upload \u2014 it never overrides the creator's attestation, and an empty result means the file carried no such metadata rather than that the file is suspect."
     },
+    "advisory_review": {
+      "type": "object",
+      "description": "ADVISORY ONLY. Corroborating or conflicting evidence gathered about this episode's declared origin \u2014 never a label. Two independent sub-reports: `reconciliation` compares the attestation against creative-process records BASE Station already owns (synthetic voice registry, voiceover assets, human recording takes, the creator's own prior attested episodes), and `third_party` records what an external provider's own AI-speech classifier reported about the audio. Neither may change ai_disclosure_label or the Creative Ownership Score; both exist so a discrepancy can be surfaced for human review instead of silently mislabelling a creator."
+    },
     "ai_disclosure_label": {
       "type": "string",
       "enum": [
