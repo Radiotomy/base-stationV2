@@ -82,18 +82,21 @@
       "enum": [
         "ai_generated",
         "ai_assisted",
-        "human"
+        "human",
+        "unverified"
       ],
-      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard). ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording. Applies to audio asset types only (not lyrics/cover art/video per the standard). Derived assets inherit the most AI-intensive label in their provenance chain."
+      "description": "RIAA/IFPI GenAI track-level label (July 2026 standard). ai_generated = GenAI created the entirety/primary portion of the sound recording; ai_assisted = substantially human recording with some GenAI expressive elements; human = no GenAI in the recording; unverified = origin never declared and no AI use observed. Applies to audio asset types only (not lyrics/cover art/video per the standard). Derived assets inherit the most AI-intensive label in their provenance chain."
     },
     "ai_disclosure_label": {
       "type": "string",
       "enum": [
         "ai_generated",
-        "ai_assisted"
+        "ai_assisted",
+        "human",
+        "unverified"
       ],
       "default": "ai_generated",
-      "description": "RIAA/IFPI-style GenAI disclosure label derived from the human participation score"
+      "description": "RIAA/IFPI-style GenAI disclosure label. Derived from the human participation score for generated assets, or from the creator's own origin attestation for uploaded recordings. 'unverified' means origin was never declared and no AI use was observed \u2014 absence of creative-process telemetry must NOT be recorded as 'ai_generated'."
     },
     "ai_disclosure_basis": {
       "type": "string",

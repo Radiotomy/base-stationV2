@@ -73,18 +73,49 @@ export default async function (req) {
       base44.asServiceRole.entities.OrvoPodcastAsset.filter({ podcast_id: episode.podcast_id, asset_type: 'voiceover' }),
     ]);
     const humanRecordings = (recordings || []).filter((r) => r.source !== 'ai_voiceover');
+    const aiVoiceUsed = (voiceovers || []).length > 0
+      || (recordings || []).some((r) => r.source === 'ai_voiceover');
+
+    // Origin is DECLARED, not detected. The platform has no AI-speech
+    // classifier, and COS only observes in-app creative-process telemetry —
+    // so an episode recorded outside the app and uploaded as a finished file
+    // legitimately produces no recording rows. Treating that silence as proof
+    // of AI authorship is what mislabelled human shows as 'ai_generated'.
+    // The creator's own attestation is therefore the authoritative signal,
+    // matching how RIAA/IFPI disclosure actually works (rights-holder declared).
+    const declared = episode.declared_origin || '';
+    const humanAuthored = declared === 'human' || humanRecordings.length > 0;
+
     const cos = calculateHumanParticipationScore({
-      userProvidedContent: humanRecordings.length > 0,
+      // For spoken word the authorship IS the script + the recorded voice
+      // performance — there is no prompt-driven generation step to score.
+      userProvidedContent: humanAuthored,
       prompt: episode.description || '',
       styleOrTags: episode.chapters?.length ? ['chaptered'] : [],
-      humanInstrumentPerformance: humanRecordings.length > 0,
-      hasSyntheticVocals: (voiceovers || []).length > 0,
+      humanInstrumentPerformance: humanAuthored,
+      hasSyntheticVocals: aiVoiceUsed,
       isIteration: (recordings || []).length > 1,
       isAutomatedMaster: false,
     });
 
-    // Fully human-recorded episodes with no synthetic voice are labelled human.
-    const label = humanRecordings.length > 0 && (voiceovers || []).length === 0 ? 'human' : cos.label;
+    // Label resolution — never infer AI authorship from missing telemetry.
+    let label;
+    let basis;
+    if (declared) {
+      label = declared;
+      basis = `Origin declared by the rights holder as "${declared}". ${cos.basis}`;
+    } else if (humanRecordings.length > 0 && !aiVoiceUsed) {
+      label = 'human';
+      basis = cos.basis;
+    } else if (aiVoiceUsed) {
+      label = cos.score >= 40 ? 'ai_assisted' : 'ai_generated';
+      basis = `Synthetic voice assets detected in this show. ${cos.basis}`;
+    } else {
+      // No AI use observed AND no attestation on file — say exactly that
+      // rather than publishing an unfounded AI claim.
+      label = 'unverified';
+      basis = 'Origin not declared and no AI generation was observed in-app. This is not a finding of AI authorship — the creator has not yet attested how this episode was made.';
+    }
 
     // The marking source must be reliable: Replicate's input downloader has a
     // 10s read timeout and public IPFS gateways (gateway.pinata.cloud) are
@@ -116,8 +147,8 @@ export default async function (req) {
       thumbnail_url: episode.thumbnail_url,
       origin: 'creator',
       ai_label: label,
-      ai_disclosure_label: label === 'human' ? 'ai_assisted' : cos.label,
-      ai_disclosure_basis: cos.basis,
+      ai_disclosure_label: label,
+      ai_disclosure_basis: basis,
       human_participation_score: cos.score,
       participation_signals: cos.signals,
       ddex_ai_metadata: cos.ddex,
@@ -136,7 +167,7 @@ export default async function (req) {
       provenance_status: 'processing',
       human_participation_score: cos.score,
       ai_disclosure_label: label,
-      ai_disclosure_basis: cos.basis,
+      ai_disclosure_basis: basis,
       participation_signals: cos.signals,
     });
 

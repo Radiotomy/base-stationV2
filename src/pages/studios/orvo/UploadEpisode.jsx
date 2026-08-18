@@ -6,6 +6,7 @@ import { uploadToPinata, extractAudioDuration } from '@/lib/studios/orvo/pinataU
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Loader2, FileAudio, ImagePlus } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import OriginAttestation from '@/components/studios/orvo/studio/OriginAttestation';
 
 export default function UploadEpisode() {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ export default function UploadEpisode() {
   const [episodeNumber, setEpisodeNumber] = useState('');
   const [seasonNumber, setSeasonNumber] = useState('1');
   const [isPremium, setIsPremium] = useState(false);
+  const [declaredOrigin, setDeclaredOrigin] = useState('');
 
   const [audioFile, setAudioFile] = useState(null);
   const [duration, setDuration] = useState(null);
@@ -59,7 +61,7 @@ export default function UploadEpisode() {
   };
 
   const save = async (publish) => {
-    if (!podcastId || !title.trim() || !audioFile) return;
+    if (!podcastId || !title.trim() || !audioFile || !declaredOrigin) return;
     setPhase('uploading');
     try {
       // Pin to IPFS AND keep a reliable Base44 storage copy in parallel.
@@ -84,6 +86,7 @@ export default function UploadEpisode() {
         thumbnail_url: thumbUrl,
         thumbnail_ipfs_hash: thumbCid,
         duration_seconds: duration || undefined,
+        declared_origin: declaredOrigin,
         is_premium: isPremium,
         status: publish ? 'published' : 'draft',
         published_date: publish ? new Date().toISOString() : undefined,
@@ -106,7 +109,7 @@ export default function UploadEpisode() {
 
   const busy = phase !== 'idle';
   const inputCls = 'w-full rounded-lg bg-white/5 border border-white/10 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-[#FF9A4D]/50';
-  const canSave = podcastId && title.trim() && audioFile && !busy;
+  const canSave = podcastId && title.trim() && audioFile && declaredOrigin && !busy;
 
   return (
     <div className="min-h-screen pb-16" style={{ backgroundColor: '#14100C' }}>
@@ -192,6 +195,8 @@ export default function UploadEpisode() {
                 <input type="file" accept="image/*" className="hidden" onChange={handleThumbUpload} disabled={uploadingThumb || busy} />
               </label>
             </div>
+
+            <OriginAttestation value={declaredOrigin} onChange={setDeclaredOrigin} disabled={busy} />
 
             <div className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 p-3.5">
               <div>

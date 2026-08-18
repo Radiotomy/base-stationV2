@@ -103,24 +103,34 @@
       "default": "unregistered",
       "description": "BASE Mark registration state for this episode's audio"
     },
-    "human_participation_score": {
-      "type": "number",
-      "minimum": 0,
-      "maximum": 100,
-      "description": "0-100 Creative Ownership Score for this episode"
+    "declared_origin": {
+      "type": "string",
+      "enum": [
+        "human",
+        "ai_assisted",
+        "ai_generated"
+      ],
+      "description": "Creator's own attestation of how this episode was made. RIAA/IFPI-style disclosure is DECLARED by the rights holder, not detected: the platform has no AI-speech classifier, so this attestation is the authoritative origin signal. Absent this, the label stays 'unverified' \u2014 never 'ai_generated'."
     },
     "ai_disclosure_label": {
       "type": "string",
       "enum": [
         "ai_generated",
         "ai_assisted",
-        "human"
+        "human",
+        "unverified"
       ],
-      "description": "Disclosure label derived from the episode's COS telemetry"
+      "description": "Disclosure label derived from the creator's attestation plus observed COS telemetry. 'unverified' means origin was never declared and no AI use was observed \u2014 it is NOT an accusation of AI authorship."
     },
     "ai_disclosure_basis": {
       "type": "string",
       "description": "Human-readable explanation of the assigned label"
+    },
+    "human_participation_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "0-100 Creative Ownership Score for this episode"
     },
     "participation_signals": {
       "type": "object",
