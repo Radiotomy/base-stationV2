@@ -3,11 +3,13 @@ import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
 import { ShieldCheck, Loader2, Fingerprint } from 'lucide-react';
 import EpisodeChainAnchor from './EpisodeChainAnchor';
+import ForeignProvenanceCard from './ForeignProvenanceCard';
 
 const LABELS = {
   human: 'Human recorded',
   ai_assisted: 'AI assisted',
   ai_generated: 'AI generated',
+  unverified: 'Origin unverified',
 };
 
 export default function EpisodeProvenancePanel({ episode, onUpdate }) {
@@ -126,6 +128,8 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Fingerprint className="w-4 h-4" />} Retry BASE Mark
             </button>
           )}
+
+          <ForeignProvenanceCard episode={episode} onUpdate={onUpdate} />
 
           <EpisodeChainAnchor episode={episode} onUpdate={onUpdate} />
         </div>

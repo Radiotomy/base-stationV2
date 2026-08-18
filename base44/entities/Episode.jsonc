@@ -112,6 +112,10 @@
       ],
       "description": "Creator's own attestation of how this episode was made. RIAA/IFPI-style disclosure is DECLARED by the rights holder, not detected: the platform has no AI-speech classifier, so this attestation is the authoritative origin signal. Absent this, the label stays 'unverified' \u2014 never 'ai_generated'."
     },
+    "external_provenance": {
+      "type": "object",
+      "description": "Tier 1 foreign-provenance scan: provenance the SOURCE TOOL declared inside the uploaded container (originating workstation, encoder software, coding history, origination date). Read-only evidence about an outside upload \u2014 it never overrides the creator's attestation, and an empty result means the file carried no such metadata rather than that the file is suspect."
+    },
     "ai_disclosure_label": {
       "type": "string",
       "enum": [

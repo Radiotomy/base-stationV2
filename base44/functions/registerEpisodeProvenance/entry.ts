@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { calculateHumanParticipationScore } from '../../shared/cosEngine.ts';
 import { persistUrl } from '../../shared/persistMedia.ts';
+import { scanForeignProvenanceFromUrl } from '../../shared/foreignProvenance.ts';
 
 // ORVO — BASE Mark + COS for a podcast episode.
 //
@@ -193,6 +194,19 @@ export default async function (req) {
       }
     }
 
+    // Tier 1 foreign-provenance read — done BEFORE our own cascade is applied,
+    // while the container still carries only what the source tool wrote. For an
+    // outside upload this is often the only true statement available about the
+    // machine and software behind it. Never fatal: a file with no such metadata
+    // is a legitimate outcome, not an error.
+    const foreign = await scanForeignProvenanceFromUrl(markSourceUrl).catch(() => null);
+    if (foreign) {
+      await base44.asServiceRole.entities.Episode.update(episodeId, { external_provenance: foreign }).catch(() => {});
+      if (label === 'unverified' && foreign.signal_count > 0) {
+        basis += ` Source file declares: ${Object.values(foreign.observations).join(' · ')}.`;
+      }
+    }
+
     // Minting the asset triggers the existing BASE Mark cascade automation.
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id,
@@ -216,6 +230,7 @@ export default async function (req) {
         ipfs_hash: episode.ipfs_hash,
         ipfs_gateway_url: episode.audio_url,
         duration_seconds: episode.duration_seconds,
+        external_provenance: foreign || undefined,
       },
     });
 
