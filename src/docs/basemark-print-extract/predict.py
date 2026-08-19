@@ -95,7 +95,29 @@ def decode_mono_f32(path, max_seconds):
     return samples, src_rate
 
 
-# ── Mirror of resampleMono (crude box average — deliberately NOT improved) ──
+# ── Mirror of resampleMono ──────────────────────────────────────────────────
+# The ALGORITHM is deliberately NOT improved: it is the same crude box average
+# over a fixed `width` window at non-uniform (truncated) start offsets, not a
+# proper anti-aliasing filter. That crudeness is load-bearing — a better
+# resampler would move interpolated peak positions relative to every reference
+# already extracted by the TS path.
+#
+# Only the EXECUTION is vectorised. The pure-Python per-output-sample loop this
+# replaces ran ~29.7M iterations for a 45-minute 44.1kHz episode, which
+# dominated the whole prediction (the FFTs themselves are batched and take well
+# under a second). Same arithmetic, ~100x less interpreter overhead.
+#
+# Accumulation is forced to float64 to match the TS side, where JS numbers are
+# doubles (`sum += ...; out[i] = sum / n` accumulates in float64 and only the
+# store into a Float32Array narrows). numpy's default float32 accumulator for a
+# float32 input would have been a genuine, if tiny, divergence from that.
+#
+# Chunked because the index matrix is out_len x width — materialising it whole
+# for a long episode would be hundreds of MB, which is the same memory mistake
+# this container exists to avoid.
+_RESAMPLE_BLOCK = 1 << 21  # ~2M output samples per block
+
+
 def resample_mono(samples, src_rate, dst_rate=TARGET_SR):
     if src_rate == dst_rate:
         return samples
@@ -103,11 +125,31 @@ def resample_mono(samples, src_rate, dst_rate=TARGET_SR):
     out_len = int(samples.size / ratio)
     width = max(1, int(ratio))
     out = np.zeros(out_len, dtype=np.float32)
-    for i in range(out_len):
-        start = int(i * ratio)
-        end = min(start + width, samples.size)
-        if end > start:
-            out[i] = samples[start:end].mean()
+    n = samples.size
+
+    for base in range(0, out_len, _RESAMPLE_BLOCK):
+        stop = min(base + _RESAMPLE_BLOCK, out_len)
+        i = np.arange(base, stop, dtype=np.int64)
+        # int(i * ratio) — truncation toward zero; values are non-negative here,
+        # so astype(int64) is exactly the same operation.
+        starts = (i * ratio).astype(np.int64)
+
+        # Fast path: every window lies fully inside the signal, so the whole
+        # block is one gather + one row-wise mean.
+        if starts[-1] + width <= n:
+            idx = starts[:, None] + np.arange(width, dtype=np.int64)[None, :]
+            out[base:stop] = samples[idx].astype(np.float64).mean(axis=1)
+            continue
+
+        # Tail: at least one window is clamped by the end of the signal, so the
+        # window LENGTHS differ and a rectangular mean would silently average in
+        # the wrong number of samples. Done element-wise — it is a handful of
+        # windows, never a hot path.
+        for k, s in zip(range(base, stop), starts):
+            e = min(s + width, n)
+            if e > s:
+                out[k] = samples[s:e].astype(np.float64).mean()
+
     return out
 
 
