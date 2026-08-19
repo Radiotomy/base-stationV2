@@ -29,6 +29,7 @@ import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints, matchAgainstMany } from '../../shared/basePrintMatch.ts';
 import { toMono, trimFromStart, round } from '../../shared/audioBenchUtils.ts';
 import { durationBracket, decodeForPrint } from '../../shared/printRegistry.ts';
+import { extractPrintRemote } from '../../shared/printExtractRemote.ts';
 
 // Attacks worth measuring for the Print Layer. The two stretch rows and the
 // off-grid pitch row are the entire point — those are the cells where every Mark
@@ -121,6 +122,47 @@ export default async function (req) {
           'transients, so its peak structure is a set of steady horizontal lines and its time ratios are ' +
           'degenerate. Treat non-zero recall here as evidence the code RUNS, not that the method works. ' +
           'Real music is required for any recall figure.',
+      });
+    }
+
+    // ── parity ─────────────────────────────────────────────────────────────
+    // Cross-implementation check: the Replicate container (predict.py) must
+    // produce the SAME hashes as the TS path (basePrint.ts) on the same file.
+    // Run this after every container rebuild, on a WAV or FLAC the runtime can
+    // also decode — no remote print is trusted for storage or matching until
+    // this agrees. Small residual disagreement can only come from decode-stage
+    // float differences; a large one means a constant drifted, which is fatal.
+    if (action === 'parity') {
+      if (!body.url) return Response.json({ error: 'url is required for a parity run' }, { status: 400 });
+      const audio = await loadWav(body.url, seconds);
+      const local = printOf(audio); // undithered — same as a stored reference
+      const remote = await extractPrintRemote(body.url, { maxSeconds: seconds });
+      if (!remote.ok) {
+        return Response.json({ ok: false, reason: remote.reason, detail: remote.detail || null }, { status: 502 });
+      }
+      // Exact (hash, anchor-ms) pairs — the strictest possible comparison.
+      const key = (h) => `${h.hash}:${Math.round(h.t * 1000)}`;
+      const pool = new Map();
+      for (const h of local) pool.set(key(h), (pool.get(key(h)) || 0) + 1);
+      let common = 0;
+      for (const h of remote.hashes) {
+        const k = key(h);
+        const c = pool.get(k);
+        if (c) { common++; pool.set(k, c - 1); }
+      }
+      const agreement = round((100 * common) / Math.max(1, Math.max(local.length, remote.hashes.length)), 2);
+      return Response.json({
+        action,
+        seconds,
+        local_hashes: local.length,
+        remote_hashes: remote.hashes.length,
+        exact_matches: common,
+        agreement_pct: agreement,
+        verdict: agreement >= 99 ? 'parity' : agreement >= 90 ? 'near_parity_investigate' : 'DIVERGED_do_not_trust_remote_prints',
+        note:
+          'Compared on exact (hash, anchor-time) pairs. >=99% = decode-stage float noise only, remote prints ' +
+          'are trustworthy. Below that, a constant or a rounding rule has drifted between predict.py and ' +
+          'basePrint.ts — fix the mirror and rebuild before storing any remote print.',
       });
     }
 

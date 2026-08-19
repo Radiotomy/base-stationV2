@@ -18,6 +18,13 @@ import { decodeWav } from './audioAttacks.ts';
 import { isFlac, decodeFlacToWav } from './flacDecoder.ts';
 import { toMono } from './audioBenchUtils.ts';
 import { assertSafeUrl } from './safeUrl.ts';
+import { extractPrintRemote, isRemotePrintConfigured } from './printExtractRemote.ts';
+
+// The runtime's own decoders died with exceededMemory on a 44MB FLAC during the
+// speech calibration run — files above this go straight to the remote container
+// (when deployed) instead of gambling the whole request on a worker OOM, which
+// is not catchable and takes the caller down with it.
+const LOCAL_DECODE_BYTE_CEILING = 24 * 1024 * 1024;
 
 // Podcasts live in long_form / extended. The original Print measurement was
 // n=6 at 20 seconds, so nothing is yet known about how the lift statistic
@@ -51,11 +58,25 @@ export async function extractPrintFromUrl(url, { maxSeconds = 0 } = {}) {
   const r = await fetch(safe);
   if (!r.ok) return { ok: false, reason: `fetch_failed_${r.status}` };
 
+  // Route large files to the remote container BEFORE buffering — a local OOM is
+  // an uncatchable worker death, not an error we could recover from below.
+  const size = Number(r.headers.get('content-length') || 0);
+  if (size > LOCAL_DECODE_BYTE_CEILING && isRemotePrintConfigured()) {
+    await r.body?.cancel().catch(() => {});
+    return await extractPrintRemote(safe, { maxSeconds });
+  }
+
   const bytes = new Uint8Array(await r.arrayBuffer());
   let audio;
   try {
     audio = decodeForPrint(bytes);
   } catch (e) {
+    // Container the runtime cannot read (MP3, M4A, OGG) — the remote extractor
+    // exists precisely for this. Only when it too is unavailable does the scan
+    // abstain with the explicit coverage statement.
+    if (isRemotePrintConfigured()) {
+      return await extractPrintRemote(safe, { maxSeconds });
+    }
     return { ok: false, reason: 'non_pcm_source', detail: e.message };
   }
 

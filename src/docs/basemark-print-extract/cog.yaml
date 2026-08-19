@@ -1,0 +1,41 @@
+# BASE Print — decode + extract container.
+# Cog build definition. Push with:
+#   cog login
+#   cog push r8.im/<your-account>/baseprint-extract
+#
+# Not part of the BASE Station app bundle — version-controlled here alongside
+# the code that calls it, same as the V2/V3/V4 containers.
+#
+# WHY THIS CONTAINER EXISTS
+# The app runtime (Deno edge worker) cannot decode MP3 at all (verified by
+# probe — see mp3Decode.ts) and hits its memory ceiling decoding FLAC files
+# beyond roughly 20MB (verified during the speech calibration run, where the
+# worker died with exceededMemory on a 44MB file). Both gaps land squarely on
+# podcasts: every ORVO episode is MP3, and long_form material is exactly what
+# the calibration must cover. This container closes both by doing the decode
+# AND the print extraction here, returning only the small packed BP01 blob —
+# heavy audio never enters the app runtime.
+#
+# PARITY IS THE TOP RISK. predict.py mirrors basePrint.ts constant-for-constant
+# INCLUDING the crude box-average resampler — do not "improve" the resampler,
+# the window, or the quantizer independently of the TS side. A silent
+# divergence would compare ratios extracted under different constants and
+# report a clean miss on audio that matches perfectly. benchmarkBasePrint's
+# `parity` action exists to prove agreement after every rebuild.
+#
+# `run` is deliberately the FIRST key, same reason as V3/V4: a paste that drops
+# the last line of the file produces a Cog error that does not mention
+# truncation.
+run: "predict.py:Predictor"
+build:
+  # CPU ONLY. Extraction is FFTs over 11kHz mono audio — comfortably faster
+  # than real time on a CPU. Do not "upgrade" this to gpu: true.
+  gpu: false
+  python_version: "3.11"
+  system_packages:
+    # ffmpeg is the entire decode story: MP3, AAC/M4A, OGG, FLAC, WAV — one
+    # battle-tested demuxer/decoder instead of a per-codec pure-JS effort. It
+    # only ever DECODES here (mark once, compress last is unaffected: nothing
+    # in this container writes audio anywhere).
+    - "ffmpeg"
+  python_requirements: "requirements.txt"

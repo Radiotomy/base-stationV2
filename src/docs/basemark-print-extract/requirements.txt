@@ -1,0 +1,5 @@
+# numpy only. The extractor is an STFT + peak pick + triplet hash — all plain
+# array arithmetic. scipy/librosa are deliberately absent: every extra DSP
+# dependency is another place the Python path could silently diverge from the
+# TS path (basePrint.ts), and parity between the two is the whole contract.
+numpy==1.26.4
