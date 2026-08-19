@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import HelpSection from '@/components/help/HelpSection';
 import TutorialWalkthrough from '@/components/help/TutorialWalkthrough';
 import ProTips from '@/components/help/ProTips';
+import PODCAST_HELP_SECTIONS from '@/components/help/podcastHelpSections';
 
 const SECTIONS = [
   {
@@ -294,6 +295,8 @@ const SECTIONS = [
       </>
     ),
   },
+  // ORVO podcast module — content lives in its own file to keep this list legible
+  ...PODCAST_HELP_SECTIONS,
   {
     id: 'audio-tools',
     title: 'Audio tool studios — stems, mashups, harmonies & more',
