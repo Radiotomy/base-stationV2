@@ -4,7 +4,7 @@
 // and hits its memory ceiling on FLAC beyond roughly 20MB (verified during the
 // speech calibration run: exceededMemory on a 44MB file). This module routes
 // extraction to the baseprint-extract Cog container instead: the container
-// decodes with ffmpeg, runs the SAME extraction (predict.py is a constant-for-
+// decodes with ffmpeg, runs the SAME extraction (run.py is a constant-for-
 // constant mirror of basePrint.ts), and returns only the packed BP01 blob —
 // heavy audio never enters this runtime.
 //
