@@ -1,9 +1,15 @@
-# BASE Print — decode + extract (Cog predictor).
+# BASE Print — decode + extract (Cog runner).
 #
-# Downloads nothing itself (Cog hands us the file), decodes ANY audio container
-# via ffmpeg, and runs the BASE Print ratio-hash extraction, returning the
-# packed BP01 blob plus diagnostics. The blob is a few MB at most; the decoded
-# PCM (potentially hundreds of MB for long_form podcasts) never leaves this box.
+# Decodes ANY audio container via ffmpeg and runs the BASE Print ratio-hash
+# extraction, returning the packed BP01 blob plus diagnostics. The blob is a few
+# MB at most; the decoded PCM (potentially hundreds of MB for long_form
+# podcasts) never leaves this box.
+#
+# Uses the CURRENT Cog Python API — BaseRunner / Runner / run(). The older
+# BasePredictor / Predictor / predict() names still function but are deprecated
+# and make Cog emit warnings on load and inspect, so new containers use the new
+# names. (The V2/V3/V4 containers predate this and are left alone; a working
+# deployed container is not worth re-pushing for a naming change.)
 #
 # ── PARITY CONTRACT ─────────────────────────────────────────────────────────
 # This file is a line-for-line mirror of base44/shared/basePrint.ts. Every
@@ -33,7 +39,7 @@ import tempfile
 from pathlib import Path as SysPath
 
 import numpy as np
-from cog import BasePredictor, Input, Path, BaseModel
+from cog import BaseRunner, BaseModel, Input, Path
 
 # ── Constants — mirror basePrint.ts exactly. Change NOTHING here without a
 # matching change on the TS side and a PRINT_VERSION bump (a version mismatch
@@ -102,10 +108,10 @@ def decode_mono_f32(path, max_seconds):
 # resampler would move interpolated peak positions relative to every reference
 # already extracted by the TS path.
 #
-# Only the EXECUTION is vectorised. The pure-Python per-output-sample loop this
-# replaces ran ~29.7M iterations for a 45-minute 44.1kHz episode, which
-# dominated the whole prediction (the FFTs themselves are batched and take well
-# under a second). Same arithmetic, ~100x less interpreter overhead.
+# Only the EXECUTION is vectorised. A pure-Python per-output-sample loop runs
+# ~29.7M iterations for a 45-minute 44.1kHz episode and would dominate the whole
+# prediction (the FFTs themselves are batched and take well under a second).
+# Same arithmetic, ~100x less interpreter overhead.
 #
 # Accumulation is forced to float64 to match the TS side, where JS numbers are
 # doubles (`sum += ...; out[i] = sum / n` accumulates in float64 and only the
@@ -181,7 +187,7 @@ def extract_peaks(samples, sample_rate):
     prev = mags[:-2]
     nxt = mags[2:]
     # Strict local max over the 3x3 time-frequency neighbourhood, same
-    # comparisons (<=) as the TS loop.
+    # comparisons as the TS loop.
     k = np.arange(lo_bin, hi_bin)
     c = cur[:, k]
     is_peak = (
@@ -224,7 +230,10 @@ def quantize_semitones_detail(ratio):
     idx = js_round(raw)
     frac = raw - idx
     hi = (1 << FREQ_BITS) - 1
-    clamp = lambda v: max(0, min(hi, v))
+
+    def clamp(v):
+        return max(0, min(hi, v))
+
     return clamp(idx), clamp(idx + (1 if frac >= 0 else -1)), abs(frac)
 
 
@@ -307,11 +316,11 @@ class Output(BaseModel):
     version: int
 
 
-class Predictor(BasePredictor):
+class Runner(BaseRunner):
     def setup(self):
         pass  # no model to load — this is pure DSP
 
-    def predict(
+    def run(
         self,
         audio: Path = Input(description="Audio file in any container ffmpeg reads (MP3, FLAC, WAV, M4A, OGG)"),
         dither: bool = Input(

@@ -16,7 +16,7 @@
 # AND the print extraction here, returning only the small packed BP01 blob —
 # heavy audio never enters the app runtime.
 #
-# PARITY IS THE TOP RISK. predict.py mirrors basePrint.ts constant-for-constant
+# PARITY IS THE TOP RISK. run.py mirrors basePrint.ts constant-for-constant
 # INCLUDING the crude box-average resampler — do not "improve" the resampler,
 # the window, or the quantizer independently of the TS side. A silent
 # divergence would compare ratios extracted under different constants and
@@ -25,17 +25,23 @@
 #
 # `run` is deliberately the FIRST key, same reason as V3/V4: a paste that drops
 # the last line of the file produces a Cog error that does not mention
-# truncation.
-run: "predict.py:Predictor"
+# truncation. It is also the CURRENT pointer key — `predict:` still loads but is
+# deprecated, and Cog warns on it.
+run: "run.py:Runner"
 build:
-  # CPU ONLY. Extraction is FFTs over 11kHz mono audio — comfortably faster
-  # than real time on a CPU. Do not "upgrade" this to gpu: true.
+  # CPU ONLY. Extraction is batched 512-point FFTs over 11kHz mono audio —
+  # comfortably faster than real time on a CPU, with no model and no tensors.
+  # Do not "upgrade" this to gpu: true; host<->device transfer would cost more
+  # than the compute it replaces, on hardware billed by the second.
   gpu: false
+  # Cog supports 3.10-3.13. Pinned to 3.11 because that is what numpy 1.26.4
+  # ships wheels for — letting Cog default to 3.13 risks a source build.
   python_version: "3.11"
   system_packages:
     # ffmpeg is the entire decode story: MP3, AAC/M4A, OGG, FLAC, WAV — one
-    # battle-tested demuxer/decoder instead of a per-codec pure-JS effort. It
-    # only ever DECODES here (mark once, compress last is unaffected: nothing
-    # in this container writes audio anywhere).
+    # battle-tested demuxer/decoder instead of a per-codec pure-JS effort, and
+    # it supplies ffprobe (used to read the native sample rate) in the same
+    # package. It only ever DECODES here: nothing in this container writes
+    # audio anywhere, so "mark once, compress last" is untouched.
     - "ffmpeg"
   python_requirements: "requirements.txt"
