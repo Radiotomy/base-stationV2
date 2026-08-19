@@ -161,7 +161,7 @@ export default async function (req) {
         verdict: agreement >= 99 ? 'parity' : agreement >= 90 ? 'near_parity_investigate' : 'DIVERGED_do_not_trust_remote_prints',
         note:
           'Compared on exact (hash, anchor-time) pairs. >=99% = decode-stage float noise only, remote prints ' +
-          'are trustworthy. Below that, a constant or a rounding rule has drifted between predict.py and ' +
+          'are trustworthy. Below that, a constant or a rounding rule has drifted between run.py and ' +
           'basePrint.ts — fix the mirror and rebuild before storing any remote print.',
       });
     }
