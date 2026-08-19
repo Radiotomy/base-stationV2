@@ -6,6 +6,7 @@ import EpisodeChainAnchor from './EpisodeChainAnchor';
 import ForeignProvenanceCard from './ForeignProvenanceCard';
 import AdvisoryReviewCard from './AdvisoryReviewCard';
 import C2paCredentialsCard from './C2paCredentialsCard';
+import PrintRecoveryCard from './PrintRecoveryCard';
 
 const LABELS = {
   human: 'Human recorded',
@@ -134,6 +135,8 @@ export default function EpisodeProvenancePanel({ episode, onUpdate }) {
           <ForeignProvenanceCard episode={episode} onUpdate={onUpdate} />
 
           <C2paCredentialsCard episode={episode} onUpdate={onUpdate} />
+
+          <PrintRecoveryCard episode={episode} onUpdate={onUpdate} />
 
           <AdvisoryReviewCard episode={episode} onUpdate={onUpdate} />
 

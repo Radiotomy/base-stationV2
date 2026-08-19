@@ -1,0 +1,106 @@
+{
+  "name": "AudioFingerprint",
+  "type": "object",
+  "description": "One packed BASE Print blob per registered audio asset. The blob is an uploaded FILE, not entity rows: a 3-minute track is thousands of ratio hashes, so a catalog of any size would be tens of millions of rows. Deliberately NOT stored on BaseMarkBenchmark or UserAsset.metadata \u2014 a Print recovers no payload, and filing it alongside watermark recovery records would let a Print match be misread as forensic attribution. It is similarity evidence only.",
+  "properties": {
+    "asset_id": {
+      "type": "string",
+      "description": "UserAsset this print was extracted from. For an ORVO episode this is the episode's base_mark_asset_id, so the print attaches to the same asset row the BASE Mark cascade already uses."
+    },
+    "episode_id": {
+      "type": "string",
+      "description": "Set when the print came from an ORVO episode, so the seeded scan can name the matched show without a reverse lookup."
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Owner of the source asset"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human-readable label for the matched source, shown on an advisory card"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "Uploaded packPrint() binary blob (magic BP01). Read back with unpackPrint()."
+    },
+    "version": {
+      "type": "number",
+      "description": "PRINT_VERSION the blob was extracted under. Extraction constants (target sample rate, FFT size, hop) are load-bearing for ratio comparability, so a version mismatch means the blob must be rebuilt, never compared."
+    },
+    "hash_count": {
+      "type": "number",
+      "description": "Number of ratio hashes in the blob"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Duration of the analysed audio"
+    },
+    "duration_bracket": {
+      "type": "string",
+      "enum": [
+        "short",
+        "medium",
+        "long_form",
+        "extended"
+      ],
+      "description": "short <2min, medium 2-20min, long_form 20-60min, extended >60min. Podcasts live in long_form/extended, a regime the original n=6 / 20-second Print measurement never covered \u2014 so false-positive rates are reported per bracket rather than pooled."
+    },
+    "hashes_per_second": {
+      "type": "number",
+      "description": "Landmark density. The extractor rank-culls to a target peaks/second, so this is the diagnostic that shows whether spoken-word material yields a comparable amount of evidence to music. Reported, never tuned against, until measured."
+    },
+    "content_class": {
+      "type": "string",
+      "enum": [
+        "music",
+        "speech",
+        "unknown"
+      ],
+      "default": "unknown",
+      "description": "Declared, not detected. Used to keep speech and music calibration populations separate \u2014 pooling them would hide a speech-specific false-positive rate behind a music average."
+    },
+    "source_url": {
+      "type": "string",
+      "description": "Audio the print was extracted from, for reproducibility"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
+    }
+  },
+  "required": [
+    "asset_id",
+    "file_url",
+    "version"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

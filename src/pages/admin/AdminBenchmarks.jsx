@@ -9,6 +9,7 @@ import NullScanForm from '@/components/admin/benchmarks/NullScanForm';
 import AttackGridForm from '@/components/admin/benchmarks/AttackGridForm';
 import JobMonitor from '@/components/admin/benchmarks/JobMonitor';
 import BackfillPanel from '@/components/admin/benchmarks/BackfillPanel';
+import SpeechPrintCalibrationPanel from '@/components/admin/benchmarks/SpeechPrintCalibrationPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const LAYERS = ['speed', 'spectral', 'neural', 'drift'];
@@ -60,6 +61,7 @@ export default function AdminBenchmarks() {
           <TabsTrigger value="run">Run tests</TabsTrigger>
           <TabsTrigger value="null">False positives</TabsTrigger>
           <TabsTrigger value="robustness">Robustness</TabsTrigger>
+          <TabsTrigger value="print">Print (speech)</TabsTrigger>
           <TabsTrigger value="runs">Runs</TabsTrigger>
         </TabsList>
 
@@ -83,6 +85,10 @@ export default function AdminBenchmarks() {
           {LAYERS.map((l) => (
             <RobustnessPanel key={l} rows={rows} layer={l} />
           ))}
+        </TabsContent>
+
+        <TabsContent value="print" className="mt-4">
+          <SpeechPrintCalibrationPanel />
         </TabsContent>
 
         <TabsContent value="runs" className="mt-4">

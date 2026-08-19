@@ -28,6 +28,7 @@ import { decodeWav, ATTACKS, synthesizeBenchmarkSource } from '../../shared/audi
 import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints, matchAgainstMany } from '../../shared/basePrintMatch.ts';
 import { toMono, trimFromStart, round } from '../../shared/audioBenchUtils.ts';
+import { durationBracket } from '../../shared/printRegistry.ts';
 
 // Attacks worth measuring for the Print Layer. The two stretch rows and the
 // off-grid pitch row are the entire point — those are the cells where every Mark
@@ -179,6 +180,151 @@ export default async function (req) {
           'strongest_unrelated_lift is the number that decides the design: it is the floor any acceptance ' +
           'threshold must clear, and it must be compared against the WARPED genuine lifts from a recall ' +
           'run — not against self-match lift, which is a trivially perfect upper bound.',
+      });
+    }
+
+    // ── speech_specificity ─────────────────────────────────────────────────
+    // The measurement that gates the whole podcast plan.
+    //
+    // Everything known about the Print Layer was measured on MUSIC at 20
+    // seconds: n=6, 30 cross-matched unrelated pairs. Podcasts violate both
+    // conditions at once. Spoken-word mono is spectrally sparser — fewer
+    // transients per second, real silence between phrases — so the extractor's
+    // rank-cull to a fixed peaks/second density may be culling from a much
+    // thinner candidate pool, and long-form material means far more hashes per
+    // reference, which raises the collision count that the geometric check has
+    // to survive.
+    //
+    // TWO CORPORA, REPORTED SEPARATELY, deliberately never pooled. Freesound /
+    // Archive.org speech is provenance-independent of BASE Station, and ORVO
+    // back-catalog episodes are the real delivery format. Pooling them would let
+    // a good rate on one hide a bad rate on the other, which is exactly the
+    // small-sample trap that made the first lift calibration wrong.
+    //
+    // Per-bracket reporting matters for the same reason: a false-positive rate
+    // averaged across a 30-second clip and a 45-minute episode describes neither.
+    if (action === 'speech_specificity') {
+      const groups = [
+        { corpus: 'freesound_archive', sources: Array.isArray(body.freesound_sources) ? body.freesound_sources : [] },
+        { corpus: 'orvo_catalog', sources: Array.isArray(body.orvo_sources) ? body.orvo_sources : [] },
+      ].filter((g) => g.sources.length > 0);
+
+      if (!groups.length) {
+        return Response.json(
+          { error: 'Provide freesound_sources and/or orvo_sources — each an array of { id, url }.' },
+          { status: 400 },
+        );
+      }
+
+      const report = [];
+      for (const group of groups) {
+        if (group.sources.length < 3) {
+          report.push({
+            corpus: group.corpus,
+            error: 'A null distribution needs at least 3 unrelated sources to cross-match.',
+            provided: group.sources.length,
+          });
+          continue;
+        }
+
+        const prints = [];
+        for (const s of group.sources) {
+          try {
+            const audio = await loadWav(s.url, seconds);
+            const dur = audio.channels[0].length / audio.sampleRate;
+            const ref = printOf(audio);
+            prints.push({
+              id: s.id || s.url,
+              hashes: ref,
+              query: printOf(audio, true),
+              duration_seconds: round(dur, 1),
+              bracket: durationBracket(dur),
+              hashes_per_second: round(ref.length / Math.max(1, dur), 1),
+            });
+          } catch (e) {
+            report.push({ corpus: group.corpus, source: s.id || s.url, error: e.message });
+          }
+        }
+        if (prints.length < 3) {
+          report.push({ corpus: group.corpus, error: 'Fewer than 3 sources loaded successfully.', loaded: prints.length });
+          continue;
+        }
+
+        const rows = [];
+        let worstUnrelated = 0;
+        let falseAccepts = 0;
+        for (const q of prints) {
+          const others = prints.filter((p) => p.id !== q.id);
+          const self = matchPrints(q.query, q.hashes);
+          const ranked = matchAgainstMany(q.query, others);
+          const top = ranked[0] || { lift: 0, votes: 0, beta: 1, accepted: false, id: null };
+          if (top.lift > worstUnrelated) worstUnrelated = top.lift;
+          if (top.accepted) falseAccepts++;
+          rows.push({
+            id: q.id,
+            bracket: q.bracket,
+            duration_seconds: q.duration_seconds,
+            // The density diagnostic. If speech yields dramatically fewer
+            // hashes/second than music, the extractor is starved of evidence and
+            // that is the finding — NOT a reason to tune the rank-cull, which
+            // stays untouched until measured across enough material to justify a
+            // change.
+            hashes_per_second: q.hashes_per_second,
+            ref_hashes: q.hashes.length,
+            self_lift: round(self.lift, 2),
+            top_unrelated_id: top.id,
+            top_unrelated_lift: round(top.lift, 2),
+            top_unrelated_votes: top.votes,
+            top_unrelated_beta: round(top.beta, 5),
+            // A spurious fit was wrong by 49-79% on music. If speech produces
+            // unrelated fits with ACCURATE-looking betas, the geometric
+            // discriminator has failed on speech and the seeded path must not
+            // ship for podcasts at all.
+            top_unrelated_beta_at_boundary: top.beta_at_boundary,
+            top_unrelated_accepted: top.accepted,
+          });
+        }
+
+        // Per-bracket breakdown, so long_form is never averaged with short.
+        const brackets = {};
+        for (const r of rows) {
+          const b = (brackets[r.bracket] = brackets[r.bracket] || {
+            n: 0, strongest_unrelated_lift: 0, false_accepts: 0, mean_hashes_per_second: 0,
+          });
+          b.n++;
+          b.false_accepts += r.top_unrelated_accepted ? 1 : 0;
+          b.mean_hashes_per_second += r.hashes_per_second;
+          if (r.top_unrelated_lift > b.strongest_unrelated_lift) b.strongest_unrelated_lift = r.top_unrelated_lift;
+        }
+        for (const b of Object.values(brackets)) {
+          b.mean_hashes_per_second = round(b.mean_hashes_per_second / b.n, 1);
+        }
+
+        report.push({
+          corpus: group.corpus,
+          sources: prints.length,
+          cross_matches: prints.length * (prints.length - 1),
+          rows,
+          brackets,
+          summary: {
+            strongest_unrelated_lift: round(worstUnrelated, 2),
+            false_accepts_at_provisional_threshold: falseAccepts,
+            weakest_self_lift: round(Math.min(...rows.map((r) => r.self_lift)), 2),
+          },
+        });
+      }
+
+      return Response.json({
+        action,
+        seconds,
+        corpora: report,
+        note:
+          'GATE MEASUREMENT. strongest_unrelated_lift per corpus and per bracket is the floor any speech ' +
+          'acceptance rule must clear, and it must be compared against WARPED genuine lifts from a speech ' +
+          'recall run — never against self_lift, which is a trivially perfect upper bound. On music these ' +
+          'distributions OVERLAPPED, which is why lift was demoted to candidate generation only. If speech ' +
+          'overlaps too, the Print-seeded episode path stays advisory permanently and must not be promoted. ' +
+          'The two corpora are reported separately on purpose: do not pool them.',
       });
     }
 

@@ -3,6 +3,7 @@ import { calculateHumanParticipationScore } from '../../shared/cosEngine.ts';
 import { persistUrl } from '../../shared/persistMedia.ts';
 import { scanForeignProvenanceFromUrl } from '../../shared/foreignProvenance.ts';
 import { scanC2paFromUrl, SOURCE_ORIGINAL } from '../../shared/c2paProvenance.ts';
+import { extractPrintFromUrl, storePrint } from '../../shared/printRegistry.ts';
 
 // ORVO — BASE Mark + COS for a podcast episode.
 //
@@ -259,7 +260,37 @@ export default async function (req) {
       participation_signals: cos.signals,
     });
 
-    return Response.json({ ok: true, asset_id: asset.id, cos, episode: updated });
+    // ── BASE Print reference ──────────────────────────────────────────────
+    // Extract the ratio-hash fingerprint alongside the cascade. This embeds
+    // NOTHING and cannot disturb the mark — it derives a signature FROM the
+    // audio — so it is safe to run here, and here is the only moment we are
+    // guaranteed a reachable copy of the episode audio.
+    //
+    // Strictly best-effort. A missing print costs one closed avenue on a future
+    // re-timing dispute; a print failure that broke registration would cost the
+    // forensic mark itself, which is a far worse trade. Compressed containers
+    // cannot be decoded server-side in this runtime and simply return a reason.
+    let printInfo = null;
+    try {
+      const extract = await extractPrintFromUrl(markSourceUrl, { maxSeconds: 180 });
+      if (extract.ok) {
+        await storePrint(base44, {
+          asset_id: asset.id,
+          episode_id: episodeId,
+          user_id: user.id,
+          title: episode.title,
+          source_url: markSourceUrl,
+          content_class: 'speech',
+        }, extract);
+        printInfo = { hash_count: extract.hash_count, duration_bracket: extract.duration_bracket };
+      } else {
+        printInfo = { skipped: extract.reason };
+      }
+    } catch (e) {
+      printInfo = { skipped: e.message };
+    }
+
+    return Response.json({ ok: true, asset_id: asset.id, cos, print: printInfo, episode: updated });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

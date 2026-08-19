@@ -120,6 +120,53 @@
       "type": "object",
       "description": "Tier 2 foreign-provenance scan: the C2PA / Content Credentials manifest store attached to the uploaded audio, if any. Records what the writing tool DELIBERATELY declared \u2014 claim generator, actions taken, generative source indicators, and the ingredient chain of earlier files. Read as attached, never cryptographically validated, so every result carries validated:false. Absence of a manifest is the normal case for audio and is never a finding against the creator; nothing here may alter ai_disclosure_label or the Creative Ownership Score."
     },
+    "print_recovery": {
+      "type": "object",
+      "description": "BASE Print seeded-recovery result: a re-timing-tolerant similarity match against a registered asset. Isolated from ai_disclosure_label and the Creative Ownership Score by the same discipline as external_provenance and c2pa_provenance \u2014 nothing written here may alter either. `standing` carries the trust level ('advisory' today) so an approved speech calibration can later promote a registry-confirmed recovery to 'attribution' on this same field with no schema migration. A Print match alone is resemblance, never ownership: only the spectral recovery it seeds, confirmed against the registry, is forensic evidence.",
+      "properties": {
+        "standing": {
+          "type": "string",
+          "enum": [
+            "advisory",
+            "attribution"
+          ],
+          "description": "advisory = surfaced for human review only. attribution = forensically asserted; permitted ONLY after the spoken-word false-positive calibration is formally approved."
+        },
+        "recovered": {
+          "type": "boolean",
+          "description": "The spectral detector cleared its stricter multi-candidate gate at a Print-proposed alignment"
+        },
+        "registry_confirmed": {
+          "type": "boolean",
+          "description": "The recovered payload resolved to a registered UserAsset. False means the result is discarded, never reported."
+        },
+        "matched_asset_id": {
+          "type": "string"
+        },
+        "matched_title": {
+          "type": "string"
+        },
+        "payload_hex": {
+          "type": "string"
+        },
+        "re_timing_detected": {
+          "type": "boolean",
+          "description": "The match required inverting a warp, i.e. the suspect audio had been re-timed"
+        },
+        "telemetry": {
+          "type": "object",
+          "description": "Lift, beta, residual RMS, offset ppm, gate values. Admin/benchmark surfaces only \u2014 per FORENSIC_SPEC \u00a74 these are inside the trust boundary and must never render on a creator-facing card."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why no recovery occurred, when it did not. 'non_pcm_source' is a coverage limit, NOT a finding of no match."
+        },
+        "scanned_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "advisory_review": {
       "type": "object",
       "description": "ADVISORY ONLY. Corroborating or conflicting evidence gathered about this episode's declared origin \u2014 never a label. Two independent sub-reports: `reconciliation` compares the attestation against creative-process records BASE Station already owns (synthetic voice registry, voiceover assets, human recording takes, the creator's own prior attested episodes), and `third_party` records what an external provider's own AI-speech classifier reported about the audio. Neither may change ai_disclosure_label or the Creative Ownership Score; both exist so a discrepancy can be surfaced for human review instead of silently mislabelling a creator."
