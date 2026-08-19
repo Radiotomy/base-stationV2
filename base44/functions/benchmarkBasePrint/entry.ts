@@ -28,7 +28,7 @@ import { decodeWav, ATTACKS, synthesizeBenchmarkSource } from '../../shared/audi
 import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints, matchAgainstMany } from '../../shared/basePrintMatch.ts';
 import { toMono, trimFromStart, round } from '../../shared/audioBenchUtils.ts';
-import { durationBracket } from '../../shared/printRegistry.ts';
+import { durationBracket, decodeForPrint } from '../../shared/printRegistry.ts';
 
 // Attacks worth measuring for the Print Layer. The two stretch rows and the
 // off-grid pitch row are the entire point — those are the cells where every Mark
@@ -75,7 +75,10 @@ async function loadWav(url, seconds) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Could not fetch source (${r.status})`);
   const bytes = new Uint8Array(await r.arrayBuffer());
-  return trimFromStart(decodeWav(bytes), seconds);
+  // decodeForPrint = WAV or FLAC, same decode path the registry itself uses.
+  // Speech null-corpus material from Archive.org ships as FLAC, and measuring
+  // it through a different decoder than production would taint the calibration.
+  return trimFromStart(decodeForPrint(bytes), seconds);
 }
 
 export default async function (req) {
