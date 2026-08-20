@@ -83,6 +83,18 @@
       "default": false,
       "description": "Whether this venue runs idle programming \u2014 a looping audio + video playlist that keeps the room alive whenever the artist is NOT live. When false the venue falls back to its static cover art, which is what an unprogrammed venue looked like before idle content existed."
     },
+    "idle_volume": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.8,
+      "description": "Playback level of the in-room audio emitter, 0-1. Stored on the venue rather than held per-listener because Portals audio is a property of a room OBJECT: everyone standing in the room hears the same emitter, so the level is a room setting. Applied on every stage push, so a change survives the next track."
+    },
+    "idle_paused": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether in-room playback is stopped. Pausing REMOVES the audio emitter from the room (Portals has no transport control on a placed object, so silence is the absence of the emitter); resuming re-places it at the programme's current position, which the clock derives from cycle_started_at. The programme keeps running while paused \u2014 a pause silences the room, it does not hold the schedule."
+    },
     "idle_now_playing": {
       "type": "object",
       "description": "Snapshot of what the stage was last pushed, written by the idle driver. This is a CACHE for change detection and for surfaces that cannot compute the clock themselves \u2014 it is never the source of truth. Position always comes from the playlist's cycle origin, so a stale snapshot can misreport the title but can never desynchronise playback."

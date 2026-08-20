@@ -262,9 +262,17 @@ export function buildVenueRig(
  */
 export function buildIdleScreen(
   preset: VenuePreset,
-  opts: { url: string; kind: 'audio' | 'video'; title?: string; subtitle?: string; audioUrl?: string },
+  opts: {
+    url: string;
+    kind: 'audio' | 'video';
+    title?: string;
+    subtitle?: string;
+    audioUrl?: string;
+    volume?: number;
+    paused?: boolean;
+  },
 ) {
-  const { url, kind, title = '', subtitle = 'Now Playing', audioUrl = '' } = opts;
+  const { url, kind, title = '', subtitle = 'Now Playing', audioUrl = '', volume = 1, paused = false } = opts;
   const items: Record<string, unknown> = {};
   const logic: Record<string, string> = {};
   if (!url) return { items, logic };
@@ -286,18 +294,32 @@ export function buildIdleScreen(
     // artwork stays visible: one item cannot be both a painting and a player.
     // Tucked just behind the stage wall at minimal scale — it is a speaker, not
     // something a fan should see.
-    if (audioUrl) {
+    if (audioUrl && !paused) {
+      // TRUE spatial audio: the emitter sits ON the stage, just in FRONT of the
+      // wall (+z, toward the audience) rather than tucked behind it, so the sound
+      // is not occluded by the stage geometry and genuinely comes from where the
+      // artwork is. Walking toward the stage gets louder, walking away quieter.
+      //
+      // Falloff scales with the preset, because a fixed pair of distances cannot
+      // serve both an apartment and an arena: an intimate room would be flooded
+      // and a festival field would be silent at the back. `fStart` is the radius
+      // of full volume, `sEnd` the radius where it reaches silence — both derived
+      // from the stage's own distance from the floor centre.
+      const depth = Math.abs(preset.screen.pos.z) || 8;
       items['106'] = item(
         'DefaultVideo',
-        { x: preset.screen.pos.x, y: preset.screen.pos.y, z: preset.screen.pos.z - 0.5 },
-        { x: 0.05, y: 0.05, z: 0.05 },
+        { x: preset.screen.pos.x, y: 1.6, z: preset.screen.pos.z + 0.6 },
+        { x: 0.02, y: 0.02, z: 0.02 },
         { contentString: audioUrl },
       );
-      // Spatial, but venue-wide: full volume anywhere near the stage (fStart) and
-      // still faintly present at the back of the largest preset (sEnd). The
-      // stream screen's tighter 8m/40m falloff is right for a focused
-      // performance and too small for a loop meant to fill the room.
-      logic['106'] = JSON.stringify({ b: true, e: 1.0, fStart: 25.0, sEnd: 200.0, Tasks: [], ViewNodes: [] });
+      logic['106'] = JSON.stringify({
+        b: true,
+        e: Math.min(1, Math.max(0, volume)),
+        fStart: Math.max(3, depth * 0.6),
+        sEnd: Math.max(18, depth * 3.5),
+        Tasks: [],
+        ViewNodes: [],
+      });
     }
   }
   return { items, logic };

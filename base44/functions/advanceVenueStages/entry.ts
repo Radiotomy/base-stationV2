@@ -21,7 +21,7 @@ import { resolveVenueIdleState } from '../../shared/venueIdleState.ts';
 // was edited in Portals directly drifts back into agreement with the programme.
 const REFRESH_AFTER_MS = 30 * 60 * 1000;
 
-async function pushVenue(base44, venue, now) {
+async function pushVenue(base44, venue, now, transport = {}) {
   const state = await resolveVenueIdleState(base44, venue, now);
 
   // A live performance owns the stage. Live Studio drives the screen during a
@@ -58,8 +58,17 @@ async function pushVenue(base44, venue, now) {
     return { venueId: venue.id, action: 'cleared' };
   }
 
+  // Transport (room volume / pause) is a room setting, so a caller that changes
+  // it must be able to push even when the track has not moved on — otherwise the
+  // change check would swallow every volume adjustment.
+  const volume = typeof transport.volume === 'number'
+    ? Math.min(1, Math.max(0, transport.volume))
+    : (typeof venue.idle_volume === 'number' ? venue.idle_volume : 0.8);
+  const paused = typeof transport.paused === 'boolean' ? transport.paused : !!venue.idle_paused;
+  const transportChanged = volume !== venue.idle_volume || paused !== !!venue.idle_paused;
+
   const unchanged = previous.asset_id === item.asset_id && previous.playlist_id === state.playlist?.id;
-  if (unchanged && !stale) return { venueId: venue.id, action: 'unchanged' };
+  if (unchanged && !stale && !transportChanged) return { venueId: venue.id, action: 'unchanged' };
 
   const { key } = await resolveKeyForVenue(base44, venue);
   const roomData = await downloadRoomData(venue.room_id, key);
@@ -72,6 +81,8 @@ async function pushVenue(base44, venue, now) {
     // For an audio entry the wall shows artwork and item 106 carries the sound —
     // a video entry needs no carrier, its own wall already plays.
     audioUrl: item.media_kind === 'video' ? '' : (item.file_url || ''),
+    volume,
+    paused,
     title: item.title || '',
     subtitle: state.source === 'schedule' ? (state.block?.label || 'Now Playing') : 'Now Playing',
   });
@@ -88,6 +99,8 @@ async function pushVenue(base44, venue, now) {
   });
 
   await base44.asServiceRole.entities.PortalVenue.update(venue.id, {
+    idle_volume: volume,
+    idle_paused: paused,
     idle_now_playing: {
       asset_id: item.asset_id || '',
       playlist_id: state.playlist?.id || '',
@@ -126,7 +139,10 @@ export default async function (req) {
       const venue = rows?.[0];
       if (!venue) return Response.json({ error: 'Venue not found' }, { status: 404 });
       if (!venue.room_id) return Response.json({ error: 'Venue has no room' }, { status: 400 });
-      const result = await pushVenue(base44, venue, now);
+      const result = await pushVenue(base44, venue, now, {
+        volume: body.volume,
+        paused: body.paused,
+      });
       return Response.json({ results: [result] });
     }
 

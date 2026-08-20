@@ -86,6 +86,10 @@ export default async function (req) {
         cover_image_url: venue.cover_image_url || '',
         room_id: venue.room_id || '',
         template_key: venue.template_key || '',
+        // Room transport state — the in-world panel needs it to show the current
+        // level rather than guessing one and jumping on first touch.
+        idle_volume: typeof venue.idle_volume === 'number' ? venue.idle_volume : 0.8,
+        idle_paused: !!venue.idle_paused,
       },
       gated: false,
       is_live: state.isLive,

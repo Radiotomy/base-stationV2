@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
  * ~1024x683 surface inside a 3D world, often on a laptop screen, so it has to be
  * readable at a glance rather than a full dashboard.
  */
-export default function VenueEmbedPanel({ venueName, track }) {
+export default function VenueEmbedPanel({ venueName, track, audioControls = null }) {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3">
@@ -34,6 +34,8 @@ export default function VenueEmbedPanel({ venueName, track }) {
           )}
         </div>
       </div>
+
+      {audioControls}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="merc-card rounded-2xl p-4">
