@@ -7,6 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import PortalStageViewer from '@/components/live/PortalStageViewer';
 import WelcomePanelToggle from '@/components/live/venues/WelcomePanelToggle';
+import VenueTemplatesTab from '@/components/live/venues/VenueTemplatesTab';
 import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
 
 export default function LiveVenueDetail() {
@@ -82,6 +83,8 @@ export default function LiveVenueDetail() {
             </a>
           </Button>
         </div>
+
+        <VenueTemplatesTab venue={venue} onUpdated={load} />
 
         <WelcomePanelToggle venue={venue} onUpdated={load} />
       </div>

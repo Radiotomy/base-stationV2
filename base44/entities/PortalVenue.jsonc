@@ -24,11 +24,11 @@
     },
     "template_key": {
       "type": "string",
-      "description": "BASE Station starter-world key the venue was created from (club, listening_room, festival_stage, blank). Recorded so the dashboard can show what the venue started as even after the creator redesigns it."
+      "description": "The performance preset currently applied (festival_stage, electronic_club, intimate_acoustic, jazz_lounge, hiphop_arena, pop_showcase, country_barn, tropical_outdoor). Rewritten whenever the artist switches template, because a preset switch changes the room's actual scene in place \u2014 this field is what the Templates tab reads to show which world is live."
     },
     "cover_image_url": {
       "type": "string",
-      "description": "Branded cover, used as the venue card art and as the Portals loading screen"
+      "description": "Branded cover, used as the venue card art and as the Portals room image"
     },
     "ownership": {
       "type": "string",
@@ -61,7 +61,7 @@
     },
     "settings_snapshot": {
       "type": "object",
-      "description": "The last settings patch BASE Station applied, captured BEFORE the write. Kept so a creator can revert a design change from BASE Station without hunting through Portals' own version history."
+      "description": "The last settings patch BASE Station applied, captured BEFORE the write. Kept so a creator can revert a design or template change from BASE Station without hunting through Portals' own version history."
     },
     "last_published_at": {
       "type": "string",

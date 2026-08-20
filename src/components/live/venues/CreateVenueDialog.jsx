@@ -1,17 +1,16 @@
 import { useState } from 'react';
-import { Loader2, Disc3, Armchair, Tent, Square } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { VENUE_TEMPLATES } from '@/lib/live/venueTemplates';
-
-const ICONS = { Disc3, Armchair, Tent, Square };
+import VenueTemplateGrid from './VenueTemplateGrid';
+import { DEFAULT_TEMPLATE_KEY } from '@/lib/live/venueTemplates';
 
 export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
-  const [templateKey, setTemplateKey] = useState('club');
+  const [templateKey, setTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [cover, setCover] = useState('');
@@ -29,7 +28,7 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
       });
       if (!res?.data?.roomId) throw new Error(res?.data?.error || 'Venue creation failed');
       toast.success('Your 3D venue is ready');
-      setName(''); setDescription(''); setCover(''); setTemplateKey('club');
+      setName(''); setDescription(''); setCover(''); setTemplateKey(DEFAULT_TEMPLATE_KEY);
       onOpenChange(false);
       onCreated?.();
     } catch (err) {
@@ -47,26 +46,8 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
 
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Starter world</p>
-            <div className="grid grid-cols-2 gap-2">
-              {VENUE_TEMPLATES.map((t) => {
-                const Icon = ICONS[t.icon] || Square;
-                const active = templateKey === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setTemplateKey(t.key)}
-                    className={`text-left p-3 rounded-xl border transition-all ${
-                      active ? 'border-accent bg-white/5' : 'border-border hover:border-white/20'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 mb-1.5 ${active ? 'text-accent' : 'text-muted-foreground'}`} />
-                    <p className="text-sm font-bold text-foreground">{t.name}</p>
-                    <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">{t.tagline}</p>
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-xs font-bold text-muted-foreground mb-2 uppercase tracking-wide">Pick your venue</p>
+            <VenueTemplateGrid value={templateKey} onChange={setTemplateKey} disabled={busy} />
           </div>
 
           <div className="space-y-2">
