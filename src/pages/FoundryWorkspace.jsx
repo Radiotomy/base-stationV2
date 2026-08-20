@@ -16,6 +16,7 @@ import InsertPreviewDialog from '@/components/foundry/InsertPreviewDialog';
 import ReferenceProfilePanel from '@/components/foundry/ReferenceProfilePanel';
 import TemplateInspectBanner from '@/components/foundry/TemplateInspectBanner';
 import TemplateCurationControls from '@/components/foundry/TemplateCurationControls';
+import InfoTip from '@/components/common/InfoTip';
 import { forkPlugin } from '@/lib/foundry/forkPlugin';
 import useFoundryEngine from '@/hooks/useFoundryEngine';
 import { compileGraph } from '@/lib/foundry/audioEngine';
@@ -218,6 +219,10 @@ export default function FoundryWorkspace() {
             <SlidersHorizontal className="w-3 h-3 mr-1.5" />
             Load in Studio
           </Button>
+          <InfoTip
+            side="bottom"
+            text="Auditions this patch as an insert on a track in Mastering Studio. Your source file is never overwritten — the patch only processes playback until you render."
+          />
           {!inspecting && (
             <>
               <Button
@@ -229,6 +234,10 @@ export default function FoundryWorkspace() {
                 {plugin.is_public ? <Globe className="w-3 h-3 mr-1.5 text-[#C7F5E0]" /> : <Lock className="w-3 h-3 mr-1.5" />}
                 {plugin.is_public ? 'Public' : 'Private'}
               </Button>
+              <InfoTip
+                side="bottom"
+                text="Public patches appear in the community hub and can be forked by anyone, with your name kept on the lineage. Private patches stay yours alone."
+              />
               <Button size="sm" onClick={save} disabled={saving} className="h-8 px-3 text-xs merc-button">
                 {saving ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Save className="w-3 h-3 mr-1.5" />}
                 Save
@@ -290,7 +299,17 @@ export default function FoundryWorkspace() {
                 Parameter values shown as the designer set them. Fork the template to change them.
               </p>
             )}
-            <FoundryScoreBadge score={score.score} label={score.label} />
+            <div className="flex items-center gap-2">
+              <div className="flex-1"><FoundryScoreBadge score={score.score} label={score.label} /></div>
+              <InfoTip
+                text="Design ownership score for this patch: hand-placed modules, your own wiring and tuned parameters raise it; prompting alone keeps it low. It scores the design only, never any audio."
+              />
+            </div>
+            {!inspecting && (
+              <Link to="/challenges" className="text-[10px] text-[#FFC98A] hover:text-white transition-colors">
+                Enter this patch in a Patch Design challenge →
+              </Link>
+            )}
           </div>
 
           {/* Right pane — 60%: node canvas */}

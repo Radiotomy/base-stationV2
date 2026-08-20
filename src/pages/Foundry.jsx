@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Cpu, Plus, Loader2, GraduationCap } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Cpu, Plus, Loader2, GraduationCap, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import InfoTip from '@/components/common/InfoTip';
 import { useToast } from '@/components/ui/use-toast';
 import PluginCard from '@/components/foundry/PluginCard';
 import CommunityFoundryHub from '@/components/foundry/CommunityFoundryHub';
@@ -60,6 +62,11 @@ export default function Foundry() {
             <div className="flex items-center gap-2 mb-1">
               <Cpu className="w-4 h-4 text-[#FF9A4D]" />
               <h1 className="text-2xl font-display text-iridescent">BASE Foundry</h1>
+              <InfoTip
+                side="bottom"
+                size="sm"
+                text="The Foundry is a DSP workbench: describe an effect or instrument, get a live node graph, then rewire and tune it. Patches are tools — they never re-render or overwrite your saved audio."
+              />
             </div>
             <p className="text-xs text-white/45 max-w-lg leading-relaxed">
               Prompt custom DSP into existence, rewire it on the canvas, and audition it live.
@@ -67,6 +74,13 @@ export default function Foundry() {
               your saved masters. Publish a patch to share it, fork anyone else's, group
               favourites into collections, or enter a Patch Design challenge — all below.
             </p>
+            <Link
+              to="/help"
+              className="inline-flex items-center gap-1.5 mt-2 text-[11px] text-[#FFC98A] hover:text-white transition-colors"
+            >
+              <BookOpen className="w-3 h-3" />
+              Read the Foundry guide
+            </Link>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button
@@ -77,6 +91,14 @@ export default function Foundry() {
               <GraduationCap className="w-3.5 h-3.5 mr-1.5" />
               Start from a template
             </Button>
+            <InfoTip
+              side="bottom"
+              text="Templates are curated reference patches. Audition one, inspect how it's wired, then fork it to get your own editable copy."
+            />
+            <InfoTip
+              side="bottom"
+              text="A new patch starts from a minimal chain. Prompt the architect for a starting point, or drop modules in by hand for a higher ownership score."
+            />
             <Button onClick={create} disabled={creating} className="h-9 text-xs merc-button">
               {creating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
               New patch
@@ -89,7 +111,10 @@ export default function Foundry() {
         <FeaturedPatchShelf />
 
         <div className="mb-10">
-          <span className="text-[11px] uppercase tracking-widest text-white/50">My patches</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-widest text-white/50">My patches</span>
+            <InfoTip text="Every patch you create or fork lives here. Publishing one makes it forkable by the community and eligible for Patch Design challenges." />
+          </span>
           {mine === null && (
             <div className="flex items-center gap-2 text-xs text-white/40 py-8">
               <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…
