@@ -32,6 +32,7 @@ const CATEGORIES = [
       { to: "/mashup-studio",      emoji: "🔀", label: "Mashup Studio",      desc: "Blend multiple tracks" },
       { to: "/vocal-harmonizer",   emoji: "🎼", label: "Vocal Harmonizer",   desc: "Add AI harmony layers" },
       { to: "/id3-studio",         emoji: "🏷️", label: "ID3 Tag Editor",     desc: "Edit metadata & tags" },
+      { to: "/foundry",            emoji: "🧰", label: "BASE Foundry",       desc: "Build your own DSP plugins & synths" },
     ],
   },
   {
