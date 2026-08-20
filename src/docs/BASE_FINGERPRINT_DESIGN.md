@@ -1,7 +1,22 @@
-# BASE Fingerprint — design proposal (not yet implemented)
+# BASE Fingerprint (BASE Print) — design and current state
 
-Status: **design only.** Nothing in this document ships yet. It exists so the
-approach can be argued with before any code is written.
+**Last updated:** 2026-08-20
+
+Status: **Phase 1 implemented and deployed, advisory only.** The extractor, the
+matcher, the packed-blob registry and the seeded-recovery path all exist and run
+in production (`basePrint.ts`, `basePrintMatch.ts`, `printRegistry.ts`,
+`printSeededRecovery.ts`, plus the `baseprint-extract` container for MP3/large
+FLAC decode). What has **not** happened is calibration: no acceptance threshold
+has been earned on any material, so every result is surfaced as advisory
+resemblance and nothing here may alter an AI disclosure label or a Creative
+Ownership Score.
+
+Two documents carry the measurement state and supersede the "what to measure"
+section below where they overlap:
+
+- `BASE_PRINT_SPEECH_CALIBRATION.md` — spoken-word specificity, the ORVO episode
+  gate, and the confound history. **Read this before trusting any speech figure.**
+- `BASE_MARK_FORENSIC_SPEC.md` §8 — what a Print match is permitted to claim.
 
 ## Why this, and why it is not a fourth watermark
 
@@ -38,10 +53,30 @@ never be marketed as if it does. It covers the case the watermarks lose.
 
 ### 1. Landmark extraction
 
-STFT (~2048-sample window, 32ms hop) → log-magnitude → pick local spectral peaks
-that dominate their time-frequency neighbourhood. Peaks survive compression,
-EQ, noise and codec loss because they are the loudest, most structural parts of
-the signal. Target density ~25–40 peaks/second.
+STFT → log-magnitude → pick local spectral peaks that dominate their
+time-frequency neighbourhood. Peaks survive compression, EQ, noise and codec loss
+because they are the loudest, most structural parts of the signal.
+
+**As shipped** (the proposal figures in earlier drafts of this document were
+wrong — these are the deployed constants, mirrored constant-for-constant in the
+container's `run.py`):
+
+| Constant | Value |
+|---|---|
+| Target sample rate | 11025 Hz, mono |
+| FFT size / hop | 512 / 128 |
+| Bin range | 4–200 |
+| `PEAKS_PER_SECOND` (rank-cull) | 20 |
+| Fanout / triplet window | 4 peaks, Δt 0.02–2.0s |
+
+Measured output density is ~100 hashes/second on both music and speech (the
+rank-cull is on *peaks*, and each retained peak contributes several triplet
+hashes). Speech was expected to be landmark-starved relative to music and
+measurably is not — see the speech calibration record.
+
+**The density knob is deliberately frozen.** It is reported in every calibration
+run and never tuned against, because tuning it would invalidate every reference
+blob already extracted.
 
 ### 2. Scale-invariant hashing (the important part)
 
@@ -85,12 +120,26 @@ At ~30 hashes/second a 3-minute track is ~5,000 hashes. Ten thousand tracks is
 otherwise would produce something that works in a demo and collapses in
 production.
 
-**Phase 1 (proposed):** store one packed binary fingerprint blob per asset as an
-uploaded file, referenced from a small `AudioFingerprint` entity
-(`asset_id`, `file_url`, `duration`, `hash_count`, `version`). Matching runs in a
-backend function that loads candidate blobs and scans them. This is honestly
-brute force, and it is fine up to a few thousand tracks — it is also enough to
-prove or disprove the invariance claims above, which is what matters first.
+**Phase 1 — IMPLEMENTED as described.** One packed binary blob (magic `BP01`,
+20-byte header, 8 bytes per hash) per asset, uploaded as a file and referenced
+from the `AudioFingerprint` entity. Matching loads candidate blobs in a backend
+function and scans them. Honestly brute force, fine up to a few thousand tracks.
+
+Two details that were decided during implementation and are load-bearing:
+
+- **`AudioFingerprint` is deliberately NOT stored on `BaseMarkBenchmark` or
+  `UserAsset.metadata`.** A Print recovers no payload; filing it alongside
+  watermark-recovery records would let a resemblance match be misread as forensic
+  attribution. Print evidence is structurally separated from Mark evidence for
+  that reason alone.
+- **References are stored undithered; only queries are dithered.** The asymmetry
+  keeps the registry one size while letting a query emit boundary-straddling
+  variants (2–4x hash count) to recover warped matches.
+
+**Version discipline:** extraction constants are load-bearing for ratio
+comparability, so `PRINT_VERSION` mismatch means a blob must be **rebuilt, never
+compared**. The remote extractor rejects any blob whose version does not match the
+runtime's.
 
 **Phase 2 (only if Phase 1 earns it):** a real inverted index. That likely means
 storage outside the entity layer, and it is a materially bigger commitment —
@@ -114,6 +163,34 @@ comparable:
 No figures should be published for any of this until measured, consistent with
 how BASE Mark robustness is already handled.
 
+## What has actually been measured (2026-08-20)
+
+**The false-positive measurement predicted above as "most likely to kill the
+design" did in fact fire — twice — and both times the correct response was to
+narrow the claim rather than tune a threshold.**
+
+1. **Music, n=6, 20s windows.** Genuine-warped and unrelated lift distributions
+   **overlapped**. Absolute lift thresholding is therefore unusable as an
+   acceptance rule, and lift was demoted permanently to **candidate generation
+   only**. This is why the Print Layer feeds the spectral detector instead of
+   reporting matches on its own.
+2. **Speech.** An initial same-show episode run looked catastrophic (unrelated
+   lift 78–106 with *accurate* beta ≈ 1.0000). Root cause was the **shared intro
+   stinger** — a head window compares literally identical audio — not a property
+   of spoken word. With the window moved past the intro, same-show episodes match
+   the distinct-voice regime (unrelated lift 17–26, betas wrong by 30–86%).
+   Full record and figures: `BASE_PRINT_SPEECH_CALIBRATION.md`.
+
+**Beta accuracy, not lift, is the discriminator that survived both.** A genuine
+match yields a plausible warp estimate; a spurious geometric fit yields one wrong
+by tens of percent or pinned at the search boundary. Any future acceptance rule
+must combine a lift floor **with** beta plausibility — a lift figure alone cannot
+distinguish "unrelated audio" from "genuinely shared audio", which is precisely
+the mistake the head-window run made.
+
+Still unmeasured: speech **recall** (specificity alone is half a measurement),
+`long_form`/`extended` brackets, and any provenance-independent speech corpus.
+
 ## Sequence
 
 1. ~~Benchmark V3 first.~~ **Done.** V3 measured 0% slot recovery under every
@@ -121,5 +198,13 @@ how BASE Mark robustness is already handled.
    cover the gap. All three watermark layers share the same blind spot, and no
    fourth watermark layer is likely to change that — which promotes this design
    from "nice to have" to the only remaining approach on the table.
-2. Prototype extraction + hashing offline; measure false positives and recall.
-3. Only then wire up storage, indexing and the deep-scan feedback loop.
+2. ~~Prototype extraction + hashing offline; measure false positives and recall.~~
+   **Done for music (n=6) and partially for speech.** Both false-positive runs
+   narrowed the claim rather than validating a threshold; see above.
+3. ~~Wire up storage and the deep-scan feedback loop.~~ **Done.** Blob registry,
+   seeded recovery and the MP3/large-FLAC extraction container all ship. Indexing
+   (Phase 2) has **not** been built and has not earned it.
+4. **Current work — calibration, not construction.** Close the speech gate
+   (widen n, add a null corpus, add long_form, run recall), then propose a
+   combined lift + beta acceptance rule. Only a measured rule can move
+   `print_recovery.standing` from `advisory` to `attribution`.
