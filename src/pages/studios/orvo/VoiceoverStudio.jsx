@@ -8,6 +8,7 @@ import { ArrowLeft, Wand2, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import VoiceProviderPicker from '@/components/studios/orvo/studio/VoiceProviderPicker';
 import EmotionTagPicker from '@/components/studios/orvo/studio/EmotionTagPicker';
+import ApplyVoiceChainCard from '@/components/studios/orvo/studio/ApplyVoiceChainCard';
 
 export default function VoiceoverStudio() {
   const { user } = useAuth();
@@ -27,6 +28,12 @@ export default function VoiceoverStudio() {
       .filter({ user_id: user.id, asset_type: 'voiceover' }, '-created_date', 20)
       .then(setAssets);
   }, [user]);
+
+  const reloadAssets = async () => {
+    const rows = await base44.entities.OrvoPodcastAsset
+      .filter({ user_id: user.id, asset_type: 'voiceover' }, '-created_date', 20);
+    setAssets(rows);
+  };
 
   const toggleTag = (tag) =>
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
@@ -120,8 +127,12 @@ export default function VoiceoverStudio() {
                   <p className="text-sm font-bold text-white truncate">{a.title}</p>
                   <p className="text-[11px] text-white/40 mb-2">
                     {a.metadata?.provider || 'unknown'} · {a.metadata?.voice_id || '—'}
+                    {a.metadata?.voice_chain && (
+                      <span className="text-[#FFC98A]"> · chain: {a.metadata.voice_chain.title}</span>
+                    )}
                   </p>
                   <audio controls src={a.file_url} className="w-full" />
+                  <ApplyVoiceChainCard asset={a} onApplied={reloadAssets} />
                 </div>
               ))}
             </div>
