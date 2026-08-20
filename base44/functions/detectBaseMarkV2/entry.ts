@@ -33,12 +33,13 @@ Deno.serve(async (req) => {
     let payloadHex = null;
     let confidence = null;
     if (detected && Array.isArray(result.messages) && result.messages.length > 0) {
-      const { valid, payload_hex } = unpackMessage(result.messages[0]);
+      const { valid, payload_hex } = await unpackMessage(result.messages[0]);
       if (valid) {
         payloadHex = payload_hex;
         confidence = Array.isArray(result.confidences) ? result.confidences[0] : null;
       } else {
-        // A neural mark was found but it isn't a BASE Mark (wrong magic byte)
+        // A neural mark was found but it isn't a BASE Mark — the validity byte
+        // matched neither the keyed tag nor the legacy magic.
         detected = false;
       }
     } else {

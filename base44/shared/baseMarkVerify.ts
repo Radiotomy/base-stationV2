@@ -55,6 +55,11 @@ export async function verifyAudioBytes(base44, bytes, { allowGpu = false } = {})
   if (v1.detected && v1.payload_hex) {
     return {
       detected: true, payload_hex: v1.payload_hex, engine: 'acoustic',
+      // The spectral layer carries 32 bits and nothing else, so its payload
+      // FORMAT is not recoverable from the audio — it is a property of the
+      // registry row, not of the signal. Resolution decides it, not detection.
+      payload_version: null,
+      requires_registry_corroboration: false,
       slot_hex: null, asset_id: null, reason: null, too_short: false, layers_tried: layersTried,
     };
   }
@@ -81,10 +86,16 @@ export async function verifyAudioBytes(base44, bytes, { allowGpu = false } = {})
   try {
     const v2 = await resolveJson(await decodeV2(uploadedUrl, { phaseShift: true }));
     if (v2?.detected && Array.isArray(v2.messages) && v2.messages.length > 0) {
-      const { valid, payload_hex } = unpackMessage(v2.messages[0]);
+      const { valid, payload_hex, payload_version, requires_registry_corroboration } = await unpackMessage(v2.messages[0]);
       if (valid) {
         return {
           detected: true, payload_hex, engine: 'neural',
+          // Phase 1: which message format matched. A LEGACY match is still
+          // constructible from public information, so it is surfaced as needing
+          // registry corroboration rather than silently ranked equal to a keyed
+          // match. PHASE 2 is where the caller must act on this.
+          payload_version,
+          requires_registry_corroboration,
           slot_hex: null, asset_id: null, reason: null, too_short: false, layers_tried: layersTried,
         };
       }

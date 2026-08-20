@@ -48,7 +48,13 @@ function getChips(segIndex) {
   return chipCache[segIndex];
 }
 
-// 32-bit FNV-1a hash of an asset id -> 8-char hex payload
+// LEGACY payload derivation — 32-bit FNV-1a of an asset id.
+//
+// SUPERSEDED by baseMarkPayload.derivePayloadForAsset() as of Phase 1. Unkeyed
+// and publicly computable, so it must NEVER be used to mint a new mark: doing so
+// re-opens the forgery path (an attacker who knows an asset id can derive the
+// payload) and skips collision detection. Retained solely so existing marked
+// assets remain readable and reproducible.
 export function payloadFromId(id) {
   let h = 0x811c9dc5;
   for (let i = 0; i < id.length; i++) {

@@ -1,6 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
-import { payloadFromId } from '../../shared/baseMark.ts';
 import { packMessage, startV2, v2Model, BASE_MARK_V2_VERSION } from '../../shared/baseMarkV2.ts';
+import {
+  derivePayload,
+  derivePayloadForAsset,
+  payloadStamp,
+  PAYLOAD_VERSION_KEYED,
+  PAYLOAD_VERSION_LEGACY,
+} from '../../shared/baseMarkPayload.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // BASE Mark V2 — fires a neural (SilentCipher) watermark embed on Replicate
@@ -33,8 +39,22 @@ Deno.serve(async (req) => {
       return Response.json({ error: e.message }, { status: 400 });
     }
 
-    const payloadHex = payloadFromId(assetId || url);
-    const message = packMessage(payloadHex);
+    // Keyed derivation (Phase 1). If a V1 layer is already baked into this
+    // asset's audio, its payload wins — the neural layer has to name the same
+    // identifier as the spectral layer physically present in the file, or the
+    // cascade resolves to two different registry rows.
+    const existingV1 = asset?.metadata?.base_mark;
+    const derived = existingV1?.payload_hex
+      ? {
+          payload_hex: existingV1.payload_hex,
+          payload_version: existingV1.payload_version || PAYLOAD_VERSION_LEGACY,
+          payload_salt: existingV1.payload_salt || 0,
+        }
+      : assetId
+        ? await derivePayloadForAsset(base44, assetId)
+        : { payload_hex: await derivePayload(url), payload_salt: 0, payload_version: PAYLOAD_VERSION_KEYED };
+    const payloadHex = derived.payload_hex;
+    const message = await packMessage(payloadHex);
 
     // Fire the prediction — do not block on Prefer:wait (cold starts exceed
     // the function timeout). Returns a prediction id we poll separately.
@@ -54,6 +74,7 @@ Deno.serve(async (req) => {
             engine: 'neural',
             model: v2Model(),
             payload_hex: payloadHex,
+            ...payloadStamp(derived),
             status: 'processing',
             prediction_id: pred.id,
             original_file_url: url,

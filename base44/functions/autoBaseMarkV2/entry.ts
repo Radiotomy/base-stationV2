@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
-import { embedMark, parseWav, payloadFromId, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
+import { embedMark, parseWav, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
+import { derivePayloadForAsset, payloadStamp, PAYLOAD_VERSION_LEGACY } from '../../shared/baseMarkPayload.ts';
 import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
 import { packMessage, startV2, v2Model, BASE_MARK_V2_VERSION } from '../../shared/baseMarkV2.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
@@ -133,8 +134,6 @@ Deno.serve(async (req) => {
     });
     claimed = true;
 
-    const payloadHex = payloadFromId(assetId);
-
     // ── Layer 1: V1 acoustic watermark — embedded first, in-process ──────────
     // Cascade order matters: V1 must be baked into the audio BEFORE V2 is
     // layered on top, so the final file carries both signatures. If this asset
@@ -142,6 +141,23 @@ Deno.serve(async (req) => {
     // instead of re-embedding.
     let v1Info = data.metadata?.base_mark || null;
     let v2SourceUrl = safeUrl;
+
+    // Payload derivation is now KEYED and collision-checked (Phase 1).
+    //
+    // The reuse branch is load-bearing, not an optimization: when a V1 layer is
+    // already baked into a file we MUST carry that file's existing payload into
+    // the neural layer. Deriving a fresh one would put a different identifier in
+    // V2 than the one physically present in the audio, so the two layers of the
+    // same asset would resolve to different registry rows — which is worse than
+    // either layer alone, because it makes the cascade self-contradicting.
+    const derived = v1Info?.payload_hex
+      ? {
+          payload_hex: v1Info.payload_hex,
+          payload_version: v1Info.payload_version || PAYLOAD_VERSION_LEGACY,
+          payload_salt: v1Info.payload_salt || 0,
+        }
+      : await derivePayloadForAsset(base44, assetId);
+    const payloadHex = derived.payload_hex;
 
     if (v1Info?.marked_file_url) {
       v2SourceUrl = v1Info.marked_file_url;
@@ -159,6 +175,7 @@ Deno.serve(async (req) => {
             v1Info = {
               version: BASE_MARK_VERSION,
               payload_hex: payloadHex,
+              ...payloadStamp(derived),
               marked_file_url: v1Url,
               original_file_url: originalUrl,
               embedded_at: new Date().toISOString(),
@@ -174,7 +191,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Layer 2: V2 neural watermark — async on Replicate, layered on top ────
-    const message = packMessage(payloadHex);
+    const message = await packMessage(payloadHex);
     const pred = await startV2({
       action: 'encode',
       audio: v2SourceUrl,
@@ -193,6 +210,7 @@ Deno.serve(async (req) => {
           engine: 'neural',
           model: v2Model(),
           payload_hex: payloadHex,
+          ...payloadStamp(derived),
           status: 'processing',
           prediction_id: pred.id,
           original_file_url: originalUrl,

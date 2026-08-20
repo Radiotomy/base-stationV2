@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { payloadFromId } from '../../shared/baseMark.ts';
 import { packMessage, startV2, v2Model, BASE_MARK_V2_VERSION } from '../../shared/baseMarkV2.ts';
+import { derivePayloadForAsset, payloadStamp, PAYLOAD_VERSION_LEGACY } from '../../shared/baseMarkPayload.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // One-shot backfill for the pre-automation catalogue.
@@ -88,11 +88,24 @@ export default async function (req) {
     const failed = [];
     for (const { asset, url } of eligible.slice(0, limit)) {
       try {
-        const payloadHex = payloadFromId(asset.id);
+        // Backfill hits the pre-migration catalogue, so most of these assets
+        // already carry a LEGACY V1 payload baked into their audio. Reuse it:
+        // deriving a fresh keyed payload here would name a different identifier
+        // in the neural layer than the one physically in the file. Only assets
+        // with no spectral layer at all get a keyed derivation.
+        const existingV1 = asset.metadata?.base_mark;
+        const derived = existingV1?.payload_hex
+          ? {
+              payload_hex: existingV1.payload_hex,
+              payload_version: existingV1.payload_version || PAYLOAD_VERSION_LEGACY,
+              payload_salt: existingV1.payload_salt || 0,
+            }
+          : await derivePayloadForAsset(base44, asset.id);
+        const payloadHex = derived.payload_hex;
         const pred = await startV2({
           action: 'encode',
           audio: url,
-          message: JSON.stringify(packMessage(payloadHex)),
+          message: JSON.stringify(await packMessage(payloadHex)),
         });
         await base44.asServiceRole.entities.UserAsset.update(asset.id, {
           metadata: {
@@ -102,6 +115,7 @@ export default async function (req) {
               engine: 'neural',
               model: v2Model(),
               payload_hex: payloadHex,
+              ...payloadStamp(derived),
               status: 'processing',
               prediction_id: pred.id,
               original_file_url: url,

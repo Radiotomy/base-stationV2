@@ -1,29 +1,85 @@
 // BASE Mark V2 — neural watermark layer (SilentCipher engine on Replicate).
-// The 40-bit neural message carries: 1 magic byte (0xB5) + the same 32-bit
-// payload used by BASE Mark V1, so both marks resolve to the same registry
-// record on UserAsset.metadata.
+// The 40-bit neural message carries: 1 validity byte + the same 32-bit payload
+// used by BASE Mark V1, so both marks resolve to the same registry record on
+// UserAsset.metadata.
+//
+// PHASE 1: the validity byte is now a KEYED tag (baseMarkPayload.deriveV2Tag)
+// rather than the fixed 0xB5 magic. The engine is MIT-licensed with public
+// weights, so a fixed magic byte plus a publicly-derivable payload meant anyone
+// could mint a V2 mark for any asset id and have the platform attribute it. A
+// keyed tag removes that. It does NOT widen the field — 8 bits still admit a
+// random decode about 1 time in 256, exactly as the magic byte did — so the
+// statistical half of that exposure is closed by mandatory registry
+// confirmation in Phase 2, not here.
+
+import { deriveV2Tag, isKeyedPayloadConfigured, PAYLOAD_VERSION_KEYED, PAYLOAD_VERSION_LEGACY } from './baseMarkPayload.ts';
 
 export const BASE_MARK_V2_VERSION = '2.0';
-export const V2_MAGIC = 0xb5;
+
+// The pre-Phase-1 fixed magic byte. Retained for READ ONLY: assets marked
+// before the migration carry it, and orphaning them would lose recoverable
+// identities for no security gain (the legacy payload is already public). It is
+// never written again — see packMessage.
+export const V2_MAGIC_LEGACY = 0xb5;
 
 // Private Replicate model name — overridable without a code change.
 export function v2Model() {
   return Deno.env.get('BASE_MARK_V2_MODEL') || 'speedwolf2000/base-mark-v2';
 }
 
-// 8-char hex payload -> [magic, b3, b2, b1, b0] (five ints 0-255)
-export function packMessage(payloadHex) {
+// 8-char hex payload -> [keyedTag, b3, b2, b1, b0] (five ints 0-255).
+// ASYNC because the tag is an HMAC. Never emits the legacy magic byte.
+export async function packMessage(payloadHex) {
   const v = parseInt(payloadHex, 16) >>> 0;
-  return [V2_MAGIC, (v >>> 24) & 0xff, (v >>> 16) & 0xff, (v >>> 8) & 0xff, v & 0xff];
+  const tag = await deriveV2Tag(payloadHex);
+  return [tag, (v >>> 24) & 0xff, (v >>> 16) & 0xff, (v >>> 8) & 0xff, v & 0xff];
 }
 
-// [magic, b3, b2, b1, b0] -> { valid, payload_hex }
-export function unpackMessage(message) {
-  if (!Array.isArray(message) || message.length !== 5 || message[0] !== V2_MAGIC) {
-    return { valid: false, payload_hex: null };
-  }
+/**
+ * [tag, b3, b2, b1, b0] -> { valid, payload_hex, payload_version,
+ *                            requires_registry_corroboration }
+ *
+ * Tries the keyed tag first, then falls back to the legacy magic byte so
+ * pre-migration assets stay detectable (Phase 1.5 dual-read).
+ *
+ * `requires_registry_corroboration` is set on a legacy match and is the handoff
+ * to PHASE 2: while the legacy format is accepted at all, a forged legacy
+ * message is still constructible from public information, so a legacy hit is
+ * only trustworthy once it resolves to an asset that was itself marked under the
+ * legacy format. This module deliberately does not make that call — it has no
+ * business reading the registry — it just refuses to let a caller mistake a
+ * legacy match for a keyed one.
+ */
+export async function unpackMessage(message) {
+  const miss = { valid: false, payload_hex: null, payload_version: null, requires_registry_corroboration: false };
+  if (!Array.isArray(message) || message.length !== 5) return miss;
+
   const v = ((message[1] << 24) | (message[2] << 16) | (message[3] << 8) | message[4]) >>> 0;
-  return { valid: true, payload_hex: v.toString(16).padStart(8, '0') };
+  const payloadHex = v.toString(16).padStart(8, '0');
+
+  if (isKeyedPayloadConfigured()) {
+    try {
+      if (message[0] === (await deriveV2Tag(payloadHex))) {
+        return {
+          valid: true,
+          payload_hex: payloadHex,
+          payload_version: PAYLOAD_VERSION_KEYED,
+          requires_registry_corroboration: false,
+        };
+      }
+    } catch { /* a key problem must degrade to legacy-only, not fail detection */ }
+  }
+
+  if (message[0] === V2_MAGIC_LEGACY) {
+    return {
+      valid: true,
+      payload_hex: payloadHex,
+      payload_version: PAYLOAD_VERSION_LEGACY,
+      requires_registry_corroboration: true,
+    };
+  }
+
+  return miss;
 }
 
 // Deployment name on Replicate. Only used when BASE_MARK_V2_DEPLOYMENT is

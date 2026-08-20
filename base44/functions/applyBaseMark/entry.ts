@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
-import { embedMark, payloadFromId, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
+import { embedMark, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
+import { derivePayload, derivePayloadForAsset, payloadStamp, PAYLOAD_VERSION_KEYED } from '../../shared/baseMarkPayload.ts';
 import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
@@ -34,7 +35,13 @@ Deno.serve(async (req) => {
 
     if (isFlac(bytes)) bytes = decodeFlacToWav(bytes);
 
-    const payloadHex = payloadFromId(assetId || url);
+    // Keyed derivation (Phase 1). Collision checking only applies to the asset
+    // path — an ad-hoc fileUrl mark is not registered, so there is no registry
+    // row for it to collide with and nothing to check against.
+    const derived = assetId
+      ? await derivePayloadForAsset(base44, assetId)
+      : { payload_hex: await derivePayload(url), payload_salt: 0, payload_version: PAYLOAD_VERSION_KEYED };
+    const payloadHex = derived.payload_hex;
     const marked = embedMark(bytes, payloadHex);
 
     const file = new File([marked], 'basemark.wav', { type: 'audio/wav' });
@@ -50,6 +57,7 @@ Deno.serve(async (req) => {
           base_mark: {
             version: BASE_MARK_VERSION,
             payload_hex: payloadHex,
+            ...payloadStamp(derived),
             marked_file_url: file_url,
             original_file_url: url,
             embedded_at: new Date().toISOString(),
