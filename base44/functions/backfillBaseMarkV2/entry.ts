@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { packMessage, startV2, v2Model, BASE_MARK_V2_VERSION } from '../../shared/baseMarkV2.ts';
 import { derivePayloadForAsset, payloadStamp, PAYLOAD_VERSION_LEGACY } from '../../shared/baseMarkPayload.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
+import { selectMarkingSource } from '../../shared/baseMarkSourceGuard.ts';
 
 // One-shot backfill for the pre-automation catalogue.
 //
@@ -53,9 +54,13 @@ export default async function (req) {
     const eligible = [];
     const skipped = [];
     for (const a of candidates) {
-      const url = a.metadata?.wav_url || a.file_url;
+      // Never mark one of our own outputs. Doing so leaves the asset stamped
+      // `completed` while carrying NO recoverable signature at all — the exact
+      // failure this backfill produced on 15 assets before the guard existed.
+      const picked = selectMarkingSource(a);
+      const url = picked.url;
       if (!url) {
-        skipped.push({ id: a.id, title: a.title, reason: 'no audio file' });
+        skipped.push({ id: a.id, title: a.title, reason: picked.reason });
         continue;
       }
       try {

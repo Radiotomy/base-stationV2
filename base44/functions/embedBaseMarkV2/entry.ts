@@ -8,6 +8,7 @@ import {
   PAYLOAD_VERSION_LEGACY,
 } from '../../shared/baseMarkPayload.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
+import { selectMarkingSource, isMarkedOutputUrl } from '../../shared/baseMarkSourceGuard.ts';
 
 // BASE Mark V2 — fires a neural (SilentCipher) watermark embed on Replicate
 // WITHOUT blocking, then returns immediately. The frontend polls
@@ -28,9 +29,31 @@ Deno.serve(async (req) => {
     if (assetId) {
       asset = await base44.entities.UserAsset.get(assetId);
       if (!asset) return Response.json({ error: 'Asset not found' }, { status: 404 });
-      url = asset.metadata?.wav_url || asset.file_url;
+      // Prefer a PRISTINE master. Marking one of our own outputs a second time
+      // destroys both signatures and leaves the registry claiming a mark that
+      // cannot be recovered (see baseMarkSourceGuard).
+      const picked = selectMarkingSource(asset);
+      if (!picked.url) {
+        return Response.json(
+          {
+            error:
+              picked.reason === 'no_audio_file'
+                ? 'This asset has no audio file to mark.'
+                : 'This asset only has already-marked copies left, so it cannot be safely re-marked. An unmarked master is needed.',
+            reason: picked.reason,
+          },
+          { status: 409 },
+        );
+      }
+      url = picked.url;
     }
     if (!url) return Response.json({ error: 'assetId or fileUrl is required' }, { status: 400 });
+    if (isMarkedOutputUrl(url)) {
+      return Response.json(
+        { error: 'This audio is already a BASE Mark output; re-marking it would destroy both signatures.', reason: 'already_marked' },
+        { status: 409 },
+      );
+    }
 
     let safeUrl;
     try {
