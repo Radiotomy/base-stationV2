@@ -13,6 +13,7 @@
 //                          or the live-session hand-back after a show ends)
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import { secrets } from 'base44:runtime';
 import { resolveKeyForVenue, downloadRoomData, uploadRoomData } from '../../shared/portalsApi.ts';
 import { getPreset, buildIdleScreen } from '../../shared/venuePresets.ts';
 import { resolveVenueIdleState } from '../../shared/venueIdleState.ts';
@@ -146,9 +147,13 @@ export default async function (req) {
       return Response.json({ results: [result] });
     }
 
-    // Sweep mode belongs to the scheduled workflow (which runs without a user);
-    // a signed-in non-admin must not be able to drive every venue on the app.
-    if (user && user.role !== 'admin') {
+    // Sweep mode drives EVERY venue on the app, so it is never open: the caller
+    // must either be an admin, or present the shared sweep token that only the
+    // scheduled workflow carries (the workflow runs with no signed-in user, so a
+    // role check alone would lock the schedule out).
+    const sweepToken = secrets.get('VENUE_SWEEP_TOKEN') || '';
+    const tokenOk = !!sweepToken && body.token === sweepToken;
+    if (!tokenOk && user?.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
