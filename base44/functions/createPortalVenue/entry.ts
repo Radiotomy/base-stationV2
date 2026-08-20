@@ -183,13 +183,16 @@ export default async function (req) {
       return Response.json({ error: err.message, venueId: venue.id }, { status: 502 });
     }
 
-    // Branding + loading screen. Best-effort: the room already exists and is
-    // usable, so a settings hiccup must not fail the whole venue.
+    // Branding. Best-effort: the room already exists and is usable, so a
+    // settings hiccup must not fail the whole venue.
+    // LoadingImages is documented but silently ignored by Portals (it always
+    // reads back empty), so the cover only drives Image — claiming a custom
+    // loading screen we cannot actually set would be a lie on the venue card.
     try {
       await setRoomSettings(roomId, key, {
         Name: name.slice(0, 60),
         Description: description || `A BASE Station live venue — ${name}`,
-        ...(coverImageUrl && { Image: coverImageUrl, 'room.LoadingImages': [coverImageUrl] }),
+        ...(coverImageUrl && { Image: coverImageUrl }),
       });
     } catch (err) {
       console.warn('Venue settings failed:', err.message);

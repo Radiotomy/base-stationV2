@@ -2,10 +2,10 @@
 // in-world BASE Station panel (welcome iframe).
 //
 // Environment settings do NOT live on /room/update-room-settings — that endpoint
-// only carries display metadata (name, description, cover) and currently 500s on
-// Portals' side. Real space options live inside room data, split across
-// settings.<field> and the settings.roomSettingsExtraData JSON string, so this
-// function goes through mergeRoomSettings (download → merge → upload).
+// only carries display metadata (name, description, cover). Real space options
+// live inside room data, split across settings.<field> and the
+// settings.roomSettingsExtraData JSON string, so this function goes through
+// mergeRoomSettings (download → merge → upload).
 //
 // Two things make it safe to call repeatedly:
 //   1. Only whitelisted options can be written. A pass-through of arbitrary keys

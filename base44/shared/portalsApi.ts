@@ -153,15 +153,18 @@ export async function uploadRoomData(roomId: string, key: string, roomData: unkn
 
 /**
  * Post a display/metadata patch (Name, Description, Image, loading screen).
- * NOTE: this endpoint is documented but currently returns HTTP 500 for every
- * documented payload shape, so callers must treat failure as non-fatal — venue
- * name/description/cover art are authoritative in BASE Station regardless.
+ *
+ * The published docs are WRONG about the payload: a flat body
+ * ({ RoomID, Name, ... }) returns HTTP 500 GLOBAL_ERROR every time. The handler
+ * actually reads a nested `room` object, and RoomID must live INSIDE it —
+ * putting it at the top level alongside `room` yields ROOM_ID_NOT_PROVIDED.
+ * Verified working shape: { room: { RoomID, Name, Description, Image, ... } }.
  */
 export async function setRoomSettings(roomId: string, key: string, patch: Record<string, unknown>) {
   const res = await fetch(`${PORTAL_BASE}/room/update-room-settings`, {
     method: 'POST',
     headers: accessHeaders(key),
-    body: JSON.stringify({ RoomID: roomId, ...patch }),
+    body: JSON.stringify({ room: { RoomID: roomId, ...patch } }),
   });
   if (!res.ok) throw new Error(`Portals rejected the settings update: ${await res.text()}`);
   return true;
