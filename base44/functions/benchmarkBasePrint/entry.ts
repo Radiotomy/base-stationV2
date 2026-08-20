@@ -82,6 +82,26 @@ async function loadWav(url, seconds) {
   return trimFromStart(decodeForPrint(bytes), seconds);
 }
 
+// Build the reference + query print pair for one source, whatever container it
+// arrives in. WAV/FLAC decode in-process; MP3 (every ORVO episode, and every
+// LibriVox side) goes to the parity-verified extraction container instead, which
+// is the only path in the system that can read it at all. The two paths must
+// stay interchangeable — they run identical constants, which is exactly what the
+// `parity` action exists to keep true.
+async function printsFor(url, seconds) {
+  try {
+    const audio = await loadWav(url, seconds);
+    const dur = audio.channels[0].length / audio.sampleRate;
+    return { hashes: printOf(audio), query: printOf(audio, true), duration_seconds: dur, remote: false };
+  } catch (localErr) {
+    const ref = await extractPrintRemote(url, { maxSeconds: seconds, dither: false });
+    if (!ref.ok) throw new Error(`${localErr.message} / remote: ${ref.reason} ${ref.detail || ''}`);
+    const q = await extractPrintRemote(url, { maxSeconds: seconds, dither: true });
+    if (!q.ok) throw new Error(`remote query extract: ${q.reason} ${q.detail || ''}`);
+    return { hashes: ref.hashes, query: q.hashes, duration_seconds: ref.duration_seconds, remote: true };
+  }
+}
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
@@ -275,16 +295,16 @@ export default async function (req) {
         const prints = [];
         for (const s of group.sources) {
           try {
-            const audio = await loadWav(s.url, seconds);
-            const dur = audio.channels[0].length / audio.sampleRate;
-            const ref = printOf(audio);
+            const p = await printsFor(s.url, seconds);
+            const dur = p.duration_seconds;
             prints.push({
               id: s.id || s.url,
-              hashes: ref,
-              query: printOf(audio, true),
+              hashes: p.hashes,
+              query: p.query,
+              remote: p.remote,
               duration_seconds: round(dur, 1),
               bracket: durationBracket(dur),
-              hashes_per_second: round(ref.length / Math.max(1, dur), 1),
+              hashes_per_second: round(p.hashes.length / Math.max(1, dur), 1),
             });
           } catch (e) {
             report.push({ corpus: group.corpus, source: s.id || s.url, error: e.message });
@@ -309,6 +329,7 @@ export default async function (req) {
             id: q.id,
             bracket: q.bracket,
             duration_seconds: q.duration_seconds,
+            extracted_remotely: q.remote,
             // The density diagnostic. If speech yields dramatically fewer
             // hashes/second than music, the extractor is starved of evidence and
             // that is the finding — NOT a reason to tune the rank-cull, which
