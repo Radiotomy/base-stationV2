@@ -17,7 +17,7 @@ const STATUS_STYLE = {
   completed: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
 };
 
-const EMPTY = { title: "", description: "", type: "weekly", genre: "", prompt: "", prize_description: "", start_date: "", end_date: "", status: "upcoming", emoji: "🏆" };
+const EMPTY = { title: "", description: "", type: "weekly", category: "music", genre: "", prompt: "", prize_description: "", start_date: "", end_date: "", status: "upcoming", emoji: "🏆" };
 
 export default function AdminChallenges() {
   const [challenges, setChallenges] = useState([]);
@@ -114,6 +114,16 @@ export default function AdminChallenges() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={form.category || "music"} onValueChange={v => upd("category", v)}>
+                  <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="music">🎵 Music — track entries</SelectItem>
+                    <SelectItem value="patch_design">🎛️ Patch Design — Foundry patches</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Status</Label>
                 <Select value={form.status} onValueChange={v => upd("status", v)}>
                   <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
@@ -161,6 +171,9 @@ export default function AdminChallenges() {
                   <p className="font-bold text-foreground">{c.title}</p>
                   <Badge className={`text-xs ${STATUS_STYLE[c.status]}`}>{c.status}</Badge>
                   <Badge variant="outline" className="text-xs capitalize">{c.type}</Badge>
+                  {c.category === "patch_design" && (
+                    <Badge variant="outline" className="text-xs">🎛️ Patch Design</Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-1">{c.description}</p>
               </div>
