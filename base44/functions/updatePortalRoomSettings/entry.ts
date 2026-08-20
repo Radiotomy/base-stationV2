@@ -1,32 +1,42 @@
 // Applies a BASE Station venue-design form to a Portals room's space options,
 // and wires the in-world BASE Station panel (welcome iframe).
 //
-// Two things make this safe to call repeatedly:
-//   1. Only a whitelisted set of space options can be written. A pass-through of
-//      arbitrary keys would let a client reach settings that govern billing,
-//      ownership or moderation on the creator's Portals account.
+// Settings are written through room data (download → merge → upload), which is
+// the documented path for these fields. Two safeguards matter here:
+//   1. Only whitelisted options can be written. Passing arbitrary keys through
+//      would let a client reach settings governing access, token gating and
+//      moderation on the creator's own Portals account.
 //   2. The previous values are snapshotted onto the venue BEFORE the write, so a
-//      creator can revert a design change from BASE Station.
+//      design change can be reverted from BASE Station.
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { resolveKeyForVenue, setRoomSettings, roomUrl } from '../../shared/portalsApi.ts';
+import { resolveKeyForVenue, mergeRoomSettings, roomUrl } from '../../shared/portalsApi.ts';
 
-// BASE Station form field -> Portals settings path.
-const SETTING_MAP = {
-  name: 'Name',
-  description: 'Description',
-  coverImageUrl: 'Image',
-  voiceChat: 'settings.voiceChat',
-  movementMode: 'settings.movementMode',
-  cameraMode: 'settings.cameraMode',
-  weapons: 'settings.weapons',
-  avatarLoad: 'settings.avatarLoad',
-  passwordProtect: 'settings.passwordProtect',
-  password: 'settings.password',
-  welcomeEmbed: 'settings.welcomeEmbed',
-  showWelcomeOnEntry: 'settings.showWelcomeOnEntry',
-  addWelcomeIframeToInfoButton: 'settings.addWelcomeIframeToInfoButton',
+// Fields that live directly on settings.<key>
+const TOP_LEVEL = {
+  nightMode: 'isNight',
+  globalVoice: 'globalSpeaking',
+  chatDisabled: 'chatDisabled',
+  stageMode: 'inTownHallMode',
+  allCanBuild: 'allCanBuild',
+  npcPrompt: 'roomPrompt',
+  liveInteractionRefresh: 'tasksRefresh',
 };
+
+// Fields that live inside the roomSettingsExtraData JSON string
+const EXTRA = {
+  welcomeEmbed: 'welcomeEmbed',
+  showWelcomeOnEntry: 'showWelcomeOnEntry',
+  addWelcomeIframeToInfoButton: 'addWelcomeIframeToInfoButton',
+  openWelcomeIframeInBackground: 'openWelcomeIframeInBackground',
+  requireUsername: 'requireUsername',
+  allowedUsers: 'allowedUsers',
+  onboardingType: 'onboardingType',
+  skyBoxDayTextureUrl: 'skyBoxDayTextureUrl',
+  skyBoxNightTextureUrl: 'skyBoxNightTextureUrl',
+};
+
+const HTTPS_FIELDS = ['welcomeEmbed', 'skyBoxDayTextureUrl', 'skyBoxNightTextureUrl'];
 
 export default async function (req) {
   try {
@@ -46,45 +56,47 @@ export default async function (req) {
     }
     if (!venue.room_id) return Response.json({ error: 'This venue has no 3D room yet' }, { status: 400 });
 
-    // Build the patch from whitelisted fields only.
-    const patch = {};
+    const topLevel = {};
+    const extra = {};
     const applied = {};
-    for (const [field, portalPath] of Object.entries(SETTING_MAP)) {
+
+    for (const [field, portalKey] of Object.entries(TOP_LEVEL)) {
       if (settings[field] === undefined) continue;
-      let value = settings[field];
-      // Any URL we hand Portals must be https — a http or relative value is
-      // dropped by the client and looks like a broken feature.
-      if ((field === 'coverImageUrl' || field === 'welcomeEmbed') && value && !String(value).startsWith('https://')) {
+      topLevel[portalKey] = settings[field];
+      applied[field] = settings[field];
+    }
+    for (const [field, portalKey] of Object.entries(EXTRA)) {
+      if (settings[field] === undefined) continue;
+      const value = settings[field];
+      // A non-https URL is silently dropped by the Portals client, which reads
+      // as a broken feature rather than a rejected input.
+      if (HTTPS_FIELDS.includes(field) && value && !String(value).startsWith('https://')) {
         return Response.json({ error: `${field} must be an https URL` }, { status: 400 });
       }
-      if (field === 'coverImageUrl') {
-        patch['room.LoadingImages'] = [value];
-      }
-      patch[portalPath] = value;
+      extra[portalKey] = value;
       applied[field] = value;
     }
 
-    if (Object.keys(patch).length === 0) {
+    if (Object.keys(topLevel).length === 0 && Object.keys(extra).length === 0) {
       return Response.json({ error: 'No supported settings provided' }, { status: 400 });
     }
 
     const { key } = await resolveKeyForVenue(base44, venue);
+    const previous = await mergeRoomSettings(venue.room_id, key, topLevel, extra);
 
-    // Snapshot BEFORE the write so a revert has something to restore.
-    await base44.asServiceRole.entities.PortalVenue.update(venue.id, {
-      settings_snapshot: venue.settings_snapshot ? { ...venue.settings_snapshot, ...applied } : applied,
-    });
-
-    await setRoomSettings(venue.room_id, key, patch);
-
-    const venuePatch = { last_published_at: new Date().toISOString() };
-    if (applied.name) venuePatch.name = applied.name;
-    if (applied.description !== undefined) venuePatch.description = applied.description;
-    if (applied.coverImageUrl) venuePatch.cover_image_url = applied.coverImageUrl;
+    const venuePatch = {
+      last_published_at: new Date().toISOString(),
+      settings_snapshot: { ...(venue.settings_snapshot || {}), ...previous },
+    };
     if (applied.welcomeEmbed !== undefined) venuePatch.welcome_embed_enabled = !!applied.welcomeEmbed;
     await base44.asServiceRole.entities.PortalVenue.update(venue.id, venuePatch);
 
-    return Response.json({ ok: true, roomId: venue.room_id, fanUrl: roomUrl(venue.room_id), applied });
+    return Response.json({
+      ok: true,
+      roomId: venue.room_id,
+      fanUrl: roomUrl(venue.room_id),
+      applied,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -150,20 +150,62 @@ export async function uploadRoomData(roomId: string, key: string, roomData: unkn
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
+//
+// Room settings live INSIDE room data, in two layers:
+//   settings.<field>                     — top-level room config
+//   settings.roomSettingsExtraData       — a JSON-encoded STRING holding the
+//                                          detailed config (welcome iframe,
+//                                          movement, skybox, UI toggles, …)
+//
+// Two rules make this destructive if ignored, so they are enforced here rather
+// than left to each caller:
+//   1. An upload REPLACES the whole room — always download, merge, upload.
+//   2. roomSettingsExtraData must be a stringified object. Passing a raw object
+//      makes Portals silently ignore every field inside it.
+//
+// (Portals also documents POST /room/update-room-settings for name/description/
+// cover art, but that endpoint currently returns 500 for every documented
+// payload shape, so display metadata is kept on the BASE Station side instead.)
 
 /**
- * Post a settings patch to Portals. Keys are passed through exactly as given so
- * callers can use the documented dotted paths (e.g. 'settings.welcomeEmbed',
- * 'room.LoadingImages') without this helper needing to know every space option.
+ * Merge a settings patch into existing room data and push it back.
+ * `topLevel` writes settings.<key>; `extra` writes into roomSettingsExtraData.
+ * Returns the previous values of everything touched, so a caller can snapshot
+ * for revert.
  */
-export async function setRoomSettings(roomId: string, key: string, patch: Record<string, unknown>) {
-  const res = await fetch(`${PORTAL_BASE}/room/update-room-settings`, {
-    method: 'POST',
-    headers: accessHeaders(key),
-    body: JSON.stringify({ RoomID: roomId, ...patch }),
-  });
-  if (!res.ok) throw new Error(`Portals rejected the settings update: ${await res.text()}`);
-  return true;
+export async function mergeRoomSettings(
+  roomId: string,
+  key: string,
+  topLevel: Record<string, unknown> = {},
+  extra: Record<string, unknown> = {},
+) {
+  const roomData = await downloadRoomData(roomId, key);
+  const settings = { ...(roomData.settings || {}) };
+
+  let extraData: Record<string, unknown> = {};
+  if (typeof settings.roomSettingsExtraData === 'string' && settings.roomSettingsExtraData) {
+    try {
+      extraData = JSON.parse(settings.roomSettingsExtraData);
+    } catch {
+      // A corrupt blob must not be silently discarded along with every other
+      // setting in the room — surface it instead of overwriting blind.
+      throw new Error('This room has unreadable settings data and cannot be updated safely');
+    }
+  }
+
+  const previous: Record<string, unknown> = {};
+  for (const k of Object.keys(topLevel)) previous[k] = settings[k];
+  for (const k of Object.keys(extra)) previous[k] = extraData[k];
+
+  const nextExtra = { ...extraData, ...extra };
+  const nextSettings = {
+    ...settings,
+    ...topLevel,
+    roomSettingsExtraData: JSON.stringify(nextExtra),
+  };
+
+  await uploadRoomData(roomId, key, { ...roomData, settings: nextSettings });
+  return previous;
 }
 
 export async function createRoom(key: string, templateName: string, name: string) {
