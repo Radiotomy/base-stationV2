@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Radio, Music, Video, Box } from 'lucide-react';
+import { Radio, Music, Video, Box, Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 /**
@@ -34,7 +34,11 @@ export default function VenueDirectoryCard({ venue }) {
       <div className="p-4 space-y-2">
         <p className="font-display text-lg truncate">{venue.name}</p>
 
-        {venue.is_live ? (
+        {venue.members_only ? (
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 flex-shrink-0" /> Fan club members only
+          </p>
+        ) : venue.is_live ? (
           <p className="text-xs text-accent flex items-center gap-1.5 truncate">
             <Radio className="w-3.5 h-3.5 flex-shrink-0" />
             {venue.live_title || 'Live performance in progress'}

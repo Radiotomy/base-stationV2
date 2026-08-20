@@ -26,6 +26,27 @@ export default async function (req) {
     // the top of the list to be correct, not the whole catalogue at once.
     const cards = await Promise.all(
       (venues || []).map(async (venue) => {
+        // A members-only venue is advertised, never previewed: the directory
+        // shows that it exists and that it is gated, and nothing about what is
+        // playing behind the door.
+        const membersOnly = venue.access_gate === 'fan_club';
+        if (membersOnly) {
+          return {
+            id: venue.id,
+            name: venue.name,
+            description: venue.description || '',
+            cover_image_url: venue.cover_image_url || '',
+            room_id: '',
+            template_key: venue.template_key || '',
+            members_only: true,
+            is_live: false,
+            live_title: '',
+            source: '',
+            channel_title: '',
+            now_playing: null,
+          };
+        }
+
         let state = null;
         try {
           state = await resolveVenueIdleState(base44, venue);
@@ -41,6 +62,7 @@ export default async function (req) {
           cover_image_url: venue.cover_image_url || '',
           room_id: venue.room_id || '',
           template_key: venue.template_key || '',
+          members_only: false,
           is_live: !!state?.isLive,
           live_title: state?.isLive ? (state.liveSession?.title || '') : '',
           source: state?.source || '',

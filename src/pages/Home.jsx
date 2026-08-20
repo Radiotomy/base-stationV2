@@ -12,6 +12,7 @@ import HomePulsePanels from "@/components/home/HomePulsePanels";
 import HomeTemplatesPreview from "@/components/home/HomeTemplatesPreview";
 import HomeTrustStrip from "@/components/home/HomeTrustStrip";
 import HomePodcastsShelf from "@/components/home/HomePodcastsShelf";
+import HomeVenuesShelf from "@/components/home/HomeVenuesShelf";
 
 const MERCURY_BG = "https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/b8218ddcb_generated_image.png";
 
@@ -131,6 +132,8 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            <HomeVenuesShelf />
 
             <HomePodcastsShelf />
 

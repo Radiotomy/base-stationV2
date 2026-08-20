@@ -36,6 +36,10 @@ const EXTRA = {
   openWelcomeIframeInBackground: 'openWelcomeIframeInBackground',
   requireUsername: 'requireUsername',
   allowedUsers: 'allowedUsers',
+  // Portals' own token gate on the 3D door. Separate from BASE Station's
+  // access_gate: this one holds even for a fan who reaches the Portals URL
+  // directly, which no BASE Station-side check can see.
+  onlyNftHolders: 'onlyNftHolders',
   onboardingType: 'onboardingType',
   skyBoxDayTextureUrl: 'skyBoxDayTextureUrl',
   skyBoxNightTextureUrl: 'skyBoxNightTextureUrl',

@@ -47,7 +47,16 @@
         "private"
       ],
       "default": "unlisted",
-      "description": "Who may find and enter this venue from BASE Station. 'public' = listed in the public venue directory and open to anyone. 'unlisted' = fully playable but only reachable with the direct link, so a creator can share a room before announcing it. 'private' = the public venue page refuses to serve it at all. Defaults to 'unlisted' deliberately: a venue must be opted IN to a public directory by its creator, never swept in by a platform feature launched after it was built. Note the underlying Portals room has its own access settings \u2014 this field governs BASE Station surfaces only."
+      "description": "Who may FIND this venue from BASE Station. 'public' = listed in the public venue directory. 'unlisted' = fully playable but only reachable with the direct link, so a creator can share a room before announcing it. 'private' = the public venue page refuses to serve it at all. Defaults to 'unlisted' deliberately: a venue must be opted IN to a public directory by its creator, never swept in by a platform feature launched after it was built. Note the underlying Portals room has its own access settings \u2014 this field governs BASE Station surfaces only."
+    },
+    "access_gate": {
+      "type": "string",
+      "enum": [
+        "open",
+        "fan_club"
+      ],
+      "default": "open",
+      "description": "Who may pass the door once they have found the venue. 'open' = anyone. 'fan_club' = only active members of this creator's fan club receive the room link and the programme; everyone else sees the venue's public face plus a join prompt. Enforced SERVER-SIDE in getVenueNowPlaying, because a client-side gate on a link is not a gate. Deliberately distinct from `visibility`, which governs being found: a venue can be publicly listed and still members-only, which is how a creator advertises a club rather than hiding it."
     },
     "status": {
       "type": "string",

@@ -2,7 +2,9 @@ import { useParams, Link } from 'react-router-dom';
 import { Loader2, Box, Radio, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/lib/AuthContext';
 import { useVenueNowPlaying } from '@/hooks/useVenueNowPlaying';
+import VenueGateCard from '@/components/venue/VenueGateCard';
 import VenueNowPlayingStage from '@/components/venue/VenueNowPlayingStage';
 import VenueQueuePanel from '@/components/venue/VenueQueuePanel';
 import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
@@ -17,6 +19,7 @@ import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
 export default function VenueStage() {
   const { venueId } = useParams();
   const { state, loading, error } = useVenueNowPlaying({ venueId });
+  const { user } = useAuth();
 
   if (loading) {
     return (
@@ -41,6 +44,23 @@ export default function VenueStage() {
   }
 
   const { venue, is_live: isLive, live, now_playing: nowPlaying, channel, block_label: blockLabel, source } = state;
+
+  // Members-only venue and this viewer is not a member — show the invitation
+  // instead of the stage. The room link never reached the client at all.
+  if (state.gated) {
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-3xl mx-auto px-5 sm:px-6 py-10 space-y-6">
+          <h1 className="text-4xl sm:text-5xl font-display text-iridescent">{venue.name}</h1>
+          {venue.description && (
+            <p className="text-sm text-muted-foreground max-w-xl">{venue.description}</p>
+          )}
+          <VenueGateCard venue={venue} creatorId={state.creator_id} isSignedIn={!!user} />
+        </div>
+      </div>
+    );
+  }
+
   const roomUrl = venue.room_id ? buildPortalShareUrl(venue.room_id) : '';
   const sourceLabel = isLive
     ? 'Live now'

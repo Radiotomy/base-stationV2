@@ -32,6 +32,50 @@ export default async function (req) {
       return Response.json({ error: 'This venue is private' }, { status: 403 });
     }
 
+    // Fan-club gate. Checked server-side because a gate applied in the browser is
+    // only a suggestion. A signed-out fan simply fails the check — the venue's
+    // public face still renders, so the join prompt reads as an invitation rather
+    // than an error.
+    let gateOpen = venue.access_gate !== 'fan_club';
+    if (!gateOpen) {
+      const viewer = await base44.auth.me().catch(() => null);
+      if (viewer) {
+        if (viewer.id === venue.user_id || viewer.role === 'admin') {
+          gateOpen = true;
+        } else {
+          const memberships = await base44.asServiceRole.entities.FanClubMembership.filter({
+            creator_id: venue.user_id,
+            user_id: viewer.id,
+            status: 'active',
+          });
+          gateOpen = (memberships || []).length > 0;
+        }
+      }
+    }
+
+    if (!gateOpen) {
+      return Response.json({
+        venue: {
+          id: venue.id,
+          name: venue.name,
+          description: venue.description || '',
+          cover_image_url: venue.cover_image_url || '',
+          // Withheld deliberately: handing over the room link would defeat the gate.
+          room_id: '',
+          template_key: venue.template_key || '',
+        },
+        gated: true,
+        creator_id: venue.user_id,
+        is_live: false,
+        live: null,
+        source: '',
+        channel: null,
+        block_label: '',
+        now_playing: null,
+        server_time: new Date().toISOString(),
+      });
+    }
+
     const state = await resolveVenueIdleState(base44, venue);
 
     return Response.json({
@@ -43,6 +87,7 @@ export default async function (req) {
         room_id: venue.room_id || '',
         template_key: venue.template_key || '',
       },
+      gated: false,
       is_live: state.isLive,
       live: state.isLive
         ? {

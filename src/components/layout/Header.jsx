@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Menu, X, Home, Radio, TrendingUp, Music, Star, Zap, Globe,
   LogOut, User, BarChart3, Mic2, Film, Upload, Settings, HelpCircle, Newspaper, Shield, Search,
-  MessagesSquare, Heart
+  MessagesSquare, Heart, Box
 } from "lucide-react";
 // Note: Icon alias warnings from destructured props are false positives — ignore them.
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import NavDropdown from "@/components/layout/NavDropdown";
 const NAV_ITEMS = [
   { to: "/", label: "Home", icon: Home },
   { to: "/radio", label: "Radio", icon: Radio },
+  { to: "/venues", label: "Venues", icon: Box },
   { to: "/charts", label: "Charts", icon: TrendingUp },
   { to: "/playlists", label: "Playlists", icon: Music },
   { to: "/podcasts", label: "Podcasts", icon: Mic2 },
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
 // Desktop grouped nav — Home stays direct, the rest collapse into two dropdowns
 const DISCOVER_NAV = [
   { to: "/radio", label: "Radio", icon: Radio },
+  { to: "/venues", label: "Venues", icon: Box },
   { to: "/charts", label: "Charts", icon: TrendingUp },
   { to: "/playlists", label: "Playlists", icon: Music },
   { to: "/podcasts", label: "Podcasts", icon: Mic2 },
