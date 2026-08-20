@@ -87,8 +87,8 @@ export default function StemCreatorStudio() {
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <h3 className="text-sm font-black">2. What You Get</h3>
             <p className="text-xs text-muted-foreground">
-              Separation produces all four stems in a single pass — you can't pick a subset,
-              because the model splits the whole mix at once.
+              Stems v2 splits the whole mix in one pass and returns all four together, so
+              there's no subset to pick. Sources must be under 50MB.
             </p>
             <div className="grid grid-cols-2 gap-2">
               {OUTPUT_STEMS.map(s => (

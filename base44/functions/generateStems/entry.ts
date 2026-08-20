@@ -48,6 +48,18 @@ Deno.serve(async (req) => {
       }, { status: 402 });
     }
 
+    // Tempolor rejects sources over 50MB. Catching it here turns a provider-side
+    // failure into a message the creator can act on.
+    try {
+      const head = await fetch(source.file_url, { method: 'HEAD' });
+      const size = Number(head.headers.get('content-length') || 0);
+      if (size > 50 * 1024 * 1024) {
+        return Response.json({
+          error: 'Track too large — stem separation accepts files up to 50MB.',
+        }, { status: 400 });
+      }
+    } catch { /* size unknown — let the provider decide */ }
+
     const itemId = await createStemTask(source.file_url);
 
     const startedAt = new Date().toISOString();
