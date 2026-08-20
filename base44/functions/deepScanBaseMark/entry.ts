@@ -8,6 +8,7 @@ import {
   evaluateCandidates,
   trimForDeepScan,
 } from '../../shared/baseMarkSearch.ts';
+import { resolvePayload, resolveExplanation } from '../../shared/baseMarkResolve.ts';
 
 // Deep scan — recovers a BASE Mark from audio that has been re-timed.
 //
@@ -88,35 +89,28 @@ Deno.serve(async (req) => {
       return Response.json({ error: e.message }, { status: 400 });
     }
 
-    // Registry confirmation is mandatory, not decorative. Testing many candidates
-    // gives the detector many chances to produce a plausible-looking payload, so a
-    // payload that matches no registered asset is treated as a false positive and
-    // discarded — never surfaced as a hit.
+    // Registry confirmation is mandatory, not decorative — and PHASE 5 routes it
+    // through the single gate (FORENSIC_SPEC §8.2) instead of a local lookup.
+    // This matters most HERE: a multi-candidate search gives the detector many
+    // chances to produce a plausible payload, so this is the path with the
+    // highest false-positive exposure and it previously had the weakest rule —
+    // five rows returned as equals, so a collision read as co-ownership.
     let matches = [];
+    let verdict = null;
     if (hit) {
-      const [v1Rows, v2Rows] = await Promise.all([
-        base44.asServiceRole.entities.UserAsset.filter(
-          { 'metadata.base_mark.payload_hex': hit.payload_hex }, '-created_date', 5
-        ),
-        base44.asServiceRole.entities.UserAsset.filter(
-          { 'metadata.base_mark_v2.payload_hex': hit.payload_hex }, '-created_date', 5
-        ),
-      ]);
-      const seen = new Set();
-      matches = [...v1Rows, ...v2Rows]
-        .filter((a) => !seen.has(a.id) && seen.add(a.id))
-        .slice(0, 5)
-        .map((a) => ({
-          title: a.title,
-          asset_type: a.asset_type,
-          created_date: a.created_date,
-          marked_at: a.metadata?.base_mark_v2?.embedded_at || a.metadata?.base_mark?.embedded_at || null,
-        }));
-      if (matches.length === 0) hit = null;
+      verdict = await resolvePayload(base44, hit);
+      matches = verdict.matches;
+      // Abstention collapses to a miss for the caller: an unresolvable payload
+      // is not a finding, and reporting the hex without an owner invites exactly
+      // the guess §8 exists to prevent.
+      if (!verdict.attributed) hit = null;
     }
 
     return Response.json({
       detected: !!hit,
+      attributed: !!verdict?.attributed,
+      status: verdict?.status || null,
+      status_explanation: verdict ? resolveExplanation(verdict.status) : null,
       payload_hex: hit ? hit.payload_hex : null,
       // What was done to the file, in plain language — the actionable finding.
       transform: hit ? hit.candidate_label : null,

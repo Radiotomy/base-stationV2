@@ -302,6 +302,23 @@ were previously one decision applied per endpoint, which meant the answer to "is
 this ours?" depended on which route was asked. All routes now resolve through one
 module (`baseMarkResolve.ts`); no endpoint may implement its own rule.
 
+**Enforcement is audited, not assumed.** Every payload→owner path was reviewed
+against this rule: `verifyBaseMark`, `lookupBaseMark`, `detectBaseMark`,
+`detectBaseMarkV2`, `deepScanBaseMark`, `printSeededEpisodeScan` and the V4 gate
+all resolve through the single module. Three of them previously did not, and
+their local lookups had failed in the two predictable ways — querying the
+spectral index alone (so an asset marked only under the neural layer resolved as
+*unregistered*, a false negative) and returning several rows as equals or
+silently taking the newest (so a collision read as co-ownership or as a confident
+wrong owner). Any new endpoint that resolves a payload must call this module; a
+local `metadata.*.payload_hex` query is a defect by definition.
+
+**Deliberately exempt: self-comparison.** `rescanAssetMark` and the benchmark
+harnesses compare a detected payload against a payload *they already know* — the
+asset's own registered value, or a planted test payload. That is an integrity or
+measurement check, not an attribution, and routing it through the gate would
+confuse "did this file keep its mark?" with "who owns this file?"
+
 Four conditions, all mandatory:
 
 1. **Keyed payload derivation.** Payloads are derived by domain-separated

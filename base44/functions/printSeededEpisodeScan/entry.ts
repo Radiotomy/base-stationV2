@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { extractQueryPrint, loadReferencePrints } from '../../shared/printRegistry.ts';
 import { attemptSeededRecovery } from '../../shared/printSeededRecovery.ts';
+import { resolvePayload } from '../../shared/baseMarkResolve.ts';
 
 // Print-seeded verification for an ORVO episode.
 //
@@ -111,26 +112,35 @@ export default async function (req) {
     // that resolves to no registered asset is a false positive, and is discarded
     // rather than reported — the whole reason the spectral detector, not the
     // Print, owns this decision.
-    const matched = await base44.asServiceRole.entities.UserAsset
-      .filter({ 'metadata.base_mark.payload_hex': result.payload_hex }, '-created_date', 1)
-      .catch(() => []);
-    const confirmed = matched?.[0] || null;
+    // PHASE 5: through the single gate (§8.2). The previous lookup here queried
+    // the V1 index alone and took [0] of a limit-1 filter, which made a payload
+    // collision structurally invisible — it would attribute an episode to the
+    // most recent of several claimants — and discarded, as "not in registry",
+    // any asset registered only under the neural layer.
+    const verdict = await resolvePayload(base44, result);
 
-    if (!confirmed) {
+    if (!verdict.attributed) {
       const updated = await writeResult({
         recovered: true,
         registry_confirmed: false,
-        reason: 'payload_not_in_registry',
-        telemetry: { lift: result.lift, beta: result.beta, offset_ppm: result.offset_ppm },
+        reason: verdict.status,
+        telemetry: {
+          lift: result.lift,
+          beta: result.beta,
+          offset_ppm: result.offset_ppm,
+          owner_count: verdict.owner_count,
+        },
       });
       return Response.json({
         ok: true,
         recovered: false,
-        reason: 'payload_not_in_registry',
-        note: 'A payload decoded but matches no registered asset, so it is discarded as a false positive.',
+        reason: verdict.status,
+        note: 'A payload decoded but could not be attributed to exactly one registered asset, so it is discarded.',
         episode: updated,
       });
     }
+
+    const confirmed = verdict.asset;
 
     const updated = await writeResult({
       recovered: true,

@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { detectMark } from '../../shared/baseMark.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
+import { confirmDetection, resolveExplanation } from '../../shared/baseMarkResolve.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -25,27 +26,30 @@ Deno.serve(async (req) => {
 
     const result = detectMark(bytes);
 
-    let matches = [];
-    if (result.detected && result.payload_hex) {
-      const rows = await base44.asServiceRole.entities.UserAsset.filter(
-        { 'metadata.base_mark.payload_hex': result.payload_hex },
-        '-created_date',
-        5
-      );
-      matches = rows.map((a) => ({
-        id: a.id,
-        title: a.title,
-        asset_type: a.asset_type,
-        created_date: a.created_date,
-        marked_at: a.metadata?.base_mark?.embedded_at || null,
-        is_own: a.user_id === user.id,
-      }));
-    }
+    // PHASE 5: attribution goes through the single gate (FORENSIC_SPEC §8.2).
+    // This endpoint previously ran its own lookup against the V1 index only and
+    // returned up to five rows as equals — which both MISSED assets registered
+    // solely under the neural layer and presented a payload collision as a list
+    // of co-owners. A payload naming two works identifies neither.
+    const verdict = await confirmDetection(base44, result);
+    const matches = verdict.matches.map((m) => ({
+      ...m,
+      // Ownership context is this scanner's whole reason to require a login, so
+      // it is added here rather than in the shared projection (which feeds the
+      // anonymous verifier and must stay owner-agnostic).
+      is_own: verdict.asset?.user_id === user.id,
+    }));
 
     // Never expose internal detector diagnostics (alignment offset, pilot
     // correlation thresholds) — creator-facing fields only.
     const { pilot_score: _p, sample_offset: _o, ...safe } = result;
-    return Response.json({ ...safe, matches });
+    return Response.json({
+      ...safe,
+      attributed: verdict.attributed,
+      status: verdict.status,
+      status_explanation: resolveExplanation(verdict.status),
+      matches,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
