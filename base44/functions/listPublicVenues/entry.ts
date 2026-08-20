@@ -67,11 +67,13 @@ export default async function (req) {
           live_title: state?.isLive ? (state.liveSession?.title || '') : '',
           source: state?.source || '',
           channel_title: state?.playlist?.title || '',
-          now_playing: state?.nowPlaying
+          // The clock returns the programme entry under `item` — read the title
+          // from there, not off the wrapper, or every card reads as untitled.
+          now_playing: state?.nowPlaying?.item
             ? {
-                title: state.nowPlaying.title || '',
-                media_kind: state.nowPlaying.media_kind || 'audio',
-                thumbnail_url: state.nowPlaying.thumbnail_url || '',
+                title: state.nowPlaying.item.title || '',
+                media_kind: state.nowPlaying.item.media_kind || 'audio',
+                thumbnail_url: state.nowPlaying.item.thumbnail_url || '',
               }
             : null,
         };
