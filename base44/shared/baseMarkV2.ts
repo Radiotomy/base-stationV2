@@ -12,14 +12,22 @@
 // statistical half of that exposure is closed by mandatory registry
 // confirmation in Phase 2, not here.
 
-import { deriveV2Tag, isKeyedPayloadConfigured, PAYLOAD_VERSION_KEYED, PAYLOAD_VERSION_LEGACY } from './baseMarkPayload.ts';
+import { deriveV2Tag, isKeyedPayloadConfigured, PAYLOAD_VERSION_KEYED } from './baseMarkPayload.ts';
 
 export const BASE_MARK_V2_VERSION = '2.0';
 
-// The pre-Phase-1 fixed magic byte. Retained for READ ONLY: assets marked
-// before the migration carry it, and orphaning them would lose recoverable
-// identities for no security gain (the legacy payload is already public). It is
-// never written again — see packMessage.
+// The pre-Phase-1 fixed magic byte. PHASE 3: no longer read OR written — it is
+// retained as a named constant only so the self-test can still construct the
+// forgery it must prove we now reject, and so this value is never accidentally
+// reintroduced as a valid tag.
+//
+// It was previously accepted on read so pre-migration assets stayed detectable.
+// That dual-read was the last forgery surface in the cascade: the payload is
+// publicly derivable and the magic byte is published, so anyone could mint a
+// V2 message for any asset id. Phase 2 contained it by demanding the named asset
+// itself be legacy-marked; Phase 3 removes the containment's subject — every
+// legacy mark record was retired by retireLegacyBaseMarks, so nothing legitimate
+// reads this byte any more and accepting it could only ever help an attacker.
 export const V2_MAGIC_LEGACY = 0xb5;
 
 // Private Replicate model name — overridable without a code change.
@@ -39,16 +47,15 @@ export async function packMessage(payloadHex) {
  * [tag, b3, b2, b1, b0] -> { valid, payload_hex, payload_version,
  *                            requires_registry_corroboration }
  *
- * Tries the keyed tag first, then falls back to the legacy magic byte so
- * pre-migration assets stay detectable (Phase 1.5 dual-read).
+ * PHASE 3: the keyed tag is the ONLY accepted tag. A message whose validity byte
+ * is not the HMAC-derived tag for its own payload does not unpack at all, which
+ * means a forged legacy message now fails at the detector rather than being
+ * carried inward as a flagged-but-valid hit.
  *
- * `requires_registry_corroboration` is set on a legacy match and is the handoff
- * to PHASE 2: while the legacy format is accepted at all, a forged legacy
- * message is still constructible from public information, so a legacy hit is
- * only trustworthy once it resolves to an asset that was itself marked under the
- * legacy format. This module deliberately does not make that call — it has no
- * business reading the registry — it just refuses to let a caller mistake a
- * legacy match for a keyed one.
+ * `requires_registry_corroboration` is retained in the shape (always false) so
+ * the resolver's rule-3 branch stays a live, tested safety net rather than being
+ * deleted along with its only caller — if any future layer ever reintroduces a
+ * weaker payload format, the gate is already there to receive it.
  */
 export async function unpackMessage(message) {
   const miss = { valid: false, payload_hex: null, payload_version: null, requires_registry_corroboration: false };
@@ -70,15 +77,9 @@ export async function unpackMessage(message) {
     } catch { /* a key problem must degrade to legacy-only, not fail detection */ }
   }
 
-  if (message[0] === V2_MAGIC_LEGACY) {
-    return {
-      valid: true,
-      payload_hex: payloadHex,
-      payload_version: PAYLOAD_VERSION_LEGACY,
-      requires_registry_corroboration: true,
-    };
-  }
-
+  // No legacy fallback. See V2_MAGIC_LEGACY above: every legacy mark record has
+  // been retired, so a message bearing the published magic byte can no longer be
+  // anything of ours.
   return miss;
 }
 

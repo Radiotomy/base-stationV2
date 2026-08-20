@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { embedMark, detectMark, payloadFromId } from '../../shared/baseMark.ts';
 import { packMessage, unpackMessage, startV2, getV2Prediction, runV2, V2_MAGIC_LEGACY } from '../../shared/baseMarkV2.ts';
-import { derivePayload, deriveV2Tag, PAYLOAD_VERSION_KEYED, PAYLOAD_VERSION_LEGACY } from '../../shared/baseMarkPayload.ts';
+import { derivePayload, deriveV2Tag, PAYLOAD_VERSION_KEYED } from '../../shared/baseMarkPayload.ts';
 
 // Diagnostic: tests whether BASE Mark V1 (acoustic) and V2 (neural) survive
 // being CASCADED on the same file — V1 embedded first, then V2 layered on
@@ -53,11 +53,12 @@ Deno.serve(async (req) => {
     //   2. A message whose validity byte does not match the keyed tag is
     //      REJECTED — this is the property that makes a V2 mark unmintable
     //      without the key.
-    //   3. A legacy-format message (the forgery an attacker can still build from
-    //      public information) is accepted for back-compat but FLAGGED as
-    //      requiring registry corroboration, never as keyed. Closing that
-    //      remaining gap is Phase 2's job, and this test is what proves Phase 1
-    //      hands it over honestly rather than silently equating the two.
+    //   3. PHASE 3: a legacy-format message — the forgery anyone could build
+    //      from public information — is now REJECTED outright. This assertion is
+    //      deliberately inverted from its Phase 1 form (which required legacy to
+    //      remain readable-but-flagged): the legacy mark records it existed to
+    //      serve have all been retired, so continuing to read that format could
+    //      only ever admit forgeries.
     if (action === 'payload_selftest') {
       const assetId = body.asset_id || `selftest-${Date.now()}`;
       const keyedPayload = await derivePayload(assetId);
@@ -82,8 +83,7 @@ Deno.serve(async (req) => {
           keyed.valid && keyed.payload_hex === keyedPayload && keyed.payload_version === PAYLOAD_VERSION_KEYED,
         keyed_payload_differs_from_legacy: keyedPayload !== legacyPayload,
         wrong_tag_rejected: !tampered.valid,
-        legacy_readable: legacy.valid && legacy.payload_version === PAYLOAD_VERSION_LEGACY,
-        legacy_flagged_for_corroboration: legacy.valid && legacy.requires_registry_corroboration === true,
+        legacy_forgery_rejected: !legacy.valid,
         keyed_not_flagged: keyed.valid && keyed.requires_registry_corroboration === false,
       };
 
@@ -92,9 +92,9 @@ Deno.serve(async (req) => {
         checks,
         passed: Object.values(checks).every(Boolean),
         note:
-          'Proves the V2 validity byte is keyed and unmintable, and that legacy marks stay readable but are ' +
-          'handed to the caller flagged. A legacy message is STILL constructible from public information — ' +
-          'Phase 2 must discard a legacy hit that does not resolve to an asset marked under the legacy format.',
+          'Phase 3 exit gate. Proves the V2 validity byte is keyed and unmintable, and that the publicly ' +
+          'constructible legacy message is now rejected at the detector. Remaining known gap: REPLAY — a mark ' +
+          'copied out of a genuinely registered file still resolves, because it is the real payload.',
       });
     }
 
