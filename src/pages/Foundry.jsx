@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Cpu, Plus, Loader2 } from 'lucide-react';
+import { Cpu, Plus, Loader2, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import PluginCard from '@/components/foundry/PluginCard';
 import CommunityFoundryHub from '@/components/foundry/CommunityFoundryHub';
 import FeaturedPatchShelf from '@/components/foundry/FeaturedPatchShelf';
+import StarterTemplatesShelf from '@/components/foundry/StarterTemplatesShelf';
+import TemplatePickerDialog from '@/components/foundry/TemplatePickerDialog';
 import PatchCollections from '@/components/foundry/PatchCollections';
 import { starterGraph } from '@/lib/foundry/nodeTypes';
 import { compileGraph } from '@/lib/foundry/audioEngine';
@@ -14,6 +16,7 @@ import { compileGraph } from '@/lib/foundry/audioEngine';
 export default function Foundry() {
   const [mine, setMine] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -65,11 +68,23 @@ export default function Foundry() {
               favourites into collections, or enter a Patch Design challenge — all below.
             </p>
           </div>
-          <Button onClick={create} disabled={creating} className="h-9 text-xs merc-button shrink-0">
-            {creating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
-            New patch
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              onClick={() => setPickerOpen(true)}
+              className="h-9 text-xs border-white/12 text-white/70"
+            >
+              <GraduationCap className="w-3.5 h-3.5 mr-1.5" />
+              Start from a template
+            </Button>
+            <Button onClick={create} disabled={creating} className="h-9 text-xs merc-button">
+              {creating ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Plus className="w-3.5 h-3.5 mr-1.5" />}
+              New patch
+            </Button>
+          </div>
         </div>
+
+        <StarterTemplatesShelf />
 
         <FeaturedPatchShelf />
 
@@ -100,6 +115,8 @@ export default function Foundry() {
 
         <CommunityFoundryHub />
       </div>
+
+      <TemplatePickerDialog open={pickerOpen} onOpenChange={setPickerOpen} />
     </div>
   );
 }

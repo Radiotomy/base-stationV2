@@ -8,7 +8,7 @@ const NODE_H = 96;
 // The patch surface. Wiring is a pointer gesture from an output port to an input
 // port; when the source is a modulator the drop asks which parameter to target,
 // because a modulator wired to "audio in" is silent and looks like a broken patch.
-export default function NodeCanvas({ graph, selected, onSelect, onChange, onManualEdit }) {
+export default function NodeCanvas({ graph, selected, onSelect, onChange, onManualEdit, readOnly = false }) {
   const hostRef = useRef(null);
   const [wiring, setWiring] = useState(null);
   const [modPick, setModPick] = useState(null);
@@ -25,10 +25,12 @@ export default function NodeCanvas({ graph, selected, onSelect, onChange, onManu
   }, []);
 
   const moveNode = (id, pos) => {
+    if (readOnly) return;
     onChange({ ...graph, nodes: nodes.map((n) => (n.id === id ? { ...n, ...pos } : n)) });
   };
 
   const deleteNode = (id) => {
+    if (readOnly) return;
     onChange({
       ...graph,
       nodes: nodes.filter((n) => n.id !== id),
@@ -38,12 +40,13 @@ export default function NodeCanvas({ graph, selected, onSelect, onChange, onManu
   };
 
   const cutEdge = (edgeId) => {
+    if (readOnly) return;
     onChange({ ...graph, edges: edges.filter((e) => e.id !== edgeId) });
     onManualEdit?.('wire');
   };
 
   const commitEdge = (fromId, toId, toParam) => {
-    if (fromId === toId) return;
+    if (readOnly || fromId === toId) return;
     const dup = edges.some((e) => e.from === fromId && e.to === toId && (e.toParam || null) === (toParam || null));
     if (dup) return;
     onChange({ ...graph, edges: [...edges, { id: newId('e'), from: fromId, to: toId, ...(toParam ? { toParam } : {}) }] });
@@ -51,6 +54,7 @@ export default function NodeCanvas({ graph, selected, onSelect, onChange, onManu
   };
 
   const onPortDown = (id) => {
+    if (readOnly) return;
     const node = nodes.find((n) => n.id === id);
     if (!node) return;
     setWiring({ fromId: id, from: { x: node.x + NODE_W, y: node.y + NODE_H / 2 }, to: { x: node.x + NODE_W, y: node.y + NODE_H / 2 } });

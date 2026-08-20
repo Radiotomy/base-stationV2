@@ -39,6 +39,15 @@
       "type": "boolean",
       "default": false
     },
+    "is_template": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marks this row as a curated Starter Template \u2014 a canonical reference patch owned by an admin/system user. Templates render read-only for everyone else (inspect the graph, fork to edit) so the reference stays stable no matter how many people learn from it. Only an admin can set or edit one: a template row is still an ordinary FoundryPlugin, so RLS owner rules already restrict mutation to the admin who owns it."
+    },
+    "audition_url": {
+      "type": "string",
+      "description": "Optional https URL of a short pre-rendered clip run THROUGH this patch, so a user can hear the result before forking. Optional by design: a utility or modulator template has no musical output worth auditioning, and a silent player would read as a broken patch."
+    },
     "fork_parent_id": {
       "type": "string",
       "description": "FoundryPlugin this was forked from. A fork inherits the graph but NOT the parent's participation score \u2014 the fork's own score starts from what the forker actually changed."

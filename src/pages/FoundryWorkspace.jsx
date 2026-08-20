@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Loader2, Save, Globe, Lock, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,9 @@ import PresetBar from '@/components/foundry/PresetBar';
 import FoundryScoreBadge from '@/components/foundry/FoundryScoreBadge';
 import InsertPreviewDialog from '@/components/foundry/InsertPreviewDialog';
 import ReferenceProfilePanel from '@/components/foundry/ReferenceProfilePanel';
+import TemplateInspectBanner from '@/components/foundry/TemplateInspectBanner';
+import TemplateCurationControls from '@/components/foundry/TemplateCurationControls';
+import { forkPlugin } from '@/lib/foundry/forkPlugin';
 import useFoundryEngine from '@/hooks/useFoundryEngine';
 import { compileGraph } from '@/lib/foundry/audioEngine';
 import { defaultParams, newId } from '@/lib/foundry/nodeTypes';
@@ -21,6 +24,7 @@ import { scoreFoundryPlugin } from '@/lib/foundry/foundryScore';
 
 export default function FoundryWorkspace() {
   const { pluginId } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const audio = useFoundryEngine();
 
@@ -31,6 +35,8 @@ export default function FoundryWorkspace() {
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [insertOpen, setInsertOpen] = useState(false);
+  const [me, setMe] = useState(null);
+  const [forking, setForking] = useState(false);
   const [reference, setReference] = useState(null);
   const [signals, setSignals] = useState({
     ai_prompt_count: 0, manual_node_edits: 0, manual_wire_edits: 0,
@@ -44,7 +50,25 @@ export default function FoundryWorkspace() {
       setGraph(p.graph_state?.nodes ? p.graph_state : { nodes: [], edges: [] });
       setSignals((s) => ({ ...s, ...(p.participation_signals || {}), was_forked: !!p.fork_parent_id }));
     }).catch(() => setPlugin(false));
+    base44.auth.me().then(setMe).catch(() => {});
   }, [pluginId]);
+
+  // A curated template opened by anyone but its owner is a read-only reference:
+  // the graph must stay stable for everyone else learning from it.
+  const inspecting = !!(plugin && plugin.is_template && me && plugin.user_id !== me.id);
+  const canCurate = !!(plugin && me && plugin.user_id === me.id && me.role === 'admin');
+
+  const forkTemplate = async () => {
+    setForking(true);
+    try {
+      const created = await forkPlugin(plugin, { titlePrefix: 'My ', titleSuffix: '' });
+      navigate(`/foundry/${created.id}`);
+    } catch (e) {
+      toast({ title: 'Could not fork', description: e.message, variant: 'destructive' });
+    } finally {
+      setForking(false);
+    }
+  };
 
   const score = useMemo(() => scoreFoundryPlugin(signals), [signals]);
   const selectedNode = graph.nodes?.find((n) => n.id === selected) || null;
@@ -179,10 +203,11 @@ export default function FoundryWorkspace() {
           </Button>
           <Input
             value={plugin.title || ''}
+            readOnly={inspecting}
             onChange={(e) => setPlugin((p) => ({ ...p, title: e.target.value }))}
             className="h-8 w-56 text-sm bg-white/5 border-white/10 font-semibold"
           />
-          <PresetBar pluginId={pluginId} graph={graph} onApply={applyGraph} />
+          {!inspecting && <PresetBar pluginId={pluginId} graph={graph} onApply={applyGraph} />}
           <div className="flex-1" />
           <Button
             size="sm"
@@ -193,20 +218,35 @@ export default function FoundryWorkspace() {
             <SlidersHorizontal className="w-3 h-3 mr-1.5" />
             Load in Studio
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setPlugin((p) => ({ ...p, is_public: !p.is_public }))}
-            className="h-8 px-3 text-xs border-white/12 text-white/70"
-          >
-            {plugin.is_public ? <Globe className="w-3 h-3 mr-1.5 text-[#C7F5E0]" /> : <Lock className="w-3 h-3 mr-1.5" />}
-            {plugin.is_public ? 'Public' : 'Private'}
-          </Button>
-          <Button size="sm" onClick={save} disabled={saving} className="h-8 px-3 text-xs merc-button">
-            {saving ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Save className="w-3 h-3 mr-1.5" />}
-            Save
-          </Button>
+          {!inspecting && (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPlugin((p) => ({ ...p, is_public: !p.is_public }))}
+                className="h-8 px-3 text-xs border-white/12 text-white/70"
+              >
+                {plugin.is_public ? <Globe className="w-3 h-3 mr-1.5 text-[#C7F5E0]" /> : <Lock className="w-3 h-3 mr-1.5" />}
+                {plugin.is_public ? 'Public' : 'Private'}
+              </Button>
+              <Button size="sm" onClick={save} disabled={saving} className="h-8 px-3 text-xs merc-button">
+                {saving ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Save className="w-3 h-3 mr-1.5" />}
+                Save
+              </Button>
+            </>
+          )}
         </div>
+
+        {inspecting && (
+          <TemplateInspectBanner template={plugin} onFork={forkTemplate} forking={forking} />
+        )}
+
+        {canCurate && (
+          <TemplateCurationControls
+            plugin={plugin}
+            onChange={(patch) => setPlugin((p) => ({ ...p, ...patch }))}
+          />
+        )}
 
         <div className="flex flex-col lg:flex-row gap-3">
           {/* Left pane — 40%: architect, transport, parameters, provenance */}
@@ -218,8 +258,12 @@ export default function FoundryWorkspace() {
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
             }}
           >
-            <ReferenceProfilePanel reference={reference} onChange={setReference} disabled={busy} />
-            <AssistantPane history={history} busy={busy} onSubmit={generate} reference={reference} />
+            {!inspecting && (
+              <>
+                <ReferenceProfilePanel reference={reference} onChange={setReference} disabled={busy} />
+                <AssistantPane history={history} busy={busy} onSubmit={generate} reference={reference} />
+              </>
+            )}
             <PreviewControls
               engine={audio.engine}
               running={audio.running}
@@ -232,9 +276,20 @@ export default function FoundryWorkspace() {
               onTrigger={audio.trigger}
               onBpmChange={audio.changeBpm}
             />
-            <div className="max-h-64 overflow-y-auto">
+            {inspecting && (
+              <Button onClick={forkTemplate} disabled={forking} className="h-8 text-xs merc-button">
+                {forking ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : null}
+                Fork to edit this patch
+              </Button>
+            )}
+            <div className={`max-h-64 overflow-y-auto ${inspecting ? 'pointer-events-none opacity-75' : ''}`}>
               <ParameterPanel node={selectedNode} onParamChange={onParamChange} />
             </div>
+            {inspecting && (
+              <p className="text-[10px] text-white/35 leading-snug">
+                Parameter values shown as the designer set them. Fork the template to change them.
+              </p>
+            )}
             <FoundryScoreBadge score={score.score} label={score.label} />
           </div>
 
@@ -247,18 +302,23 @@ export default function FoundryWorkspace() {
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
             }}
           >
-            <div className="px-3 py-2 border-b border-white/8">
-              <NodePalette onAdd={addNode} />
-            </div>
+            {!inspecting && (
+              <div className="px-3 py-2 border-b border-white/8">
+                <NodePalette onAdd={addNode} />
+              </div>
+            )}
             <NodeCanvas
               graph={graph}
               selected={selected}
               onSelect={setSelected}
               onChange={applyGraph}
               onManualEdit={noteManualEdit}
+              readOnly={inspecting}
             />
             <div className="px-3 py-1.5 border-t border-white/8 text-[9px] text-white/30">
-              Drag a module to move · drag an output port to an input port to patch · click a cable to cut it
+              {inspecting
+                ? 'Click any module to read its parameters · follow the cables to trace signal flow'
+                : 'Drag a module to move · drag an output port to an input port to patch · click a cable to cut it'}
             </div>
           </div>
         </div>
