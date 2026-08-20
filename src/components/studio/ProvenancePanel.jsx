@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Shield, Cpu, Layers, Combine, Sparkles, Film, Hash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import FoundryProvenanceRow from './FoundryProvenanceRow';
 
 /**
  * Phase 3 — Provenance Viewer
@@ -88,6 +89,8 @@ export default function ProvenancePanel({ assetId, asset: assetProp }) {
           </div>
         </div>
       )}
+
+      <FoundryProvenanceRow insert={m.foundry_insert} />
 
       {m.content_hash && (
         <div className="flex items-center gap-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">

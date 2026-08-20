@@ -6,6 +6,7 @@ const SIGNAL_LABELS = {
   detailed_prompt:     'Detailed prompt (+14)',
   reference_material:  'Reference material (+12)',
   human_performance:   'Human performance (+12)',
+  human_dsp_design:    'Own DSP chain (+10)',
   custom_style:        'Custom style / tags (+6)',
   rich_style:          'Rich style palette (+4)',
   musical_specificity: 'Musical direction (+6)',
