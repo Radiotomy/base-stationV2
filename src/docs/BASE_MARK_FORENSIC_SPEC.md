@@ -497,6 +497,17 @@ these are V4's own figures and not the cascade's):
 | Pitch-preserved tempo stretch | 0% | 0% | **0%** |
 | Crops under ~5s | declined | — | **0%** |
 
+**Per-copy format verified end-to-end (Phase 6).** A 30-second master marked with
+`payload | copy_id | 64-bit tag` recovered the exact 128-bit message on a clean
+round trip — payload, copy id and tag all intact, bit-error 0.361, inside the
+acceptance band. The same test on an 8-second clip recovered the payload but
+decoded the tail with flipped bits (bit-error 0.526), and the tag check therefore
+**refused the decode** rather than reporting a payload-only match. That is the
+intended behaviour and is a strengthening, not a regression: under the retired
+zero-tail format the same marginal decode would have surfaced a payload as if it
+were evidence. Short-clip V4 recovery remains 0%, now for a cryptographic reason
+rather than a heuristic one.
+
 ### 10.1 Real codec round trips
 
 The Speed Layer container carries ffmpeg, so codec robustness is measured with an
