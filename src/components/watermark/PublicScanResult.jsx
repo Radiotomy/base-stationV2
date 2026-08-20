@@ -6,7 +6,7 @@ export default function PublicScanResult({ result, matches }) {
     <div className={`rounded-xl border p-5 space-y-3 text-sm ${result.detected ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-border bg-secondary/40'}`}>
       {result.detected ? (
         <>
-          <p className="flex items-center gap-2 text-emerald-400 font-semibold text-base">
+          <p className={`flex items-center gap-2 font-semibold text-base ${result.attributed === false ? 'text-[#FFC98A]' : 'text-emerald-400'}`}>
             <ShieldCheck className="w-5 h-5" /> BASE Mark detected
           </p>
           <p>Payload: <code className="text-[#FFC98A]">{result.payload_hex}</code></p>
@@ -24,7 +24,12 @@ export default function PublicScanResult({ result, matches }) {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">Mark detected, but no matching track found in the public registry.</p>
+            // A recovered signature is not by itself an attribution: it must
+            // resolve to exactly one registered work. The server explains which
+            // check withheld it, so this never implies ownership it cannot back.
+            <p className="text-muted-foreground">
+              {result.status_explanation || 'Mark detected, but no matching track found in the public registry.'}
+            </p>
           )}
         </>
       ) : (

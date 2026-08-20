@@ -24,6 +24,7 @@
 
 import { detectMark } from './baseMark.ts';
 import { decodeV2, unpackMessage } from './baseMarkV2.ts';
+import { resolvePayload } from './baseMarkResolve.ts';
 
 // Replicate models return either an inline object or a URL to a JSON file,
 // depending on how the container declares its output. Accept both.
@@ -105,30 +106,17 @@ export async function verifyAudioBytes(base44, bytes, { allowGpu = false } = {})
   return { ...miss, layers_tried: layersTried };
 }
 
-/** Public registry matches for a resolved detection. Never exposes internals. */
-export async function registryMatches(base44, { payload_hex, asset_id }) {
-  const rows = [];
-  if (asset_id) {
-    const a = await base44.asServiceRole.entities.UserAsset.get(asset_id).catch(() => null);
-    if (a) rows.push(a);
-  }
-  if (payload_hex) {
-    const [v1Rows, v2Rows] = await Promise.all([
-      base44.asServiceRole.entities.UserAsset.filter({ 'metadata.base_mark.payload_hex': payload_hex }, '-created_date', 5),
-      base44.asServiceRole.entities.UserAsset.filter({ 'metadata.base_mark_v2.payload_hex': payload_hex }, '-created_date', 5),
-    ]);
-    rows.push(...(v1Rows || []), ...(v2Rows || []));
-  }
-  const seen = new Set();
-  return rows
-    .filter((a) => !seen.has(a.id) && seen.add(a.id))
-    .slice(0, 5)
-    .map((a) => ({
-      title: a.title,
-      asset_type: a.asset_type,
-      created_date: a.created_date,
-      marked_at: a.metadata?.base_mark_v2?.embedded_at
-        || a.metadata?.base_mark?.embedded_at
-        || null,
-    }));
+/**
+ * Public registry matches for a detection.
+ *
+ * PHASE 2: this is now a thin shim over the single resolver, which means it
+ * returns matches ONLY when the payload resolves to exactly one registered asset
+ * and passes the format check. It used to return up to five rows as equals,
+ * which presented a payload collision as a list of co-owners instead of the
+ * abstention it has to be. Callers that need the reason, not just the rows,
+ * should use confirmDetection() from baseMarkResolve.ts directly.
+ */
+export async function registryMatches(base44, detection) {
+  const verdict = await resolvePayload(base44, detection);
+  return verdict.matches;
 }

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { unpackMessage, runV2, BASE_MARK_V2_VERSION } from '../../shared/baseMarkV2.ts';
+import { resolvePayload, resolveExplanation } from '../../shared/baseMarkResolve.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // BASE Mark V2 — neural detection via the private Replicate model.
@@ -32,8 +33,10 @@ Deno.serve(async (req) => {
     let detected = !!result.detected;
     let payloadHex = null;
     let confidence = null;
+    let unpacked = null;
     if (detected && Array.isArray(result.messages) && result.messages.length > 0) {
-      const { valid, payload_hex } = await unpackMessage(result.messages[0]);
+      unpacked = await unpackMessage(result.messages[0]);
+      const { valid, payload_hex } = unpacked;
       if (valid) {
         payloadHex = payload_hex;
         confidence = Array.isArray(result.confidences) ? result.confidences[0] : null;
@@ -46,29 +49,32 @@ Deno.serve(async (req) => {
       detected = false;
     }
 
-    let matches = [];
+    // PHASE 2: resolution runs through the single gate, so a payload that is
+    // unregistered, shared by two assets, or arrives in a legacy format the
+    // named asset was never marked under yields NO attribution here either.
+    // Passing the unpack flags through is what carries the legacy corroboration
+    // requirement into resolution instead of dropping it at the detector.
+    let verdict = { attributed: false, status: 'not_detected', matches: [], asset: null };
     if (detected && payloadHex) {
-      const [v2Rows, v1Rows] = await Promise.all([
-        base44.asServiceRole.entities.UserAsset.filter({ 'metadata.base_mark_v2.payload_hex': payloadHex }, '-created_date', 5),
-        base44.asServiceRole.entities.UserAsset.filter({ 'metadata.base_mark.payload_hex': payloadHex }, '-created_date', 5),
-      ]);
-      const seen = new Set();
-      matches = [...v2Rows, ...v1Rows]
-        .filter((a) => !seen.has(a.id) && seen.add(a.id))
-        .slice(0, 5)
-        .map((a) => ({
-          id: a.id,
-          title: a.title,
-          asset_type: a.asset_type,
-          created_date: a.created_date,
-          marked_at: a.metadata?.base_mark_v2?.embedded_at || a.metadata?.base_mark?.embedded_at || null,
-          mark_generation: a.metadata?.base_mark_v2 ? 'v2' : 'v1',
-          is_own: a.user_id === user.id,
-        }));
+      verdict = await resolvePayload(base44, {
+        payload_hex: payloadHex,
+        payload_version: unpacked?.payload_version,
+        requires_registry_corroboration: unpacked?.requires_registry_corroboration,
+      });
     }
+    const matches = verdict.attributed
+      ? verdict.matches.map((m) => ({
+          ...m,
+          mark_generation: verdict.asset?.metadata?.base_mark_v2 ? 'v2' : 'v1',
+          is_own: verdict.asset?.user_id === user.id,
+        }))
+      : [];
 
     return Response.json({
       detected,
+      attributed: verdict.attributed,
+      status: verdict.status,
+      status_explanation: resolveExplanation(verdict.status),
       payload_hex: detected ? payloadHex : null,
       confidence: detected ? confidence : null,
       engine: 'neural',

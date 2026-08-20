@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { verifyAudioBytes, registryMatches } from '../../shared/baseMarkVerify.ts';
+import { verifyAudioBytes } from '../../shared/baseMarkVerify.ts';
+import { confirmDetection, resolveExplanation } from '../../shared/baseMarkResolve.ts';
 import { consumeRateLimit } from '../../shared/rateLimit.ts';
 
 // Public black-box verifier for the no-login /verify page.
@@ -45,19 +46,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: e.message }, { status: 400 });
     }
 
-    const matches = result.detected
-      ? await registryMatches(base44, result)
-      : [];
+    // PHASE 2: detection and ATTRIBUTION are reported separately. `detected` is
+    // the signal-level fact (a signature was recovered); `attributed` is the
+    // forensic claim, and it requires the payload to resolve to exactly one
+    // registered work. Collapsing the two would let an unregistered or
+    // colliding payload read as proof of ownership.
+    const verdict = await confirmDetection(base44, result);
 
     return Response.json({
       detected: result.detected,
+      attributed: verdict.attributed,
+      status: verdict.status,
+      status_explanation: resolveExplanation(verdict.status),
       payload_hex: result.detected ? result.payload_hex : null,
       engine: result.engine,
       reason: result.detected ? result.reason : result.reason,
       // Signals to the client that a deep scan is pointless — there simply isn't
       // enough audio for any detector, re-timed or not.
       too_short: result.too_short,
-      matches,
+      matches: verdict.matches,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

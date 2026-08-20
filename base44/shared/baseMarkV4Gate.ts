@@ -15,6 +15,8 @@
 // output there is ABSTENTION, not a best guess (§8). A single threshold would
 // force every ambiguous decode into one of two confident answers, which is how
 // false attributions get manufactured.
+import { resolvePayload } from './baseMarkResolve.ts';
+
 export const V4_BIT_ERROR_ACCEPT_BELOW = 0.45;
 export const V4_BIT_ERROR_ABSTAIN_ABOVE = 0.50;
 
@@ -46,25 +48,16 @@ export function classifyV4BitError(bitError) {
  * through the SAME registry lookup as V1 and V2. Registry confirmation is
  * mandatory: a payload matching no registered asset is a false positive and is
  * discarded (§8).
+ *
+ * PHASE 2: delegated to the shared resolver. This previously took `rows[0]` when
+ * several assets matched, which turned a payload collision into a confident
+ * attribution of the most recent one. The resolver abstains instead, and returns
+ * null here — the cascade fallback to the V1/V2 indexes it used to do by hand is
+ * now part of the resolver's single index list.
  */
 export async function resolveV4Payload(base44, payloadHex) {
-  if (!payloadHex) return null;
-  const rows = await base44.asServiceRole.entities.UserAsset
-    .filter({ 'metadata.base_mark_v4.payload_hex': payloadHex }, '-created_date', 5)
-    .catch(() => []);
-  if (rows?.length) return rows[0];
-
-  // A V4 mark is cascaded on top of V1/V2, so the payload is derived from the
-  // same asset id and will also be on record under the earlier layers. Falling
-  // back to those is not a loosening of the check — it is the same registry,
-  // reached by the other index.
-  const [v1, v2] = await Promise.all([
-    base44.asServiceRole.entities.UserAsset
-      .filter({ 'metadata.base_mark.payload_hex': payloadHex }, '-created_date', 5).catch(() => []),
-    base44.asServiceRole.entities.UserAsset
-      .filter({ 'metadata.base_mark_v2.payload_hex': payloadHex }, '-created_date', 5).catch(() => []),
-  ]);
-  return v1?.[0] || v2?.[0] || null;
+  const verdict = await resolvePayload(base44, { payload_hex: payloadHex });
+  return verdict.attributed ? verdict.asset : null;
 }
 
 /**
@@ -77,10 +70,15 @@ export async function acceptV4Recovery(base44, { payload_hex, bit_error }) {
   if (band !== 'accept') {
     return { accepted: false, band, reason: band === 'abstain' ? 'undecidable_bit_error_band' : 'bit_error_too_high' };
   }
-  const asset = await resolveV4Payload(base44, payload_hex);
-  if (!asset) {
-    return { accepted: false, band, reason: 'payload_not_in_registry' };
+  // The verdict carries WHY resolution failed, and the distinction matters: an
+  // unregistered payload is a false positive, while a colliding one is a real
+  // mark the registry simply cannot disambiguate. Both refuse attribution, but
+  // only the second is a data problem worth investigating.
+  const verdict = await resolvePayload(base44, { payload_hex });
+  if (!verdict.attributed) {
+    return { accepted: false, band, reason: verdict.status };
   }
+  const asset = verdict.asset;
   return {
     accepted: true,
     band,
