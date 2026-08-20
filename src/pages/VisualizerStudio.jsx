@@ -11,6 +11,7 @@ import PresetPicker from '@/components/studio/PresetPicker';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 import InfoTip from '@/components/common/InfoTip';
+import PatchModulationTap from '@/components/visualizer/PatchModulationTap';
 
 export default function VisualizerStudio() {
   const params = new URLSearchParams(window.location.search);
@@ -24,6 +25,7 @@ export default function VisualizerStudio() {
   const [preset, setPreset] = useState(null);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
+  const [modLevel, setModLevel] = useState(0);
 
   const handleDirectUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -131,6 +133,14 @@ export default function VisualizerStudio() {
             <PresetPicker value={preset} onChange={setPreset} />
           </div>
 
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <h3 className="text-sm font-black flex items-center gap-2">
+              3. Patch Modulation
+              <InfoTip text="Tap a BASE Foundry patch's LFO or envelope and let it drive the visuals, so the picture moves with the processing instead of just the amplitude. The patch runs silently — it never alters your audio." />
+            </h3>
+            <PatchModulationTap onLevel={setModLevel} />
+          </div>
+
           <Button onClick={generate} disabled={running || (source === 'library' ? selected.length === 0 : !uploadedAssetId)}
             className="w-full rounded-xl bg-purple-600 hover:bg-purple-500 gap-2 font-bold">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
@@ -153,7 +163,7 @@ export default function VisualizerStudio() {
                   <p className="text-sm font-bold truncate">{result.title}</p>
                   <AddToProjectButton asset={result} tool="visualizer_studio" toolRoute="/visualizer-studio" />
                 </div>
-                <MilkdropVisualizer src={result.file_url} presetName={result.metadata?.visualizer_style || preset} title={result.title} />
+                <MilkdropVisualizer src={result.file_url} presetName={result.metadata?.visualizer_style || preset} title={result.title} modulation={modLevel} />
               </div>
               <ProvenancePanel asset={result} />
             </>

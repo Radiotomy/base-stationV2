@@ -81,6 +81,10 @@ export default class FoundryEngine {
     this.micStream = null;
     this.micSource = null;
     this._levelData = null;
+    // Read-only analyser taps on the graph's modulation sources (LFO / ADSR).
+    // Taps observe: they are additional connections off a modulator's output and
+    // never sit in the signal path, so reading them cannot alter the audio.
+    this.modTaps = [];
   }
 
   async ensureContext() {
@@ -427,9 +431,26 @@ export default class FoundryEngine {
     this.units = new Map();
     this.graph = graph;
 
+    this.modTaps = [];
     for (const node of graph.nodes || []) {
       const unit = this._createUnit(node);
-      if (unit) this.units.set(node.id, unit);
+      if (!unit) continue;
+      this.units.set(node.id, unit);
+      if (unit.isMod && unit.out) {
+        const an = this.ctx.createAnalyser();
+        an.fftSize = 256;
+        try {
+          unit.out.connect(an);
+          this.modTaps.push({
+            nodeId: node.id,
+            type: node.type,
+            label: NODE_DEFS[node.type]?.label || node.type,
+            analyser: an,
+            data: new Float32Array(an.fftSize),
+            scale: 1e-6,
+          });
+        } catch { /* an untappable modulator is simply not exposed */ }
+      }
     }
 
     for (const edge of graph.edges || []) {
@@ -563,6 +584,32 @@ export default class FoundryEngine {
       if (v > peak) peak = v;
     }
     return Math.min(1, peak);
+  }
+
+  /**
+   * Live modulation readout: one 0..1 value per LFO / envelope in the graph.
+   *
+   * A modulator's raw output is in the unit of whatever it drives (Hz, dB,
+   * seconds), so absolute values are meaningless to a consumer. Each tap
+   * normalises against the largest magnitude it has seen, which keeps the
+   * reading comparable across patches without inventing a fixed range.
+   */
+  getModulation() {
+    return this.modTaps.map((t) => {
+      t.analyser.getFloatTimeDomainData(t.data);
+      let peak = 0;
+      for (let i = 0; i < t.data.length; i++) {
+        const v = Math.abs(t.data[i]);
+        if (v > peak) peak = v;
+      }
+      if (peak > t.scale) t.scale = peak;
+      return {
+        nodeId: t.nodeId,
+        type: t.type,
+        label: t.label,
+        value: Math.min(1, peak / t.scale),
+      };
+    });
   }
 
   async destroy() {

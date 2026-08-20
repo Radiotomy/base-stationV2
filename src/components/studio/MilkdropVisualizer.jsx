@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
  * Real MilkDrop visualizer powered by Butterchurn (WebGL port of MilkDrop 2).
  * Renders community presets reacting to the actual audio stream.
  */
-export default function MilkdropVisualizer({ src, presetName, title, enableRecording = false }) {
+export default function MilkdropVisualizer({ src, presetName, title, enableRecording = false, modulation = 0 }) {
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
   const ctxRef = useRef(null);
@@ -165,7 +165,18 @@ export default function MilkdropVisualizer({ src, presetName, title, enableRecor
   return (
     <div className="space-y-2">
       <div className="relative rounded-xl overflow-hidden bg-black border border-border" style={{ aspectRatio: '16/9' }}>
-        <canvas ref={canvasRef} width={960} height={540} className="w-full h-full" />
+        {/* Foundry patch modulation drives scale + saturation, so the frame moves
+            with the patch's LFO/envelope rather than only with loudness. */}
+        <canvas
+          ref={canvasRef}
+          width={960}
+          height={540}
+          className="w-full h-full"
+          style={modulation ? {
+            transform: `scale(${1 + modulation * 0.06})`,
+            filter: `saturate(${1 + modulation * 0.8}) brightness(${1 + modulation * 0.15})`,
+          } : undefined}
+        />
         {!playing && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
             <Button onClick={togglePlay} size="lg" className="rounded-full bg-white/10 backdrop-blur hover:bg-white/20 gap-2">
