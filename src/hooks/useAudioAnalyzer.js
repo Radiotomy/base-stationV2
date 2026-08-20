@@ -12,6 +12,35 @@ import { useEffect, useRef, useState } from 'react';
 // (a failed re-attach left audio routed into a dead graph = playing but muted).
 const graphCache = new WeakMap();
 
+/**
+ * Get (or lazily build) the shared Web Audio graph for a media element:
+ * source → analyser → destination.
+ *
+ * Exported so other features (e.g. the Live Studio patch rack) can splice into
+ * the SAME graph. Building a second MediaElementSource for one element throws,
+ * so everything that touches live playback must come through here.
+ */
+export function getElementAudioGraph(el, fftSize = 256) {
+  if (!el) return null;
+  let graph = graphCache.get(el);
+  if (graph) return graph;
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  if (!Ctx) return null;
+  try {
+    const ctx = new Ctx();
+    const source = ctx.createMediaElementSource(el);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = fftSize;
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
+    graph = { ctx, source, analyser };
+    graphCache.set(el, graph);
+    return graph;
+  } catch {
+    return null;
+  }
+}
+
 export function useAudioAnalyzer(audioRef, { fftSize = 256, enabled = true } = {}) {
   const [data, setData] = useState({
     spectrum: new Array(fftSize / 2).fill(0),
@@ -35,19 +64,8 @@ export function useAudioAnalyzer(audioRef, { fftSize = 256, enabled = true } = {
 
     const setup = () => {
       try {
-        let graph = graphCache.get(el);
-        if (!graph) {
-          const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (!Ctx) return;
-          const ctx = new Ctx();
-          const source = ctx.createMediaElementSource(el);
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = fftSize;
-          source.connect(analyser);
-          analyser.connect(ctx.destination);
-          graph = { ctx, source, analyser };
-          graphCache.set(el, graph);
-        }
+        const graph = getElementAudioGraph(el, fftSize);
+        if (!graph) return;
         ctxRef.current = graph.ctx;
         sourceRef.current = graph.source;
         analyserRef.current = graph.analyser;

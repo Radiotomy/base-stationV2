@@ -23,6 +23,7 @@ import LiveQuestPanel from '@/components/live/LiveQuestPanel';
 import LiveDropTrigger from '@/components/live/LiveDropTrigger';
 import AudioModeSelector from '@/components/live/AudioModeSelector';
 import LocalVisualizerPreview from '@/components/live/LocalVisualizerPreview';
+import LivePatchRack from '@/components/live/LivePatchRack';
 import PortalsVenuePanel from '@/components/live/PortalsVenuePanel';
 import { useStreamrAudio } from '@/hooks/useStreamrAudio';
 
@@ -619,6 +620,9 @@ export default function LiveStudio() {
                 />
               </div>
             )}
+
+            {/* Foundry patch rack — live-only signal routing */}
+            <LivePatchRack audioRef={audioRef} hasTrack={!!selectedTrack} />
 
             {/* Reactions */}
             <LiveReactionBar sessionId={sessionId} currentUser={currentUser} isLive={isLive} />
