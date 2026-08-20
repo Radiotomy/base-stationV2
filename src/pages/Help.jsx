@@ -11,6 +11,7 @@ import TutorialWalkthrough from '@/components/help/TutorialWalkthrough';
 import ProTips from '@/components/help/ProTips';
 import PODCAST_HELP_SECTIONS from '@/components/help/podcastHelpSections';
 import FOUNDRY_HELP_SECTIONS from '@/components/help/foundryHelpSections';
+import VENUE_HELP_SECTIONS from '@/components/help/venueHelpSections';
 
 const SECTIONS = [
   {
@@ -300,6 +301,7 @@ const SECTIONS = [
           <li><strong>Submit Track</strong> — enter the public charts and playlists on BaseStation.</li>
           <li><strong>Publish to Audius</strong> — push to the Audius decentralized network from any finished asset.</li>
           <li><strong>Live Studio</strong> <span className="text-orange-300 font-semibold">(beta-locked — request access)</span> — go live with a co-listening session for your fans, with reactions, chat, tipping, and collectible drops.</li>
+          <li><strong>3D Venues</strong> — open a permanent room that plays your music around the clock, with AI staff and a public stage page. See the venue sections below.</li>
         </ul>
       </>
     ),
@@ -329,6 +331,8 @@ const SECTIONS = [
   },
   // BASE Foundry — DSP tool module, content in its own file
   ...FOUNDRY_HELP_SECTIONS,
+  // 3D venues, idle programming and AI staff
+  ...VENUE_HELP_SECTIONS,
   {
     id: 'rights',
     title: 'Rights Management Portal — your catalog, verified',

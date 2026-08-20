@@ -52,6 +52,10 @@ export default function VenueStaffCard({ venue, onUpdated }) {
         AI characters who greet fans and talk about your music. They only know what your venue can back up —
         the venue name, your name and what is playing — and are instructed never to invent anything else.
       </p>
+      <p className="text-xs text-muted-foreground">
+        Your 3D room has to be awake to be updated — if saving fails, open the room link above for a few
+        seconds first, then save again.
+      </p>
 
       <div className="space-y-3">
         {STAFF_ROLES.map((role, i) => (

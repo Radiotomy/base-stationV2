@@ -123,6 +123,15 @@ export async function downloadRoomData(roomId: string, key: string) {
   const res = await fetch(`${PORTAL_BASE}/mcp/download-room-data`, {
     headers: { 'x-room-id': roomId, 'x-access-key': key },
   });
+  // Portals only serves room data while the space is loaded in its live cache.
+  // A room nobody has opened recently answers 404 ROOM_NOT_FOUND — which is a
+  // sleeping room, NOT a missing one. Reported as a bare HTTP code this reads as
+  // a broken venue, so it is translated into the one action that fixes it.
+  if (res.status === 404) {
+    throw new Error(
+      'This 3D room is asleep, so it cannot be updated right now. Open the venue once in your browser (the Open 3D Room link), leave it loaded for a few seconds, then try again.',
+    );
+  }
   if (!res.ok) throw new Error(`Could not read the Portals room (HTTP ${res.status})`);
   return await res.json();
 }
