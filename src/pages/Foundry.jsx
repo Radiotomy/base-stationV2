@@ -61,7 +61,8 @@ export default function Foundry() {
             <p className="text-xs text-white/45 max-w-lg leading-relaxed">
               Prompt custom DSP into existence, rewire it on the canvas, and audition it live.
               Foundry patches are tools — they run in their own audio engine and never alter
-              your saved masters.
+              your saved masters. Publish a patch to share it, fork anyone else's, group
+              favourites into collections, or enter a Patch Design challenge — all below.
             </p>
           </div>
           <Button onClick={create} disabled={creating} className="h-9 text-xs merc-button shrink-0">

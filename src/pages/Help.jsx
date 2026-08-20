@@ -3,13 +3,14 @@ import { Link } from 'react-router-dom';
 import {
   Search, ArrowLeft, BookOpen, Music, Mic2, Palette, Film, Sparkles,
   Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint, Radio, Scale,
-  Layers, FileCheck, ScanLine, Users, Heart, Lock
+  Layers, FileCheck, ScanLine, Users, Heart, Lock, Cpu
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import HelpSection from '@/components/help/HelpSection';
 import TutorialWalkthrough from '@/components/help/TutorialWalkthrough';
 import ProTips from '@/components/help/ProTips';
 import PODCAST_HELP_SECTIONS from '@/components/help/podcastHelpSections';
+import FOUNDRY_HELP_SECTIONS from '@/components/help/foundryHelpSections';
 
 const SECTIONS = [
   {
@@ -83,10 +84,11 @@ const SECTIONS = [
         <p><strong className="text-foreground">Advanced Generate</strong> gives you full control: pick the provider, model version, BPM, voice persona, and attach your own lyrics.</p>
         <p><strong className="text-foreground">Providers at a glance:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Sonic v4-5+</strong> — vocal tracks. Custom mode for lyrics; auto-lyrics if you only have a vibe.</li>
-          <li><strong>Tempolor v4.6 / i3.5</strong> — strong genre fidelity, instrumental or vocal, supports cover mode.</li>
+          <li><strong>Tempolor (tempolor-latest, i3 / i4)</strong> — the current default for both vocal and instrumental generation: strong genre fidelity, reference-based cover mode, and the stem separation engine behind Stem Creator.</li>
+          <li><strong>Sonic v4-5+</strong> — vocal tracks and song extension. Custom mode for lyrics; auto-lyrics if you only have a vibe.</li>
           <li><strong>Producer (FUZZ-2.0)</strong> — instrumentals with quick turnaround.</li>
         </ul>
+        <p className="text-xs text-muted-foreground">Note: ElevenLabs is no longer a default music generator here — it stays in service for voice cloning, text-to-speech, and podcast voiceover.</p>
         <p><strong className="text-foreground">Sound prompt tips:</strong> describe instruments + atmosphere ("808 sub, brushed snare, distant choir, late-night intimate") — not just genre. 200–400 chars is the sweet spot.</p>
       </>
     ),
@@ -219,6 +221,11 @@ const SECTIONS = [
       <>
         <p>Drop in any track (from your library or direct PC upload) and pick an animation style.</p>
         <p><strong className="text-foreground">Tip:</strong> uploading direct from PC gives the best audio-reactive results — library tracks served from CloudFront may fall back to synthetic mode due to CORS.</p>
+        <div className="p-3 rounded-xl bg-purple-500/5 border border-purple-500/20">
+          <p className="text-purple-300 font-bold text-sm mb-1">🎛️ Patch Modulation — visuals that follow the processing</p>
+          <p>In step 3 you can tap a <strong className="text-foreground">BASE Foundry patch</strong> as a modulation source. Any patch of yours containing an LFO or an envelope shows up in the list; switch on "Drive visuals" and the picture's scale, saturation and brightness move with that modulator instead of only with loudness. Live meters show each modulator's value as it runs.</p>
+          <p className="mt-1.5">The patch runs <strong className="text-foreground">silently</strong> — it is read as a control source only and never touches, colours or re-renders your audio.</p>
+        </div>
         <p>Styles: <strong>Spectrum</strong> (frequency bars), <strong>Particles</strong> (flowing field), <strong>Waveform</strong> (clean pulse), <strong>Liquid</strong> (reactive metal), <strong>Cinematic</strong> (AI film loop), <strong>Retro</strong> (VHS glitch).</p>
       </>
     ),
@@ -250,6 +257,8 @@ const SECTIONS = [
           <li>Video (LTX): ~2 credits per second of video</li>
           <li>Music Video / Timeline render: 5 base + 1 per scene or clip (+3 audio, +4 captions)</li>
           <li>Visualizer: 12 credits</li>
+          <li>Stem separation: 8 credits per track</li>
+          <li>BASE Foundry: free — patches, presets, collections and the visualizer modulation tap all run in your browser</li>
         </ul>
         <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
           <p className="text-yellow-300 font-bold text-sm mb-1">⚡ Open beta credits</p>
@@ -306,10 +315,10 @@ const SECTIONS = [
       <>
         <p>Beyond generation, a full rack of audio tools works on any track in your library or uploaded from your PC:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Stem Creator</strong> — split any track into vocals, drums, bass, and instrument stems.</li>
+          <li><strong>Stem Creator</strong> — real separation (Tempolor Stems) into vocals, drums, bass, and instruments. Bundled results are unpacked server-side, so each stem lands in your library as its own playable, remixable asset (8 credits, 50 MB source limit).</li>
           <li><strong>Mashup Studio</strong> — blend two tracks into a new hybrid arrangement.</li>
           <li><strong>Vocal Harmonizer</strong> — layer AI-generated harmonies onto an existing vocal.</li>
-          <li><strong>Cover Song Studio</strong> — reimagine a track in a new genre or style with preset transformations.</li>
+          <li><strong>Cover Song Studio</strong> — reimagine a track in a new genre or style using reference-based generation, with preset transformations.</li>
           <li><strong>Audio Remix Studio</strong> — edit, extend, and apply effects to existing audio.</li>
           <li><strong>Sound FX Studio</strong> — generate custom sound effects from text descriptions.</li>
           <li><strong>Promo Studio</strong> — build shareable promo packages and social cards for a release.</li>
@@ -318,6 +327,8 @@ const SECTIONS = [
       </>
     ),
   },
+  // BASE Foundry — DSP tool module, content in its own file
+  ...FOUNDRY_HELP_SECTIONS,
   {
     id: 'rights',
     title: 'Rights Management Portal — your catalog, verified',
@@ -364,7 +375,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong><Link to="/charts" className="text-purple-400 hover:underline">Charts</Link></strong> — weekly, monthly, and all-time rankings of community tracks. Plays and votes move the needle.</li>
           <li><strong><Link to="/radio" className="text-purple-400 hover:underline">Radio</Link></strong> — 24/7 curated channels mixing community submissions with Audius catalog tracks.</li>
-          <li><strong><Link to="/challenges" className="text-purple-400 hover:underline">Challenges</Link></strong> — themed weekly competitions with badge rewards.</li>
+          <li><strong><Link to="/challenges" className="text-purple-400 hover:underline">Challenges</Link></strong> — themed competitions with badge rewards, in two categories: <strong>Music</strong> (a track is the entry) and <strong>Patch Design</strong> (a BASE Foundry patch is the entry, judged on the graph you designed rather than on audio). Forked entries are allowed and shown with their lineage — credit is displayed, not hidden.</li>
           <li><strong><Link to="/leaderboard" className="text-purple-400 hover:underline">Leaderboard &amp; Badges</Link></strong> — earn XP and badges for creating, submitting, and supporting other artists.</li>
           <li><strong><Link to="/forum" className="text-purple-400 hover:underline">Community Forum</Link></strong> — open to everyone (no account required) with dedicated boards for legal &amp; terms, COS methodology, and AI music policy.</li>
           <li><strong><Link to="/news-hub" className="text-purple-400 hover:underline">News Hub</Link></strong> — auto-curated AI music legal, policy, and industry news, refreshed 3× daily.</li>

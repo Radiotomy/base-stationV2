@@ -40,6 +40,8 @@ user-generated content and imported catalogue.
 `StudioHistory`, `UserCredit`, `CreditLog`, `APIUsageLog`, `MusicFinetune`,
 `VoicePersona`, `LoopSample`, `PromptTemplate`, `CustomChip`
 
+**BASE Foundry** — `FoundryPlugin`, `FoundryPreset`, `FoundryCollection`
+
 **Community** — `TrackSubmission`, `Playlist`, `PlaylistTrack`, `TrackChart`,
 `RadioChannel`, `AudiusRadioChannel`, `AudiusPlaylist`, `LoudlyPlaylist`,
 `Challenge`, `ChallengeSubmission`, `ArtistProfile`,
@@ -89,6 +91,23 @@ Community governance over the COS weights. A proposal names a `signal_key`, its
 `current_weight` and a `proposed_weight`; admins move it out of `open` based on
 consensus. The rules that judge creators are public and amendable.
 
+### `FoundryPlugin` / `FoundryPreset` / `FoundryCollection`
+A patch is a **tool**, not a sound recording, so these sit outside the
+`UserAsset` provenance spine entirely. `graph_state` is canvas truth and the only
+authoritative representation; `dsp_definition` is the compiled, engine-facing
+form. `human_score` is a **design** participation score and must never be blended
+with an audio COS. A `FoundryPreset` stores parameter *values* only — a preset
+that could change topology would silently become a different plugin under the
+same name. A `FoundryCollection` stores `plugin_ids` only: pointers, so
+collecting never copies a graph or detaches a patch from its author.
+
+### `Challenge` / `ChallengeSubmission`
+`category` decides what is being judged: `music` (a recording, carrying a
+`track_url`) or `patch_design` (a `FoundryPlugin`, carrying `plugin_id` and no
+track). `plugin_human_score` is snapshotted at submission so continued editing
+can't change what was judged, and `fork_parent_id` / `fork_depth` display lineage
+rather than hide it.
+
 ### `GenerationJob`
 Job ledger for every AI generation: `job_type`, `provider`, `status`,
 `provider_job_id`, `input_data`, `output_url`, `credits_used`, `ai_label`. The
@@ -103,6 +122,7 @@ throughout:
 | --- | --- |
 | Owner-only, all four ops | `UserAsset`, `MusicFinetune`, `Workspace`, `Project`, `GenerationJob`, `UserCredit` |
 | Owner-or-admin read, owner write | Most creator-scoped entities |
+| Public-flag read (`is_public` OR owner OR admin), owner write | `FoundryPlugin`, `FoundryPreset`, `FoundryCollection` |
 | Public read, owner/admin write | `TrackSubmission`, `Playlist`, `TransparencyFlag`, `CosProposal`, `BaseMarkBenchmark` |
 | Public read, admin-only write | `RadioChannel`, `NewsArticle`, `Badge`, `Challenge` |
 | Admin-only everything | `ErrorLog`, `MarketingContent`, `APIUsageLog` writes, `ForumMember` |

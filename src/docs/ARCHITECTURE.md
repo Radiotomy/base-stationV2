@@ -21,8 +21,15 @@ Base44 backend
   ├─ Workflows (scheduled / triggered)  (base44/workflows/*.jsonc)
   └─ In-app agents                      (base44/agents/*.jsonc)
         │
-External: Replicate · ElevenLabs · Audius · Pinata/IPFS · Base RPC · Freesound · Streamr
+External: Replicate · Tempolor · Sonic · ElevenLabs · Audius · Pinata/IPFS ·
+          Base RPC · Freesound · Streamr · Shotstack · LTX · Pexels
 ```
+
+**Provider posture (Aug 2026).** Tempolor is the default music-generation and
+stem-separation provider; Sonic remains in place for core generation and
+extension, with its migration paused pending a possible deprecation notice.
+ElevenLabs is retained **only** for voice cloning, TTS and podcast voiceover — it
+is not a default music generator.
 
 ## 2. The direct-CRUD vs backend-function split
 
@@ -67,6 +74,7 @@ problem.
 | `safeUrl.ts` | URL allow-listing / SSRF guard |
 | `persistMedia.ts` | Copy provider-hosted output onto our own storage |
 | `flacDecoder.ts` | Server-side FLAC decode for analysis paths |
+| `tempolorStems.ts` | Tempolor stem separation client, stem-label normalisation, and archive expansion |
 
 **Rule:** logic needed by more than one function goes here. Never copy a block
 between two `entry.ts` files.
@@ -104,6 +112,25 @@ modules, slot entity and Replicate deployments were removed in August 2026 (see
 or `BaseMarkV3Slot`; if it does, it is dead code.
 
 **Treat the execution budget as an architectural input, not an annoyance.**
+
+**Stem separation** follows the same shape with one extra step: Tempolor returns
+a multi-stem archive, so `pollTempolorStems` expands it server-side (`fflate`),
+uploads each stem's bytes to our own storage rather than trusting provider URLs,
+normalises filenames, and creates one `UserAsset` per stem with
+`parent_asset_id` pointing at the source. Credits are deducted once, on the
+finalize step. Large archives are the memory-pressure risk on this path.
+
+## 4a. BASE Foundry (client-side module)
+
+The Foundry is the one significant subsystem that is deliberately **not** on the
+server: a node-graph DSP engine owning its own `AudioContext`, isolated from the
+mastering chain, the BASE Mark path and every COS module. A patch is a *tool*,
+never a recording — it carries its own design participation score, which must
+never be blended with an audio COS, and it never enters the forensic attribution
+path. Its only backend piece is `foundryGenerateGraph` (prompt → graph). Phase 8
+added read-only analyser taps on a patch's LFO/envelope outputs so Visualizer
+Studio can be driven by modulation instead of amplitude; the tapped patch runs
+muted and touches no other audio graph. Full rules: `FOUNDRY_MODULE.md`.
 
 ## 5. Workflows
 
