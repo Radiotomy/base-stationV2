@@ -34,6 +34,10 @@ export function buildPortalEmbedUrl(roomId, opts = {}) {
     params.set('maximized', 'true');
   }
   if (loadTime) params.set('loadTime', String(loadTime));
+  // Ask Portals for its name/avatar prompt on entry. Without it every guest
+  // enters unnamed and the room fills with identical anonymous visitors — this
+  // is the documented switch that gives a fan a name over their own head.
+  params.set('glbavatar2022', 'true');
   // Only https GLBs are accepted — a http/relative url silently drops the avatar
   if (avatarUrl && avatarUrl.startsWith('https://')) params.set('avatar', avatarUrl);
   if (guardian) params.set('guardian', 'true');
@@ -43,5 +47,7 @@ export function buildPortalEmbedUrl(roomId, opts = {}) {
 
 /** Plain shareable link for fans opening the venue in their own tab. */
 export function buildPortalShareUrl(roomId) {
-  return roomId ? `${PORTAL_ORIGIN}?room=${roomId}` : '';
+  // Same name/avatar prompt as the embed — a fan opening the venue in their own
+  // tab should not be anonymous either.
+  return roomId ? `${PORTAL_ORIGIN}?room=${roomId}&glbavatar2022=true` : '';
 }

@@ -78,6 +78,57 @@
       "default": false,
       "description": "Whether the BASE Station in-world panel (now playing, provenance, tip jar, quests) is wired to this room's welcome iframe."
     },
+    "staff": {
+      "type": "array",
+      "description": "The venue's AI NPC staff \u2014 host, stage guide, bartender, hype dancer. Stored on the venue rather than as its own entity because a staff member has no life outside the room it stands in: deleting the venue must take its staff with it, and a roster of four characters is not a collection worth querying. Each entry is a POINTER to a rigged GLB plus the character's persona; the NPC itself only exists inside the Portals room, written into reserved item ids 120-139.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "host",
+              "guide",
+              "bartender",
+              "dancer"
+            ],
+            "description": "Which job this character does. The role decides where they stand and what they are briefed to talk about, so placement never has to be hand-authored per venue."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name shown above the character in-world"
+          },
+          "glb_url": {
+            "type": "string",
+            "description": "https URL of the avatar model. Must be RIGGED (skeleton/armature) to animate \u2014 an unrigged model loads as a frozen statue, which is why `rigged` exists rather than being assumed."
+          },
+          "rigged": {
+            "type": "boolean",
+            "default": true,
+            "description": "False marks a static model, which is then declared to Portals as non-rigged and given no animation. Getting this wrong is the single most common NPC failure, so it is recorded rather than guessed."
+          },
+          "animation": {
+            "type": "string",
+            "description": "Looping animation name, case-sensitive and exact ('Wave', 'Jive', 'Sitting', \u2026). Empty = idle. A near-miss name leaves the character in a T-pose."
+          },
+          "persona": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "The artist's own character notes, appended to the role's briefing. Never the whole prompt: the venue facts and the anti-invention rules are composed server-side, so a character cannot be given permission to make things up about the venue."
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Lets a creator park a character without losing the persona they wrote. A disabled member is simply not written into the room."
+          }
+        }
+      }
+    },
+    "staff_last_pushed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the staff were last written into the Portals room. Kept because a room upload replaces the ENTIRE room, so knowing whether the live room already matches the stored roster is what allows a needless write to be skipped."
+    },
     "idle_enabled": {
       "type": "boolean",
       "default": false,
