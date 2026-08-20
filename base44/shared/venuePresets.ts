@@ -293,7 +293,11 @@ export function buildIdleScreen(
         { x: 0.05, y: 0.05, z: 0.05 },
         { contentString: audioUrl },
       );
-      logic['106'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
+      // Spatial, but venue-wide: full volume anywhere near the stage (fStart) and
+      // still faintly present at the back of the largest preset (sEnd). The
+      // stream screen's tighter 8m/40m falloff is right for a focused
+      // performance and too small for a loop meant to fill the room.
+      logic['106'] = JSON.stringify({ b: true, e: 1.0, fStart: 25.0, sEnd: 200.0, Tasks: [], ViewNodes: [] });
     }
   }
   return { items, logic };
