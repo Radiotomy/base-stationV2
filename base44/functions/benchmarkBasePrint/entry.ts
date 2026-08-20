@@ -27,7 +27,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { decodeWav, ATTACKS, synthesizeBenchmarkSource } from '../../shared/audioAttacks.ts';
 import { computePrint } from '../../shared/basePrint.ts';
 import { matchPrints, matchAgainstMany } from '../../shared/basePrintMatch.ts';
-import { toMono, trimFromStart, round } from '../../shared/audioBenchUtils.ts';
+import { toMono, trimFromStart, sliceWindow, round } from '../../shared/audioBenchUtils.ts';
 import { durationBracket, decodeForPrint } from '../../shared/printRegistry.ts';
 import { extractPrintRemote } from '../../shared/printExtractRemote.ts';
 
@@ -72,14 +72,20 @@ function printOf(audio, dither = false) {
   return computePrint(toMono(audio), audio.sampleRate, dither);
 }
 
-async function loadWav(url, seconds) {
+async function loadWav(url, seconds, offsetSeconds = 0) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Could not fetch source (${r.status})`);
   const bytes = new Uint8Array(await r.arrayBuffer());
   // decodeForPrint = WAV or FLAC, same decode path the registry itself uses.
   // Speech null-corpus material from Archive.org ships as FLAC, and measuring
   // it through a different decoder than production would taint the calibration.
-  return trimFromStart(decodeForPrint(bytes), seconds);
+  const audio = decodeForPrint(bytes);
+  if (offsetSeconds > 0) {
+    const win = sliceWindow(audio, offsetSeconds, seconds);
+    if (!win) throw new Error(`window ${offsetSeconds}s+${seconds}s runs past the end of the file`);
+    return win;
+  }
+  return trimFromStart(audio, seconds);
 }
 
 // Build the reference + query print pair for one source, whatever container it
@@ -88,15 +94,15 @@ async function loadWav(url, seconds) {
 // is the only path in the system that can read it at all. The two paths must
 // stay interchangeable — they run identical constants, which is exactly what the
 // `parity` action exists to keep true.
-async function printsFor(url, seconds) {
+async function printsFor(url, seconds, offsetSeconds = 0) {
   try {
-    const audio = await loadWav(url, seconds);
+    const audio = await loadWav(url, seconds, offsetSeconds);
     const dur = audio.channels[0].length / audio.sampleRate;
     return { hashes: printOf(audio), query: printOf(audio, true), duration_seconds: dur, remote: false };
   } catch (localErr) {
-    const ref = await extractPrintRemote(url, { maxSeconds: seconds, dither: false });
+    const ref = await extractPrintRemote(url, { maxSeconds: seconds, offsetSeconds, dither: false });
     if (!ref.ok) throw new Error(`${localErr.message} / remote: ${ref.reason} ${ref.detail || ''}`);
-    const q = await extractPrintRemote(url, { maxSeconds: seconds, dither: true });
+    const q = await extractPrintRemote(url, { maxSeconds: seconds, offsetSeconds, dither: true });
     if (!q.ok) throw new Error(`remote query extract: ${q.reason} ${q.detail || ''}`);
     return { hashes: ref.hashes, query: q.hashes, duration_seconds: ref.duration_seconds, remote: true };
   }
@@ -112,6 +118,11 @@ export default async function (req) {
     const body = await req.json().catch(() => ({}));
     const action = body.action || 'selftest';
     const seconds = Number(body.seconds) || 20;
+    // Head windows are NOT safe for same-show material: episodes of one podcast
+    // share an intro stinger, so a 0-offset window compares partly identical
+    // audio and reports it as an unrelated match. Calibration sets this past the
+    // intro; registration and parity runs leave it at 0.
+    const offsetSeconds = Number(body.offset_seconds) || 0;
 
     // ── selftest ───────────────────────────────────────────────────────────
     if (action === 'selftest') {
@@ -295,7 +306,7 @@ export default async function (req) {
         const prints = [];
         for (const s of group.sources) {
           try {
-            const p = await printsFor(s.url, seconds);
+            const p = await printsFor(s.url, seconds, offsetSeconds);
             const dur = p.duration_seconds;
             prints.push({
               id: s.id || s.url,
@@ -384,6 +395,12 @@ export default async function (req) {
         action,
         seconds,
         corpora: report,
+        window_offset_seconds: offsetSeconds,
+        window_note:
+          offsetSeconds > 0
+            ? `Window starts ${offsetSeconds}s in — past any shared intro.`
+            : 'HEAD WINDOW. Only valid for material with no shared intro (single-shot clips). For same-show ' +
+              'episodes this compares partly identical audio and its unrelated-match rate is not interpretable.',
         note:
           'GATE MEASUREMENT. strongest_unrelated_lift per corpus and per bracket is the floor any speech ' +
           'acceptance rule must clear, and it must be compared against WARPED genuine lifts from a speech ' +

@@ -84,13 +84,18 @@ def probe_sample_rate(path):
     return rate
 
 
-def decode_mono_f32(path, max_seconds):
+def decode_mono_f32(path, max_seconds, offset_seconds=0):
     # Decode at NATIVE rate, mono, float32. The resample to TARGET_SR happens in
     # resample_mono below using the same box-average as the TS path — NOT
     # ffmpeg's high-quality resampler, which would move interpolated peak
     # positions relative to references extracted by the runtime.
     src_rate = probe_sample_rate(path)
     cmd = ["ffmpeg", "-v", "error", "-i", str(path)]
+    # -ss AFTER -i is the decode-accurate seek. Slower than an input-side seek,
+    # but an input-side seek on MP3 lands on a frame boundary chosen by the
+    # demuxer, which would put the reference and the query at different starts.
+    if offset_seconds and offset_seconds > 0:
+        cmd += ["-ss", str(float(offset_seconds))]
     if max_seconds and max_seconds > 0:
         cmd += ["-t", str(float(max_seconds))]
     cmd += ["-vn", "-ac", "1", "-f", "f32le", "-acodec", "pcm_f32le", "pipe:1"]
@@ -333,8 +338,15 @@ class Runner(BaseRunner):
             description="Analyse only the first N seconds (0 = whole file). Registration uses a cap; "
                         "calibration sets it explicitly so brackets stay comparable.",
         ),
+        offset_seconds: float = Input(
+            default=0,
+            description="Skip the first N seconds before analysing. Exists for calibration: episodes of the "
+                        "same show share an intro stinger, so a head window compares partly IDENTICAL audio "
+                        "and inflates the unrelated-match rate. Leave at 0 for registration and for parity "
+                        "runs (a decode-side seek is not guaranteed sample-identical to the runtime's slice).",
+        ),
     ) -> Output:
-        samples, src_rate = decode_mono_f32(audio, max_seconds)
+        samples, src_rate = decode_mono_f32(audio, max_seconds, offset_seconds)
         duration = samples.size / src_rate
 
         peaks = extract_peaks(samples, src_rate)

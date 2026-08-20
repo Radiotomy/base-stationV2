@@ -80,10 +80,14 @@ async function waitForPrediction(data, timeoutMs) {
 // registry callers cannot tell (and must not care) which path produced a blob —
 // with `remote: true` kept for diagnostics only. Never throws: an unreachable
 // container is a coverage statement, not a scan finding.
-export async function extractPrintRemote(audioUrl, { dither = false, maxSeconds = 0, timeoutMs = 600000 } = {}) {
+export async function extractPrintRemote(audioUrl, { dither = false, maxSeconds = 0, offsetSeconds = 0, timeoutMs = 600000 } = {}) {
   try {
     const input = { audio: audioUrl, dither: Boolean(dither) };
     if (maxSeconds > 0) input.max_seconds = maxSeconds;
+    // Only sent when non-zero: an older container build has no such input and
+    // Cog rejects unknown inputs outright, so registration keeps working
+    // untouched while calibration opts in after a rebuild.
+    if (offsetSeconds > 0) input.offset_seconds = offsetSeconds;
     const pred = await postPrediction(input, printVersion());
     const output = await waitForPrediction(pred, timeoutMs);
 
