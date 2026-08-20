@@ -107,6 +107,23 @@ Deno.serve(async (req) => {
       style: style || 'custom',
     };
 
+    // ⚠️ HARDEN BEFORE REVIVING SERVER-SIDE MASTERING (Foundry Phase 3 gap)
+    // This route is a stub: it re-uses the source URL as output and does NOT
+    // bake a Foundry insert. Today the real render happens client-side in
+    // AIMasteringPanel (renderMasteringOffline + UserAsset.create), which is
+    // where the patch is actually applied and recorded. If this function is
+    // ever made to produce real audio, it MUST also:
+    //   1. Accept the selected patch and splice it pre-limiter, at the same
+    //      position as offlineMastering.js — otherwise the render silently
+    //      disagrees with what the creator auditioned.
+    //   2. Write metadata.foundry_insert = { plugin_id, title,
+    //      plugin_human_score, parameter_snapshot: dsp_definition, baked_at }.
+    //      The SNAPSHOT is load-bearing: provenance must keep describing the
+    //      chain that shaped THIS audio even if the patch is later edited.
+    //   3. Grant the human_dsp_design COS signal (calculateCos with
+    //      humanDspDesign: true) and persist score/signals/label/basis.
+    // Skipping any of these loses the creator's design credit silently.
+    //
     // NOTE: In production this would dispatch to Sonic remaster or a DSP worker.
     // For now we persist the mastering profile + preview URL (same source) and
     // attach all parameters to metadata so the client can apply Web Audio DSP
