@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Layers, Loader2, Wand2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 
-const STEM_TYPES = [
+const OUTPUT_STEMS = [
   { id: 'vocals', label: 'Vocals', emoji: '🎤' },
   { id: 'drums', label: 'Drums', emoji: '🥁' },
   { id: 'bass', label: 'Bass', emoji: '🎸' },
@@ -23,27 +23,49 @@ export default function StemCreatorStudio() {
   const preselected = params.get('assetId');
 
   const [selected, setSelected] = useState(preselected ? [preselected] : []);
-  const [stemTypes, setStemTypes] = useState(['vocals', 'drums', 'bass', 'other']);
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState(null);
+  const [stems, setStems] = useState(null);
+  const timer = useRef(null);
 
-  const toggleStem = (id) => {
-    setStemTypes(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const poll = (jobId, attempt = 0) => {
+    // Separation runs provider-side; give it up to ~5 minutes before giving up.
+    if (attempt > 60) {
+      setRunning(false);
+      toast.error('Separation is taking longer than expected — check your library shortly.');
+      return;
+    }
+    timer.current = setTimeout(async () => {
+      try {
+        const r = await base44.functions.invoke('pollTempolorStems', { job_id: jobId });
+        if (r.data?.status === 'completed') {
+          setStems(r.data.stems || []);
+          setRunning(false);
+          toast.success(`Separated ${r.data.stems?.length || 0} stems`, { icon: '🎛️' });
+        } else if (r.data?.status === 'failed') {
+          setRunning(false);
+          toast.error(r.data.error || 'Stem separation failed');
+        } else {
+          poll(jobId, attempt + 1);
+        }
+      } catch {
+        poll(jobId, attempt + 1);
+      }
+    }, 5000);
   };
 
   const generate = async () => {
     if (selected.length === 0) { toast.error('Pick a track first'); return; }
-    if (stemTypes.length === 0) { toast.error('Pick at least one stem'); return; }
     setRunning(true);
-    setResult(null);
+    setStems(null);
     try {
-      const r = await base44.functions.invoke('generateStems', { assetId: selected[0], stemTypes });
-      setResult(r.data);
-      toast.success(`Separated ${r.data?.stems?.length || stemTypes.length} stems`, { icon: '🎛️' });
+      const r = await base44.functions.invoke('generateStems', { assetId: selected[0] });
+      toast.success('Separation started — this takes a minute or two.');
+      poll(r.data?.job_id);
     } catch (e) {
-      toast.error(e?.response?.data?.error || 'Stem separation failed');
-    } finally {
       setRunning(false);
+      toast.error(e?.response?.data?.error || 'Stem separation failed');
     }
   };
 
@@ -63,16 +85,17 @@ export default function StemCreatorStudio() {
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-black">2. Stems to Extract</h3>
+            <h3 className="text-sm font-black">2. What You Get</h3>
+            <p className="text-xs text-muted-foreground">
+              Separation produces all four stems in a single pass — you can't pick a subset,
+              because the model splits the whole mix at once.
+            </p>
             <div className="grid grid-cols-2 gap-2">
-              {STEM_TYPES.map(s => (
-                <button key={s.id} onClick={() => toggleStem(s.id)}
-                  className={`p-3 rounded-xl border text-left transition-all ${stemTypes.includes(s.id)
-                    ? 'border-emerald-500 bg-emerald-500/10'
-                    : 'border-border bg-muted/30 hover:border-emerald-500/40'}`}>
+              {OUTPUT_STEMS.map(s => (
+                <div key={s.id} className="p-3 rounded-xl border border-border bg-muted/30">
                   <div className="text-xl mb-1">{s.emoji}</div>
                   <p className="text-xs font-bold">{s.label}</p>
-                </button>
+                </div>
               ))}
             </div>
           </div>
@@ -80,27 +103,42 @@ export default function StemCreatorStudio() {
           <Button onClick={generate} disabled={running || selected.length === 0}
             className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 gap-2 font-bold">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
-            {running ? 'Separating…' : `Separate ${stemTypes.length} Stems`}
+            {running ? 'Separating…' : 'Separate Stems'}
           </Button>
+          <p className="text-[11px] text-muted-foreground text-center">
+            Costs 8 credits — charged only if separation succeeds.
+          </p>
         </div>
 
         {/* Results */}
         <div className="lg:col-span-2 space-y-4">
-          {!result && (
+          {!stems && !running && (
             <div className="bg-muted/30 border border-dashed border-border rounded-2xl p-8 text-center">
               <Layers className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-30" />
-              <p className="text-sm text-muted-foreground">Pick a track and select which stems to extract.</p>
+              <p className="text-sm text-muted-foreground">Pick a track to split into stems.</p>
             </div>
           )}
 
-          {result?.stems?.map(stem => (
+          {running && (
+            <div className="bg-card border border-border rounded-2xl p-8 text-center">
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-emerald-400" />
+              <p className="text-sm font-bold">Separating stems…</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Usually a minute or two. You can leave this page — the stems land in your library.
+              </p>
+            </div>
+          )}
+
+          {stems?.map(stem => (
             <div key={stem.id} className="bg-card rounded-2xl border border-border p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   <p className="text-sm font-bold">{stem.title}</p>
                 </div>
-                <Badge variant="outline" className="capitalize">{stem.stem_type}</Badge>
+                <Badge variant="outline" className="capitalize">
+                  {stem.stem_type || stem.metadata?.stem_type}
+                </Badge>
               </div>
               <StudioAudioPlayer src={stem.file_url} title={stem.title} compact />
               <div className="flex flex-wrap gap-2">
@@ -109,7 +147,7 @@ export default function StemCreatorStudio() {
             </div>
           ))}
 
-          {result?.stems?.[0] && <ProvenancePanel asset={result.stems[0]} />}
+          {stems?.[0] && <ProvenancePanel asset={stems[0]} />}
         </div>
       </div>
     </div>

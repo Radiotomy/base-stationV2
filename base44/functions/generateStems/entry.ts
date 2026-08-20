@@ -1,20 +1,21 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
+import { createStemTask } from '../../shared/tempolorStems.ts';
 
 /**
- * Phase 3 — Stem Creator Studio
+ * Stem Creator Studio — real stem separation via Tempolor (Stems v2).
  *
- * Provider-agnostic stem separation. Creates a GenerationJob, deducts credits,
- * and returns simulated stem UserAssets that inherit origin from the source.
+ * This submits an async provider task and returns a processing GenerationJob.
+ * Results are collected by pollTempolorStems, which is also where credits are
+ * deducted — nothing is charged for a separation that never lands.
  *
- * Real provider wiring (Sonic, custom DSP) plugs in via the providerRouter
- * helper — for now we register the job structure so the UI is fully
- * functional and persistence is correct.
- *
- * Payload: { assetId, stemTypes?: ['vocals','drums','bass','other'] }
+ * Payload: { assetId }
+ * Returns: { data: { job_id, status: 'processing', provider: 'tempcolor' } }
  */
 
-const DEFAULT_STEMS = ['vocals', 'drums', 'bass', 'other'];
-const CREDITS_PER_STEM = 2;
+// Flat cost: separation is ONE provider call regardless of how many stems come
+// back, so the old per-stem multiplier no longer described what was billed.
+// 8 credits matches what a full 4-stem run cost before.
+const SEPARATION_COST = 8;
 
 Deno.serve(async (req) => {
   try {
@@ -22,97 +23,61 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { assetId, stemTypes = DEFAULT_STEMS } = await req.json();
+    const { assetId } = await req.json();
     if (!assetId) return Response.json({ error: 'assetId required' }, { status: 400 });
 
-    // Load source asset (user-scoped)
     const sourceList = await base44.entities.UserAsset.filter({ id: assetId });
     const source = sourceList[0];
     if (!source) return Response.json({ error: 'Source asset not found' }, { status: 404 });
     if (source.asset_type !== 'track') {
       return Response.json({ error: 'Source must be a track' }, { status: 400 });
     }
+    if (!source.file_url) {
+      return Response.json({ error: 'Source track has no audio file' }, { status: 400 });
+    }
 
-    // Only Sonic is currently wired for stem separation
-    const primary = 'sonic';
+    // ── Credit gate (charged on completion, not here) ──
+    const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+    const balance = recs[0]?.balance ?? 0;
+    if (balance < SEPARATION_COST) {
+      return Response.json({
+        error: 'Insufficient credits',
+        required: SEPARATION_COST,
+        balance,
+        message: `Stem separation costs ${SEPARATION_COST} credits. You have ${balance}.`,
+      }, { status: 402 });
+    }
 
-    // Create generation job
+    const itemId = await createStemTask(source.file_url);
+
+    const startedAt = new Date().toISOString();
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id,
       user_email: user.email,
       job_type: 'music',
-      provider: primary,
-      status: 'completed',
-      input_data: { assetId, stemTypes, action: 'stem_separation' },
-      output_url: source.file_url,
-      output_metadata: { stems: stemTypes, source_provider: source.metadata?.provider },
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
+      provider: 'tempcolor',
+      status: 'processing',
+      input_data: {
+        action: 'stem_separation',
+        assetId,
+        source_title: source.title,
+        credit_cost: SEPARATION_COST,
+      },
+      provider_job_id: itemId,
+      started_at: startedAt,
     });
 
-    // Deduct credits (best-effort, non-blocking on UI)
-    try {
-      await base44.functions.invoke('deductCredits', {
-        amount: CREDITS_PER_STEM * stemTypes.length,
-        job_id: job.id,
-        provider: primary,
-        description: `Stem separation: ${stemTypes.length} stems`,
-      });
-    } catch { /* non-blocking */ }
-
-    // Create stem assets — origin inherits from source
-    const stems = [];
-    for (const stemType of stemTypes) {
-      const asset = await base44.entities.UserAsset.create({
-        user_id: user.id,
-        user_email: user.email,
-        asset_type: 'stem',
-        title: `${source.title} — ${stemType}`,
-        description: `${stemType} stem extracted from ${source.title}`,
-        file_url: source.file_url, // placeholder until real DSP wiring
-        thumbnail_url: source.thumbnail_url,
-        origin: source.origin || 'creator',
-        // RIAA GenAI label — stem separation is non-generative, inherit source label
-        ...(source.ai_label && { ai_label: source.ai_label }),
-        // Creative Ownership Score — derived asset: reference material + iteration
-        ai_disclosure_label: 'ai_generated',
-        ai_disclosure_basis: 'Score based on: reference material upload, iterative refinement.',
-        human_participation_score: 25,
-        participation_signals: { reference_material: 15, iteration: 10 },
-        parent_asset_id: source.id,
-        stem_type: stemType,
-        tags: ['stem', stemType, ...(source.tags || [])],
-        metadata: {
-          stem_type: stemType,
-          source_asset_id: source.id,
-          source_title: source.title,
-          provider: primary,
-          bpm: source.metadata?.bpm,
-          key: source.metadata?.key,
-          duration: source.metadata?.duration,
-          provenance: {
-            created_by: 'stem_creator',
-            providers_used: [primary],
-            stems_used: [],
-            remix_sources: [source.id],
-          },
-        },
-      });
-      stems.push(asset);
-    }
-
-    // Studio history
-    await base44.asServiceRole.entities.StudioHistory.create({
-      user_id: user.id,
-      user_email: user.email,
-      tool: 'stem_creator',
-      asset_id: stems[0]?.id,
-      source_asset_ids: [source.id],
-      title: `Separated ${stems.length} stems from "${source.title}"`,
-      metadata: { provider: primary, stems: stemTypes },
+    base44.asServiceRole.entities.APIUsageLog.create({
+      user_id: user.id, user_email: user.email, user_name: user.full_name,
+      provider: 'tempcolor', task: 'stem_separation',
+      credits_used: 0, status: 'pending',
+      timestamp: startedAt, job_id: job.id,
+      metadata: { action: 'stem_separation', source_asset_id: assetId, provider_job_id: itemId },
     }).catch(() => {});
 
-    return Response.json({ data: { job_id: job.id, stems, provider: primary } });
+    return Response.json({
+      data: { job_id: job.id, status: 'processing', provider: 'tempcolor', item_id: itemId },
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
