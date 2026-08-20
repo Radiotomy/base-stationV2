@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Music, Image, FileText, Film, Trash2, ChevronDown, Download, Shield, Zap, Clock, Mic2, Hash, Sparkles } from 'lucide-react';
+import { Music, Image, FileText, Film, Trash2, ChevronDown, Download, Shield, Zap, Clock, Mic2, Hash, Sparkles, Cpu } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
+import FoundryProvenanceRow from '@/components/studio/FoundryProvenanceRow';
 import AILabelBadge from '@/components/common/AILabelBadge';
 import WavDownloadButton from '@/components/music/WavDownloadButton';
 import NextStepNudge from '@/components/dashboard/NextStepNudge';
@@ -109,6 +110,14 @@ export default function TrackCard({ asset, onDelete, workspaces, onAssignWorkspa
             {m.bpm     && <Badge variant="outline" className="text-xs px-1.5 py-0">{m.bpm} BPM</Badge>}
             {m.key     && <Badge variant="outline" className="text-xs px-1.5 py-0">{m.key}</Badge>}
             {m.id3_tagged && <Badge className="text-xs px-1.5 py-0 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">ID3 ✓</Badge>}
+            {m.foundry_insert && (
+              <Badge
+                title={`Foundry patch baked in: ${m.foundry_insert.title || 'Untitled patch'}`}
+                className="text-xs px-1.5 py-0 bg-[#FF9A4D]/10 text-[#FFC98A] border-[#FF9A4D]/25 gap-1"
+              >
+                <Cpu className="w-2.5 h-2.5" /> Foundry
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -229,6 +238,9 @@ export default function TrackCard({ asset, onDelete, workspaces, onAssignWorkspa
                   <pre className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap font-sans">{m.lyrics}</pre>
                 </div>
               )}
+
+              {/* Baked Foundry patch — the creator's own DSP chain */}
+              <FoundryProvenanceRow insert={m.foundry_insert} />
 
               {/* Content hash / provenance */}
               {m.content_hash && (
