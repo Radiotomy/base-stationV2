@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useMemo } from 'react';
 import { PARAMETRIC_EQ_ZONES } from '@/config/parametricEQZones';
 import { buildFoundryInsert, isInsertable } from '@/lib/foundry/foundryInsert';
 
@@ -412,7 +412,10 @@ export default function useMasteringChain() {
     };
   }, []);
 
-  return {
+  // Stable identity: consumers put `chain` in effect dependency arrays, so a new
+  // object on every render re-fires those effects and re-attaches the graph —
+  // which loops until React tears the page down.
+  return useMemo(() => ({
     attach,
     setBalance,
     setSeparation,
@@ -421,5 +424,5 @@ export default function useMasteringChain() {
     setLufsTarget,
     setInsert,
     getAnalysers,
-  };
+  }), [attach, setBalance, setSeparation, setEQBand, setCharacter, setLufsTarget, setInsert, getAnalysers]);
 }
