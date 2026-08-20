@@ -39,6 +39,16 @@
       "default": "platform",
       "description": "Which Portals account owns the underlying room. 'platform' = provisioned under BASE Station's account (no Portals account needed). 'creator' = created with the creator's own connected access key, so their wallet owns it. This is fixed at creation time and never rewritten: the room can only ever be modified with the key that made it."
     },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "public",
+        "unlisted",
+        "private"
+      ],
+      "default": "unlisted",
+      "description": "Who may find and enter this venue from BASE Station. 'public' = listed in the public venue directory and open to anyone. 'unlisted' = fully playable but only reachable with the direct link, so a creator can share a room before announcing it. 'private' = the public venue page refuses to serve it at all. Defaults to 'unlisted' deliberately: a venue must be opted IN to a public directory by its creator, never swept in by a platform feature launched after it was built. Note the underlying Portals room has its own access settings \u2014 this field governs BASE Station surfaces only."
+    },
     "status": {
       "type": "string",
       "enum": [

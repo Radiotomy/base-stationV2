@@ -26,6 +26,11 @@ export default async function (req) {
     if (!venue || venue.status === 'archived') {
       return Response.json({ error: 'Venue not found' }, { status: 404 });
     }
+    // A private venue is closed to every fan-facing surface. Legacy venues have
+    // no visibility set and stay reachable by link, which is what they were.
+    if (venue.visibility === 'private') {
+      return Response.json({ error: 'This venue is private' }, { status: 403 });
+    }
 
     const state = await resolveVenueIdleState(base44, venue);
 
