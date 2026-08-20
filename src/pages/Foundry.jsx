@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import PluginCard from '@/components/foundry/PluginCard';
 import CommunityFoundryHub from '@/components/foundry/CommunityFoundryHub';
+import FeaturedPatchShelf from '@/components/foundry/FeaturedPatchShelf';
+import PatchCollections from '@/components/foundry/PatchCollections';
 import { starterGraph } from '@/lib/foundry/nodeTypes';
 import { compileGraph } from '@/lib/foundry/audioEngine';
 
@@ -68,6 +70,8 @@ export default function Foundry() {
           </Button>
         </div>
 
+        <FeaturedPatchShelf />
+
         <div className="mb-10">
           <span className="text-[11px] uppercase tracking-widest text-white/50">My patches</span>
           {mine === null && (
@@ -90,6 +94,8 @@ export default function Foundry() {
             {(mine || []).map((p) => <PluginCard key={p.id} plugin={p} />)}
           </div>
         </div>
+
+        <PatchCollections />
 
         <CommunityFoundryHub />
       </div>

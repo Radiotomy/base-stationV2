@@ -8,10 +8,17 @@ import { newId } from '@/lib/foundry/nodeTypes';
 
 const CATEGORIES = ['all', 'effect', 'instrument', 'utility', 'modulator'];
 
+const SORTS = [
+  { key: 'newest', label: 'Newest', apply: (a, b) => new Date(b.created_date) - new Date(a.created_date) },
+  { key: 'forks', label: 'Most forked', apply: (a, b) => (b.fork_count || 0) - (a.fork_count || 0) },
+  { key: 'design', label: 'Design score', apply: (a, b) => (b.human_score || 0) - (a.human_score || 0) },
+];
+
 // Community Foundry Hub — explore, audition and fork public plugins.
 export default function CommunityFoundryHub() {
   const [plugins, setPlugins] = useState(null);
   const [category, setCategory] = useState('all');
+  const [sort, setSort] = useState('newest');
   const [forking, setForking] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -65,7 +72,9 @@ export default function CommunityFoundryHub() {
     }
   };
 
-  const shown = (plugins || []).filter((p) => category === 'all' || p.category === category);
+  const shown = (plugins || [])
+    .filter((p) => category === 'all' || p.category === category)
+    .sort((SORTS.find((s) => s.key === sort) || SORTS[0]).apply);
 
   return (
     <div className="space-y-4">
@@ -83,6 +92,23 @@ export default function CommunityFoundryHub() {
             }`}
           >
             {c}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-[10px] uppercase tracking-widest text-white/30 mr-1">Sort</span>
+        {SORTS.map((s) => (
+          <button
+            key={s.key}
+            onClick={() => setSort(s.key)}
+            className={`px-2.5 py-1 rounded-lg text-[10px] transition-colors border ${
+              sort === s.key
+                ? 'text-white border-white/25 bg-white/10'
+                : 'text-white/40 border-white/8 hover:text-white/70'
+            }`}
+          >
+            {s.label}
           </button>
         ))}
       </div>

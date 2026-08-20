@@ -1,0 +1,80 @@
+{
+  "name": "FoundryCollection",
+  "type": "object",
+  "description": "A curated set of BASE Foundry patches \u2014 a 'patch playlist'. Stores plugin ids only, never copies of graphs: a collection is a pointer list, so a patch stays owned and versioned by its author no matter how many collections reference it.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Curator of the collection"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "plugin_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "FoundryPlugin ids in curator order. Ids that no longer resolve are skipped on render rather than pruned \u2014 a deleted patch must not silently rewrite someone's collection."
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_public": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

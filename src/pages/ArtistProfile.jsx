@@ -16,6 +16,7 @@ import TopFans from "@/components/community/TopFans";
 import CollectiblesGrid from "@/components/collectibles/CollectiblesGrid";
 import AILabelBadge from "@/components/common/AILabelBadge";
 import CreatorPodcastShowcase from "@/components/studios/orvo/CreatorPodcastShowcase";
+import CreatorPatchShowcase from "@/components/foundry/CreatorPatchShowcase";
 
 function StatBox({ value, label }) {
   return (
@@ -284,6 +285,9 @@ export default function ArtistProfile() {
 
         {/* Podcasts */}
         <CreatorPodcastShowcase creatorId={id} />
+
+        {/* Foundry patches */}
+        <CreatorPatchShowcase creatorId={id} />
 
         {/* Top Fans */}
         <TopFans artistId={id} />
