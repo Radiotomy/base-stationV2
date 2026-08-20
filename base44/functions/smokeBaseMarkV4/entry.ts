@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { ATTACKS, decodeWav, encodeWav, synthesizeBenchmarkSource } from '../../shared/audioAttacks.ts';
-import { startV4, getV4Prediction, packV4Message, unpackV4Message, v4Model, v4Version } from '../../shared/baseMarkV4.ts';
+import { startV4, getV4Prediction, packV4Message, unpackV4Message, newCopyId, v4Model, v4Version } from '../../shared/baseMarkV4.ts';
 import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
 
 // BASE Mark V4 (Speed Layer) smoke test — the first real exercise of the
@@ -62,10 +62,15 @@ export default async function (req: Request): Promise<Response> {
       }
 
       const payloadHex = body.payload_hex || TEST_PAYLOAD;
+      // PHASE 6: exercise the per-copy path by default. A smoke test that only
+      // ever embedded a bearer message would leave the copy id and the 64-bit
+      // tag — the whole point of the new format — untested.
+      const copyId = body.copy_id || newCopyId();
+      const messageHex = await packV4Message(payloadHex, copyId);
       const pred = await startV4({
         audio: file_url,
         mode: 'encode',
-        payload_hex: packV4Message(payloadHex),
+        payload_hex: messageHex,
         key_hex: Deno.env.get('BASE_MARK_V4_KEY'),
       });
 
@@ -73,7 +78,9 @@ export default async function (req: Request): Promise<Response> {
         model: v4Model(),
         pinned_version: v4Version() ? 'yes' : 'no',
         payload_hex: payloadHex,
-        message_hex: packV4Message(payloadHex),
+        copy_id: copyId,
+        message_hex: messageHex,
+        message_version: 2,
         prediction_id: pred.id,
         source_url: file_url,
         source_kind: body.source_url ? 'uploaded' : 'synthetic',
@@ -195,15 +202,28 @@ export default async function (req: Request): Promise<Response> {
       // The container returns ONE recovered 128-bit message as `payload_hex`
       // (already the best of audiowmark's pattern lines) — not a list.
       const message = out.payload_hex || null;
-      const { valid: structurallyValid, payload_hex: recovered } = unpackV4Message(message);
+      // PHASE 6: `valid` is now the 64-bit HMAC verdict, not a zero-tail check.
+      // `reason` distinguishes a tag mismatch (tampered or spurious) from a
+      // retired-format message (a stale marked file), which previously looked
+      // identical.
+      const { valid: tagValid, payload_hex: recovered, copy_id: recoveredCopyId, per_copy, reason } =
+        await unpackV4Message(message);
 
       return Response.json({
         status: 'succeeded',
         detected: out.detected === true,
         expected_payload_hex: expected,
         recovered_payload_hex: recovered,
-        zero_tail_intact: structurallyValid,
-        survived: out.detected === true && structurallyValid && recovered === expected,
+        recovered_copy_id: recoveredCopyId,
+        per_copy,
+        tag_valid: tagValid,
+        invalid_reason: reason,
+        copy_id_match: body.copy_id ? recoveredCopyId === body.copy_id : null,
+        survived:
+          out.detected === true &&
+          tagValid &&
+          recovered === expected &&
+          (!body.copy_id || recoveredCopyId === body.copy_id),
         speed: out.speed ?? null,
         confidence: out.confidence ?? null,
         raw_message: message,
@@ -295,13 +315,17 @@ export default async function (req: Request): Promise<Response> {
           continue;
         }
         const out = p.output || {};
-        const { valid, payload_hex: recovered } = unpackV4Message(out.payload_hex || null);
-        const survived = out.detected === true && valid && recovered === expected;
+        const { valid, payload_hex: recovered, copy_id: recoveredCopyId } =
+          await unpackV4Message(out.payload_hex || null);
+        const survived =
+          out.detected === true && valid && recovered === expected &&
+          (!body.copy_id || recoveredCopyId === body.copy_id);
         results.push({
           attack: job.attack,
           status: 'succeeded',
           survived,
           recovered_payload_hex: recovered,
+          recovered_copy_id: recoveredCopyId,
           speed: out.speed ?? null,
           confidence: out.confidence ?? null,
           note: out.note ?? null,
@@ -496,11 +520,12 @@ export default async function (req: Request): Promise<Response> {
         }
 
         const out = p.output || {};
-        const { valid, payload_hex: recovered } = unpackV4Message(out.payload_hex || null);
-        // A false positive is a payload that is STRUCTURALLY VALID — correct
-        // length with the zero tail intact. A garbage pattern line that fails
-        // that check is a near miss worth recording, not a false attribution,
-        // because the production gate would reject it on structure alone.
+        const { valid, payload_hex: recovered } = await unpackV4Message(out.payload_hex || null);
+        // A false positive is now a message whose 64-bit HMAC tag VERIFIES out of
+        // unmarked audio. That bar is ~1 in 1.8e19 rather than the zero tail's
+        // structural guess, so a valid row here is an extraordinary result and
+        // invalidates the threshold outright. A garbage pattern line failing the
+        // tag is a near miss worth recording, not a false attribution.
         const falsePositive = out.detected === true && valid;
         // Only meaningful when the detector actually returned a pattern line. On
         // a clean miss the container reports confidence 0, which would otherwise
@@ -517,7 +542,7 @@ export default async function (req: Request): Promise<Response> {
           any_pattern_line: out.detected === true,
           false_positive: falsePositive,
           spurious_payload_hex: out.detected === true ? recovered : null,
-          zero_tail_intact: valid,
+          tag_valid: valid,
           bit_error: bitError,
           speed: out.speed ?? null,
           note: out.note ?? null,

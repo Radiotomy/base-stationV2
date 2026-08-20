@@ -140,6 +140,27 @@ export async function deriveV2Tag(payloadHex) {
   return b[0];
 }
 
+/**
+ * Derive the V4 message's 64-bit validity tag over (payload, copy id).
+ *
+ * PHASE 6. This is what the V2 tag could not be: SilentCipher's 40-bit message
+ * left room for 8 bits, which authenticates but still admits a random decode
+ * about 1 time in 256. audiowmark carries 128 bits, so the tag can be 64 —
+ * a random decode lands on a valid tag about 1 time in 1.8e19, which is what
+ * makes the tag itself load-bearing rather than a structural hint.
+ *
+ * The tag covers the COPY ID as well as the payload. Without that, a copy id
+ * could be edited to point at a different recipient while the tag still
+ * verified, which would make per-copy tracing worthless.
+ */
+export async function deriveV4Tag(payloadHex, copyIdHex) {
+  const b = await hmacBytes(
+    'basemark.v4.tag',
+    `${String(payloadHex).toLowerCase()}:${String(copyIdHex).toLowerCase()}`,
+  );
+  return Array.from(b.slice(0, 8)).map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+
 /** Every asset already registered under this payload, across all layer indexes. */
 export async function payloadOwners(base44, payloadHex) {
   const svc = base44.asServiceRole || base44;

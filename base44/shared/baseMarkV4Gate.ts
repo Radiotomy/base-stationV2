@@ -16,6 +16,7 @@
 // force every ambiguous decode into one of two confident answers, which is how
 // false attributions get manufactured.
 import { resolvePayload } from './baseMarkResolve.ts';
+import { V4_BEARER_COPY_ID } from './baseMarkV4Message.ts';
 
 export const V4_BIT_ERROR_ACCEPT_BELOW = 0.45;
 export const V4_BIT_ERROR_ABSTAIN_ABOVE = 0.50;
@@ -61,11 +62,37 @@ export async function resolveV4Payload(base44, payloadHex) {
 }
 
 /**
+ * Resolve a recovered copy id to its issuance record. PHASE 6.
+ *
+ * A copy id is only evidence if something says who the copy went to, so an id
+ * with no issuance record is reported as UNKNOWN rather than trusted: the tag
+ * proves the id was written by us, but not that this particular id was ever
+ * issued, and a copy record could have been deleted. Scoped to the resolved
+ * asset — a copy id is unique within an asset, not globally.
+ */
+export async function resolveCopy(base44, assetId, copyIdHex) {
+  if (!copyIdHex || copyIdHex === V4_BEARER_COPY_ID) {
+    return { per_copy: false, copy: null, status: 'bearer_copy' };
+  }
+  const svc = base44.asServiceRole || base44;
+  const rows = await svc.entities.BaseMarkCopy
+    .filter({ asset_id: assetId, copy_id: copyIdHex }, '-created_date', 2)
+    .catch(() => []);
+  if (!rows.length) return { per_copy: true, copy: null, status: 'copy_not_on_record' };
+  return { per_copy: true, copy: rows[0], status: rows[0].status === 'revoked' ? 'copy_revoked' : 'copy_identified' };
+}
+
+/**
  * Full V4 acceptance decision: band classification AND registry confirmation.
  * Both must pass. Returns a uniform verdict object so no caller has to
  * reimplement — or subtly weaken — either half.
+ *
+ * PHASE 6: when the message carried a copy id, the verdict also names the copy.
+ * That is what upgrades the claim from §8.2's narrow "this signature belongs to
+ * asset X" to "this audio carries the copy issued to Y" — the replay gap, closed
+ * for this layer only.
  */
-export async function acceptV4Recovery(base44, { payload_hex, bit_error }) {
+export async function acceptV4Recovery(base44, { payload_hex, bit_error, copy_id }) {
   const band = classifyV4BitError(bit_error);
   if (band !== 'accept') {
     return { accepted: false, band, reason: band === 'abstain' ? 'undecidable_bit_error_band' : 'bit_error_too_high' };
@@ -79,11 +106,17 @@ export async function acceptV4Recovery(base44, { payload_hex, bit_error }) {
     return { accepted: false, band, reason: verdict.status };
   }
   const asset = verdict.asset;
+  const copy = await resolveCopy(base44, asset.id, copy_id);
   return {
     accepted: true,
     band,
     asset_id: asset.id,
     title: asset.title,
+    per_copy: copy.per_copy,
+    copy_status: copy.status,
+    copy_id: copy.per_copy ? copy_id : null,
+    issued_to: copy.copy?.issued_to || null,
+    copy_purpose: copy.copy?.purpose || null,
     production_approved: V4_PRODUCTION_APPROVED,
   };
 }

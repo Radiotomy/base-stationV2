@@ -1,0 +1,98 @@
+{
+  "name": "BaseMarkCopy",
+  "type": "object",
+  "description": "One issued copy of a marked asset (BASE Mark V4, Phase 6). This is the record that makes a per-copy payload mean something: the 32-bit copy id inside the V4 message is only traceable if something says which issuance it was. Written server-side only \u2014 a client that could create these could forge an issuance record and misdirect a replay investigation.",
+  "properties": {
+    "asset_id": {
+      "type": "string",
+      "description": "UserAsset this copy was cut from"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Owner of the source asset, so a creator can read their own issuance log"
+    },
+    "payload_hex": {
+      "type": "string",
+      "description": "The asset's keyed 32-bit payload \u2014 identical across every copy. Deliberately duplicated here so a recovered payload can be resolved to copies without loading the asset first."
+    },
+    "copy_id": {
+      "type": "string",
+      "description": "32-bit copy identifier as 8 hex chars, unique within this asset. '00000000' is reserved for a bearer copy (no per-copy issuance) and is never stored as a record."
+    },
+    "message_hex": {
+      "type": "string",
+      "description": "The full 128-bit V4 message actually embedded (payload + copy id + validity tag). Stored so a recovery can be reproduced exactly rather than re-derived from assumptions about the format in force at issue time."
+    },
+    "message_version": {
+      "type": "number",
+      "default": 2,
+      "description": "V4 message format generation. 1 = retired zero-tail format, 2 = keyed per-copy format. A mark cannot be interpreted without knowing which."
+    },
+    "issued_to": {
+      "type": "string",
+      "description": "Who or what this copy was released to \u2014 an email, a partner name, or a distribution channel. Free text: the point is investigability, not a foreign key."
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Why the copy was cut, e.g. 'sync licence screener', 'press promo', 'DSP delivery'"
+    },
+    "marked_file_url": {
+      "type": "string",
+      "description": "The delivered file carrying this copy's mark"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "issued",
+        "failed",
+        "revoked"
+      ],
+      "default": "processing",
+      "description": "revoked records the copy's authorisation being withdrawn. It does NOT remove the mark from any file already delivered, so a revoked copy still resolves \u2014 it resolves to a copy that was not supposed to be in circulation, which is the finding rather than a reason to hide it."
+    },
+    "leak_reported_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set when this copy was recovered from audio it was not licensed to appear in"
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  },
+  "required": [
+    "asset_id",
+    "copy_id",
+    "payload_hex"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -15,7 +15,19 @@
 //      why there is no deployment endpoint below: the model endpoint is fine.
 
 export const BASE_MARK_V4_VERSION = '4.0';
-export const V4_MESSAGE_HEX_CHARS = 32; // 128-bit audiowmark message
+
+// PHASE 6: the message layout lives in baseMarkV4Message.ts, where it became a
+// keyed per-copy format. Re-exported so existing importers keep working — but
+// both helpers are now ASYNC, because the validity tag is a real HMAC.
+export {
+  packV4Message,
+  unpackV4Message,
+  newCopyId,
+  V4_MESSAGE_HEX_CHARS,
+  V4_MESSAGE_VERSION,
+  V4_BEARER_COPY_ID,
+} from './baseMarkV4Message.ts';
+import { packV4Message, V4_MESSAGE_HEX_CHARS, V4_BEARER_COPY_ID } from './baseMarkV4Message.ts';
 
 // Same defensive check as V3: a stored model value without a slash is a
 // misconfigured secret (we have literally had the secret NAME saved as its
@@ -38,27 +50,6 @@ export function v4Key() {
   const key = (Deno.env.get('BASE_MARK_V4_KEY') || '').trim();
   if (!key) throw new Error('BASE_MARK_V4_KEY is not set — refusing to write an unkeyed, publicly readable mark');
   return key;
-}
-
-// ── Message packing ────────────────────────────────────────────────────────
-// Our registry payload is 32 bits (8 hex chars) and audiowmark's message is
-// 128 bits (32 hex chars). The payload is left-aligned and the remainder zero
-// filled. The zero tail is not wasted space: it doubles as a cheap structural
-// check on decode, because a spurious recovery has no reason to land 96 zero
-// bits in a row. Redundancy is left to audiowmark's own error correction rather
-// than reinvented by repeating the payload here.
-export function packV4Message(payloadHex) {
-  const p = String(payloadHex || '').trim().toLowerCase();
-  if (!/^[0-9a-f]{8}$/.test(p)) throw new Error('V4 expects a 32-bit payload as 8 hex chars');
-  return p.padEnd(V4_MESSAGE_HEX_CHARS, '0');
-}
-
-export function unpackV4Message(messageHex) {
-  const m = String(messageHex || '').trim().toLowerCase();
-  if (!/^[0-9a-f]{32}$/.test(m)) return { valid: false, payload_hex: null };
-  const payload = m.slice(0, 8);
-  const tail = m.slice(8);
-  return { valid: /^0+$/.test(tail), payload_hex: payload };
 }
 
 // ── Replicate plumbing ─────────────────────────────────────────────────────
@@ -134,11 +125,14 @@ export async function runV4(input, { timeoutMs = 300000 } = {}) {
   return data.output;
 }
 
-export async function encodeV4(audioUrl, payloadHex) {
+// `copyId` is what makes a recovery traceable to ONE delivered file rather than
+// only to the asset (Phase 6). Omitting it embeds the bearer sentinel, which is
+// a deliberately weaker claim and is reported as such by unpackV4Message.
+export async function encodeV4(audioUrl, payloadHex, copyId = V4_BEARER_COPY_ID) {
   return await runV4({
     audio: audioUrl,
     mode: 'encode',
-    payload_hex: packV4Message(payloadHex),
+    payload_hex: await packV4Message(payloadHex, copyId),
     key_hex: v4Key(),
   });
 }

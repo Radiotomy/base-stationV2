@@ -354,14 +354,43 @@ degrading to unauthenticated reads. Silence is the correct failure mode for a
 forensic instrument; the key is consequently load-bearing and cannot be rotated
 without re-marking.
 
-**Known open gap — replay.** None of the above resists a mark **copied out of a
-genuinely registered file** and pasted into unrelated audio: the payload is real,
-the tag is valid, and the registry match is correct. Per-copy payloads are the
-standard answer, and 32 bits cannot carry one alongside the asset identifier — so
-this is a payload-width decision, not a detector fix, and it remains open. Until
-it is resolved, an attribution asserts *"this signature belongs to asset X"* and
-not *"this file is asset X"*. Any dispute turning on that distinction requires
-corroboration from the on-chain anchor (§2, item 4) rather than the mark alone.
+**Replay — closed for V4 only (Phase 6), open for V1/V2.** None of the above
+resists a mark **copied out of a genuinely registered file** and pasted into
+unrelated audio: the payload is real, the tag is valid, and the registry match is
+correct. This was always a payload-width problem rather than a detector one, and
+it is now resolved in the only layer wide enough to resolve it.
+
+- **V1 and V2 remain exposed, permanently.** Their messages are 32 and 40 bits;
+  neither can carry a per-copy identifier alongside the asset payload, and no
+  resolution rule can distinguish a replayed mark from a genuine one. For these
+  layers an attribution continues to assert *"this signature belongs to asset X"*
+  and not *"this file is asset X"*, and any dispute turning on that distinction
+  requires corroboration from the on-chain anchor (§2, item 4).
+- **V4 carries a per-copy message.** audiowmark's 128 bits are now allocated as
+  32-bit asset payload + 32-bit **copy id** + **64-bit keyed validity tag** over
+  both. Each delivered file is marked with its own copy id and recorded as a
+  `BaseMarkCopy` issuance naming the recipient, so recovered audio identifies the
+  copy it came from — replay stops being anonymous and becomes the finding.
+
+Three consequences worth stating precisely:
+
+1. **The zero-tail heuristic is gone.** The retired format left-aligned the
+   payload and zero-filled 96 bits, treating an intact zero tail as validity.
+   That was a structural guess and was publicly reproducible. A 64-bit HMAC tag
+   admits a random decode roughly 1 time in 1.8 × 10¹⁹, against the V2 tag's 1 in
+   256 — which is why V2's residual false-accept rate had to be carried by
+   registry confirmation and V4's does not. There were **zero V4-marked assets in
+   the catalogue** when this landed, so the old format is rejected by name rather
+   than dual-read (the Phase 3 discipline).
+2. **A copy id is not self-certifying.** The tag proves *we* wrote the id; only
+   the issuance record proves the id was ever issued and to whom. An id with no
+   record resolves as `copy_not_on_record` — reported, never trusted — and a
+   revoked copy still resolves, because a revoked copy in circulation is the
+   result, not something to suppress.
+3. **This does not promote V4.** The acceptance band is still uncalibrated on
+   speech and on cascaded material, and `V4_PRODUCTION_APPROVED` remains false.
+   Per-copy issuance is admin-only, and a V4 recovery may not back a
+   creator-facing attribution until §11's gate is satisfied.
 
 ## 9. Deep scan (re-timed audio)
 
@@ -566,21 +595,14 @@ around and would otherwise force a second migration.
    against a threat we have not measured in production. Because the production
    cascade is now V1+V2 only, the TPM claim over everything we ship is already
    unqualified, which removes the urgency that made (b) attractive.
-6. **Decide the payload format before more assets are marked — DECIDED AND
-   MIGRATED FOR THE PRODUCTION LAYERS (V1/V2); STILL OPEN FOR V4.** Keyed
-   HMAC-SHA256 derivation and a cryptographic validity tag are live per §8.2, with
-   collision detection at embed time and the legacy format retired. What remains
-   under this item is **V4-specific**: the 128-bit
-   audiowmark message currently carries our 32-bit payload left-aligned with a
-   96-bit zero tail used as a structural check. Upstream's documented
-   recommendation is that the message be a **hash or HMAC**. The V4 field is wide
-   enough to carry the keyed tag *inside the message*, replacing the zero-tail
-   heuristic with a real validity check — and, unlike the 32-bit layers, wide
-   enough to also carry per-copy data, which is the only route to the replay gap
-   in §8.2. That makes this the natural place to solve replay, and a reason to
-   decide the V4 message format **before** V4 is promoted rather than after.
-   Assets marked under the zero-tail format would need re-marking, so the decision
-   precedes any volume of V4 marking, not the (already consolidated) lookup.
+6. **Decide the payload format before more assets are marked — DONE (PHASE 6).**
+   Keyed HMAC-SHA256 derivation and a cryptographic validity tag are live for
+   V1/V2 per §8.2, with collision detection at embed time and the legacy format
+   retired. The V4 message is now `payload | copy_id | 64-bit HMAC tag`, adopting
+   upstream's recommendation that the message be an HMAC and using the surplus
+   width for the per-copy identifier that closes replay for this layer. The
+   decision landed at **zero V4-marked assets**, so no re-marking was required —
+   which was the whole reason for deciding it before promotion rather than after.
 7. **Look up every candidate pattern line, not just the best one.** Upstream
    specifies a registry lookup per emitted pattern line, treating an unmatched
    message as a decoding error. The container currently returns a single
