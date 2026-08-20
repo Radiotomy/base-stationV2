@@ -40,7 +40,7 @@ export function apiKeyHeaders(key: string) {
 }
 
 export function roomUrl(roomId: string) {
-  return `https://theportal.to/?room=${roomId}`;
+  return `https://portals.to/?room=${roomId}`;
 }
 
 /**

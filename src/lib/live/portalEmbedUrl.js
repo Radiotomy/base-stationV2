@@ -7,7 +7,7 @@
  * connection waits rather than dropping into a half-loaded world.
  */
 
-const PORTAL_ORIGIN = 'https://theportal.to/';
+const PORTAL_ORIGIN = 'https://portals.to/';
 
 /**
  * @param {string} roomId          Portals room id
