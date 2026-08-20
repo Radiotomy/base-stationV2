@@ -40,6 +40,23 @@ export default async function (req) {
 
     const { key, ownership } = await resolveAccessKey(base44, user.id);
 
+    // Rooms provisioned on the platform Portals account consume a shared quota,
+    // so an unbounded create endpoint is a cost/abuse surface rather than a
+    // feature. Creator-owned rooms spend the creator's own quota and are exempt.
+    if (ownership === 'platform' && user.role !== 'admin') {
+      const mine = await base44.asServiceRole.entities.PortalVenue.filter({
+        user_id: user.id,
+        ownership: 'platform',
+      });
+      const active = mine.filter((v) => v.status !== 'archived' && v.status !== 'failed');
+      if (active.length >= 5) {
+        return Response.json(
+          { error: 'You have reached the limit of 5 venues. Archive one, or connect your own Portals key for unlimited venues.' },
+          { status: 429 },
+        );
+      }
+    }
+
     // Record the venue up front so a Portals failure leaves a visible row the
     // creator can read, rather than a silent no-op.
     const venue = await base44.asServiceRole.entities.PortalVenue.create({

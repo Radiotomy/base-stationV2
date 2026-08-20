@@ -67,10 +67,15 @@ export default async function (req) {
     const extra = {};
     const applied = {};
 
+    // Room data has a hard 50 MB import ceiling, so free-text fields are clamped
+    // here — an unbounded string from a client would eventually make the room
+    // un-importable, breaking every later settings write for that venue.
+    const clamp = (v) => (typeof v === 'string' ? v.slice(0, 2000) : v);
+
     for (const [field, portalKey] of Object.entries(TOP_LEVEL)) {
       if (settings[field] === undefined) continue;
-      topLevel[portalKey] = settings[field];
-      applied[field] = settings[field];
+      topLevel[portalKey] = clamp(settings[field]);
+      applied[field] = topLevel[portalKey];
     }
     for (const [field, portalKey] of Object.entries(EXTRA)) {
       if (settings[field] === undefined) continue;
@@ -78,8 +83,8 @@ export default async function (req) {
       if (HTTPS_FIELDS.includes(field) && value && !String(value).startsWith('https://')) {
         return Response.json({ error: `${field} must be an https URL` }, { status: 400 });
       }
-      extra[portalKey] = value;
-      applied[field] = value;
+      extra[portalKey] = clamp(value);
+      applied[field] = extra[portalKey];
     }
 
     if (Object.keys(topLevel).length === 0 && Object.keys(extra).length === 0) {
