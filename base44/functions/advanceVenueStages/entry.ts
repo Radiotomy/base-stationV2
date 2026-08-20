@@ -45,6 +45,7 @@ async function pushVenue(base44, venue, now) {
       ? buildIdleScreen(preset, { url: venue.cover_image_url, kind: 'audio', title: venue.name, subtitle: 'BASE Station venue' })
       : { items: {}, logic: {} };
     delete items['105'];
+    delete items['106'];
     await uploadRoomData(venue.room_id, key, {
       ...roomData,
       roomItems: { ...items, ...cover.items },
@@ -68,13 +69,21 @@ async function pushVenue(base44, venue, now) {
     // stands in, because an empty wall reads as a broken room, not as music.
     url: item.media_kind === 'video' ? item.file_url : (item.thumbnail_url || venue.cover_image_url || ''),
     kind: item.media_kind === 'video' ? 'video' : 'audio',
+    // For an audio entry the wall shows artwork and item 106 carries the sound —
+    // a video entry needs no carrier, its own wall already plays.
+    audioUrl: item.media_kind === 'video' ? '' : (item.file_url || ''),
     title: item.title || '',
     subtitle: state.source === 'schedule' ? (state.block?.label || 'Now Playing') : 'Now Playing',
   });
 
+  // Drop the previous carrier before merging: leaving it would keep the last
+  // track audible underneath the new one.
+  const baseItems = { ...(roomData.roomItems || {}) };
+  delete baseItems['106'];
+
   await uploadRoomData(venue.room_id, key, {
     ...roomData,
-    roomItems: { ...(roomData.roomItems || {}), ...screen.items },
+    roomItems: { ...baseItems, ...screen.items },
     logic: { ...(roomData.logic || {}), ...screen.logic },
   });
 

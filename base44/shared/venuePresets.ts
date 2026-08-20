@@ -252,14 +252,19 @@ export function buildVenueRig(
  * narrower the write the less there is to get wrong.
  *
  * A video entry becomes a playing video wall; an audio entry becomes its cover
- * art, because Portals has no audio-only surface and a blank wall would read as
- * a broken venue rather than as music playing.
+ * art PLUS a hidden audio carrier (item 106), because Portals has no audio-only
+ * surface: the video prefab is the only thing in the room that plays a media URL,
+ * so an audio track is handed to it and the visible wall keeps the artwork. A
+ * blank wall would read as a broken venue rather than as music playing.
+ *
+ * `audioUrl` is the actual sound file and is separate from `url` (the artwork),
+ * because for an audio entry those are two different files.
  */
 export function buildIdleScreen(
   preset: VenuePreset,
-  opts: { url: string; kind: 'audio' | 'video'; title?: string; subtitle?: string },
+  opts: { url: string; kind: 'audio' | 'video'; title?: string; subtitle?: string; audioUrl?: string },
 ) {
-  const { url, kind, title = '', subtitle = 'Now Playing' } = opts;
+  const { url, kind, title = '', subtitle = 'Now Playing', audioUrl = '' } = opts;
   const items: Record<string, unknown> = {};
   const logic: Record<string, string> = {};
   if (!url) return { items, logic };
@@ -277,6 +282,19 @@ export function buildIdleScreen(
       hoverTitle: title,
       hoverBodyContent: subtitle,
     });
+    // The sound itself. Kept as its own item rather than folded into 105 so the
+    // artwork stays visible: one item cannot be both a painting and a player.
+    // Tucked just behind the stage wall at minimal scale — it is a speaker, not
+    // something a fan should see.
+    if (audioUrl) {
+      items['106'] = item(
+        'DefaultVideo',
+        { x: preset.screen.pos.x, y: preset.screen.pos.y, z: preset.screen.pos.z - 0.5 },
+        { x: 0.05, y: 0.05, z: 0.05 },
+        { contentString: audioUrl },
+      );
+      logic['106'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
+    }
   }
   return { items, logic };
 }
