@@ -16,6 +16,15 @@
         "special"
       ]
     },
+    "category": {
+      "type": "string",
+      "enum": [
+        "music",
+        "patch_design"
+      ],
+      "default": "music",
+      "description": "What is being judged. 'music' = a sound recording entry. 'patch_design' = a BASE Foundry DSP patch, judged on the graph the human designed rather than on audio \u2014 so a patch challenge entry carries a plugin, never a track URL."
+    },
     "genre": {
       "type": "string"
     },

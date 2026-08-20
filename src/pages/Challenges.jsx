@@ -6,6 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ChallengeCard from "@/components/challenges/ChallengeCard";
 import SubmitChallengeModal from "@/components/challenges/SubmitChallengeModal";
+import SubmitPatchChallengeModal from "@/components/challenges/SubmitPatchChallengeModal";
+import PatchLineageLeaderboard from "@/components/challenges/PatchLineageLeaderboard";
+
+const CATEGORY_TABS = [
+  { key: "all", label: "All" },
+  { key: "music", label: "🎵 Music" },
+  { key: "patch_design", label: "🎛️ Patch Design" },
+];
 
 const STATUS_TABS = [
   { key: "active", label: "🔥 Active", color: "text-orange-400" },
@@ -18,6 +26,7 @@ export default function Challenges() {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("active");
+  const [category, setCategory] = useState("all");
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [user, setUser] = useState(null);
 
@@ -33,7 +42,10 @@ export default function Challenges() {
     setLoading(false);
   };
 
-  const filtered = challenges.filter(c => c.status === tab);
+  // Legacy challenges predate the category field — treat them as music entries.
+  const filtered = challenges.filter(c =>
+    c.status === tab && (category === "all" || (c.category || "music") === category)
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -66,6 +78,16 @@ export default function Challenges() {
           ))}
         </div>
 
+        {/* Category filter — music recordings vs Foundry patch design */}
+        <div className="flex gap-2 flex-wrap -mt-6 mb-10">
+          {CATEGORY_TABS.map(({ key, label }) => (
+            <button key={key} onClick={() => setCategory(key)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${category === key ? "border-transparent merc-button" : "border-border text-muted-foreground hover:text-foreground"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array(6).fill(0).map((_, i) => <div key={i} className="h-64 rounded-2xl bg-muted animate-pulse" />)}
@@ -84,15 +106,30 @@ export default function Challenges() {
             ))}
           </div>
         )}
+
+        {category === "patch_design" && (
+          <div className="mt-12">
+            <PatchLineageLeaderboard />
+          </div>
+        )}
       </div>
 
       {selectedChallenge && (
-        <SubmitChallengeModal
-          challenge={selectedChallenge}
-          user={user}
-          onClose={() => setSelectedChallenge(null)}
-          onSubmitted={() => { setSelectedChallenge(null); loadChallenges(); }}
-        />
+        (selectedChallenge.category === "patch_design" ? (
+          <SubmitPatchChallengeModal
+            challenge={selectedChallenge}
+            user={user}
+            onClose={() => setSelectedChallenge(null)}
+            onSubmitted={() => { setSelectedChallenge(null); loadChallenges(); }}
+          />
+        ) : (
+          <SubmitChallengeModal
+            challenge={selectedChallenge}
+            user={user}
+            onClose={() => setSelectedChallenge(null)}
+            onSubmitted={() => { setSelectedChallenge(null); loadChallenges(); }}
+          />
+        ))
       )}
     </div>
   );

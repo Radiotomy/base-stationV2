@@ -8,6 +8,15 @@
     "challenge_title": {
       "type": "string"
     },
+    "challenge_category": {
+      "type": "string",
+      "enum": [
+        "music",
+        "patch_design"
+      ],
+      "default": "music",
+      "description": "Copied from the challenge so a submission can be rendered without loading its challenge first."
+    },
     "artist_name": {
       "type": "string"
     },
@@ -31,6 +40,28 @@
     },
     "ai_tools_used": {
       "type": "string"
+    },
+    "plugin_id": {
+      "type": "string",
+      "description": "FoundryPlugin entered in a patch_design challenge. The plugin is the entry \u2014 nothing is copied out of it, so the live patch stays the single source of truth for what was submitted."
+    },
+    "plugin_human_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Snapshot of the plugin's design Creative Ownership Score at submission time. Snapshotted deliberately: the creator can keep editing the patch afterwards, and a challenge must be judged on what was entered. This is the PLUGIN DESIGN score and must never be blended with an audio COS."
+    },
+    "fork_parent_id": {
+      "type": "string",
+      "description": "The FoundryPlugin this entry was forked from, if any. Credit for a lineage is shown, not hidden \u2014 a fork is a legitimate entry, it just isn't presented as an original."
+    },
+    "fork_parent_title": {
+      "type": "string"
+    },
+    "fork_depth": {
+      "type": "number",
+      "default": 0,
+      "description": "How many forks deep this entry sits. 0 = original design."
     },
     "vote_count": {
       "type": "number",
