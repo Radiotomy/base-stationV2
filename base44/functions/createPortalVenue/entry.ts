@@ -101,11 +101,12 @@ export default async function (req) {
         ShortDescription: `${name} — a BASE Station live music venue.`.slice(0, 160),
         Status: 'Published',
         ShowOnDirectory: true,
-        // The actual door. A new Portals room defaults to a private AccessType,
-        // which is what produced "this space is private" even on a published,
-        // directory-listed room — publishing controls listing, AccessType
-        // controls entry, and they are independent.
-        AccessType: 'public',
+        // The actual door: `AccessLevel`. A room MISSING this field is treated as
+        // private, which is what produced "this space is private" on a published,
+        // directory-listed room — publishing controls listing, AccessLevel
+        // controls entry, and they are independent. (Not `AccessType`: that name
+        // is accepted and silently stored, but nothing reads it.)
+        AccessLevel: 'public',
       });
     } catch (err) {
       console.warn('Venue settings failed:', err.message);
