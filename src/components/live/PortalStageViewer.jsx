@@ -1,8 +1,16 @@
+import { buildPortalEmbedUrl } from '@/lib/live/portalEmbedUrl';
+
 /**
  * Embeds The Portal 3D stage as a full iframe.
  * The Portal room is created server-side via the createPortalRoom function.
+ *
+ * Embed controls are applied per session so the iframe reads as a BASE Station
+ * surface: Portals' own close/maximize chrome is suppressed, the world opens
+ * maximized, and a slow connection waits rather than dropping the fan into a
+ * half-loaded room. `avatarUrl` injects a fan's own GLB; `guardian` gives the
+ * performer/promoter the moderator view.
  */
-export default function PortalStageViewer({ roomId }) {
+export default function PortalStageViewer({ roomId, avatarUrl = '', guardian = false, lockChrome = true }) {
   // Phase 5.5 — explicit fallback when Portals is not configured
   if (!roomId) {
     return (
@@ -12,7 +20,7 @@ export default function PortalStageViewer({ roomId }) {
     );
   }
 
-  const portalUrl = `https://theportal.to/?room=${roomId}`;
+  const portalUrl = buildPortalEmbedUrl(roomId, { lockChrome, avatarUrl, guardian });
 
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden border border-border">
