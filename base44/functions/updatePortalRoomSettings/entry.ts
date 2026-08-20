@@ -1,18 +1,23 @@
-// Applies a BASE Station venue-design form to a Portals room's space options,
-// and wires the in-world BASE Station panel (welcome iframe).
+// Applies a BASE Station venue-design change to a Portals room, and wires the
+// in-world BASE Station panel (welcome iframe).
 //
-// Settings are written through room data (download → merge → upload), which is
-// the documented path for these fields. Two safeguards matter here:
-//   1. Only whitelisted options can be written. Passing arbitrary keys through
-//      would let a client reach settings governing access, token gating and
-//      moderation on the creator's own Portals account.
-//   2. The previous values are snapshotted onto the venue BEFORE the write, so a
-//      design change can be reverted from BASE Station.
+// Environment settings do NOT live on /room/update-room-settings — that endpoint
+// only carries display metadata (name, description, cover) and currently 500s on
+// Portals' side. Real space options live inside room data, split across
+// settings.<field> and the settings.roomSettingsExtraData JSON string, so this
+// function goes through mergeRoomSettings (download → merge → upload).
+//
+// Two things make it safe to call repeatedly:
+//   1. Only whitelisted options can be written. A pass-through of arbitrary keys
+//      would let a client reach access, token-gating and moderation settings on
+//      the creator's own Portals account.
+//   2. mergeRoomSettings returns the prior values, which are snapshotted onto the
+//      venue so a design change can be reverted from BASE Station.
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { resolveKeyForVenue, mergeRoomSettings, roomUrl } from '../../shared/portalsApi.ts';
 
-// Fields that live directly on settings.<key>
+// BASE Station field -> settings.<key> (top level of the room settings object)
 const TOP_LEVEL = {
   nightMode: 'isNight',
   globalVoice: 'globalSpeaking',
@@ -20,10 +25,10 @@ const TOP_LEVEL = {
   stageMode: 'inTownHallMode',
   allCanBuild: 'allCanBuild',
   npcPrompt: 'roomPrompt',
-  liveInteractionRefresh: 'tasksRefresh',
+  audiusPlaylist: 'audiusPlaylist',
 };
 
-// Fields that live inside the roomSettingsExtraData JSON string
+// BASE Station field -> key inside the roomSettingsExtraData JSON string
 const EXTRA = {
   welcomeEmbed: 'welcomeEmbed',
   showWelcomeOnEntry: 'showWelcomeOnEntry',
@@ -36,6 +41,8 @@ const EXTRA = {
   skyBoxNightTextureUrl: 'skyBoxNightTextureUrl',
 };
 
+// Anything Portals loads as a resource must be https — a http or relative value
+// is dropped by the client and reads as a broken feature rather than bad input.
 const HTTPS_FIELDS = ['welcomeEmbed', 'skyBoxDayTextureUrl', 'skyBoxNightTextureUrl'];
 
 export default async function (req) {
@@ -68,8 +75,6 @@ export default async function (req) {
     for (const [field, portalKey] of Object.entries(EXTRA)) {
       if (settings[field] === undefined) continue;
       const value = settings[field];
-      // A non-https URL is silently dropped by the Portals client, which reads
-      // as a broken feature rather than a rejected input.
       if (HTTPS_FIELDS.includes(field) && value && !String(value).startsWith('https://')) {
         return Response.json({ error: `${field} must be an https URL` }, { status: 400 });
       }

@@ -150,22 +150,35 @@ export async function uploadRoomData(roomId: string, key: string, roomData: unkn
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
+
+/**
+ * Post a display/metadata patch (Name, Description, Image, loading screen).
+ * NOTE: this endpoint is documented but currently returns HTTP 500 for every
+ * documented payload shape, so callers must treat failure as non-fatal — venue
+ * name/description/cover art are authoritative in BASE Station regardless.
+ */
+export async function setRoomSettings(roomId: string, key: string, patch: Record<string, unknown>) {
+  const res = await fetch(`${PORTAL_BASE}/room/update-room-settings`, {
+    method: 'POST',
+    headers: accessHeaders(key),
+    body: JSON.stringify({ RoomID: roomId, ...patch }),
+  });
+  if (!res.ok) throw new Error(`Portals rejected the settings update: ${await res.text()}`);
+  return true;
+}
+
+// Room ENVIRONMENT settings do not live on that endpoint at all — they live
+// inside room data, in two layers:
+//   settings.<field>                — top-level room config
+//   settings.roomSettingsExtraData  — a JSON-encoded STRING holding the detailed
+//                                     config (welcome iframe, movement, skybox,
+//                                     UI toggles, access rules)
 //
-// Room settings live INSIDE room data, in two layers:
-//   settings.<field>                     — top-level room config
-//   settings.roomSettingsExtraData       — a JSON-encoded STRING holding the
-//                                          detailed config (welcome iframe,
-//                                          movement, skybox, UI toggles, …)
-//
-// Two rules make this destructive if ignored, so they are enforced here rather
+// Two rules make this destructive if ignored, so they're enforced here rather
 // than left to each caller:
 //   1. An upload REPLACES the whole room — always download, merge, upload.
 //   2. roomSettingsExtraData must be a stringified object. Passing a raw object
 //      makes Portals silently ignore every field inside it.
-//
-// (Portals also documents POST /room/update-room-settings for name/description/
-// cover art, but that endpoint currently returns 500 for every documented
-// payload shape, so display metadata is kept on the BASE Station side instead.)
 
 /**
  * Merge a settings patch into existing room data and push it back.
@@ -198,13 +211,10 @@ export async function mergeRoomSettings(
   for (const k of Object.keys(extra)) previous[k] = extraData[k];
 
   const nextExtra = { ...extraData, ...extra };
-  const nextSettings = {
-    ...settings,
-    ...topLevel,
-    roomSettingsExtraData: JSON.stringify(nextExtra),
-  };
-
-  await uploadRoomData(roomId, key, { ...roomData, settings: nextSettings });
+  await uploadRoomData(roomId, key, {
+    ...roomData,
+    settings: { ...settings, ...topLevel, roomSettingsExtraData: JSON.stringify(nextExtra) },
+  });
   return previous;
 }
 
