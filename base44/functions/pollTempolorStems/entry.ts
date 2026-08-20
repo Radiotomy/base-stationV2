@@ -1,5 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
-import { queryStemTask, normalizeStemUrls } from '../../shared/tempolorStems.ts';
+import { queryStemTask, normalizeStemUrls, expandStemArchive } from '../../shared/tempolorStems.ts';
 
 /**
  * Poll a Tempolor stem-separation job and finalize it.
@@ -12,19 +12,57 @@ import { queryStemTask, normalizeStemUrls } from '../../shared/tempolorStems.ts'
  * repeated poll from double-charging.
  */
 
+async function upload(base44, bytes: Uint8Array | ArrayBuffer, filename: string) {
+  const safe = filename.replace(/[^\w.\-]/g, '_');
+  const file = new File([bytes], safe, { type: 'application/octet-stream' });
+  const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
+  return up?.file_url;
+}
+
 // Copy provider files into Base44 storage — provider links expire.
 async function persist(base44, url: string, filename: string) {
   try {
     const r = await fetch(url);
     if (!r.ok) return url;
-    const buf = await r.arrayBuffer();
-    const safe = filename.replace(/[^\w.\-]/g, '_');
-    const file = new File([buf], safe, { type: 'application/octet-stream' });
-    const up = await base44.asServiceRole.integrations.Core.UploadFile({ file });
-    return up?.file_url || url;
+    return (await upload(base44, await r.arrayBuffer(), filename)) || url;
   } catch {
     return url;
   }
+}
+
+/**
+ * Turn the provider result into [{ stem_type, file_url }] in Base44 storage.
+ *
+ * Tempolor returns ONE download for a separation, which is a zip of the stems —
+ * so a single 'bundle' entry is unpacked into its individual audio files here.
+ * If it isn't a zip, it's kept as one file rather than mislabelled as a stem.
+ */
+async function collectStemFiles(base44, parts, titleStem: string) {
+  const single = parts.length === 1 && parts[0].stem_type === 'bundle';
+  if (single) {
+    const res = await fetch(parts[0].url);
+    if (res.ok) {
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const expanded = await expandStemArchive(bytes);
+      if (expanded.length > 0) {
+        const out = [];
+        for (const e of expanded) {
+          const fileUrl = await upload(base44, e.bytes, `${titleStem}_${e.filename}`);
+          if (fileUrl) out.push({ stem_type: e.stem_type, file_url: fileUrl });
+        }
+        return out;
+      }
+      // Not a zip — keep the single delivered file.
+      const fileUrl = await upload(base44, bytes, `${titleStem}_stems.wav`);
+      return [{ stem_type: 'bundle', file_url: fileUrl || parts[0].url }];
+    }
+  }
+
+  const out = [];
+  for (const p of parts) {
+    out.push({ stem_type: p.stem_type, file_url: await persist(base44, p.url, `${titleStem}_${p.stem_type}.wav`) });
+  }
+  return out;
 }
 
 Deno.serve(async (req) => {
@@ -75,9 +113,18 @@ Deno.serve(async (req) => {
     const srcList = await base44.entities.UserAsset.filter({ id: job.input_data?.assetId });
     const source = srcList[0];
 
+    const titleStem = (source?.title || 'track').slice(0, 40);
+    const files = await collectStemFiles(base44, parts, titleStem);
+    if (files.length === 0) {
+      await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+        status: 'failed', error_message: 'Could not read the separated stem files',
+      });
+      return Response.json({ status: 'failed', error: 'Could not read the separated stem files' });
+    }
+
     const stems = [];
-    for (const part of parts) {
-      const fileUrl = await persist(base44, part.url, `${(source?.title || 'track').slice(0, 40)}_${part.stem_type}.wav`);
+    for (const part of files) {
+      const fileUrl = part.file_url;
       const asset = await base44.entities.UserAsset.create({
         user_id: job.user_id,
         user_email: job.user_email,
@@ -124,7 +171,7 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.GenerationJob.update(job.id, {
       status: 'completed',
       output_url: stems[0]?.file_url,
-      output_metadata: { stems: parts.map(p => p.stem_type), stem_asset_ids: stems.map(s => s.id) },
+      output_metadata: { stems: files.map(p => p.stem_type), stem_asset_ids: stems.map(s => s.id) },
       credits_used: cost,
       completed_at: completedAt,
     });
@@ -163,7 +210,7 @@ Deno.serve(async (req) => {
       if (pending) {
         await base44.asServiceRole.entities.APIUsageLog.update(pending.id, {
           status: 'success', credits_used: cost, timestamp: completedAt,
-          metadata: { ...(pending.metadata || {}), stems: parts.map(p => p.stem_type) },
+          metadata: { ...(pending.metadata || {}), stems: files.map(p => p.stem_type) },
         });
       }
     } catch { /* non-blocking */ }
@@ -174,7 +221,7 @@ Deno.serve(async (req) => {
       asset_id: stems[0]?.id,
       source_asset_ids: source?.id ? [source.id] : [],
       title: `Separated ${stems.length} stems from "${source?.title || 'track'}"`,
-      metadata: { provider: 'tempcolor', stems: parts.map(p => p.stem_type) },
+      metadata: { provider: 'tempcolor', stems: files.map(p => p.stem_type) },
     }).catch(() => {});
 
     return Response.json({ status: 'completed', stems });

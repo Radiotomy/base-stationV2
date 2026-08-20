@@ -95,6 +95,38 @@ export function normalizeStemUrls(stemsUrl: unknown): Array<{ stem_type: string;
   return [];
 }
 
+const AUDIO_EXT = /\.(wav|mp3|flac|m4a|aac|ogg|opus)$/i;
+
+/**
+ * Expand a Tempolor stems archive into individual audio files.
+ *
+ * Tempolor delivers a separation as ONE `stems_url` download, so the four stems
+ * only become separately usable assets after the archive is unpacked. Returns []
+ * when the payload isn't a zip (e.g. a single rendered file), so the caller can
+ * fall back to treating it as one file instead of guessing.
+ */
+export async function expandStemArchive(
+  bytes: Uint8Array,
+): Promise<Array<{ stem_type: string; filename: string; bytes: Uint8Array }>> {
+  // Zip magic: PK\x03\x04
+  if (!(bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04)) return [];
+
+  const { unzipSync } = await import('npm:fflate@0.8.2');
+  const entries = unzipSync(bytes);
+
+  return Object.entries(entries)
+    .filter(([name, data]) => AUDIO_EXT.test(name) && (data as Uint8Array).length > 0)
+    .map(([name, data]) => {
+      const base = name.split('/').pop() || name;
+      return {
+        // The stem name lives in the filename ("vocals.wav", "drums.wav", …)
+        stem_type: normalizeLabel(base.replace(AUDIO_EXT, '')),
+        filename: base,
+        bytes: data as Uint8Array,
+      };
+    });
+}
+
 // Map provider stem names onto the UserAsset.stem_type enum where they line up.
 function normalizeLabel(raw: string): string {
   const s = String(raw).toLowerCase().replace(/[^a-z]/g, '');
