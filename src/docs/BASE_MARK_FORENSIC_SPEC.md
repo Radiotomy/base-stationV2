@@ -6,7 +6,7 @@ values and calibration figures that sit inside the trade-secret boundary of §6 
 description of this system is the public BASE Mark documentation, which is written
 from measured behaviour only.
 **Engine:** BASE Mark — a unified layered signature. Spectral Layer + Neural Layer are stacked on every asset (production). Drift Layer is DECOMMISSIONED. Speed Layer and Print Layer are internal forensic reserve
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-20
 
 ---
 
@@ -34,9 +34,18 @@ not disclosed here.
 
 ## 2. What the mark asserts
 
-A detected BASE Mark asserts exactly one fact: *this audio (or a derivative of
-it) originated from a specific asset record in the BASE Station registry.* The
-recovered 32-bit payload is cross-referenced against:
+An **attributed** BASE Mark asserts exactly one fact: *this audio (or a derivative
+of it) originated from a specific asset record in the BASE Station registry.*
+
+**Detection and attribution are separate claims and are reported separately**
+(§8.2). Detection is the signal-level fact that a valid signature was recovered;
+attribution is the forensic claim, and it requires that payload to resolve to
+**exactly one** registered asset. A recovered payload that matches no asset, or
+that matches more than one, supports **no** assertion under this section — the
+first is a false positive, the second names two works and therefore identifies
+neither. Collapsing the two would let either case read as proof of ownership.
+
+The recovered 32-bit payload is cross-referenced against:
 
 1. The asset's **Provenance Manifest** (COS metrics, participation signals)
 2. The asset's **DDEX AI-attribution bundle**
@@ -56,13 +65,15 @@ layers, which the mark makes discoverable even after metadata stripping.
 | Localization | The identifier repeats through the file; measured recovery is reliable from ~5s excerpts. Below ~3s the detector **declines to answer** rather than guess (see §8) |
 | Persistence | Measured to survive metadata stripping, band-limiting, quantization, additive noise, cutting and stem separation. **Pitch-shifting and time-stretching defeat the production layers** (V1/V2, measured 0% recovery) — a stated limitation, not a degradation. The Speed Layer (§10) recovers resample-based re-timing but is held as internal reserve, not on the production path |
 | Non-repudiation | Payload is threaded through the cryptographic manifest and on-chain anchor at embed time |
+| Unforgeability | Payloads are keyed (HMAC-SHA256) and the Neural Layer's validity tag is cryptographic, so a mark cannot be *fabricated* for an asset. A mark **copied** from a genuine file is a separate, open problem — see §8.2 |
 | Abstention | Detection thresholds scale with the evidence available, so the detector reports "insufficient evidence" instead of a low-confidence attribution |
 
 ## 4. Verification model (black-box)
 
 Verification is offered as a **black-box service**: verifiers submit audio and
-receive an outcome (detected / not detected), the recovered payload, and public
-registry matches. Internal detection mechanics — alignment data, correlation
+receive an outcome (`detected`), an attribution verdict (`attributed`) with a
+machine-readable status and a plain-language explanation, the recovered payload,
+and public registry matches. Internal detection mechanics — alignment data, correlation
 scores, decision thresholds — are never exposed, to prevent adversarial probing
 and mark-removal tooling.
 
@@ -283,6 +294,58 @@ TPM claim of §5.1 — will assert an attribution. It is recorded here so the
 acceptance criterion is documented at protocol level rather than existing only in
 implementation comments.
 
+### 8.2 The attribution gate (payload integrity and single-owner exclusivity)
+
+§8.1 governs when the detector will assert it *recovered* something. This section
+governs when the platform will assert that recovery **names an owner**. The two
+were previously one decision applied per endpoint, which meant the answer to "is
+this ours?" depended on which route was asked. All routes now resolve through one
+module (`baseMarkResolve.ts`); no endpoint may implement its own rule.
+
+Four conditions, all mandatory:
+
+1. **Keyed payload derivation.** Payloads are derived by domain-separated
+   HMAC-SHA256 over the asset identifier under a server-side key, not by an
+   unkeyed hash. This was adopted for the reason upstream recommends it (§11.6):
+   an unkeyed payload over a known identifier is *derivable by anyone*, so it
+   authenticates nothing.
+2. **Cryptographic validity, not a structural heuristic.** The Neural Layer's
+   validity byte is an HMAC-derived tag over the payload it accompanies. A message
+   whose tag does not match its own payload does not unpack — the forgery fails at
+   the **detector**, and is never carried inward as a flagged-but-valid hit.
+3. **Registry corroboration.** A payload matching no registered asset is
+   discarded, never reported as a hit (restating §8 as a gate condition).
+4. **Single-owner exclusivity.** A payload resolving to more than one asset is an
+   **abstention**, not a list of co-owners. 32-bit payloads have a birthday
+   ceiling, so collisions are expected at scale rather than anomalous; derivation
+   is collision-checked at embed time, and resolution refuses to guess when a
+   collision exists anyway.
+
+**Legacy format: retired, not tolerated.** Marks predating condition 1 carried a
+published fixed magic byte and a publicly derivable payload — jointly sufficient
+to mint a valid-looking mark for any asset. That format was read-only-tolerated
+during migration, then contained by requiring the named asset to itself be
+legacy-marked, then **eliminated**: every legacy mark record was retired from the
+registry indexes (retaining a non-resolving audit stamp), after which the read
+path was deleted. A message bearing the legacy magic byte is now rejected
+outright. The corroboration branch is retained in code as a tested net should any
+future layer introduce a weaker format.
+
+**Fail-closed on key loss, deliberately.** With no legacy path remaining, an
+absent payload key causes the Neural Layer to recover *nothing* rather than
+degrading to unauthenticated reads. Silence is the correct failure mode for a
+forensic instrument; the key is consequently load-bearing and cannot be rotated
+without re-marking.
+
+**Known open gap — replay.** None of the above resists a mark **copied out of a
+genuinely registered file** and pasted into unrelated audio: the payload is real,
+the tag is valid, and the registry match is correct. Per-copy payloads are the
+standard answer, and 32 bits cannot carry one alongside the asset identifier — so
+this is a payload-width decision, not a detector fix, and it remains open. Until
+it is resolved, an attribution asserts *"this signature belongs to asset X"* and
+not *"this file is asset X"*. Any dispute turning on that distinction requires
+corroboration from the on-chain anchor (§2, item 4) rather than the mark alone.
+
 ## 9. Deep scan (re-timed audio)
 
 Resampling and time-stretching do not erase the mark, they **desynchronize** it:
@@ -457,13 +520,16 @@ The container work is done; the remaining blocker is a decision rule. Until a
 bit-error gate is enforced, a V4 recovery is measurement, not evidence, and
 cannot back an attribution.
 
-1. **Codify the acceptance threshold in the registry lookup.** Enforce a gate in
-   the 0.45–0.50 bit-error band, in the lookup path itself rather than in each
-   caller, so no route can accept a payload the gate would reject. Registry
-   confirmation stays mandatory per §8: a payload matching no asset is discarded.
-2. **Attribute recovered payloads to assets.** A recovered 32-bit payload must
-   resolve to a `UserAsset` provenance record, so a V4 hit reads as an
-   attribution rather than a hex string.
+1. **Codify the acceptance threshold in the registry lookup — DONE.** The
+   0.45–0.50 bit-error band is enforced in `baseMarkV4Gate.ts`, centrally rather
+   than per caller. `abstain` is a first-class outcome: a decode landing inside
+   the band reports "no determination" and is never rounded to a hit or a miss.
+2. **Attribute recovered payloads to assets — DONE.** V4 carries the full 32-bit
+   payload and resolves through the same single gate as V1/V2 (§8.2), so it
+   inherits registry corroboration and single-owner exclusivity rather than
+   reimplementing them. A promotion flag (`V4_PRODUCTION_APPROVED`, currently
+   false) keeps promotion a single reviewed change that no endpoint can opt itself
+   into.
 3. **Replace polling with webhook finalization**, consistent with V2/V3, so
    verification latency is not bounded by a poll interval.
 4. **Then, and only then, promote V4 and publish.** Raise n, add source material
@@ -483,15 +549,21 @@ around and would otherwise force a second migration.
    against a threat we have not measured in production. Because the production
    cascade is now V1+V2 only, the TPM claim over everything we ship is already
    unqualified, which removes the urgency that made (b) attractive.
-6. **Decide the payload format before more assets are marked.** The 128-bit
+6. **Decide the payload format before more assets are marked — DECIDED AND
+   MIGRATED FOR THE PRODUCTION LAYERS (V1/V2); STILL OPEN FOR V4.** Keyed
+   HMAC-SHA256 derivation and a cryptographic validity tag are live per §8.2, with
+   collision detection at embed time and the legacy format retired. What remains
+   under this item is **V4-specific**: the 128-bit
    audiowmark message currently carries our 32-bit payload left-aligned with a
    96-bit zero tail used as a structural check. Upstream's documented
-   recommendation is that the message be a **hash or HMAC**. Adopting a keyed
-   HMAC over the asset identifier would use the field as designed and resolve two
-   open problems at once: the 32-bit collision ceiling (FNV-1a payloads, currently
-   without collision detection) and payload forgeability, replacing the zero-tail
-   heuristic with a cryptographic validity check. This is a payload-format change
-   and therefore a migration — decide before the registry lookup is consolidated.
+   recommendation is that the message be a **hash or HMAC**. The V4 field is wide
+   enough to carry the keyed tag *inside the message*, replacing the zero-tail
+   heuristic with a real validity check — and, unlike the 32-bit layers, wide
+   enough to also carry per-copy data, which is the only route to the replay gap
+   in §8.2. That makes this the natural place to solve replay, and a reason to
+   decide the V4 message format **before** V4 is promoted rather than after.
+   Assets marked under the zero-tail format would need re-marking, so the decision
+   precedes any volume of V4 marking, not the (already consolidated) lookup.
 7. **Look up every candidate pattern line, not just the best one.** Upstream
    specifies a registry lookup per emitted pattern line, treating an unmatched
    message as a decoding error. The container currently returns a single
