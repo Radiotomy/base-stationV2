@@ -277,7 +277,10 @@ Deno.serve(async (req) => {
     if (!createRes.ok) {
       return Response.json({ error: `Portals room create failed: ${await createRes.text()}` }, { status: 502 });
     }
-    const { roomId } = await createRes.json();
+    // Portals nests the joinable id as room.RoomID (a UUID). room.id is the
+    // internal document id and does not work in ?room=.
+    const createData = await createRes.json();
+    const roomId = createData?.room?.RoomID || createData?.RoomID || createData?.roomId;
     if (!roomId) return Response.json({ error: 'No roomId returned from Portals' }, { status: 502 });
 
     // 2. Room settings — name, description, cover as loading screen image

@@ -177,6 +177,10 @@ export async function createRoom(key: string, templateName: string, name: string
   });
   if (!res.ok) throw new Error(`Portals room create failed: ${await res.text()}`);
   const data = await res.json();
-  if (!data?.roomId) throw new Error('Portals did not return a room id');
-  return data.roomId as string;
+  // Portals nests the room under `room` and names the joinable id `RoomID` (a
+  // UUID) — distinct from `room.id`, which is the internal document id and does
+  // NOT work in ?room=. Accept the flat shape too in case the response changes.
+  const roomId = data?.room?.RoomID || data?.RoomID || data?.roomId;
+  if (!roomId) throw new Error(`Portals did not return a room id: ${JSON.stringify(data).slice(0, 300)}`);
+  return roomId as string;
 }

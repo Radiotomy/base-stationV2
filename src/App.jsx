@@ -46,6 +46,9 @@ const VideoStudio = lazy(() => import('./pages/VideoStudio'));
 const AssetGallery = lazy(() => import('./pages/AssetGallery'));
 const LiveStudio = lazy(() => import('./pages/LiveStudio'));
 const LiveManager = lazy(() => import('./pages/LiveManager'));
+const LiveVenues = lazy(() => import('./pages/LiveVenues'));
+const LiveVenueDetail = lazy(() => import('./pages/LiveVenueDetail'));
+const VenuePanel = lazy(() => import('./pages/VenuePanel'));
 const LiveWatch = lazy(() => import('./pages/LiveWatch'));
 const LiveSummary = lazy(() => import('./pages/LiveSummary'));
 const AudiusTrending = lazy(() => import('./pages/AudiusTrending'));
@@ -163,6 +166,9 @@ const AuthenticatedApp = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          {/* In-world venue panel — loaded inside the Portals 3D room by every
+              fan, so it sits outside MobileLayout and needs no account */}
+          <Route path="/venue-panel" element={<VenuePanel />} />
           {/* Public community forum — open to guests, no BASE Station account required */}
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/:id" element={<ForumThread />} />
@@ -209,6 +215,8 @@ const AuthenticatedApp = () => {
               <Route path="/asset-gallery" element={<AssetGallery />} />
               <Route path="/live-studio" element={<BetaGate feature="Live Studio"><LiveStudio /></BetaGate>} />
               <Route path="/live-manager" element={<LiveManager />} />
+              <Route path="/live-venues" element={<LiveVenues />} />
+              <Route path="/live-venues/:venueId" element={<LiveVenueDetail />} />
               <Route path="/live-watch" element={<LiveWatch />} />
               <Route path="/live-summary" element={<LiveSummary />} />
               <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
