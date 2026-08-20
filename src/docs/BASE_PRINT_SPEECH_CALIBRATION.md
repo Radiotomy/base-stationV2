@@ -1,5 +1,15 @@
 # BASE Print — Speech Calibration Record
 
+> **CLASSIFICATION: CONFIDENTIAL — TRADE SECRET. ADMIN EYES ONLY. DO NOT PUBLISH.**
+>
+> Internal engineering record. Contains proprietary forensic parameters, measured
+> detector margins and calibration methodology. **Never** render this content on a
+> creator-facing page, a public docs surface (`/docs`, `/trust`, `/transparency`,
+> `/verify`), an export, a support reply, or any external report. Do not import this
+> file into any component — it must not enter the client bundle. Public-facing
+> documentation of the Print Layer is sanitized per `BASE_MARK_FORENSIC_SPEC` §4:
+> no thresholds, no lift/beta figures, no extraction constants, no payload widths.
+
 **Last updated:** 2026-08-20
 **Purpose:** the measurement record for whether the Print Layer's specificity holds on
 spoken word. This is the gate on the Print-seeded episode path in ORVO. Everything

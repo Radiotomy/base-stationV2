@@ -1,5 +1,15 @@
 # BASE Fingerprint (BASE Print) — design and current state
 
+> **CLASSIFICATION: CONFIDENTIAL — TRADE SECRET. ADMIN EYES ONLY. DO NOT PUBLISH.**
+>
+> Internal design document. The extraction constants, hashing scheme, matcher
+> discriminators and measured margins below are proprietary and are the substance of
+> the Print Layer's protection. **Never** render this content on a creator-facing page,
+> a public docs surface (`/docs`, `/trust`, `/transparency`, `/verify`), an export, a
+> support reply, or any external report, and do not import this file into any component
+> — it must not enter the client bundle. Public documentation is sanitized per
+> `BASE_MARK_FORENSIC_SPEC` §4.
+
 **Last updated:** 2026-08-20
 
 Status: **Phase 1 implemented and deployed, advisory only.** The extractor, the
