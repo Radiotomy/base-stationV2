@@ -84,11 +84,22 @@ export default async function (req) {
     try {
       const roomData = await downloadRoomData(roomId, key);
       const rig = buildVenueRig(preset, { name, coverImageUrl });
+      // A freshly created room carries an EMPTY roomSettingsExtraData string, so
+      // no access value is stored at all. Write allowedUsers: 0 ("anyone") so the
+      // venue is explicitly open to fans instead of relying on an unset default.
+      let extra: Record<string, unknown> = {};
+      const raw = roomData?.settings?.roomSettingsExtraData;
+      if (typeof raw === 'string' && raw) { try { extra = JSON.parse(raw); } catch { extra = {}; } }
       await uploadRoomData(roomId, key, {
         ...roomData,
         roomItems: { ...(roomData.roomItems || {}), ...rig.items },
         logic: { ...(roomData.logic || {}), ...rig.logic },
-        settings: { ...(roomData.settings || {}), isNight: preset.isNight },
+        settings: {
+          ...(roomData.settings || {}),
+          isNight: preset.isNight,
+          onlyNftHolders: false,
+          roomSettingsExtraData: JSON.stringify({ ...extra, allowedUsers: 0 }),
+        },
       });
     } catch (err) {
       console.warn('Stage rig build failed (room still usable):', err.message);
