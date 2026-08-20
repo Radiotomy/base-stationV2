@@ -11,9 +11,15 @@
 // The platform key and any creator key are server-side only. They are never
 // returned to a client: callers get { ownership, configured } instead.
 
+import { secrets } from 'base44:runtime';
+
 export const PORTAL_BASE = 'https://theportal.to/api/v2';
 
-const PLATFORM_KEY = Deno.env.get('PORTAL_ACCESS_KEY') || '';
+// Read lazily inside calls — resolving a secret at module scope would run before
+// any handler's try/catch and turn a missing key into an unlogged boot error.
+function platformKey() {
+  return secrets.get('PORTAL_ACCESS_KEY') || '';
+}
 
 export type PortalOwnership = 'platform' | 'creator';
 
@@ -76,12 +82,13 @@ export async function resolveAccessKey(base44: any, userId: string): Promise<Res
     // Credential lookup failure must not break venue creation — fall through
     // to the platform key rather than blocking the creator entirely.
   }
-  if (!PLATFORM_KEY) throw new Error('Portals is not configured for this app');
-  return { key: PLATFORM_KEY, ownership: 'platform', uid: null };
+  const pk = platformKey();
+  if (!pk) throw new Error('Portals is not configured for this app');
+  return { key: pk, ownership: 'platform', uid: null };
 }
 
 export function platformConfigured() {
-  return !!PLATFORM_KEY;
+  return !!platformKey();
 }
 
 /**
@@ -103,8 +110,9 @@ export async function resolveKeyForVenue(base44: any, venue: any): Promise<Resol
     }
     return { key: cred.access_key, ownership: 'creator', uid: cred.portal_uid || null };
   }
-  if (!PLATFORM_KEY) throw new Error('Portals is not configured for this app');
-  return { key: PLATFORM_KEY, ownership: 'platform', uid: null };
+  const pk = platformKey();
+  if (!pk) throw new Error('Portals is not configured for this app');
+  return { key: pk, ownership: 'platform', uid: null };
 }
 
 // ── Room data ────────────────────────────────────────────────────────────────
