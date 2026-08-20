@@ -1,5 +1,6 @@
 import { useRef, useCallback, useEffect } from 'react';
 import { PARAMETRIC_EQ_ZONES } from '@/config/parametricEQZones';
+import { buildFoundryInsert, isInsertable } from '@/lib/foundry/foundryInsert';
 
 /**
  * useMasteringChain
@@ -62,6 +63,7 @@ export default function useMasteringChain() {
   const compRef        = useRef(null);
   // Master + meter
   const masterGainRef  = useRef(null);
+  const insertRef      = useRef(null);   // active Foundry insert, if any
   const meterSplitRef  = useRef(null);
   const lAnalyserRef   = useRef(null);
   const rAnalyserRef   = useRef(null);
@@ -114,6 +116,9 @@ export default function useMasteringChain() {
       compRef, masterGainRef, meterSplitRef, lAnalyserRef, rAnalyserRef,
     ].forEach(r => safeDisconnect(r.current));
     Object.values(eqNodesRef.current).forEach(safeDisconnect);
+    // A rebuild replaces the nodes the insert was spliced between, so the old
+    // insert has to go with them or it keeps running detached.
+    if (insertRef.current) { insertRef.current.dispose(); insertRef.current = null; }
 
     sourceRef.current = source;
 
@@ -354,6 +359,38 @@ export default function useMasteringChain() {
     masterGainRef.current.gain.setTargetAtTime(linear, t(), 0.08);
   }, []);
 
+  /**
+   * Splice a Foundry patch in as an insert between the compressor and the
+   * master makeup gain — i.e. pre-limiter, post-character, which is where a
+   * creator's own colour stage belongs. Pass null to remove it.
+   *
+   * Non-destructive by construction: this only re-routes the PREVIEW graph.
+   * Nothing here writes to an asset; baking happens in the offline render.
+   */
+  const setInsert = useCallback(async (graph, bpm = 120) => {
+    const comp = compRef.current;
+    const master = masterGainRef.current;
+    const ctx = ctxRef.current;
+    if (!comp || !master || !ctx) return;
+
+    // Detach whatever is currently between comp and master.
+    safeDisconnect(comp);
+    if (insertRef.current) {
+      insertRef.current.dispose();
+      insertRef.current = null;
+    }
+
+    if (!graph || !isInsertable(graph)) {
+      comp.connect(master);
+      return;
+    }
+
+    const insert = await buildFoundryInsert(ctx, graph, { bpm });
+    comp.connect(insert.input);
+    insert.output.connect(master);
+    insertRef.current = insert;
+  }, []);
+
   const getAnalysers = useCallback(() => ({
     left:  lAnalyserRef.current,
     right: rAnalyserRef.current,
@@ -382,6 +419,7 @@ export default function useMasteringChain() {
     setEQBand,
     setCharacter,
     setLufsTarget,
+    setInsert,
     getAnalysers,
   };
 }

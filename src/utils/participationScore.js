@@ -26,6 +26,7 @@ export const SIGNAL_REGISTRY = {
   persona_used:        { points: 9,  dimension: 'vocal_identity',     label: 'Saved creative persona' },
   iteration:           { points: 8,  dimension: 'craft_refinement',   label: 'Iteration & refinement' },
   human_performance:   { points: 12, dimension: 'craft_refinement',   label: 'Human instrument performance' },
+  human_dsp_design:    { points: 10, dimension: 'craft_refinement',   label: 'Own DSP chain designed in BASE Foundry' },
 };
 
 export const DIMENSIONS = {

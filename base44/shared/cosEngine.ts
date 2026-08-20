@@ -16,6 +16,9 @@ export const SIGNAL_REGISTRY = {
   persona_used:        { points: 9,  dimension: 'vocal_identity',     label: 'Saved creative persona' },
   iteration:           { points: 8,  dimension: 'craft_refinement',   label: 'Iteration & refinement' },
   human_performance:   { points: 12, dimension: 'craft_refinement',   label: 'Human instrument performance' },
+  // Designing a DSP chain by hand is production work the creator actually did,
+  // so a baked Foundry patch RAISES the score rather than being ignored.
+  human_dsp_design:    { points: 10, dimension: 'craft_refinement',   label: 'Own DSP chain designed in BASE Foundry' },
 };
 
 export const DIMENSION_LABELS = {
@@ -33,7 +36,7 @@ const MUSICAL_TERMS = /\b(bpm|tempo|key of|major|minor|verse|chorus|bridge|hook|
 // Telemetry fields the engine can observe — confidence = how many were reported.
 const TELEMETRY_FIELDS = [
   'prompt', 'userProvidedContent', 'styleOrTags', 'referenceFile',
-  'personaOrTemplate', 'isIteration', 'humanInstrumentPerformance',
+  'personaOrTemplate', 'isIteration', 'humanInstrumentPerformance', 'humanDspDesign',
   'hasSyntheticVocals', 'isAutomatedMaster',
 ];
 
@@ -65,6 +68,7 @@ export function calculateHumanParticipationScore(inputs = {}) {
   // ── Craft & refinement ──
   if (inputs.isIteration) grant('iteration');
   if (inputs.humanInstrumentPerformance) grant('human_performance');
+  if (inputs.humanDspDesign) grant('human_dsp_design');
 
   const raw = Object.values(signals).reduce((a, b) => a + b, 0);
   const score = Math.min(100, raw);

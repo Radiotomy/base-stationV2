@@ -12,6 +12,7 @@ import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErr
 import StereoVUMeter from './StereoVUMeter';
 import ScrubWaveformPlayer from './ScrubWaveformPlayer';
 import AssetPicker from '@/components/studio/AssetPicker';
+import FoundryInsertSlot from './FoundryInsertSlot';
 import useMasteringChain from '@/hooks/useMasteringChain';
 import { decodeAudioFromUrl, renderMasteringOffline } from '@/utils/offlineMastering';
 import { audioBufferToWav } from '@/utils/wavEncoder';
@@ -61,6 +62,7 @@ export default function AIMasteringPanel() {
   const [sourceMetadata, setSourceMetadata] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [abMode, setAbMode] = useState('mastered'); // 'original' | 'mastered'
+  const [insertPatch, setInsertPatch] = useState(null); // Foundry patch used as an insert
 
   // Stereo controls
   const [balance, setBalance] = useState(0);       // -100 (full L) → +100 (full R)
@@ -108,6 +110,11 @@ export default function AIMasteringPanel() {
     Object.entries(character).forEach(([k, v]) => chain.setCharacter(k, v));
   }, [character, graphReady, chain]);
   useEffect(() => { if (graphReady) chain.setLufsTarget(lufsTarget); }, [lufsTarget, graphReady, chain]);
+  // Insert re-splices on selection AND on graph rebuild (a new track tears the
+  // chain down, so the insert has to be re-applied or it quietly disappears).
+  useEffect(() => {
+    if (graphReady) chain.setInsert(insertPatch?.graph_state || null);
+  }, [insertPatch, graphReady, chain]);
 
   const analysers = graphReady ? chain.getAnalysers() : { left: null, right: null };
 
@@ -218,6 +225,7 @@ export default function AIMasteringPanel() {
         eq,
         lufsTarget,
         stereo: { balance, separation },
+        foundryInsert: insertPatch ? { graph: insertPatch.graph_state } : null,
       });
 
       // 3. Encode to PCM WAV (16-bit streaming · 24-bit Apple / mastering)
@@ -230,7 +238,23 @@ export default function AIMasteringPanel() {
       toast.loading('Uploading…', { id: 'master' });
       const uploaded = await base44.integrations.Core.UploadFile({ file: wavFile });
 
-      // 5. Save as a `master` UserAsset
+      // 5. Baking a hand-built patch is production work the creator did, so the
+      // COS engine is asked to re-score with that signal. Only when one was used —
+      // an untouched render keeps its existing behaviour.
+      let cos = null;
+      if (insertPatch) {
+        try {
+          const scored = await base44.functions.invoke('calculateCos', {
+            humanDspDesign: true,
+            isAutomatedMaster: true,
+          });
+          cos = scored.data;
+        } catch {
+          // Scoring is provenance enrichment — it must never block the master.
+        }
+      }
+
+      // 6. Save as a `master` UserAsset
       const me = await base44.auth.me();
       const asset = await base44.entities.UserAsset.create({
         user_id: me.id,
@@ -240,7 +264,13 @@ export default function AIMasteringPanel() {
         description: `Client-rendered master · ${lufsTarget} LUFS target · style: ${style || 'custom'}`,
         file_url: uploaded.file_url,
         origin: 'creator',
-        tags: ['mastered', style || 'custom'],
+        tags: ['mastered', style || 'custom', ...(insertPatch ? ['foundry-insert'] : [])],
+        ...(cos ? {
+          human_participation_score: cos.score,
+          participation_signals: cos.signals,
+          ai_disclosure_label: cos.label,
+          ai_disclosure_basis: cos.basis,
+        } : {}),
         metadata: {
           mastering_profile: style || 'custom',
           lufs_target: lufsTarget,
@@ -252,9 +282,23 @@ export default function AIMasteringPanel() {
           bit_depth: bitDepth,
           format: `wav-${bitDepth}bit`,
           rendered_client_side: true,
+          // Baked-patch record. Written only on render — auditioning leaves no
+          // trace, because auditioning did not change the audio. The parameter
+          // snapshot is stored so this exact render can be reproduced even if
+          // the patch is later edited or deleted.
+          ...(insertPatch ? {
+            foundry_insert: {
+              plugin_id: insertPatch.id,
+              title: insertPatch.title,
+              plugin_human_score: insertPatch.human_score ?? null,
+              parameter_snapshot: insertPatch.dsp_definition || null,
+              baked_at: new Date().toISOString(),
+            },
+          } : {}),
           provenance: {
             created_by: 'mastering_studio',
             dsp: 'web_audio_offline',
+            foundry_patch_baked: !!insertPatch,
           },
         },
       });
@@ -354,6 +398,8 @@ export default function AIMasteringPanel() {
             <RotateCcw className="w-3 h-3" /> Reset all
           </Button>
         </div>
+
+        <FoundryInsertSlot selected={insertPatch} onSelect={setInsertPatch} />
 
         {/* Stereo controls — Balance + Separation */}
         <div className="bg-card rounded-2xl border border-border p-5 space-y-4">

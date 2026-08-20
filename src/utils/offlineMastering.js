@@ -1,4 +1,5 @@
 import { PARAMETRIC_EQ_ZONES } from '@/config/parametricEQZones';
+import { buildFoundryInsert, isInsertable } from '@/lib/foundry/foundryInsert';
 
 /**
  * Offline Mastering Renderer
@@ -62,7 +63,7 @@ export async function decodeAudioFromUrl(url) {
  * @returns {Promise<AudioBuffer>}
  */
 export async function renderMasteringOffline(sourceBuffer, settings) {
-  const { character = {}, eq = {}, lufsTarget = -14, stereo = {} } = settings;
+  const { character = {}, eq = {}, lufsTarget = -14, stereo = {}, foundryInsert = null } = settings;
   const { balance = 0, separation = 0 } = stereo;
 
   // Force stereo: if source is mono, duplicate the channel so the
@@ -206,6 +207,15 @@ export async function renderMasteringOffline(sourceBuffer, settings) {
   comp.release.value   = 0.18;
   cursor.connect(comp);
   cursor = comp;
+
+  // ─── Foundry insert (optional) — same position as the live preview ───
+  // Spliced between the compressor and master makeup so the render matches
+  // what was auditioned. Skipped silently when no patch is loaded.
+  if (foundryInsert?.graph && isInsertable(foundryInsert.graph)) {
+    const insert = await buildFoundryInsert(ctx, foundryInsert.graph, { bpm: foundryInsert.bpm ?? 120 });
+    cursor.connect(insert.input);
+    cursor = insert.output;
+  }
 
   // ─── Master makeup: punch + LUFS target ───
   const master = ctx.createGain();

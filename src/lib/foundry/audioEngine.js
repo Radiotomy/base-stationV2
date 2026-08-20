@@ -96,8 +96,35 @@ export default class FoundryEngine {
       this.master.connect(this.analyser);
       this.analyser.connect(this.ctx.destination);
     }
-    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    // An OfflineAudioContext also reports 'suspended', but resuming one STARTS
+    // its render — so an adopted offline context must never be resumed here.
+    const isOffline = typeof this.ctx.startRendering === 'function';
+    if (!isOffline && this.ctx.state === 'suspended') await this.ctx.resume();
     return this.ctx;
+  }
+
+  /**
+   * Adopt an EXISTING context and terminals so this graph can run as an insert
+   * inside another chain (live mastering preview, or an offline render).
+   *
+   * The engine deliberately does NOT touch ctx.destination in this mode: an
+   * insert that also talked to the speakers would double the signal and would
+   * leak Foundry audio into a render it was not routed into.
+   */
+  async adopt(ctx, graph, { input, output, bpm = 120 }) {
+    this.ctx = ctx;
+    this.externalInput = input;
+    this.master = output;
+    this.bpm = bpm;
+    await this.build(graph);
+    return this;
+  }
+
+  /** Tear down the units but LEAVE the context alive (adopted-context path). */
+  releaseUnits() {
+    for (const unit of this.units.values()) { try { unit.dispose(); } catch {} }
+    this.units.clear();
+    this.running = false;
   }
 
   // ---- unit factory -------------------------------------------------------
