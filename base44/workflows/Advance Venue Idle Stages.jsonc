@@ -1,0 +1,45 @@
+{
+  "description": "Keeps every idle-programmed 3D venue's stage wall showing whatever its playlist clock says is on air, so an offline venue never sits on a static poster. Runs every 5 minutes (cron's floor); between sweeps the in-world panel triggers the same targeted push, and the public venue page derives position from the playlist clock, so fan-facing playback is never waiting on this schedule.",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "advance_venue_idle_stages",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sweep_venues": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "advanceVenueStages",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Advance idle stages",
+            "description": "All programmed venues"
+          }
+        }
+      }
+    ]
+  },
+  "name": "Advance Venue Idle Stages",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/5 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  }
+}

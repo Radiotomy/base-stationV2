@@ -243,6 +243,44 @@ export function buildVenueRig(
   return { items, logic };
 }
 
+/**
+ * Build ONLY the main stage screen (item 105) for a piece of idle content.
+ *
+ * Exported separately from buildVenueRig because idle programming rewrites the
+ * screen every few minutes: re-running the whole rig on each advance would
+ * rebuild the lighting too, and a room upload replaces the entire room, so the
+ * narrower the write the less there is to get wrong.
+ *
+ * A video entry becomes a playing video wall; an audio entry becomes its cover
+ * art, because Portals has no audio-only surface and a blank wall would read as
+ * a broken venue rather than as music playing.
+ */
+export function buildIdleScreen(
+  preset: VenuePreset,
+  opts: { url: string; kind: 'audio' | 'video'; title?: string; subtitle?: string },
+) {
+  const { url, kind, title = '', subtitle = 'Now Playing' } = opts;
+  const items: Record<string, unknown> = {};
+  const logic: Record<string, string> = {};
+  if (!url) return { items, logic };
+
+  if (kind === 'video') {
+    items['105'] = item('DefaultVideo', preset.screen.pos, preset.screen.scale, {
+      contentString: url,
+      hoverTitle: title,
+      hoverBodyContent: subtitle,
+    });
+    logic['105'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
+  } else {
+    items['105'] = item('DefaultPainting', preset.screen.pos, preset.screen.scale, {
+      contentString: url,
+      hoverTitle: title,
+      hoverBodyContent: subtitle,
+    });
+  }
+  return { items, logic };
+}
+
 /** Strip a previous BASE Station rig, leaving everything the artist placed. */
 export function withoutRig<T extends Record<string, unknown>>(map: T = {} as T): Record<string, unknown> {
   const out: Record<string, unknown> = {};

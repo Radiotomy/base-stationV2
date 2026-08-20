@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import PortalStageViewer from '@/components/live/PortalStageViewer';
 import WelcomePanelToggle from '@/components/live/venues/WelcomePanelToggle';
 import VenueTemplatesTab from '@/components/live/venues/VenueTemplatesTab';
+import VenueIdlePlaylistTab from '@/components/live/venues/VenueIdlePlaylistTab';
 import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
 
 export default function LiveVenueDetail() {
@@ -83,6 +84,8 @@ export default function LiveVenueDetail() {
             </a>
           </Button>
         </div>
+
+        <VenueIdlePlaylistTab venue={venue} onUpdated={load} />
 
         <VenueTemplatesTab venue={venue} onUpdated={load} />
 

@@ -59,6 +59,20 @@
       "default": false,
       "description": "Whether the BASE Station in-world panel (now playing, provenance, tip jar, quests) is wired to this room's welcome iframe."
     },
+    "idle_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether this venue runs idle programming \u2014 a looping audio + video playlist that keeps the room alive whenever the artist is NOT live. When false the venue falls back to its static cover art, which is what an unprogrammed venue looked like before idle content existed."
+    },
+    "idle_now_playing": {
+      "type": "object",
+      "description": "Snapshot of what the stage was last pushed, written by the idle driver. This is a CACHE for change detection and for surfaces that cannot compute the clock themselves \u2014 it is never the source of truth. Position always comes from the playlist's cycle origin, so a stale snapshot can misreport the title but can never desynchronise playback."
+    },
+    "idle_last_pushed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the stage screen was last rewritten. Kept so the driver can avoid re-uploading a whole Portals room on every tick when nothing has actually changed \u2014 a room upload replaces the entire room, so needless writes are the main risk to anything the artist placed by hand."
+    },
     "settings_snapshot": {
       "type": "object",
       "description": "The last settings patch BASE Station applied, captured BEFORE the write. Kept so a creator can revert a design or template change from BASE Station without hunting through Portals' own version history."

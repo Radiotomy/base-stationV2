@@ -1,0 +1,110 @@
+{
+  "name": "VenuePlaylist",
+  "type": "object",
+  "description": "A venue's idle-content playlist: the mixed audio + video programme that plays in a 3D venue whenever the artist is NOT live. Stores POINTERS to UserAsset records plus the small amount of display data the public venue page needs, never copies of the media itself, so re-mastering a track flows through to every venue that programmes it. Deliberately separate from Playlist (a listener-facing track collection) because this drives a physical stage screen and a server clock, not a listening queue.",
+  "properties": {
+    "venue_id": {
+      "type": "string",
+      "description": "PortalVenue this programme belongs to"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Creator who owns the venue and therefore the programme"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "Programme name, shown to fans as the channel name, e.g. 'Lo-fi Mornings'"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000
+    },
+    "items": {
+      "type": "array",
+      "description": "Ordered programme. Each entry carries its own media kind because a single programme deliberately interleaves audio and video: the stage renders a video wall for one and cover art plus a visualizer for the other.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "description": "Source UserAsset id"
+          },
+          "media_kind": {
+            "type": "string",
+            "enum": [
+              "audio",
+              "video"
+            ],
+            "description": "How this entry is staged. Derived from the source asset's type at add time and stored, because the stage layer must know which prefab to build without loading every asset."
+          },
+          "title": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "thumbnail_url": {
+            "type": "string"
+          },
+          "duration_seconds": {
+            "type": "number",
+            "description": "Length of this entry. Load-bearing: the server clock derives the whole programme position by summing durations, so an entry with no measurable duration is treated as a fixed fallback length rather than skipped."
+          }
+        }
+      }
+    },
+    "is_default_loop": {
+      "type": "boolean",
+      "default": false,
+      "description": "Marks this programme as the venue's fallback loop \u2014 what plays during any time not covered by a VenueSchedule block. Exactly one programme per venue should carry it; the resolver takes the most recently updated one if more than one does, so a mis-set flag degrades to a working venue rather than silence."
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the programme is listed on the venue's public page. A private programme still plays \u2014 this only controls whether fans see the full queue."
+    },
+    "cycle_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The clock origin for this programme's loop. Every surface (3D stage, in-world panel, public venue page) computes the current item and its play offset from this single instant, which is what makes a fan arriving mid-track land at the same moment as everyone else without any server-side playhead to keep in sync."
+    }
+  },
+  "required": [
+    "venue_id",
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

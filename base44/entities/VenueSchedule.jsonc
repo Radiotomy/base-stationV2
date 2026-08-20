@@ -1,0 +1,85 @@
+{
+  "name": "VenueSchedule",
+  "type": "object",
+  "description": "A booked time block that overrides a venue's default idle loop with a specific programme \u2014 'Lo-fi mornings 09:00-12:00 daily', 'DJ replay Fri 20:00-22:00'. Blocks are evaluated in the venue owner's own timezone, because a programme called 'mornings' must mean morning where the artist is, not UTC.",
+  "properties": {
+    "venue_id": {
+      "type": "string"
+    },
+    "playlist_id": {
+      "type": "string",
+      "description": "VenuePlaylist to run during this block. A block whose programme no longer exists is skipped at resolve time rather than pruned \u2014 deleting a programme must not silently rewrite the artist's whole week."
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string",
+      "description": "Creator-facing name for the block"
+    },
+    "days_of_week": {
+      "type": "array",
+      "description": "Days this block runs, 0 = Sunday through 6 = Saturday. An empty array means every day.",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 6
+      }
+    },
+    "start_time": {
+      "type": "string",
+      "description": "Local start, 24h 'HH:MM'"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "Local end, 24h 'HH:MM'. An end earlier than the start is read as crossing midnight, so an overnight block can be expressed as one row instead of two."
+    },
+    "timezone": {
+      "type": "string",
+      "default": "America/Chicago",
+      "description": "IANA zone the times are written in"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Lets a creator park a block without losing it \u2014 a deleted block would have to be rebuilt from memory."
+    }
+  },
+  "required": [
+    "venue_id",
+    "playlist_id",
+    "user_id",
+    "start_time",
+    "end_time"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": null,
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

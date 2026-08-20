@@ -49,6 +49,7 @@ const LiveManager = lazy(() => import('./pages/LiveManager'));
 const LiveVenues = lazy(() => import('./pages/LiveVenues'));
 const LiveVenueDetail = lazy(() => import('./pages/LiveVenueDetail'));
 const VenuePanel = lazy(() => import('./pages/VenuePanel'));
+const VenueStage = lazy(() => import('./pages/VenueStage'));
 const LiveWatch = lazy(() => import('./pages/LiveWatch'));
 const LiveSummary = lazy(() => import('./pages/LiveSummary'));
 const AudiusTrending = lazy(() => import('./pages/AudiusTrending'));
@@ -191,6 +192,7 @@ const AuthenticatedApp = () => {
             <Route path="/artist/:id" element={<ArtistProfile />} />
             <Route path="/fanclub/:creatorId" element={<FanClub />} />
             <Route path="/creator-store/:creatorId" element={<CreatorStore />} />
+            <Route path="/venue/:venueId" element={<VenueStage />} />
             <Route path="/verify" element={<VerifyMark />} />
             <Route path="/trust" element={<TrustCenter />} />
             <Route path="/why-base-station" element={<Navigate to="/trust" replace />} />
