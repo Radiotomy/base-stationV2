@@ -1,0 +1,119 @@
+{
+  "name": "FoundryPlugin",
+  "type": "object",
+  "description": "A BASE Foundry DSP plugin: a node graph plus its compiled DSP definition. Deliberately isolated from UserAsset and every BASE Mark / COS record \u2014 a Foundry plugin is a TOOL, not a sound recording, so it carries its own participation score and never enters the forensic attribution path.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner of the plugin"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "effect",
+        "instrument",
+        "utility",
+        "modulator"
+      ],
+      "default": "effect"
+    },
+    "graph_state": {
+      "type": "object",
+      "description": "Canvas truth: { nodes: [{id, type, x, y, params}], edges: [{id, from, to, toParam}] }. The engine builds directly from this, so it is the only authoritative representation of the plugin."
+    },
+    "dsp_definition": {
+      "type": "object",
+      "description": "Compiled, engine-facing description of the signal chain (ordered processing units and their resolved parameter values). Derived from graph_state, stored so a plugin can be auditioned without re-running the canvas layer."
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false
+    },
+    "fork_parent_id": {
+      "type": "string",
+      "description": "FoundryPlugin this was forked from. A fork inherits the graph but NOT the parent's participation score \u2014 the fork's own score starts from what the forker actually changed."
+    },
+    "human_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "0-100 Creative Ownership Score for the PLUGIN DESIGN \u2014 how much of this graph the human authored versus prompted. Computed by the Foundry's own scorer; it is not the audio COS and must never be blended with one."
+    },
+    "participation_signals": {
+      "type": "object",
+      "description": "Breakdown of the signals behind human_score: ai_prompt_count, manual_node_edits, manual_wire_edits, param_customizations, was_forked."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fork_count": {
+      "type": "number",
+      "default": 0
+    },
+    "audition_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_public": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

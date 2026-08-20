@@ -1,0 +1,73 @@
+{
+  "name": "FoundryPreset",
+  "type": "object",
+  "description": "A saved parameter snapshot for a FoundryPlugin. Stores values only, never topology \u2014 a preset that could change the graph would silently become a different plugin under the same name.",
+  "properties": {
+    "plugin_id": {
+      "type": "string"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "Creator of the preset"
+    },
+    "name": {
+      "type": "string"
+    },
+    "parameter_values": {
+      "type": "object",
+      "description": "Flat map of 'nodeId.param' -> value. Keys that no longer exist in the plugin graph are ignored on load rather than recreated."
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "plugin_id",
+    "name"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_public": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

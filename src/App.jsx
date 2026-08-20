@@ -107,6 +107,9 @@ const Forum = lazy(() => import('./pages/Forum'));
 const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
 const VerifyMark = lazy(() => import('./pages/VerifyMark'));
+// BASE Foundry — isolated DSP plugin studio module
+const Foundry = lazy(() => import('./pages/Foundry'));
+const FoundryWorkspace = lazy(() => import('./pages/FoundryWorkspace'));
 const RightsPortal = lazy(() => import('./pages/RightsPortal'));
 // ORVO Podcast Studio (additive module)
 import OrvoStudioLayoutBoundary from '@/components/studios/orvo/performance/StudioLayoutBoundary';
@@ -227,6 +230,8 @@ const AuthenticatedApp = () => {
               <Route path="/blockchain" element={<Navigate to="/creator-dashboard?tab=proof" replace />} />
               <Route path="/id3-studio" element={<ID3TagStudio />} />
               <Route path="/base-mark" element={<BaseMarkStudio />} />
+              <Route path="/foundry" element={<Foundry />} />
+              <Route path="/foundry/:pluginId" element={<FoundryWorkspace />} />
               <Route path="/creator-dashboard" element={<CreatorDashboard />} />
               <Route path="/rights" element={<RightsPortal />} />
               <Route path="/credits" element={<Credits />} />
