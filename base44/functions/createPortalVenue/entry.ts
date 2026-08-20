@@ -74,6 +74,12 @@ export default async function (req) {
         Name: name.slice(0, 60),
         Description: description || `A BASE Station live venue — ${name}`,
         ...(coverImageUrl && { Image: coverImageUrl }),
+        // A new room starts unpublished, which is what makes fans hit "this space
+        // is private". Publishing requires a non-empty ShortDescription, so it is
+        // sent in the same patch rather than left to a later call.
+        ShortDescription: `${name} — a BASE Station live music venue.`.slice(0, 160),
+        Status: 'Published',
+        ShowOnDirectory: true,
       });
     } catch (err) {
       console.warn('Venue settings failed:', err.message);

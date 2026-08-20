@@ -13,7 +13,9 @@
 
 import { secrets } from 'base44:runtime';
 
-export const PORTAL_BASE = 'https://theportal.to/api/v2';
+// Portals' current public base address is portals.to (the older theportal.to host
+// still answers, but the new documentation treats portals.to as canonical).
+export const PORTAL_BASE = 'https://portals.to/api/v2';
 
 // Read lazily inside calls — resolving a secret at module scope would run before
 // any handler's try/catch and turn a missing key into an unlogged boot error.
