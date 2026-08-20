@@ -14,6 +14,7 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [cover, setCover] = useState('');
+  const [loadingImage, setLoadingImage] = useState('');
   const [busy, setBusy] = useState(false);
 
   const create = async () => {
@@ -25,10 +26,11 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
         description: description.trim(),
         templateKey,
         coverImageUrl: cover.trim(),
+        loadingImageUrl: loadingImage.trim(),
       });
       if (!res?.data?.roomId) throw new Error(res?.data?.error || 'Venue creation failed');
       toast.success('Your 3D venue is ready');
-      setName(''); setDescription(''); setCover(''); setTemplateKey(DEFAULT_TEMPLATE_KEY);
+      setName(''); setDescription(''); setCover(''); setLoadingImage(''); setTemplateKey(DEFAULT_TEMPLATE_KEY);
       onOpenChange(false);
       onCreated?.();
     } catch (err) {
@@ -57,6 +59,8 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
               placeholder="Describe your venue (optional)" rows={2} className="text-sm rounded-lg resize-none" />
             <Input value={cover} onChange={(e) => setCover(e.target.value)}
               placeholder="Cover image URL (https, optional)" className="h-9 text-sm rounded-lg" />
+            <Input value={loadingImage} onChange={(e) => setLoadingImage(e.target.value)}
+              placeholder="Loading screen image URL (https, optional)" className="h-9 text-sm rounded-lg" />
           </div>
 
           <Button onClick={create} disabled={busy} className="w-full rounded-lg h-10 font-bold gap-2">

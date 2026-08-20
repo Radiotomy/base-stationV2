@@ -35,7 +35,8 @@ const EXTRA = {
   addWelcomeIframeToInfoButton: 'addWelcomeIframeToInfoButton',
   openWelcomeIframeInBackground: 'openWelcomeIframeInBackground',
   requireUsername: 'requireUsername',
-  allowedUsers: 'allowedUsers',
+  // `allowedUsers` is deliberately NOT writable: Portals reads any stored value
+  // as a whitelist, so setting it at all makes the room report itself private.
   // Portals' own token gate on the 3D door. Separate from BASE Station's
   // access_gate: this one holds even for a fan who reaches the Portals URL
   // directly, which no BASE Station-side check can see.

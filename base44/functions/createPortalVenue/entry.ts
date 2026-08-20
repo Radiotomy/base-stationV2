@@ -31,11 +31,15 @@ export default async function (req) {
     const name = (body.name || '').trim();
     const preset = getPreset(body.templateKey || DEFAULT_PRESET_KEY);
     const coverImageUrl = body.coverImageUrl || '';
+    const loadingImageUrl = body.loadingImageUrl || '';
     const description = (body.description || '').slice(0, 1000);
 
     if (!name) return Response.json({ error: 'Venue name required' }, { status: 400 });
     if (coverImageUrl && !coverImageUrl.startsWith('https://')) {
       return Response.json({ error: 'Cover image must be an https URL' }, { status: 400 });
+    }
+    if (loadingImageUrl && !loadingImageUrl.startsWith('https://')) {
+      return Response.json({ error: 'Loading screen image must be an https URL' }, { status: 400 });
     }
 
     const { key, ownership } = await resolveAccessKey(base44, user.id);
@@ -83,14 +87,14 @@ export default async function (req) {
 
     // Branding. Best-effort: the room already exists and is usable, so a
     // settings hiccup must not fail the whole venue.
-    // LoadingImages is documented but silently ignored by Portals (it always
-    // reads back empty), so the cover only drives Image — claiming a custom
-    // loading screen we cannot actually set would be a lie on the venue card.
     try {
       await setRoomSettings(roomId, key, {
         Name: name.slice(0, 60),
         Description: description || `A BASE Station live venue — ${name}`,
         ...(coverImageUrl && { Image: coverImageUrl }),
+        // Creator's own entry artwork. Portals takes an ARRAY here, and falls
+        // back to its default splash when it is empty.
+        ...(loadingImageUrl && { LoadingImages: [loadingImageUrl] }),
         // A new room starts unpublished, which is what makes fans hit "this space
         // is private". Publishing requires a non-empty ShortDescription, so it is
         // sent in the same patch rather than left to a later call.
@@ -107,12 +111,10 @@ export default async function (req) {
     try {
       const roomData = await downloadRoomData(roomId, key);
       const rig = buildVenueRig(preset, { name, coverImageUrl });
-      // A freshly created room carries an EMPTY roomSettingsExtraData string, so
-      // no access value is stored at all. Write allowedUsers: 0 ("anyone") so the
-      // venue is explicitly open to fans instead of relying on an unset default.
-      let extra: Record<string, unknown> = {};
-      const raw = roomData?.settings?.roomSettingsExtraData;
-      if (typeof raw === 'string' && raw) { try { extra = JSON.parse(raw); } catch { extra = {}; } }
+      // Never write an `allowedUsers` value here. Portals treats ANY stored value
+      // for it as a whitelist — including 0 — which locked fans out of the room
+      // with "this space is private". A fresh room leaves it unset, and unset is
+      // what "open to everyone" actually looks like.
       await uploadRoomData(roomId, key, {
         ...roomData,
         roomItems: { ...(roomData.roomItems || {}), ...rig.items },
@@ -121,7 +123,6 @@ export default async function (req) {
           ...(roomData.settings || {}),
           isNight: preset.isNight,
           onlyNftHolders: false,
-          roomSettingsExtraData: JSON.stringify({ ...extra, allowedUsers: 0 }),
         },
       });
     } catch (err) {

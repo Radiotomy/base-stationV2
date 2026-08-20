@@ -10,6 +10,7 @@ import WelcomePanelToggle from '@/components/live/venues/WelcomePanelToggle';
 import VenueTemplatesTab from '@/components/live/venues/VenueTemplatesTab';
 import VenueIdlePlaylistTab from '@/components/live/venues/VenueIdlePlaylistTab';
 import VenueVisibilityCard from '@/components/live/venues/VenueVisibilityCard';
+import VenueBrandingCard from '@/components/live/venues/VenueBrandingCard';
 import VenueAccessGateCard from '@/components/live/venues/VenueAccessGateCard';
 import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
 
@@ -86,6 +87,8 @@ export default function LiveVenueDetail() {
             </a>
           </Button>
         </div>
+
+        <VenueBrandingCard venue={venue} onUpdated={load} />
 
         <VenueVisibilityCard venue={venue} onUpdated={load} />
 
