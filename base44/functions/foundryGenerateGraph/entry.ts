@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { prompt, existing_graph, category } = await req.json();
+    const { prompt, existing_graph, category, reference_profile } = await req.json();
     if (!prompt || typeof prompt !== 'string') {
       return Response.json({ error: 'A prompt is required' }, { status: 400 });
     }
@@ -115,6 +115,26 @@ Deno.serve(async (req) => {
     const contextBlock = existing_graph?.nodes?.length
       ? `The creator already has this graph. MODIFY it to satisfy the request, preserving node ids where the module survives:\n${JSON.stringify(existing_graph)}`
       : 'The creator is starting from scratch.';
+
+    // Reference-derived design. The client measures a track the creator likes and
+    // sends only its tonal DESCRIPTION — band balance, brightness, dynamics, width.
+    // No audio reaches this function, so the graph is designed to hit a tone TARGET
+    // and can never be a reconstruction of the reference.
+    const referenceBlock = reference_profile?.bands?.length
+      ? `
+TONAL REFERENCE. The creator wants the patch to move audio TOWARD this balance.
+Band levels are relative to the loudest band in dB (0 = loudest, negative = quieter):
+${reference_profile.bands.map((b) => `- ${b.label} (${b.range_hz} Hz): ${b.relative_db} dB`).join('\n')}
+Approximate spectral centroid: ${reference_profile.approx_centroid_hz} Hz
+Crest factor: ${reference_profile.crest_factor_db} dB (low = compressed, high = dynamic)
+Stereo width: ${reference_profile.stereo_width} (0 = mono, >0.35 = wide)
+
+Design an EFFECT/UTILITY chain starting from "input" that shapes arbitrary incoming
+audio toward this balance — set eq3, filter and saturation values that actually move
+tone in that direction. Do NOT try to synthesise the reference itself; the reference
+describes a destination, not a source. Say in the summary which specific traits of the
+reference you are matching and how.`
+      : '';
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are a DSP architect for BASE Foundry, a modular audio plugin builder.
@@ -124,6 +144,7 @@ Design a Web Audio signal graph for this request:
 
 ${category ? `Intended category: ${category}` : ''}
 ${contextBlock}
+${referenceBlock}
 
 ${GUIDE}
 

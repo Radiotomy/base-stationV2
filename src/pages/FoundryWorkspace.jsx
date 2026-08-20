@@ -13,6 +13,7 @@ import NodePalette from '@/components/foundry/NodePalette';
 import PresetBar from '@/components/foundry/PresetBar';
 import FoundryScoreBadge from '@/components/foundry/FoundryScoreBadge';
 import InsertPreviewDialog from '@/components/foundry/InsertPreviewDialog';
+import ReferenceProfilePanel from '@/components/foundry/ReferenceProfilePanel';
 import useFoundryEngine from '@/hooks/useFoundryEngine';
 import { compileGraph } from '@/lib/foundry/audioEngine';
 import { defaultParams, newId } from '@/lib/foundry/nodeTypes';
@@ -30,6 +31,7 @@ export default function FoundryWorkspace() {
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [insertOpen, setInsertOpen] = useState(false);
+  const [reference, setReference] = useState(null);
   const [signals, setSignals] = useState({
     ai_prompt_count: 0, manual_node_edits: 0, manual_wire_edits: 0,
     param_customizations: 0, was_forked: false,
@@ -98,6 +100,7 @@ export default function FoundryWorkspace() {
         prompt,
         existing_graph: graph.nodes?.length ? graph : null,
         category: plugin?.category,
+        reference_profile: reference?.profile || null,
       });
       const data = res.data;
       if (data?.error) throw new Error(data.error);
@@ -215,7 +218,8 @@ export default function FoundryWorkspace() {
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)',
             }}
           >
-            <AssistantPane history={history} busy={busy} onSubmit={generate} />
+            <ReferenceProfilePanel reference={reference} onChange={setReference} disabled={busy} />
+            <AssistantPane history={history} busy={busy} onSubmit={generate} reference={reference} />
             <PreviewControls
               engine={audio.engine}
               running={audio.running}

@@ -10,9 +10,17 @@ const EXAMPLES = [
   'Hollow metallic drone from two detuned saws',
 ];
 
+// Shown once a reference is analysed — the useful asks change shape entirely
+// when the architect has a tone target to aim at.
+const REFERENCE_EXAMPLES = [
+  'Match the tonal balance of this reference',
+  'Get me most of the way to this reference, but keep more low end',
+  'Match its brightness and width, not its compression',
+];
+
 // Conversational DSP architect. Every turn is kept: a prompt history is how you
 // retrace why a patch sounds the way it does.
-export default function AssistantPane({ history, busy, onSubmit }) {
+export default function AssistantPane({ history, busy, onSubmit, reference }) {
   const [prompt, setPrompt] = useState('');
 
   const submit = () => {
@@ -36,7 +44,7 @@ export default function AssistantPane({ history, busy, onSubmit }) {
               Describe the sound you want. The architect designs the module chain, and you
               keep full control of it on the canvas.
             </p>
-            {EXAMPLES.map((ex) => (
+            {(reference ? REFERENCE_EXAMPLES : EXAMPLES).map((ex) => (
               <button
                 key={ex}
                 onClick={() => setPrompt(ex)}
@@ -88,7 +96,9 @@ export default function AssistantPane({ history, busy, onSubmit }) {
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
           }}
-          placeholder="Describe a sound, or ask for a change to the current patch…"
+          placeholder={reference
+            ? 'Ask the architect to match the reference — or match only part of it…'
+            : 'Describe a sound, or ask for a change to the current patch…'}
           rows={2}
           className="text-xs bg-white/5 border-white/10 resize-none mb-2"
         />
