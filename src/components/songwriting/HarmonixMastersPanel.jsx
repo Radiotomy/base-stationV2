@@ -18,19 +18,24 @@ const MOODS = ['Energetic', 'Melancholy', 'Dreamy', 'Dark', 'Uplifting', 'Romant
  * ACE-Step's structure-tag grammar and a comma-dense style prompt — the two
  * things that actually move Harmonix output quality.
  */
-export default function HarmonixMastersPanel({ onApply }) {
+export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
   const [topic, setTopic] = useState('');
   const [genre, setGenre] = useState('Pop');
   const [mood, setMood] = useState('Energetic');
   const [running, setRunning] = useState(false);
   const [brief, setBrief] = useState(null);
 
+  // The track description above already says what the song is about, so an empty
+  // topic box falls back to it rather than leaving the button dead — writing your
+  // idea twice was the reason this panel looked permanently disabled.
+  const effectiveTopic = (topic.trim() || fallbackTopic.trim());
+
   const run = async () => {
-    if (!topic.trim()) { toast.error('Give the Masters engine a topic to write about'); return; }
+    if (!effectiveTopic) { toast.error('Give the Masters engine a topic to write about'); return; }
     setRunning(true);
     try {
       const res = await base44.functions.invoke('generate243Masters', {
-        topic, genre, mood, max_chars: 3000,
+        topic: effectiveTopic, genre, mood, max_chars: 3000,
       });
       const data = res.data;
       const aceLyrics = toAceStepLyrics(data.lyrics);
@@ -63,7 +68,9 @@ export default function HarmonixMastersPanel({ onApply }) {
         value={topic}
         onChange={e => setTopic(e.target.value)}
         rows={2}
-        placeholder="What's the song about? e.g. leaving a town that never loved you back"
+        placeholder={fallbackTopic.trim()
+          ? `Optional — leave blank to write about: "${fallbackTopic.trim().slice(0, 70)}"`
+          : "What's the song about? e.g. leaving a town that never loved you back"}
         className="w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
       />
 
@@ -78,12 +85,17 @@ export default function HarmonixMastersPanel({ onApply }) {
         </select>
       </div>
 
-      <Button onClick={run} disabled={running || !topic.trim()}
+      <Button onClick={run} disabled={running || !effectiveTopic}
         className="w-full gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 font-bold">
         {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
         {running ? 'Masters are writing…' : 'Write with 243 Masters'}
         {!running && <CostBadge cost={3} />}
       </Button>
+      {!effectiveTopic && (
+        <p className="text-[11px] text-amber-300/80">
+          Add a topic above — or describe your track in "Describe Your Track" — to unlock the Masters engine.
+        </p>
+      )}
 
       {brief && (
         <div className="text-[11px] text-muted-foreground space-y-1 pt-1 border-t border-amber-500/20">

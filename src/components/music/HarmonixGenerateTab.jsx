@@ -231,7 +231,7 @@ export default function HarmonixGenerateTab() {
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
       </div>
 
-      <HarmonixMastersPanel onApply={({ lyrics: l, prompt: p, title: t }) => {
+      <HarmonixMastersPanel fallbackTopic={prompt} onApply={({ lyrics: l, prompt: p, title: t }) => {
         setLyrics(l);
         setPrompt(p);
         setUsedMasters(true);
