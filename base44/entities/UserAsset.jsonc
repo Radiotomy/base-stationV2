@@ -23,9 +23,10 @@
         "harmony",
         "mashup",
         "visualizer",
-        "sfx"
+        "sfx",
+        "loop"
       ],
-      "description": "Type of asset"
+      "description": "Type of asset. 'loop' rows are the provenance registry entries for generated LoopSample loops \u2014 the loop library still reads LoopSample, but the forensic registry is indexed here, so a loop needs a row to be attributable at all."
     },
     "title": {
       "type": "string",
@@ -66,6 +67,10 @@
     "workspace_id": {
       "type": "string",
       "description": "Optional Workspace id this asset belongs to (empty = unassigned / All)"
+    },
+    "loop_sample_id": {
+      "type": "string",
+      "description": "LoopSample this registry row was created for, when asset_type is 'loop'. Kept so a recovered payload can be traced back to the loop a creator actually sees in their library."
     },
     "origin": {
       "type": "string",
@@ -141,6 +146,26 @@
     "c2pa_provenance_hash": {
       "type": "string",
       "description": "Cryptographic manifest checksum anchoring the COS metrics to the audio container"
+    },
+    "chain_status": {
+      "type": "string",
+      "enum": [
+        "unregistered",
+        "pending",
+        "registered",
+        "failed",
+        "skipped"
+      ],
+      "default": "unregistered",
+      "description": "On-chain provenance anchor state for this asset. 'skipped' records that automatic anchoring considered this asset and deliberately passed on it (owner has not opted in, or the type is not anchorable) \u2014 distinct from 'unregistered', which means nothing has looked yet."
+    },
+    "chain_registry_id": {
+      "type": "string",
+      "description": "BaseTrackRegistry record id for this asset's anchor"
+    },
+    "chain_tx_hash": {
+      "type": "string",
+      "description": "Anchor transaction hash"
     },
     "parent_asset_id": {
       "type": "string",

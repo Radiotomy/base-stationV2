@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { cosForJob } from '../../shared/cosStamp.ts';
 
 // ── Dedicated LLM Lyrics Generation (Claude Sonnet) ──────────────────────────
 async function generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars }) {
@@ -138,6 +139,37 @@ Deno.serve(async (req) => {
     const enc = new TextEncoder();
     const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(`${user.id}|${result.provider}|${topic}|${mood}|${style}|${result.lyrics.slice(0, 100)}`));
     const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+    // Persist the lyrics as a library asset so the text has a provenance RECORD,
+    // not just a log line. No watermark can live inside text, so the stored
+    // label, score and content hash are the whole provenance for a lyric sheet —
+    // leaving them only in APIUsageLog metadata meant the work itself carried
+    // nothing at all.
+    try {
+      const file = new File([result.lyrics], `${String(topic).slice(0, 40).replace(/[^\w.\-]/g, '_')}.txt`, { type: 'text/plain' });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const { fields: cos } = cosForJob({ input_data: { topic, mood, style, length, prompt: topic } });
+      await base44.entities.UserAsset.create({
+        user_id: user.id,
+        user_email: user.email,
+        asset_type: 'lyric',
+        title: result.title || String(topic).slice(0, 120),
+        description: `${style} lyrics — ${mood}`,
+        file_url,
+        origin: 'creator',
+        ...cos,
+        c2pa_provenance_hash: contentHash,
+        tags: ['lyrics', style, mood].filter(Boolean),
+        metadata: {
+          content_hash: contentHash,
+          cos_engine: '2.0',
+          lyrics: result.lyrics,
+          model_version: 'claude_sonnet_4_6',
+          generation_job_id: job.id,
+          input_parameters: { topic: String(topic).slice(0, 200), mood, style, length, rhyme_scheme: rhyme_scheme || 'Mixed' },
+        },
+      });
+    } catch (e) { console.warn('Lyrics provenance save failed:', e.message); }
 
     await base44.asServiceRole.entities.APIUsageLog.create({
       user_id: user.id, user_email: user.email, user_name: user.full_name,

@@ -83,6 +83,21 @@
       "type": "object",
       "description": "What the SoundForge finishing stage measured and applied \u2014 seamless flag, bar/beat count, sample rate, bit depth, normalization. Stored so the library can show DAW-readiness without re-analyzing the file."
     },
+    "base_mark_asset_id": {
+      "type": "string",
+      "description": "UserAsset id carrying this loop's BASE Mark cascade. A loop is a LoopSample, but the forensic registry is indexed on UserAsset \u2014 a payload that resolves to nothing is discarded as a false positive, so a loop can only be attributable if it also owns a registry row. Same arrangement ORVO episodes use: the asset IS the provenance record, the loop points at it."
+    },
+    "provenance_status": {
+      "type": "string",
+      "enum": [
+        "unregistered",
+        "processing",
+        "marked",
+        "failed"
+      ],
+      "default": "unregistered",
+      "description": "BASE Mark registration state for this loop's audio. Only generated loops are registered \u2014 an imported CC0 sample is somebody else's recording and must never be marked as this creator's work."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000,

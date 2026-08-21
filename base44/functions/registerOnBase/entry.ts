@@ -1,5 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { ethers } from 'npm:ethers@6.13.4';
+// Anchoring core is shared with the opt-in automatic path (autoAnchorAsset).
+// Anchors are irreversible, so there is exactly one implementation of what gets
+// hashed and what the calldata means.
+import {
+  isTxHash, normalizePk, toHex, prepareAnchorRecord, broadcastAnchor,
+} from '../../shared/chainAnchor.ts';
 
 /**
  * End-to-end Base provenance registration — platform-paid.
@@ -15,107 +21,11 @@ import { ethers } from 'npm:ethers@6.13.4';
  *  admin_repin    (admin)     — re-pin the IPFS bundle for a record.
  */
 
-const isTxHash = (h) => /^0x[0-9a-fA-F]{64}$/.test(h || '');
+// Fingerprint + IPFS pin + pending registry & tx-log records — see
+// shared/chainAnchor.ts. Kept as a thin local alias so the call sites below read
+// the same as before the extraction.
+const prepareRecord = (base44, user, body) => prepareAnchorRecord(base44, user, body);
 
-// Normalize a pasted private key: trim whitespace/quotes, add 0x prefix if missing
-function normalizePk(raw) {
-  if (!raw) return null;
-  let k = raw.trim().replace(/^["']|["']$/g, '');
-  if (/^[0-9a-fA-F]{64}$/.test(k)) k = '0x' + k;
-  return /^0x[0-9a-fA-F]{64}$/.test(k) ? k : null;
-}
-
-const toHex = (str) =>
-  '0x' + Array.from(new TextEncoder().encode(str)).map((b) => b.toString(16).padStart(2, '0')).join('');
-
-const sha256Hex = async (str) => {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-};
-
-// Fingerprint + IPFS pin + pending registry & tx-log records
-async function prepareRecord(base44, user, body) {
-  const t = body.track || {};
-  // Content fingerprint: SHA-256 of the actual audio bytes so the on-chain anchor
-  // is verifiable against the file itself. Falls back to a metadata hash only if
-  // the audio can't be downloaded.
-  let fingerprint;
-  try {
-    const dl = await fetch(t.track_url);
-    if (!dl.ok) throw new Error('download failed');
-    const buf = await dl.arrayBuffer();
-    const digest = await crypto.subtle.digest('SHA-256', buf);
-    fingerprint = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
-  } catch (_) {
-    fingerprint = await sha256Hex(JSON.stringify({
-      title: t.title,
-      artist: user.full_name,
-      url: t.track_url,
-      genre: t.genre || '',
-      timestamp: new Date().toISOString(),
-    }));
-  }
-
-  let pin = null;
-  let pinError = null;
-  try {
-    const res = await base44.functions.invoke('pinToIPFS', {
-      mode: 'track',
-      track: {
-        title: t.title,
-        artist: user.full_name,
-        artist_id: user.id,
-        asset_id: t.asset_id || null,
-        file_url: t.track_url,
-        cover_url: t.cover_image_url || '',
-        genre: t.genre || '',
-        ai_tools_used: t.ai_tools_used || '',
-        description: t.description || '',
-        fingerprint_hash: fingerprint,
-        blockchain: 'base',
-      },
-    });
-    pin = res.data;
-  } catch (e) {
-    pinError = e?.response?.data?.error || e.message;
-  }
-
-  const record = await base44.asServiceRole.entities.BaseTrackRegistry.create({
-    artist_id: user.id,
-    artist_name: user.full_name,
-    artist_email: user.email,
-    track_title: t.title,
-    track_url: t.track_url,
-    cover_image_url: t.cover_image_url || '',
-    genre: t.genre || '',
-    ai_tools_used: t.ai_tools_used || '',
-    ai_label: t.ai_label || undefined,
-    description: t.description || '',
-    supersedes_tx_hash: body.supersedes_tx_hash || undefined,
-    correction_reason: body.correction_reason || undefined,
-    wallet_address: body.wallet_address || '',
-    fingerprint_hash: fingerprint,
-    metadata_uri: pin?.metadata_uri || '',
-    registration_status: 'pending',
-    network: 'base-mainnet',
-  });
-
-  const txLog = await base44.asServiceRole.entities.BlockchainTransaction.create({
-    user_id: user.id,
-    user_email: user.email,
-    blockchain: 'base',
-    network: 'base-mainnet',
-    action: 'register_track',
-    status: 'pending',
-    wallet_address: body.wallet_address || '',
-    related_entity: 'BaseTrackRegistry',
-    related_entity_id: record.id,
-    metadata: { metadata_uri: pin?.metadata_uri || '', fingerprint_hash: fingerprint, pin_error: pinError },
-    description: `Provenance anchor for "${t.title}"`,
-  });
-
-  return { record, txLog, fingerprint, pin, pinError };
-}
 
 Deno.serve(async (req) => {
   try {
@@ -158,63 +68,14 @@ Deno.serve(async (req) => {
 
       const { record, txLog, fingerprint, pin, pinError } = await prepareRecord(base44, user, body);
 
-      const pk = normalizePk(Deno.env.get('PLATFORM_WALLET_PRIVATE_KEY'));
-      if (!pk) {
-        return Response.json({
-          registry_id: record.id,
-          registration_status: 'pending',
-          fingerprint_hash: fingerprint,
-          metadata_uri: pin?.metadata_uri || '',
-          gateway_url: pin?.gateway_url || '',
-          pin_error: pinError,
-          chain_error: 'Platform wallet key missing or invalid — saved as pending',
-        });
-      }
-
       try {
-        const rpcUrl = Deno.env.get('BASE_RPC_URL') || 'https://mainnet.base.org';
-        const provider = new ethers.JsonRpcProvider(rpcUrl, 8453, { staticNetwork: true });
-        const wallet = new ethers.Wallet(pk, provider);
-
-        // 0-value self-transaction carrying the provenance anchor in calldata.
-        // A correction uses the BSTN1C prefix and names the transaction it
-        // supersedes, so the retraction is provable on-chain rather than only
-        // in our database — an existing anchor can never be edited or removed.
-        const supersedes = body.supersedes_tx_hash || '';
-        const anchorData = toHex(
-          supersedes
-            ? `BSTN1C|${fingerprint}|${pin?.metadata_uri || ''}|supersedes:${supersedes}`
-            : `BSTN1|${fingerprint}|${pin?.metadata_uri || ''}`,
-        );
-        const tx = await wallet.sendTransaction({
-          to: wallet.address,
-          value: 0n,
-          data: anchorData,
+        const { transaction_hash, wallet_address } = await broadcastAnchor(base44, {
+          record,
+          txLog,
+          fingerprint,
+          metadataUri: pin?.metadata_uri || '',
+          supersedes: body.supersedes_tx_hash || '',
         });
-
-        await base44.asServiceRole.entities.BaseTrackRegistry.update(record.id, {
-          transaction_hash: tx.hash,
-          wallet_address: wallet.address,
-          registration_status: 'registered',
-          registered_at: new Date().toISOString(),
-        });
-        await base44.asServiceRole.entities.BlockchainTransaction.update(txLog.id, {
-          status: 'success',
-          transaction_hash: tx.hash,
-          wallet_address: wallet.address,
-        });
-
-        // Point the superseded record at its replacement so the bad anchor
-        // always resolves to the authoritative one.
-        if (supersedes) {
-          const prior = await base44.asServiceRole.entities.BaseTrackRegistry
-            .filter({ transaction_hash: supersedes }, '-created_date', 1).catch(() => []);
-          if (prior?.[0]) {
-            await base44.asServiceRole.entities.BaseTrackRegistry.update(prior[0].id, {
-              superseded_by_tx_hash: tx.hash,
-            }).catch(() => {});
-          }
-        }
 
         await base44.asServiceRole.entities.ActivityFeedItem.create({
           type: 'track_submitted',
@@ -228,16 +89,17 @@ Deno.serve(async (req) => {
         return Response.json({
           registry_id: record.id,
           registration_status: 'registered',
-          transaction_hash: tx.hash,
-          wallet_address: wallet.address,
+          transaction_hash,
+          wallet_address,
           fingerprint_hash: fingerprint,
           metadata_uri: pin?.metadata_uri || '',
           gateway_url: pin?.gateway_url || '',
-          basescan_url: `https://basescan.org/tx/${tx.hash}`,
+          basescan_url: `https://basescan.org/tx/${transaction_hash}`,
           pin_error: pinError,
         });
       } catch (chainErr) {
-        // IPFS provenance is saved; record stays pending for admin retry
+        // IPFS provenance is saved; record stays pending for admin retry.
+        // A missing/invalid platform wallet lands here too — same outcome.
         return Response.json({
           registry_id: record.id,
           registration_status: 'pending',

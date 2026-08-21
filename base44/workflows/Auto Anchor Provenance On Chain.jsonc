@@ -1,0 +1,34 @@
+{
+  "name": "Auto Anchor Provenance On Chain",
+  "description": "For creators who opted in, publishes a permanent Base provenance anchor for each new whole work (track, master, mashup). The opt-in is checked server-side against the owner's account, not against this trigger \u2014 an anchor is irreversible and public, so it is never created for someone who did not ask for it. Assets belonging to creators who have not opted in are recorded as 'skipped'.",
+  "trigger": {
+    "condition": "${ ((.trigger.data.asset_type == \"track\" or .trigger.data.asset_type == \"master\" or .trigger.data.asset_type == \"mashup\") and (.trigger.data.chain_status == null or .trigger.data.chain_status == \"unregistered\")) }",
+    "config": {
+      "trigger_type": "entity",
+      "events": [
+        "create"
+      ],
+      "entity_name": "UserAsset"
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "auto_anchor_provenance_on_chain",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "anchor": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "autoAnchorAsset",
+            "args": {}
+          },
+          "then": "end"
+        }
+      }
+    ]
+  }
+}

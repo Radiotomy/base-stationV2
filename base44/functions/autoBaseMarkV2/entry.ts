@@ -24,7 +24,7 @@ import { assertSafeUrl } from '../../shared/safeUrl.ts';
 // Runs entirely service-role (no user session). V2 fires asynchronously on
 // Replicate (no blocking on a cold T4); the prediction id is stamped on the asset
 // so the existing replicateV2Webhook finalize completes the asset when GPU settles.
-const AUDIO_TYPES = ['track', 'stem', 'master', 'harmony', 'mashup', 'sfx'];
+const AUDIO_TYPES = ['track', 'stem', 'master', 'harmony', 'mashup', 'sfx', 'loop'];
 
 // How recently an asset must have been created for the unauthenticated
 // automation shape to act on it.

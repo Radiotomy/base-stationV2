@@ -11,8 +11,11 @@
 // Idempotent by output_url: finalizeJob is safe to call repeatedly, and the
 // studio page may still create its own asset, so this must never double-write.
 
+import { cosForJob, contentHash } from './cosStamp.ts';
+
 // GenerationJob.job_type -> UserAsset.asset_type.
-// 'loop' is deliberately absent: loops are LoopSample records, not UserAssets.
+// 'loop' is deliberately absent: loops are LoopSample records, and their
+// provenance row is created by registerLoopProvenance instead.
 // Mashups are also skipped here — finalizeMashupAsset already builds those with
 // their parent lineage, which this generic path cannot reconstruct.
 const ASSET_TYPE_BY_JOB = {
@@ -35,6 +38,15 @@ export async function autoSaveJobAsset(base44, job, providerData, outputUrl) {
   const p = providerData || {};
   const title = job.input_data?.title || p.title || `${job.provider} ${job.job_type}`;
 
+  // Score EVERY generated asset, not just audio. A video or a cover art carries
+  // creative-process telemetry exactly as a track does, and an asset saved with
+  // no score is indistinguishable from one scored zero.
+  const { fields: cos } = cosForJob(job);
+  // Content-addressable provenance for the types no watermark can carry a signal
+  // in (video, image). It does not survive re-encoding — it proves this output
+  // came from this recorded generation.
+  const hash = await contentHash([job.user_id, job.provider, job.id, outputUrl]);
+
   return await svc.entities.UserAsset.create({
     user_id: job.user_id,
     user_email: job.user_email,
@@ -44,11 +56,14 @@ export async function autoSaveJobAsset(base44, job, providerData, outputUrl) {
     thumbnail_url: p.cover_image_url || undefined,
     origin: 'creator',
     is_public: false,
-    ...(job.job_type === 'music' && {
-      ai_label: job.ai_label || 'ai_generated',
-      ai_disclosure_label: 'ai_generated',
-    }),
+    // RIAA/IFPI track-level label applies to sound recordings only, per the
+    // standard — it is deliberately not written onto video or artwork.
+    ...(job.job_type === 'music' && { ai_label: job.ai_label || 'ai_generated' }),
+    ...cos,
+    c2pa_provenance_hash: hash,
     metadata: {
+      content_hash: hash,
+      cos_engine: '2.0',
       generation_job_id: job.id,
       provider: job.provider,
       tier: job.input_data?.tier || null,

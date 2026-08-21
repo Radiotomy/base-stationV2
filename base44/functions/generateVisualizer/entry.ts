@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { cosForDerived } from '../../shared/cosStamp.ts';
 
 /**
  * Phase 3 — AI Visualizer Studio
@@ -55,6 +56,16 @@ Deno.serve(async (req) => {
       });
     } catch { /* non-blocking */ }
 
+    // Scored by the authoritative engine rather than a number written here —
+    // a second scoring rule is how a disclosure label starts disagreeing with
+    // itself across studios.
+    const { fields: cos } = cosForDerived({
+      prompt: style,
+      sourceCount: 1,
+      styleOrTags: [style, preset].filter(Boolean),
+      personaOrTemplate: !!preset,
+    });
+
     const visualizer = await base44.entities.UserAsset.create({
       user_id: user.id,
       user_email: user.email,
@@ -64,11 +75,7 @@ Deno.serve(async (req) => {
       file_url: source.file_url,
       thumbnail_url: source.thumbnail_url,
       origin: source.origin === 'audius' ? 'audius' : 'creator',
-      // Creative Ownership Score — derived asset: reference + iteration + user-picked preset
-      ai_disclosure_label: 'ai_generated',
-      ai_disclosure_basis: 'Score based on: reference material upload, saved creative persona, iterative refinement.',
-      human_participation_score: 35,
-      participation_signals: { reference_material: 15, persona_used: 10, iteration: 10 },
+      ...cos,
       parent_asset_id: source.id,
       tags: ['visualizer', style, 'video'],
       metadata: {

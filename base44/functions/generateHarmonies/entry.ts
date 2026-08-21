@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { cosForDerived } from '../../shared/cosStamp.ts';
 
 /**
  * Phase 3 — AI Vocal Harmonizer
@@ -59,6 +60,12 @@ Deno.serve(async (req) => {
       });
     } catch { /* non-blocking */ }
 
+    const { fields: cos } = cosForDerived({
+      prompt: custom ? `${harmonyType} harmony: ${custom}` : `${harmonyType} harmony`,
+      sourceCount: 1,
+      styleOrTags: [harmonyType],
+    });
+
     const harmony = await base44.entities.UserAsset.create({
       user_id: user.id,
       user_email: user.email,
@@ -69,11 +76,7 @@ Deno.serve(async (req) => {
       thumbnail_url: source.thumbnail_url,
       origin: 'creator',
       ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
-      // Creative Ownership Score — derived asset: reference material + iteration
-      ai_disclosure_label: 'ai_generated',
-      ai_disclosure_basis: 'Score based on: reference material upload, iterative refinement.',
-      human_participation_score: 25,
-      participation_signals: { reference_material: 15, iteration: 10 },
+      ...cos,
       parent_asset_id: source.id,
       tags: ['harmony', harmonyType, 'creator'],
       metadata: {

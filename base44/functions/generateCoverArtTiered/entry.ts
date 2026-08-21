@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { autoSaveJobAsset } from '../../shared/autoSaveAsset.ts';
 
 async function deductCreditsServerSide(base44, user, amount, { provider, job_id, description }) {
   const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -109,6 +110,20 @@ Deno.serve(async (req) => {
     const ded = await deductCreditsServerSide(base44, user, credits, {
       provider: 'tempcolor', job_id, description: `Cover art (${qualityTier})`,
     });
+
+    // Save the artwork as a library asset carrying its label, Creative Ownership
+    // Score and content hash. Until now cover art only ever existed as a job
+    // output URL, so a generated image had no provenance record at all — and an
+    // image cannot carry an audio watermark, which makes the stored record the
+    // only provenance it will ever have. Idempotent by file URL.
+    try {
+      await autoSaveJobAsset(
+        base44,
+        { ...updated, user_id: user.id, user_email: user.email },
+        {},
+        result.image_url,
+      );
+    } catch (e) { console.warn('Cover art provenance save failed:', e.message); }
 
     return Response.json({
       job_id,

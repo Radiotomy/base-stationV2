@@ -1,8 +1,8 @@
 {
   "name": "Auto BASE Mark V2 on new audio assets",
-  "description": "Automatically embeds a BASE Mark V2 neural watermark into every newly saved audio asset (tracks, stems, masters, harmonies, mashups, sfx) via Replicate, completing asynchronously through the webhook finalizer.",
+  "description": "Automatically embeds a BASE Mark V2 neural watermark into every newly saved audio asset (tracks, stems, masters, harmonies, mashups, sfx, generated loops) via Replicate, completing asynchronously through the webhook finalizer.",
   "trigger": {
-    "condition": "${ ((.trigger.data.asset_type == \"track\" or .trigger.data.asset_type == \"stem\" or .trigger.data.asset_type == \"master\" or .trigger.data.asset_type == \"harmony\" or .trigger.data.asset_type == \"mashup\" or .trigger.data.asset_type == \"sfx\") and (.trigger.data.metadata.base_mark == null)) }",
+    "condition": "${ ((.trigger.data.asset_type == \"track\" or .trigger.data.asset_type == \"stem\" or .trigger.data.asset_type == \"master\" or .trigger.data.asset_type == \"harmony\" or .trigger.data.asset_type == \"mashup\" or .trigger.data.asset_type == \"sfx\" or .trigger.data.asset_type == \"loop\") and (.trigger.data.metadata.base_mark == null)) }",
     "config": {
       "trigger_type": "entity",
       "events": [
