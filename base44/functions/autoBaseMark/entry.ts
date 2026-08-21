@@ -7,21 +7,35 @@ import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    // Admin-only — automations invoke with platform admin auth context; this
-    // blocks unauthenticated external callers from triggering watermarking.
-    const user = await base44.auth.me().catch(() => null);
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
     const payload = await req.json();
     const entityId = payload?.event?.entity_id;
-    if (payload?.event?.entity_name !== 'UserAsset' || !entityId) {
+    const isAutomation = payload?.event?.entity_name === 'UserAsset';
+
+    // The entity workflow runs with NO signed-in user, so an unconditional admin
+    // check locks the automation out of its own job (403 on every create). Any
+    // OTHER caller must be an admin. Same gate autoBaseMarkV2 uses.
+    if (!isAutomation) {
+      const user = await base44.auth.me().catch(() => null);
+      if (!user || user.role !== 'admin') {
+        return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+      }
+    }
+    if (!isAutomation || !entityId) {
       return Response.json({ skipped: true, reason: 'Not a UserAsset event' });
     }
 
-    let data = payload.data;
-    if (!data) data = await base44.asServiceRole.entities.UserAsset.get(entityId);
+    // The automation body is caller-supplied and authorises nothing, so every
+    // gate below is re-derived from the STORED record — never from the payload.
+    const data = await base44.asServiceRole.entities.UserAsset.get(entityId).catch(() => null);
     if (!data) return Response.json({ skipped: true, reason: 'Asset not found' });
+
+    // Anything older than this window is a replay, not a new asset. Combined with
+    // the "already marked" check below, the open path can only ever do work the
+    // create event was about to do anyway.
+    const ageMs = Date.now() - new Date(data.created_date).getTime();
+    if (!(ageMs >= 0 && ageMs < 30 * 60 * 1000)) {
+      return Response.json({ skipped: true, reason: 'Asset not newly created' });
+    }
 
     const AUDIO_TYPES = ['track', 'stem', 'master', 'harmony', 'mashup', 'sfx'];
     if (!AUDIO_TYPES.includes(data.asset_type)) {
