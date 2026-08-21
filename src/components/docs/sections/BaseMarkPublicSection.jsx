@@ -44,12 +44,12 @@ export default function BaseMarkPublicSection() {
           </span>
         </div>
         <h1 className="font-display text-3xl md:text-4xl text-foreground leading-tight">
-          Every track leaves the platform carrying proof of who made it.
+          Every track leaves the platform carrying a record of where it came from.
         </h1>
         <p className="text-muted-foreground leading-relaxed max-w-3xl">
           BASE Mark is BASE Station&apos;s audio watermarking standard. Every master saved on the platform is
           stamped with an inaudible forensic signature bound to its registry record — so a track, or an
-          excerpt, stem or remix of it, can be traced back to the creator who made it. The signature is
+          excerpt, stem or remix of it, can be traced back to the registered work it came from. The signature is
           layered: complementary technologies ride on the same file so that an edit defeating one leaves
           another intact. It is applied automatically, to everything, from the first save.
         </p>
@@ -142,7 +142,7 @@ export default function BaseMarkPublicSection() {
             <p className="font-semibold text-foreground text-sm">Attribution is becoming law</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Disclosure and attribution obligations are arriving across every major music market. A platform
-              that can prove which work came from where is not a feature — it is the licence to operate.
+              that can show which work came from where is not a feature — it is the licence to operate.
             </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-4 space-y-2">
@@ -204,6 +204,7 @@ export default function BaseMarkPublicSection() {
           <li>Heavy compression and repeated re-encoding reduce confidence, which is precisely why multiple layers are carried rather than one.</li>
           <li>Audio whose speed or pitch has been altered is the hardest case for any watermark, industry-wide. BASE Station runs additional recovery and identification stages for it; coverage there is improving but is not yet complete, and we say so rather than implying otherwise.</li>
           <li>Like all watermarking, BASE Mark is a deterrent and a forensic instrument — not unbreakable DRM. Anyone claiming otherwise about any system is selling something.</li>
+          <li>A recovered mark identifies the registered recording a piece of audio came from. That is strong, dated evidence for a rights conversation — it is not a determination of authorship or copyright, and no watermark can be.</li>
         </ul>
       </section>
 

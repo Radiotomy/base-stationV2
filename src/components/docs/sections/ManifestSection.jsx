@@ -118,11 +118,11 @@ export default function ManifestSection() {
           <code className="text-[#FFC98A] text-xs">base_mark</code> object reports the asset&apos;s in-waveform
           forensic signature and its opaque{' '}
           <code className="text-[#FFC98A] text-xs">mark_id</code>. Scanning the audio returns the same{' '}
-          <code className="text-[#FFC98A] text-xs">mark_id</code>, proving the audio and this manifest belong
-          together even when all metadata has been stripped. Multiple layers carry the mark and each resolves
-          independently, so a layer still reported as pending in{' '}
+          <code className="text-[#FFC98A] text-xs">mark_id</code>, showing that the audio and this manifest
+          belong together even when all metadata has been stripped. Multiple layers carry the mark and each
+          resolves independently, so a layer still reported as pending in{' '}
           <code className="text-[#FFC98A] text-xs">base_mark_layers</code> does not weaken the record — the
-          signature is already authoritative. Layer technologies, payload structure and detection thresholds are
+          signature already resolves. Layer technologies, payload structure and detection thresholds are
           confidential and never exposed through partner endpoints.
         </p>
       </div>

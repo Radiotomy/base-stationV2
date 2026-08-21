@@ -142,6 +142,68 @@ rewrite:
 
 ---
 
+## src/components/docs/sections/OverviewSection.jsx
+
+### Compliance Mission pillar
+> Aligned with the RIAA/IFPI GenAI track-level labeling standard (July 2026) and DDEX AI
+> attribution profiles, so creators can prove authorship to DSPs, distributors, and
+> rights bodies.
+
+---
+
+## src/components/docs/sections/BaseMarkPublicSection.jsx
+
+### Hero
+> # Every track leaves the platform carrying proof of who made it.
+> BASE Mark is BASE Station's audio watermarking standard. Every master saved on the
+> platform is stamped with an inaudible forensic signature bound to its registry record —
+> so a track, or an excerpt, stem or remix of it, can be traced back to the creator who
+> made it. The signature is layered: complementary technologies ride on the same file so
+> that an edit defeating one leaves another intact. It is applied automatically, to
+> everything, from the first save.
+
+### Why it matters — "Attribution is becoming law"
+> Disclosure and attribution obligations are arriving across every major music market. A
+> platform that can prove which work came from where is not a feature — it is the licence
+> to operate.
+
+---
+
+## src/components/docs/sections/OnChainRegistrationSection.jsx
+
+### Intro
+> BASE Station anchors every registered track's provenance on the Base blockchain using a
+> platform-sponsored wallet. The pipeline turns studio telemetry into an immutable,
+> publicly verifiable ownership record — with zero crypto friction for the artist.
+
+---
+
+## src/components/docs/sections/ManifestSection.jsx
+
+### Verification
+> Scanning the audio returns the same `mark_id`, proving the audio and this manifest
+> belong together even when all metadata has been stripped. Multiple layers carry the
+> mark and each resolves independently, so a layer still reported as pending in
+> `base_mark_layers` does not weaken the record — the signature is already authoritative.
+
+---
+
+## Reviewed and left unchanged
+
+- `src/components/docs/SecurityTrustCallout.jsx` — describes IPFS content addressing,
+  on-chain anchoring, SHA-256 binding and SSRF hardening. All factual mechanism claims,
+  no authorship or ownership overclaim.
+- `src/components/docs/sections/CosCalculateSection.jsx`, `DdexExportSection.jsx`,
+  `Id3ComplianceSection.jsx`, `CreditsSection.jsx` — API reference copy; describes
+  request/response shape only.
+- `src/components/home/HomeRackHero.jsx` — "Create Boldly. Own It Transparently." plus
+  disclosure-label/COS/BASE Mark description. Accurate as written.
+- `src/components/home/HomeCTAPanel.jsx` — "Human + AI", co-creator framing. No
+  provenance claim to soften.
+- `src/components/home/HomeFeatureGrid.jsx` — feature navigation labels only.
+
+---
+
 ## src/components/home/HomeTrustStrip.jsx
 
 > **Protected the moment you hit save.**

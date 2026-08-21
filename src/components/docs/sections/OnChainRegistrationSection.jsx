@@ -44,8 +44,10 @@ export default function OnChainRegistrationSection() {
         <h1 className="text-3xl font-black text-foreground mb-3">On-Chain Registration Pipeline</h1>
         <p className="text-muted-foreground leading-relaxed max-w-2xl">
           BASE Station anchors every registered track's provenance on the Base blockchain using a
-          platform-sponsored wallet. The pipeline turns studio telemetry into an immutable,
-          publicly verifiable ownership record — with zero crypto friction for the artist.
+          platform-sponsored wallet. The pipeline turns studio telemetry into a dated, publicly
+          verifiable provenance record that cannot be quietly edited or backdated — with zero crypto
+          friction for the artist. It is evidence of what was registered and when, not a grant of
+          copyright.
         </p>
       </div>
 

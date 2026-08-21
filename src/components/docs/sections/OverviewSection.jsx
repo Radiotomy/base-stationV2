@@ -16,7 +16,7 @@ const PILLARS = [
   {
     icon: Scale,
     title: 'Compliance Mission',
-    text: 'Aligned with the RIAA/IFPI GenAI track-level labeling standard (July 2026) and DDEX AI attribution profiles, so creators can prove authorship to DSPs, distributors, and rights bodies.',
+    text: 'Aligned with the RIAA/IFPI GenAI track-level labeling standard (July 2026) and DDEX AI attribution profiles, so creators can document how a work was made for DSPs, distributors, and rights bodies. These are disclosure records — they do not grant copyright or settle a competing claim.',
   },
 ];
 
@@ -60,6 +60,13 @@ export default function OverviewSection() {
           <li><span className="text-foreground font-medium">ID3v2 embedding</span> — TXXX and WXXX frames (including the BASE Mark identifier) written into the MP3 container so provenance travels with the file itself.</li>
           <li><span className="text-foreground font-medium">On-chain anchoring</span> — a SHA-256 content hash of the marked audio bytes is registered on Base mainnet, verifiable against the file itself.</li>
         </ol>
+        <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+          <span className="text-foreground font-medium">What these records are, precisely.</span> Each layer has a
+          narrow job: a mark identifies the recording it was embedded in, a hash identifies exact bytes, a timestamp
+          records when an entry was made, and a score reports the creative input we observed. Together they form an
+          evidence trail a partner can inspect and rely on. None of them grants copyright, establishes who authored a
+          work, or resolves a competing claim — treat them as disclosure and provenance data, not adjudication.
+        </p>
       </div>
 
       <SecurityTrustCallout />
