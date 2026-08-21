@@ -11,6 +11,7 @@ import InfoTip from '@/components/common/InfoTip';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel';
+import HarmonixGrooveControls from '@/components/music/HarmonixGrooveControls';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
@@ -26,6 +27,10 @@ export default function HarmonixGenerateTab() {
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(60);
+  const [groove, setGroove] = useState({
+    bpm: null, key_scale: '', time_signature: 'auto',
+    guidance_scale: 7.5, thinking: true, seed: null,
+  });
   const [generating, setGenerating] = useState(false);
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
@@ -159,6 +164,12 @@ export default function HarmonixGenerateTab() {
     try {
       const res = await base44.functions.invoke('generateMusicHarmonix', {
         tier, prompt, lyrics: lyrics || undefined, duration, title: title || undefined,
+        bpm: groove.bpm || undefined,
+        key_scale: groove.key_scale || undefined,
+        time_signature: groove.time_signature,
+        guidance_scale: groove.guidance_scale,
+        thinking: groove.thinking,
+        seed: groove.seed || undefined,
       });
       refreshCreditsFromResponse(res.data);
 
@@ -231,12 +242,20 @@ export default function HarmonixGenerateTab() {
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
       </div>
 
-      <HarmonixMastersPanel fallbackTopic={prompt} onApply={({ lyrics: l, prompt: p, title: t }) => {
+      <HarmonixMastersPanel fallbackTopic={prompt} onApply={({ lyrics: l, prompt: p, title: t, bpm, key_scale, time_signature }) => {
         setLyrics(l);
         setPrompt(p);
         setUsedMasters(true);
         if (t && !title.trim()) setTitle(t);
+        setGroove(g => ({
+          ...g,
+          bpm: bpm || g.bpm,
+          key_scale: key_scale || g.key_scale,
+          time_signature: time_signature || g.time_signature,
+        }));
       }} />
+
+      <HarmonixGrooveControls value={groove} onChange={setGroove} disabled={isProcessing} />
 
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">

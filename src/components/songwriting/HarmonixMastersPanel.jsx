@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError } from '@/utils/creditErrors';
-import { toAceStepLyrics, toHarmonixPrompt } from '@/utils/aceStepLyrics';
+import { toAceStepLyrics, toHarmonixPrompt, getGrooveDefaults } from '@/utils/aceStepLyrics';
 
 const GENRES = ['Pop', 'Hip-Hop', 'R&B', 'Country', 'Rock', 'EDM', 'Lo-Fi', 'Soul', 'Folk', 'Afrobeats'];
 const MOODS = ['Energetic', 'Melancholy', 'Dreamy', 'Dark', 'Uplifting', 'Romantic', 'Aggressive', 'Chill'];
@@ -41,7 +41,15 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
       const aceLyrics = toAceStepLyrics(data.lyrics);
       const prompt = toHarmonixPrompt(data, { genre, mood });
       setBrief({ ...data, aceLyrics, prompt });
-      onApply({ lyrics: aceLyrics, prompt, title: data.title, bpm: data.bpm });
+      // The brief's own tempo/key win; otherwise fall back to the genre's pocket
+      // so the groove is anchored rather than guessed.
+      const fallback = getGrooveDefaults(genre);
+      onApply({
+        lyrics: aceLyrics, prompt, title: data.title,
+        bpm: data.bpm || fallback.bpm,
+        key_scale: data.key || '',
+        time_signature: fallback.time_signature,
+      });
       toast.success('Masters brief applied — formatted for Harmonix');
     } catch (err) {
       if (!handleCreditError(err)) {

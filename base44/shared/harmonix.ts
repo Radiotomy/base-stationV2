@@ -30,7 +30,10 @@ export const HARMONIX_TIERS = {
     name: 'BASE-Harmonix Pro',
     tagline: 'Core Model · v1',
     description: 'Full-track generation for the standard pipeline',
-    inference_steps: 27,
+    // ACE-Step's own guidance puts the base/SFT sweet spot at 32-100 steps. 27
+    // sat just under it, which is exactly where the instrumental bed wavers
+    // around the vocal instead of committing to a groove.
+    inference_steps: 36,
     max_duration: 120,
     credit_cost: 10,
   },

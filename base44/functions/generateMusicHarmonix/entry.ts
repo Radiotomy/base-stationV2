@@ -40,7 +40,12 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { tier = 'pro', prompt, lyrics, duration = 60, title } = await req.json();
+    const {
+      tier = 'pro', prompt, lyrics, duration = 60, title,
+      // Groove anchors + inference controls. All optional: unset means the
+      // model's own LM decides, which is the old behaviour.
+      bpm, key_scale, time_signature, guidance_scale, thinking, seed,
+    } = await req.json();
     if (!prompt || !prompt.trim()) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
     const tierConfig = resolveTier(tier);
@@ -61,12 +66,37 @@ Deno.serve(async (req) => {
     // can be embedded in-memory before the single upload. Other tiers stay mp3.
     const forensicNative = tier === 'vault';
 
+    // Groove anchors. Leaving bpm/key/time-signature unset makes the LM guess the
+    // pocket, which is what lets the band drift against the vocal phrasing — so
+    // whatever the creator (or the Masters brief) supplies is passed straight
+    // through, clamped to the model's accepted ranges.
+    const numBpm = Number(bpm);
+    const safeBpm = Number.isFinite(numBpm) && numBpm >= 30 && numBpm <= 300
+      ? Math.round(numBpm) : null;
+    const safeTimeSig = ['2', '3', '4', '6'].includes(String(time_signature))
+      ? String(time_signature) : 'auto';
+    const numGuidance = Number(guidance_scale);
+    // Only the base/SFT checkpoint honours CFG — turbo ignores it — and above ~9
+    // the model overfits the caption, so the range is deliberately narrower than
+    // Replicate's 1-15.
+    const safeGuidance = Number.isFinite(numGuidance)
+      ? Math.min(Math.max(numGuidance, 1), 9) : 7;
+    const numSeed = Number(seed);
+    const safeSeed = Number.isFinite(numSeed) && numSeed > 0 ? Math.round(numSeed) : -1;
+
     const replicateInput = {
-      prompt: prompt.slice(0, 1000),
-      lyrics: hasLyrics ? lyrics.slice(0, 3000) : '[Instrumental]',
+      prompt: prompt.slice(0, 512),
+      lyrics: hasLyrics ? lyrics.slice(0, 4000) : '[Instrumental]',
       duration: safeDuration,
       inference_steps: tierConfig.inference_steps,
-      seed: -1,
+      guidance_scale: safeGuidance,
+      // Thinking mode weakens caption generalisation vs the DiT, so a dense,
+      // well-specified prompt often lands a steadier band with it off.
+      thinking: thinking !== false,
+      time_signature: safeTimeSig,
+      ...(safeBpm ? { bpm: safeBpm } : {}),
+      ...(key_scale && String(key_scale).trim() ? { key_scale: String(key_scale).trim().slice(0, 40) } : {}),
+      seed: safeSeed,
       batch_size: 1,
       audio_format: forensicNative ? FORENSIC_AUDIO_FORMAT : 'mp3',
     };
@@ -87,6 +117,11 @@ Deno.serve(async (req) => {
       tier, tier_name: tierConfig.name,
       prompt, lyrics: lyrics || '', duration: safeDuration,
       title: title || '', credit_cost: cost,
+      // Recorded so a take with a good pocket can be reproduced exactly.
+      bpm: safeBpm, key_scale: replicateInput.key_scale || '',
+      time_signature: safeTimeSig, guidance_scale: safeGuidance,
+      thinking: replicateInput.thinking, seed: safeSeed,
+      inference_steps: tierConfig.inference_steps,
     };
 
     // Settled synchronously within the 55s wait window (typical for ACE-Step)
