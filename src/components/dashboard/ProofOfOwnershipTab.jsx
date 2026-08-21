@@ -4,6 +4,7 @@ import { ShieldCheck, Music } from "lucide-react";
 import RegistrationProcessSteps from "@/components/blockchain/RegistrationProcessSteps";
 import ProofRegistrationCard from "@/components/dashboard/ProofRegistrationCard";
 import ProofRegisterLauncher from "@/components/dashboard/ProofRegisterLauncher";
+import AutoAnchorToggle from "@/components/blockchain/AutoAnchorToggle";
 
 export default function ProofOfOwnershipTab({ userId, user, assets = [] }) {
   const [baseRegistrations, setBaseRegistrations] = useState([]);
@@ -57,6 +58,8 @@ export default function ProofOfOwnershipTab({ userId, user, assets = [] }) {
           onRegistered={load}
         />
       </div>
+
+      <AutoAnchorToggle user={user} />
 
       <RegistrationProcessSteps />
 
