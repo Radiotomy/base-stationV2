@@ -60,7 +60,7 @@ export default function HomeRackHero({ user }) {
               boxShadow: "0 4px 14px -2px rgba(120,60,10,0.5)",
             }}
           >
-            <span className="text-[10px] font-black tracking-[0.25em] text-[#2A1508]">MUSIC TOOLS · HUMAN, AI, OR BOTH</span>
+            <span className="text-[10px] font-black tracking-[0.25em] text-[#2A1508]">MADE BY CREATORS · ANY WAY YOU MAKE IT</span>
           </div>
 
           <h1 className="font-display text-4xl sm:text-6xl md:text-7xl leading-[0.98] mb-6 text-[#1F3A0E]">
