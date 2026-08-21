@@ -43,6 +43,11 @@
       "type": "boolean",
       "default": true,
       "description": "Lets a creator park a block without losing it \u2014 a deleted block would have to be rebuilt from memory."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
     }
   },
   "required": [
