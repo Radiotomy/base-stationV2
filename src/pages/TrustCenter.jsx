@@ -2,6 +2,8 @@ import { Link } from 'react-router-dom';
 import { ShieldCheck, Fingerprint, Sparkles, Link2, ScanLine, FileText, Scale, Braces } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import TrustPillarCard from '@/components/trust/TrustPillarCard';
+import EvidenceBoundary from '@/components/trust/EvidenceBoundary';
+import HashVsWaveform from '@/components/trust/HashVsWaveform';
 
 // The four things BASE Station does to every track, and the ONE page that owns
 // the detail for each. Everything else in the app links here rather than
@@ -37,9 +39,9 @@ const PILLARS = [
   {
     icon: Link2,
     accent: '#60a5fa',
-    label: 'Proof',
+    label: 'Record',
     title: 'On-Chain Registration',
-    body: 'A content hash of the marked audio is written to the registry with an immutable timestamp — proof of creation that outlives any single platform.',
+    body: 'A content hash of the marked audio is written to a public registry with a timestamp nobody — including us — can quietly edit or backdate. It shows what was registered, by whom, and when. It is dated evidence, not copyright.',
     to: '/creator-dashboard?tab=proof',
     linkLabel: 'Your registry records',
   },
@@ -64,8 +66,8 @@ export default function TrustCenter() {
           <h1 className="font-display text-4xl md:text-5xl text-foreground">Trust &amp; Provenance</h1>
           <p className="text-muted-foreground leading-relaxed">
             BASE Station watermarks, scores, labels and registers every track the moment it is saved —
-            automatically, with nothing to opt into. This is the single place to understand what that
-            means and where each record lives.
+            automatically, with nothing to opt into. This is the single place to understand what each
+            of those records shows, what it does not, and where to find it.
           </p>
         </header>
 
@@ -73,6 +75,12 @@ export default function TrustCenter() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {PILLARS.map((p) => <TrustPillarCard key={p.title} {...p} />)}
         </section>
+
+        {/* The boundary of every claim on this page, stated once and plainly */}
+        <EvidenceBoundary />
+
+        {/* Why the mark lives in the waveform, not just the file */}
+        <HashVsWaveform />
 
         {/* Human-first stance — stated once, for the whole platform */}
         <section className="merc-card rounded-2xl p-6 md:p-8 space-y-3 text-center max-w-3xl mx-auto">
@@ -98,16 +106,17 @@ export default function TrustCenter() {
               <Link to="/creator-dashboard?tab=ownership" className="text-xs font-bold text-[#FFC98A] hover:text-foreground">Open dashboard →</Link>
             </div>
             <div className="rounded-xl border border-border bg-card p-5 space-y-1.5">
-              <p className="font-bold text-foreground">Proof of ownership</p>
+              <p className="font-bold text-foreground">Registry &amp; certificates</p>
               <p className="text-muted-foreground text-[13px] leading-relaxed">
-                On-chain registrations and downloadable certificates for your catalog.
+                On-chain registrations and downloadable certificates for your catalog — dated records
+                you can point to, not a grant of copyright.
               </p>
               <Link to="/creator-dashboard?tab=proof" className="text-xs font-bold text-[#FFC98A] hover:text-foreground">Open registry →</Link>
             </div>
             <div className="rounded-xl border border-border bg-card p-5 space-y-1.5">
               <p className="font-bold text-foreground">Public verification</p>
               <p className="text-muted-foreground text-[13px] leading-relaxed">
-                Anyone can scan an audio file for a BASE Mark and see who it belongs to.
+                Anyone can scan an audio file for a BASE Mark and see which registered work it came from.
               </p>
               <Link to="/verify" className="text-xs font-bold text-[#FFC98A] hover:text-foreground">Scan a file →</Link>
             </div>

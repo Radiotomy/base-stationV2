@@ -47,8 +47,9 @@ export default function CreativeOwnership() {
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
             The Creative Ownership Score (COS) is a 0–100 measure of the human creative input behind every
             piece of AI-generated content on BASE Station — aligned with the music community's voluntary
-            GenAI labeling program (RIAA, IFPI &amp; partners, July 2026). It's not a static ceiling:
-            the scoring weights are an open, adaptive ledger that the community benchmarks and tunes together.
+            GenAI labeling program (RIAA, IFPI &amp; partners, July 2026). It measures the creative input
+            we can actually observe in our own studios, and the scoring weights are an open ledger the
+            community benchmarks and tunes together.
           </p>
           <div className="flex items-center justify-center gap-6 mt-8">
             {[15, 55, 90].map(s => <ParticipationBadge key={s} score={s} size={64} />)}
@@ -65,6 +66,11 @@ export default function CreativeOwnership() {
             Anyone can press a button. What sets creators apart is the direction they give — the lyrics they write,
             the references they bring, the styles they choose, and the refinements they make. The COS captures that
             fingerprint and turns it into a score, a disclosure label, and a creator tier that travel with your work.
+          </p>
+          <p className="text-xs text-muted-foreground/70 max-w-2xl mx-auto leading-relaxed">
+            What the score is not: a measure of quality, a ruling on authorship, and not a claim of
+            copyright. It records the creative choices we observed while you worked — which makes it
+            disclosure you can stand behind, not a verdict on who owns the result.
           </p>
         </section>
 
@@ -160,8 +166,8 @@ export default function CreativeOwnership() {
               <p className="text-muted-foreground leading-relaxed">Copy an XML metadata snippet from any manifest to hand to distributors and downstream partner channels.</p>
             </div>
             <div className="p-4 rounded-xl bg-muted/40 border border-border space-y-1">
-              <p className="font-bold text-foreground">Clear verification blocks</p>
-              <p className="text-muted-foreground leading-relaxed">Use a high-COS manifest as an authoritative credential when platforms flag AI content for manual review.</p>
+              <p className="font-bold text-foreground">Something to show on review</p>
+              <p className="text-muted-foreground leading-relaxed">When a platform flags AI content for manual review, a detailed manifest gives you dated evidence to submit. Each platform still makes its own call.</p>
             </div>
           </div>
           <p className="text-[11px] text-muted-foreground/70 text-center">
@@ -175,8 +181,10 @@ export default function CreativeOwnership() {
           <p className="text-xs text-muted-foreground italic leading-relaxed text-center">"{OWNERSHIP_POLICY_TEXT}"</p>
           <p className="text-[11px] text-muted-foreground/70 leading-relaxed text-center">
             The COS extends the music community&apos;s track-level GenAI labeling program to lyrics, cover art
-            and video.{' '}
-            <Link to="/transparency" className="text-emerald-400 hover:underline">See the labeling policy →</Link>
+            and video. It is disclosure and evidence — it does not grant copyright or settle a
+            competing claim.{' '}
+            <Link to="/transparency" className="text-emerald-400 hover:underline">See the labeling policy →</Link>{' '}
+            <Link to="/trust" className="text-emerald-400 hover:underline">What our records can and can&apos;t show →</Link>
           </p>
         </section>
 

@@ -85,7 +85,9 @@ export default function VerifyMark() {
         <p className="text-center text-[11px] text-muted-foreground/70">
           BASE Mark is one signature made of two layers, applied automatically to every saved track: a spectral
           layer and a neural layer. This public scan checks the spectral layer first; signed-in creators also get
-          a neural scan; a clean scan is not proof a file was never marked.
+          a neural scan. Two limits worth stating plainly: a clean scan is not proof a file was never marked, and
+          a recovered mark identifies the registered recording the audio came from — it is dated evidence for a
+          rights conversation, not a ruling on who owns the work.
         </p>
       </div>
     </div>

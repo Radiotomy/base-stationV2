@@ -34,6 +34,12 @@ export default function AITransparency() {
             GenAI labeling program introduced by the music community (IFPI, RIAA, A2IM, WIN, IMPALA,
             The Grammys, SAG-AFTRA &amp; the Human Artistry Campaign — July 2026).
           </p>
+          <p className="text-xs text-muted-foreground/70 max-w-xl mx-auto leading-relaxed">
+            A label is a disclosure, not a detection. On work made here it reflects what our own
+            pipeline recorded; on an upload it reflects what the artist attested. We have no
+            classifier that can listen to a finished recording and tell you how it was made, and we
+            do not pretend otherwise.
+          </p>
         </header>
 
         {/* The three labels */}
@@ -89,6 +95,12 @@ export default function AITransparency() {
               mashups) inherit the most AI-intensive label in their provenance chain:
               AI-Generated &gt; AI-Assisted &gt; Human.
             </p>
+            <p>
+              <span className="text-white font-semibold">Where origin was never declared</span> and we
+              observed no AI use, the label stays <em>Unverified</em>. That is an absence of
+              information, not an accusation — we will not record a human performance as AI-generated
+              because nobody filled in a form.
+            </p>
           </div>
         </section>
 
@@ -101,7 +113,9 @@ export default function AITransparency() {
             <p>
               Beyond the track-level label, every scored asset carries a machine-readable DDEX-style AI
               attribution profile, exportable from its Provenance Manifest — so distributors and partner
-              channels receive verifiable disclosure data instead of a single opaque label.
+              channels receive structured disclosure data instead of a single opaque label. What it
+              carries is our record of how the work was made; it is not a certification issued by DDEX,
+              a distributor, or any standards body.
             </p>
             <p>
               <Link to="/creative-ownership" className="text-[#FFC98A] underline underline-offset-2">How the Creative Ownership Score builds that profile →</Link>

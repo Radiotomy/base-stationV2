@@ -5,7 +5,7 @@ const ITEMS = [
   { icon: ShieldCheck, color: '#FFC98A', label: 'GenAI label' },
   { icon: Sparkles, color: '#6EE7B7', label: 'Ownership score' },
   { icon: Fingerprint, color: '#FFC98A', label: 'BASE Mark' },
-  { icon: Link2, color: '#93C5FD', label: 'On-chain proof' },
+  { icon: Link2, color: '#93C5FD', label: 'On-chain record' },
 ];
 
 /**
@@ -20,7 +20,7 @@ export default function HomeTrustStrip() {
           <p className="font-display text-white text-base md:text-lg">Protected the moment you hit save.</p>
           <p className="text-white/60 text-xs mt-1 leading-relaxed max-w-2xl">
             Every track is watermarked, scored, labeled and registered automatically — no setup, nothing to
-            opt into. AI is the instrument; you stay the artist, and the record proves it.
+            opt into. AI is the instrument; you stay the artist, and you leave with dated evidence of it.
           </p>
           <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
             {ITEMS.map(({ icon: Icon, color, label }) => (
