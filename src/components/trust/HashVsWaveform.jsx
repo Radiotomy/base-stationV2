@@ -41,13 +41,13 @@ export default function HashVsWaveform() {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm min-w-[420px]">
+        <table className="w-full text-left text-sm min-w-[320px]">
           <thead>
             <tr className="border-b border-border">
-              <th className="py-2.5 pr-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <th className="py-2.5 pr-2 sm:pr-4 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 What happens to the track
               </th>
-              <th className="py-2.5 px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
+              <th className="py-2.5 px-2 sm:px-3 text-xs font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap">
                 <span className="inline-flex items-center gap-1.5"><FileX className="w-3.5 h-3.5" /> File hash</span>
               </th>
               <th className="py-2.5 pl-3 text-xs font-bold uppercase tracking-wider text-[#FFC98A] whitespace-nowrap">
@@ -58,9 +58,9 @@ export default function HashVsWaveform() {
           <tbody>
             {ROWS.map((r) => (
               <tr key={r.attack} className="border-b border-border/50 last:border-0">
-                <td className="py-2.5 pr-4 text-[13px] text-foreground">{r.attack}</td>
-                <td className="py-2.5 px-3"><Cell state={r.hash} /></td>
-                <td className="py-2.5 pl-3"><Cell state={r.mark} /></td>
+                <td className="py-2.5 pr-2 sm:pr-4 text-[12px] sm:text-[13px] text-foreground">{r.attack}</td>
+                <td className="py-2.5 px-2 sm:px-3"><Cell state={r.hash} /></td>
+                <td className="py-2.5 pl-2 sm:pl-3"><Cell state={r.mark} /></td>
               </tr>
             ))}
           </tbody>
