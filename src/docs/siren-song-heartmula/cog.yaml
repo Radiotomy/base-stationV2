@@ -1,0 +1,25 @@
+# Cog config for speedwolf2000/siren-song (HeartMuLa / heartlib fork).
+#
+# The weights are downloaded at BUILD time, not in setup(). A 3B LM plus the
+# codec is far too large to fetch on every cold boot, and a setup() that fails
+# to find weights is exactly how you end up with predictions that return null.
+build:
+  gpu: true
+  cuda: "12.1"
+  python_version: "3.10"
+  system_packages:
+    - "ffmpeg"          # required to write the .mp3 the pipeline saves
+    - "git"
+  python_requirements: requirements.txt
+  run:
+    # heartlib itself, installed from the repo this image is built from.
+    - "pip install -e ."
+    # Shared generation config + tokenizer, then the recommended RL checkpoint
+    # and the matching codec release. These MUST land as ./ckpt/HeartMuLa-oss-3B
+    # and ./ckpt/HeartCodec-oss — the pipeline resolves those subfolder names.
+    - "pip install --no-cache-dir 'huggingface_hub[cli]'"
+    - "hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen'"
+    - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
+    - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
+
+predict: "predict.py:Predictor"

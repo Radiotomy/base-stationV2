@@ -1,0 +1,10 @@
+# Pinned floor versions for the siren-song (HeartMuLa) Cog image.
+# heartlib's own dependencies come from `pip install -e .` in cog.yaml; these are
+# the pieces the predictor and the checkpoint download need directly.
+torch==2.4.0
+torchaudio==2.4.0
+transformers==4.44.2
+huggingface_hub==0.25.2
+soundfile==0.12.1
+numpy==1.26.4
+einops==0.8.0
