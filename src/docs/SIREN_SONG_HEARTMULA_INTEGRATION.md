@@ -51,8 +51,11 @@ pipe({"lyrics": lyrics_path, "tags": tags_path},
 
 Two things follow:
 
-1. **The pipeline is handed FILE PATHS, not strings.** `{"lyrics": ..., "tags": ...}`
-   are paths to `.txt` files on disk. Passing prompt text directly will not work.
+1. **`lyrics` and `tags` accept either a raw string or a `.txt` path.**
+   `preprocess()` does `if os.path.isfile(x): read(x)`, so strings work directly —
+   the example script only uses files because it is a CLI. The pipeline also
+   lowercases both channels and auto-wraps tags in `<tag>…</tag>`, so we must not
+   add those markers ourselves.
 2. **There are exactly two conditioning channels, and neither is a prose prompt:**
 
    | Channel | Format | Example |
@@ -75,7 +78,7 @@ than new. **Do not wire siren-song to the raw `prompt` field.**
 
 | Param | Default | Notes |
 |---|---|---|
-| `max_audio_length_ms` | 240000 | ceiling, not a target |
+| `max_audio_length_ms` | 120000 in the pipeline, 240000 in the CLI | ceiling, not a target |
 | `topk` | 50 | |
 | `temperature` | 1.0 | |
 | `cfg_scale` | 1.5 | higher = follows tags more literally |
@@ -90,10 +93,10 @@ against. Flagging these so no BASE Station copy repeats a claim we cannot honour
   i.e. roughly one second of compute per second of audio, with acceleration and
   streaming still on the TODO list. Budget a 2-minute track at ~2 minutes of GPU
   time plus model load — not 10-30s. This has direct cost and UX consequences.
-- **"Reference Audio Support" / "Upload reference tracks"**: reference-audio
-  conditioning is an **unchecked TODO** in the README. The released 3B pipeline
-  takes lyrics and tags only. We must not ship a reference-audio input for this
-  model.
+- **"Reference Audio Support" / "Upload reference tracks"**: not merely a TODO —
+  `preprocess()` contains `raise NotImplementedError("ref_audio is not supported yet.")`.
+  The released 3B pipeline takes lyrics and tags only. We must not ship a
+  reference-audio input for this model.
 - **"Commercial use, no copyright concerns"**: the code and weights are Apache
   2.0, which is a licence on the *model*, not a warranty about *outputs*. Per our
   standing evidence-not-ownership posture, this should not become an ownership
@@ -102,21 +105,48 @@ against. Flagging these so no BASE Station copy repeats a claim we cannot honour
 Accurate and safe to state: open weights, Apache 2.0, 3B params, HeartCodec at
 12.5Hz, multilingual lyrics (EN/ZH/JA/KO/ES), self-hostable.
 
-## 4. Forensic pipeline note
+## 4. Output formats — WAV is native, and this is good news with one catch
 
-The example pipeline writes **`.mp3`** (`save_path=./assets/output.mp3`), and the
-predictor here keeps that default. Under our "mark once, compress last" rule an
-MP3-only source means the V1 spectral watermark stage is skipped and we lean on
-V2/V3 — the same constraint already documented for ElevenLabs. Whether
-`save_path` with a `.wav` suffix yields PCM is **untested**; I have not claimed
-it in the predictor. Confirming that is worth doing before siren-song output
-enters the BASE Mark cascade, because a PCM source would let the full cascade run.
+Resolved by reading `postprocess()`:
+
+```python
+torchaudio.save(save_path, wav.to(torch.float32).cpu(), 48000)
+```
+
+The model's native output is a **48 kHz float32** tensor, and `torchaudio.save`
+selects the encoder from the **file extension**. So:
+
+| `output_format` | What you get |
+|---|---|
+| `wav` | native, lossless 32-bit float PCM @ 48 kHz — **our default** |
+| `flac` | lossless compressed |
+| `mp3` / `ogg` | lossy re-encode of the same audio (needs ffmpeg, present in the image) |
+
+MP3 was never the model's format — it was just the example script's `save_path`.
+Requesting `.wav` costs nothing in quality and is strictly better for us: a PCM
+source means the **full BASE Mark cascade can run, including the V1 spectral
+stage** that we skip for MP3-only providers like ElevenLabs. This is exactly the
+"mark once, compress last" arrangement we already prefer.
+
+**The catch — 48 kHz.** Two of our open issues bite precisely here: *"BASE Mark V2
+detection currently failing on 48kHz masters"* and *"48kHz sampling rate support
+via current delta recombination results in message corruption; requires
+band-limiting delta in container before upsampling."* siren-song emits 48 kHz
+natively, so its WAVs land straight in the failing regime. Before any siren-song
+audio enters the cascade we should either resample to 44.1 kHz on ingest or fix
+the 48 kHz path — otherwise we will be marking tracks whose marks we cannot
+recover, which is worse than not marking them.
+
+Also note `torchaudio` writes **32-bit float** WAV for a float tensor. Some DAWs
+and our own tooling prefer 24-bit PCM; converting on ingest is cheap, and the
+pipeline gives us no bit-depth argument to do it upstream.
 
 ## 5. Status
 
 - [x] Corrected Cog predictor + config authored (`src/docs/siren-song-heartmula/`)
 - [ ] Verify a real prediction returns audio on Replicate
-- [ ] Confirm whether a `.wav` `save_path` gives PCM (see §4)
+- [x] Output formats resolved — wav/flac/mp3/ogg by extension, 48 kHz native (§4)
+- [ ] Decide the 48 kHz ingest policy (resample to 44.1k vs fix the V2 48k path)
 - [ ] Caption → (tags, section-lyrics) translation layer
 - [ ] `generateMusicSirenSong` backend function + studio UI
 

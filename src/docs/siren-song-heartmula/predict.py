@@ -10,28 +10,36 @@ that MUST be true, and are the usual omissions:
 
   1. predict() RETURNS a cog.Path pointing at a file that exists on disk.
      Writing the file is not enough. Printing the path is not enough.
-  2. The model is loaded in setup(), not in predict(), and the weights are
-     present in the image. If setup() silently no-ops, predict() has nothing
-     to run and falls straight through.
+  2. The model is loaded in setup(), with the weights present in the image. A
+     setup() that cannot find ./ckpt has nothing for predict() to run.
 
 HEARTMULA'S CONDITIONING CONTRACT (this is NOT a prose-prompt model)
 -------------------------------------------------------------------
-heartlib's pipeline is called with a dict of TWO FILE PATHS, not prompt strings:
+Confirmed against src/heartlib/pipelines/music_generation.py:
 
-    pipe({"lyrics": "<path>.txt", "tags": "<path>.txt"}, ...)
+  * TWO conditioning channels only — `tags` and `lyrics`. Each may be a raw
+    string OR a path to a .txt file; preprocess() checks os.path.isfile() and
+    reads the file if it is one. We pass strings.
+  * `tags` are lowercased and auto-wrapped in <tag>…</tag> by the pipeline.
+    Comma-separated tokens, no spaces: "piano,happy,wedding,synthesizer".
+    This is the style channel — a prose sentence is a misuse of it.
+  * `lyrics` are lowercased. Bracketed section headers ([Verse], [Chorus], …).
+  * `ref_audio` raises NotImplementedError. Reference-audio conditioning does
+    NOT exist in this release, whatever heartmula.net's feature list says.
 
-  * lyrics — plain text, structured with bracketed section headers
-             ([Intro], [Verse], [Prechorus], [Chorus], [Bridge], [Outro]).
-  * tags   — comma-separated style tokens with NO SPACES after the commas,
-             e.g. "piano,happy,wedding,synthesizer,romantic".
-             This is the style channel. Sentences do not belong here.
+OUTPUT FORMAT
+-------------
+postprocess() ends with:
 
-So this predictor accepts lyrics/tags as strings for API ergonomics and writes
-them to temp .txt files itself, because that is what the pipeline actually reads.
+    torchaudio.save(save_path, wav.to(torch.float32).cpu(), 48000)
+
+So the model's native output is a 48 kHz float32 tensor, and torchaudio infers
+the container from the save_path EXTENSION. WAV is therefore the native, lossless
+form and MP3 is a lossy re-encode of it — which is why `output_format` defaults
+to wav here, per our "mark once, compress last" rule.
 """
 
 import os
-import subprocess
 import tempfile
 
 import torch
@@ -86,6 +94,14 @@ class Predictor(BasePredictor):
             ),
             default="[Instrumental]",
         ),
+        output_format: str = Input(
+            description=(
+                "Container for the 48kHz output. 'wav' is the model's native "
+                "lossless form (32-bit float PCM); mp3/flac/ogg are encoded from it."
+            ),
+            choices=["wav", "mp3", "flac", "ogg"],
+            default="wav",
+        ),
         max_audio_length_ms: int = Input(
             description=(
                 "Maximum audio length in milliseconds. Generation runs at roughly "
@@ -103,16 +119,15 @@ class Predictor(BasePredictor):
         ),
         temperature: float = Input(default=1.0, ge=0.1, le=2.0),
         topk: int = Input(default=50, ge=1, le=200),
-        seed: int = Input(
-            description="Leave blank for a random seed.", default=None
-        ),
+        seed: int = Input(description="Leave blank for a random seed.", default=None),
     ) -> Path:
         if seed is None:
             seed = int.from_bytes(os.urandom(4), "big")
         torch.manual_seed(seed)
         print(f"Using seed: {seed}")
 
-        # Normalise the two conditioning channels, then hand the pipeline PATHS.
+        # Normalise the two conditioning channels. The pipeline lowercases both
+        # and wraps tags in <tag></tag> itself, so we only fix structure here.
         clean_tags = ",".join(
             t.strip() for t in tags.replace("\n", ",").split(",") if t.strip()
         )
@@ -127,19 +142,13 @@ class Predictor(BasePredictor):
 
         print(f"tags: {clean_tags}")
 
-        workdir = tempfile.mkdtemp()
-        tags_path = os.path.join(workdir, "tags.txt")
-        lyrics_path = os.path.join(workdir, "lyrics.txt")
-        out_path = os.path.join(workdir, "output.mp3")
-
-        with open(tags_path, "w", encoding="utf-8") as f:
-            f.write(clean_tags)
-        with open(lyrics_path, "w", encoding="utf-8") as f:
-            f.write(clean_lyrics)
+        # torchaudio picks the encoder from the extension, so the extension IS
+        # the format switch.
+        out_path = os.path.join(tempfile.mkdtemp(), f"output.{output_format}")
 
         with torch.no_grad():
             self.pipe(
-                {"lyrics": lyrics_path, "tags": tags_path},
+                {"lyrics": clean_lyrics, "tags": clean_tags},
                 max_audio_length_ms=max_audio_length_ms,
                 save_path=out_path,
                 topk=topk,
