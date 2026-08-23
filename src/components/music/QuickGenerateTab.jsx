@@ -267,7 +267,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         genre: aiParams?.genre || 'Pop',
         mood: aiParams?.mood || 'Energetic',
         duration: 60,
-        model: 'TemPolor v4.6',
+        model: 'TemPolor i4',
         tempolor_mode: 'instrumental',
         extend_audio_url: audioUrl,
       });
@@ -387,7 +387,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         ...(lyrics && { lyrics }),
         ...(selectedPersona !== 'auto' && { voice_persona_id: selectedPersona }),
         ...(effectiveProvider === 'sonic' && { model: routing.model || 'sonic-v4-5-plus' }),
-        ...(effectiveProvider === 'tempcolor' && { model: routing.model || 'TemPolor v4.6', tempolor_mode: routing.tempolor_mode || (aiDecision.needs_lyrics ? 'song' : 'instrumental') }),
+        ...(effectiveProvider === 'tempcolor' && { model: routing.model || 'tempolor-latest', tempolor_mode: routing.tempolor_mode || (aiDecision.needs_lyrics ? 'song' : 'instrumental') }),
       };
 
       let res;

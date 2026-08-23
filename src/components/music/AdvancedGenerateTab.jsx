@@ -51,35 +51,45 @@ const SONIC_FAMILIES = [
   ]},
 ];
 
-// Tempolor catalog — audited from platform.tempolor.com/docs (Model and Pricing).
+// Tempolor catalog — re-audited from platform.tempolor.com/docs/6665893m0 (2026-08-23).
+// TemPolor dropped the version numbers on its own house song model: there is now one
+// rolling "tempolor-latest" identifier instead of v4.6 / v3.5, so it is labelled
+// "Latest" here rather than given a version we'd be inventing. The instrumental line
+// is still numbered (i4 is new this update).
 const TEMPOLOR_SONG_FAMILIES = [
   { name: 'TemPolor', maker: 'TemPolor', versions: [
-    { value: 'TemPolor v4.6', label: 'v4.6', desc: '⭐ Flagship — best all-round, 5 min, 30+ languages' },
-    { value: 'TemPolor v3.5', label: 'v3.5', desc: 'Natural, lifelike vocals — 4.5 min, EN/ZH/JA/Cantonese' },
-  ]},
-  { name: 'Lyria', maker: 'Google DeepMind', versions: [
-    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Polished vocals, 3 min, multilingual' },
+    { value: 'tempolor-latest', label: 'Latest', desc: '⭐ Flagship — best all-round, 5 min vocals, 30+ languages' },
   ]},
   { name: 'Mureka', maker: 'Kunlun Tech', versions: [
-    { value: 'Mureka V9', label: 'V9', desc: 'Richest arrangements — 5.5 min, 10+ languages' },
+    { value: 'Mureka V9.5', label: 'V9.5', desc: '✨ Newest — richest arrangements, 5.5 min, 10+ languages' },
+    { value: 'Mureka V9', label: 'V9', desc: 'Layered arrangements, 5.5 min — lower cost' },
   ]},
   { name: 'MiniMax', maker: 'MiniMax', versions: [
-    { value: 'MiniMax 2.6', label: '2.6', desc: 'Premium vocals — longest tracks (6 min)' },
+    { value: 'MiniMax 3.0', label: '3.0', desc: 'Premium vocals — longest tracks (6 min)' },
+  ]},
+  { name: 'Lyria', maker: 'Google DeepMind', versions: [
+    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Natural, lifelike vocals — 3 min, multilingual' },
+  ]},
+  { name: 'Eleven Music', maker: 'ElevenLabs', versions: [
+    { value: 'Eleven Music V2', label: 'V2', desc: '💎 Premium tier — 5 min, 44.1kHz MP3/WAV' },
   ]},
 ];
 const TEMPOLOR_INSTRUMENTAL_FAMILIES = [
   { name: 'TemPolor', maker: 'TemPolor', versions: [
-    { value: 'TemPolor i3.5', label: 'i3.5', desc: '⭐ Flagship instrumental — 4.5 min, precise duration control' },
-    { value: 'TemPolor i3', label: 'i3', desc: 'Fastest (<3s) & most cost-effective — 2 min' },
-  ]},
-  { name: 'Lyria', maker: 'Google DeepMind', versions: [
-    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Clean instrumentals, 3 min' },
+    { value: 'TemPolor i4', label: 'i4', desc: '⭐ New flagship instrumental — best sound quality, 3 min' },
+    { value: 'TemPolor i3', label: 'i3', desc: 'Fastest (<3s) & most cost-effective — 2 min, prompt duration control' },
   ]},
   { name: 'Mureka', maker: 'Kunlun Tech', versions: [
     { value: 'Mureka V9', label: 'V9', desc: 'Rich, layered arrangements — 4.5 min' },
   ]},
   { name: 'MiniMax', maker: 'MiniMax', versions: [
-    { value: 'MiniMax 2.6', label: '2.6', desc: 'Premium — longest instrumentals (6 min)' },
+    { value: 'MiniMax 3.0', label: '3.0', desc: 'Premium — longest instrumentals (6 min)' },
+  ]},
+  { name: 'Lyria', maker: 'Google DeepMind', versions: [
+    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Clean instrumentals — 3 min' },
+  ]},
+  { name: 'Eleven Music', maker: 'ElevenLabs', versions: [
+    { value: 'Eleven Music V2', label: 'V2', desc: '💎 Premium tier — 5 min, 44.1kHz MP3/WAV' },
   ]},
 ];
 
@@ -119,7 +129,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [importedFromStudio, setImportedFromStudio] = useState(false);
   const [sonicModel, setSonicModel] = useState('sonic-v4-5-plus');
   const [temporlorMode, setTemporlorMode] = useState('song');
-  const [temporlorModel, setTemporlorModel] = useState('TemPolor v4.6');
+  const [temporlorModel, setTemporlorModel] = useState('tempolor-latest');
   const [elevenModel, setElevenModel] = useState('music_v1');
   const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)
   const [genre, setGenre] = useState(initialGenre || 'Hip-Hop');
@@ -406,7 +416,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         provider: 'tempcolor',
         sound_prompt: `Continue and extend: ${soundPrompt || `${mood} ${genre} track`}`,
         genre, mood, duration: 60,
-        model: temporlorMode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6',
+        model: temporlorMode === 'instrumental' ? 'TemPolor i4' : 'tempolor-latest',
         tempolor_mode: temporlorMode,
         extend_audio_url: audioUrl,
       });
@@ -696,7 +706,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-1.5">
                 {[{ value: 'song', label: '🎤 Song', desc: 'Vocals' }, { value: 'instrumental', label: '🎼 Instrumental', desc: 'No vocals' }].map(m => (
-                  <button key={m.value} onClick={() => { setTemporlorMode(m.value); setTemporlorModel(m.value === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'); }}
+                  <button key={m.value} onClick={() => { setTemporlorMode(m.value); setTemporlorModel(m.value === 'instrumental' ? 'TemPolor i4' : 'tempolor-latest'); }}
                     className={`px-2.5 py-2 rounded-lg border text-left transition-all ${temporlorMode === m.value ? 'border-amber-500 bg-amber-500/10' : 'border-border bg-card'}`}>
                     <p className="text-xs font-bold text-foreground">{m.label}</p>
                     <p className="text-xs text-muted-foreground">{m.desc}</p>

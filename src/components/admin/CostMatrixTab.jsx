@@ -33,13 +33,29 @@ const OPERATIONS = [
   { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Concat Music", api_credits: 2, api_usd: 2 * AIMUSIC_CREDIT_USD, output: "1 track", category: "utility" },
   // ── LYRICS (via AIMusicAPI) ─────────────────────────────────────────────────
   { provider: "sonic", model: "Lyrics API", operation: "Generate Lyrics", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "Full lyrics", category: "lyrics" },
-  // ── TEMPOLOR ────────────────────────────────────────────────────────────────
-  { provider: "tempcolor", model: "TemPolor v4.6", operation: "Song Generation (vocal, up to 5 min)", api_credits: 5, api_usd: 5 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
-  { provider: "tempcolor", model: "TemPolor v3", operation: "Song Generation (vocal, up to 2 min)", api_credits: 3, api_usd: 3 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
-  { provider: "tempcolor", model: "TemPolor i3.5", operation: "Instrumental Generation (up to 270s)", api_credits: 4, api_usd: 4 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
-  { provider: "tempcolor", model: "TemPolor i3", operation: "Instrumental Generation (up to 120s)", api_credits: 3, api_usd: 3 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  // ── TEMPOLOR — re-audited from platform.tempolor.com/docs/6665893m0 (2026-08-23) ──
+  // TemPolor's house song model dropped its version numbers: v4.6 / v3.5 are gone and
+  // there is one rolling "tempolor-latest" identifier for song + reference generation.
+  // Song models
+  { provider: "tempcolor", model: "tempolor-latest", operation: "Song Generation (vocal, up to 5 min, 30+ languages)", api_credits: 4, api_usd: 4 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "Mureka V9.5", operation: "Song Generation (vocal, up to 5.5 min)", api_credits: 15, api_usd: 15 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "Mureka V9", operation: "Song Generation (vocal, up to 5.5 min)", api_credits: 4.5, api_usd: 4.5 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "MiniMax 3.0", operation: "Song Generation (vocal, up to 6 min)", api_credits: 12, api_usd: 12 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "Lyria 3 Pro", operation: "Song Generation (vocal, up to 3 min)", api_credits: 8, api_usd: 8 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  // Eleven Music V2 via Tempolor is 70 credits — ~17x the house model. Flat-rate
+  // reselling of this one at our standard 10 BS credits loses money on every call.
+  { provider: "tempcolor", model: "Eleven Music V2", operation: "Song Generation (vocal, 5 min, 44.1kHz MP3/WAV)", api_credits: 70, api_usd: 70 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  // Instrumental models
+  { provider: "tempcolor", model: "TemPolor i4", operation: "Instrumental Generation (flagship, up to 3 min)", api_credits: 4, api_usd: 4 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "TemPolor i3", operation: "Instrumental Generation (<3s render, up to 2 min)", api_credits: 3, api_usd: 3 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "Mureka V9", operation: "Instrumental Generation (up to 4.5 min)", api_credits: 4.5, api_usd: 4.5 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  { provider: "tempcolor", model: "MiniMax 3.0", operation: "Instrumental Generation (up to 6 min)", api_credits: 12, api_usd: 12 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "music" },
+  // Reference-based (Cover / remix)
+  { provider: "tempcolor", model: "tempolor-latest", operation: "Reference-based Cover (keeps vocal melody)", api_credits: 10, api_usd: 10 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "edit" },
+  { provider: "tempcolor", model: "Mureka V9", operation: "Reference-based Remix (mp3/m4a source)", api_credits: 20, api_usd: 20 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "edit" },
   { provider: "tempcolor", model: "Lyric v1", operation: "Lyrics Generation", api_credits: 1, api_usd: 1 * TEMPOLOR_CREDIT_USD, output: "Lyrics", category: "lyrics" },
-  { provider: "tempcolor", model: "Stems v1", operation: "Audio Stem Separation (vocal + instrumental)", api_credits: 5, api_usd: 5 * TEMPOLOR_CREDIT_USD, output: "2 stems", category: "stems" },
+  { provider: "tempcolor", model: "Stems v2", operation: "Stem Separation — 4 stems (vocals/drums/bass/other)", api_credits: 5, api_usd: 5 * TEMPOLOR_CREDIT_USD, output: "4 stems", category: "stems" },
+  { provider: "tempcolor", model: "Stems v3", operation: "Stem Separation — 8 stems (pro fidelity)", api_credits: 15, api_usd: 15 * TEMPOLOR_CREDIT_USD, output: "8 stems", category: "stems" },
 ];
 
 const PROVIDER_STYLE = {
@@ -240,7 +256,7 @@ export default function CostMatrixTab() {
             {[
               { op: "Quick Music Gen (Tempolor i3)",  bs: bsCredits(0.03, markup), note: "most used" },
               { op: "Full Song (Sonic v4-5-plus)",    bs: bsCredits(0.10, markup), note: "premium" },
-              { op: "Song w/ Vocals (Tempolor v4.6)", bs: bsCredits(0.05, markup), note: "flagship" },
+              { op: "Song w/ Vocals (tempolor-latest)", bs: bsCredits(0.04, markup), note: "flagship" },
               { op: "Stems Basic (Sonic)",            bs: bsCredits(0.10, markup), note: "power user" },
               { op: "Stems Full 24-stem (Sonic)",     bs: bsCredits(0.50, markup), note: "pro tier only" },
               { op: "Generate Lyrics (Tempolor)",     bs: bsCredits(0.01, markup), note: "cheap" },

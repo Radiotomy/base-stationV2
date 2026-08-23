@@ -138,23 +138,47 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
 //   POST /open-apis/v1/song/generate { prompt, model, lyrics?, instrumental?, action?, upload_audio_url?, callback_url }
 //   Instrumental generation now uses instrumental:true on this endpoint (the old
 //   /instrumental/generate route is no longer documented).
-// Model catalog (docs/6665893m0 — Model and Pricing):
-//   Song:  TemPolor v4.6 (flagship — musicality/quality/prompt-following, 5min, 30+ languages, streaming)
-//          TemPolor v3.5 (natural lifelike vocals, 4.5min, zh/yue/en/ja)
-//          Lyria 3 Pro   (by Google — polished vocals, 3min, multilingual)
-//          Mureka V9     (richest arrangements, 5.5min, 10+ languages)
-//          MiniMax 2.6   (premium vocals, longest tracks — 6min)
-//   Instrumental: TemPolor i3.5 (flagship, 4.5min, precise duration control)
-//          TemPolor i3   (fastest — <3s generation, 2min, cheapest)
-//          Lyria 3 Pro / Mureka V9 / MiniMax 2.6 (as above, instrumental mode)
-//   Cover (action=upload_cover): TemPolor v4.6 (keeps vocal melody, reshapes style)
-//          Mureka V9 (full remix — mp3/m4a source, no instrumentals)
+// Model catalog — re-audited against docs/6665893m0 (Model and Pricing), 2026-08-23.
+//
+// IMPORTANT: TemPolor no longer publishes a version number for its own house song
+// model. The numbered entries (v4.6, v3.5) are gone and there is now a single
+// rolling identifier, `tempolor-latest`, for both song generation and
+// reference-based generation (Cover). We pass that identifier through verbatim —
+// inventing "TemPolor v4.7" to look tidy would send a model name the API does not
+// know. The instrumental line is still versioned (i4 is new, i3 remains), so those
+// keep their numbers.
+//
+//   Song (4 credits — tempolor-latest):
+//     tempolor-latest  flagship, 5min vocal, 30+ languages, streaming playback
+//     Eleven Music V2  by ElevenLabs — 5min, 44.1kHz MP3/WAV (70 credits upstream)
+//     Lyria 3 Pro      by Google — lifelike vocals, 3min, multilingual
+//     Mureka V9.5      newest Mureka — layered arrangements, 5.5min, 10+ languages
+//     Mureka V9        cheaper Mureka, same 5.5min ceiling
+//     MiniMax 3.0      by MiniMax — longest tracks (6min)
+//   Instrumental:
+//     TemPolor i4      NEW flagship instrumental, 3min
+//     TemPolor i3      fastest (<3s) + cheapest, 2min, prompt duration control
+//     Eleven Music V2 / Lyria 3 Pro / Mureka V9 / MiniMax 3.0 (instrumental mode)
+//   Reference-based / Cover (action=upload_cover):
+//     tempolor-latest  keeps the original vocal melody, reshapes the style
+//     Mureka V9        full remix — mp3/m4a source, no instrumental sources
 const TEMPOLOR_BASE = 'https://api.tempolor.com/open-apis/v1';
-const TEMPOLOR_SONG_MODELS = ['TemPolor v4.6', 'TemPolor v3.5', 'Lyria 3 Pro', 'Mureka V9', 'MiniMax 2.6'];
-const TEMPOLOR_INSTRUMENTAL_MODELS = ['TemPolor i3.5', 'TemPolor i3', 'Lyria 3 Pro', 'Mureka V9', 'MiniMax 2.6'];
-const TEMPOLOR_COVER_MODELS = ['TemPolor v4.6', 'Mureka V9'];
-// Legacy model names → current equivalents
-const TEMPOLOR_LEGACY_MAP = { 'TemPolor v3': 'TemPolor v3.5' };
+const TEMPOLOR_SONG_MODELS = ['tempolor-latest', 'Eleven Music V2', 'Lyria 3 Pro', 'Mureka V9.5', 'Mureka V9', 'MiniMax 3.0'];
+const TEMPOLOR_INSTRUMENTAL_MODELS = ['TemPolor i4', 'TemPolor i3', 'Eleven Music V2', 'Lyria 3 Pro', 'Mureka V9', 'MiniMax 3.0'];
+const TEMPOLOR_COVER_MODELS = ['tempolor-latest', 'Mureka V9'];
+// Retired model names → their current equivalents. Kept so saved presets, queued
+// jobs and library metadata written before this update still resolve to a live
+// model instead of silently falling back to the default.
+const TEMPOLOR_LEGACY_MAP = {
+  'TemPolor v3': 'tempolor-latest',
+  'TemPolor v3.5': 'tempolor-latest',
+  'TemPolor v4': 'tempolor-latest',
+  'TemPolor v4.6': 'tempolor-latest',
+  'TemPolor i3.5': 'TemPolor i4',
+  'MiniMax 2.6': 'MiniMax 3.0',
+};
+const TEMPOLOR_DEFAULT_SONG = 'tempolor-latest';
+const TEMPOLOR_DEFAULT_INSTRUMENTAL = 'TemPolor i4';
 
 async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url }) {
   const isInstrumental = tempolor_mode === 'instrumental' || (!lyrics && !voice_id && !cover_audio_url);
@@ -162,9 +186,9 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
   // Resolve + validate the model against the documented catalog per mode
   const requested = TEMPOLOR_LEGACY_MAP[model] || model;
   let resolvedModel;
-  if (cover_audio_url) resolvedModel = TEMPOLOR_COVER_MODELS.includes(requested) ? requested : 'TemPolor v4.6';
-  else if (isInstrumental) resolvedModel = TEMPOLOR_INSTRUMENTAL_MODELS.includes(requested) ? requested : 'TemPolor i3.5';
-  else resolvedModel = TEMPOLOR_SONG_MODELS.includes(requested) ? requested : 'TemPolor v4.6';
+  if (cover_audio_url) resolvedModel = TEMPOLOR_COVER_MODELS.includes(requested) ? requested : TEMPOLOR_DEFAULT_SONG;
+  else if (isInstrumental) resolvedModel = TEMPOLOR_INSTRUMENTAL_MODELS.includes(requested) ? requested : TEMPOLOR_DEFAULT_INSTRUMENTAL;
+  else resolvedModel = TEMPOLOR_SONG_MODELS.includes(requested) ? requested : TEMPOLOR_DEFAULT_SONG;
 
   const endpoint = `${TEMPOLOR_BASE}/song/generate`;
 
@@ -429,7 +453,7 @@ Deno.serve(async (req) => {
     // Determine exact model version used per provider
     const modelVersionMap = {
       sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
-      tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? 'TemPolor i3.5' : 'TemPolor v4.6'),
+      tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? TEMPOLOR_DEFAULT_INSTRUMENTAL : TEMPOLOR_DEFAULT_SONG),
       elevenlabs: providerResult.model || model || 'music_v1',
     };
     const modelVersion = modelVersionMap[provider] || provider;

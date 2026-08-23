@@ -22,11 +22,15 @@ const SPECS = {
   tempcolor: {
     default: { maxLyricsChars: 3000, structureTags: true, vocal: true, languages: 'Multilingual' },
     models: {
-      'TemPolor v4.6': { languages: '30+ languages' },
-      'TemPolor v3.5': { languages: 'English, Chinese, Cantonese, Japanese ONLY', notes: 'Lyrics in other languages may produce poor or failed vocals' },
-      'Mureka V9':     { languages: '10+ languages' },
-      'TemPolor i3.5': { vocal: false, notes: 'Instrumental-only model — lyrics are ignored' },
-      'TemPolor i3':   { vocal: false, notes: 'Instrumental-only model — lyrics are ignored' },
+      // TemPolor's house song model is now a single rolling "tempolor-latest"
+      // identifier — the numbered v4.6 / v3.5 entries no longer exist upstream.
+      'tempolor-latest': { languages: '30+ languages' },
+      'Mureka V9.5':     { languages: '10+ languages' },
+      'Mureka V9':       { languages: '10+ languages' },
+      'MiniMax 3.0':     { languages: 'Multilingual' },
+      'Eleven Music V2': { maxLyricsChars: 3500, languages: 'Multilingual', notes: 'Premium tier — costs significantly more per track upstream' },
+      'TemPolor i4':     { vocal: false, notes: 'Instrumental-only model — lyrics are ignored' },
+      'TemPolor i3':     { vocal: false, notes: 'Instrumental-only model — lyrics are ignored' },
     },
   },
   elevenlabs: {
