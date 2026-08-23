@@ -70,6 +70,12 @@ export default function GuidedTour() {
     (async () => {
       try {
         const user = await base44.auth.me();
+        // Already completed or opted out on ANY device — the flag lives on the
+        // account, so a new browser must not restart a finished tour.
+        if (user?.tour_complete || user?.tour_opted_out) {
+          localStorage.setItem(TOUR_KEY, '1');
+          return;
+        }
         const onboarded = user?.onboarding_complete || localStorage.getItem(ONBOARDING_KEY);
         const isNew = user?.created_date && (Date.now() - new Date(user.created_date).getTime()) < 7 * 24 * 60 * 60 * 1000;
         // New users who haven't onboarded yet will get the tour via the event instead
@@ -103,10 +109,16 @@ export default function GuidedTour() {
     return () => window.removeEventListener('resize', measure);
   }, [active, measure]);
 
-  const finish = async () => {
+  // One flag write covers both endings: completing it and opting out both mean
+  // "never show this again", so the tour can only ever run once per account.
+  const finish = async (optedOut = false) => {
     localStorage.setItem(TOUR_KEY, '1');
     setActive(false);
-    try { await base44.auth.updateMe({ tour_complete: true }); } catch {}
+    try {
+      await base44.auth.updateMe(
+        optedOut ? { tour_complete: true, tour_opted_out: true } : { tour_complete: true }
+      );
+    } catch {}
   };
 
   const goTo = (to) => { finish(); navigate(to); };
@@ -175,8 +187,8 @@ export default function GuidedTour() {
           )}
 
           <div className="flex items-center justify-between gap-2">
-            <button onClick={finish} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Skip tour
+            <button onClick={() => finish(true)} className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+              Skip — don't show again
             </button>
             <div className="flex gap-2">
               {step > 0 && (
@@ -185,7 +197,7 @@ export default function GuidedTour() {
                 </Button>
               )}
               <Button size="sm" className="rounded-lg gap-1 text-xs merc-button font-bold"
-                onClick={() => (isLast ? finish() : setStep(step + 1))}>
+                onClick={() => (isLast ? finish(false) : setStep(step + 1))}>
                 {isLast ? (<><Check className="w-3.5 h-3.5" /> Done</>) : (<>Next <ArrowRight className="w-3.5 h-3.5" /></>)}
               </Button>
             </div>
