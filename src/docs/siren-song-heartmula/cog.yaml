@@ -28,7 +28,9 @@ build:
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
 
-# `run:` is the current entry-point key and must match run.py's class + method.
-# The old `predict: "predict.py:Predictor"` form still builds but is deprecated:
-# Cog warns on it and `cog doctor --fix` migrates it to this.
-run: "run.py:Runner"
+# Entry point — must match run.py's class + method exactly.
+# This MUST stay `predict:` pointing at a BasePredictor subclass. The `run:` key
+# with a `BaseRunner` class does not work in this Cog SDK: `from cog import
+# BaseRunner` raises ImportError while loading the predictor, so every worker slot
+# fails setup and predictions hang in "starting" forever.
+predict: "run.py:Predictor"

@@ -1,18 +1,21 @@
 """
 Cog runner for the siren-song model — a fork of HeartMuLa (heartlib).
 
-WHY THIS FILE REPLACES predict.py
----------------------------------
-Current Cog has renamed the prediction entry point. `BaseRunner.run()` is the
-canonical interface; `BasePredictor`, `Predictor` and `predict()` still execute
-for existing models but are DEPRECATED — Cog emits a deprecation warning on
-build/push, `cog doctor --fix` offers to migrate the project, and the static
-schema parser now treats `run()` as primary with `predict()` only as a legacy
-fallback. Building a NEW model on the old interface therefore starts life on a
-path Cog is actively unwinding, so this file defines a Runner.
+ENTRY POINT: BasePredictor.predict()
+------------------------------------
+This file defines `class Predictor(BasePredictor)` with a `predict()` method, and
+cog.yaml points at it with `predict: "run.py:Predictor"`.
 
-Note this is a rename of the entry point, not a change to the contract: setup()
-is unchanged, Input() is unchanged, and the return value is still a cog.Path.
+DO NOT "modernise" this to `BaseRunner.run()`. That was tried and it hard-fails:
+the Cog SDK installed in this image exports no `BaseRunner`, so the import blows
+up while the worker is loading the predictor —
+
+    Setup failed: failed to load predictor: ImportError:
+    cannot import name 'BaseRunner' from 'cog'
+
+Every worker slot then dies during setup, which the API surfaces as a prediction
+that sits in "starting" indefinitely rather than as an obvious build failure. The
+`run:` key in cog.yaml has the same problem and must stay `predict:`.
 
 WHY THE 1 ms SUCCESS HAPPENS
 ----------------------------
@@ -21,15 +24,15 @@ an entry point that never produced a value. Cog marks the run successful because
 nothing raised, and returns null because nothing was returned. Two things MUST be
 true, and are the usual omissions:
 
-  1. run() RETURNS a cog.Path pointing at a file that exists on disk.
+  1. predict() RETURNS a cog.Path pointing at a file that exists on disk.
      Writing the file is not enough. Printing the path is not enough.
   2. The model is loaded in setup(), with weights present in the image. A setup()
-     that cannot find ./ckpt has nothing for run() to execute.
+     that cannot find ./ckpt has nothing for predict() to execute.
 
 A third, subtler cause: if cog.yaml points at a class that has no matching entry
 method at all, the container still boots and answers instantly with nothing —
 which is why the pointer in cog.yaml and the class/method here must agree
-exactly ("run.py:Runner" → class Runner → def run).
+exactly ("run.py:Predictor" → class Predictor → def predict).
 
 HEARTMULA'S CONDITIONING CONTRACT (this is NOT a prose-prompt model)
 -------------------------------------------------------------------
@@ -61,7 +64,12 @@ import os
 import tempfile
 
 import torch
-from cog import BaseRunner, Input, Path
+# BasePredictor / predict(), NOT BaseRunner / run(). `BaseRunner` does not exist in
+# the Cog SDK this image installs — importing it fails at predictor load time and
+# every slot dies with "Setup failed: failed to load predictor: ImportError:
+# cannot import name 'BaseRunner' from 'cog'", which presents as a run that hangs
+# in "starting" forever. BasePredictor is the interface the installed runtime has.
+from cog import BasePredictor, Input, Path
 
 from heartlib import HeartMuLaGenPipeline
 
@@ -75,7 +83,7 @@ KNOWN_SECTIONS = (
 )
 
 
-class Runner(BaseRunner):
+class Predictor(BasePredictor):
     def setup(self):
         """Load HeartMuLa + HeartCodec once per container boot."""
         if not os.path.isdir(MODEL_PATH):
@@ -95,7 +103,7 @@ class Runner(BaseRunner):
             lazy_load=False,
         )
 
-    def run(
+    def predict(
         self,
         tags: str = Input(
             description=(
