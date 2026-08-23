@@ -18,6 +18,7 @@ const CATEGORIES = [
       { to: "/voice-creator",      emoji: "🗣️", label: "Voice Creator",      desc: "Custom AI voices & personas" },
       { to: "/sfx-studio",         emoji: "💥", label: "Sound FX Studio",    desc: "Text-to-SFX with ElevenLabs" },
       { to: "/loop-studio",        emoji: "🥁", label: "Loops & Samples",    desc: "Generate loops, discover free samples & build your library" },
+      { to: "/foundry",            emoji: "🧰", label: "BASE Foundry",       desc: "Build your own DSP plugins & synths" },
     ],
   },
   {
@@ -32,7 +33,6 @@ const CATEGORIES = [
       { to: "/mashup-studio",      emoji: "🔀", label: "Mashup Studio",      desc: "Blend multiple tracks" },
       { to: "/vocal-harmonizer",   emoji: "🎼", label: "Vocal Harmonizer",   desc: "Add AI harmony layers" },
       { to: "/id3-studio",         emoji: "🏷️", label: "ID3 Tag Editor",     desc: "Edit metadata & tags" },
-      { to: "/foundry",            emoji: "🧰", label: "BASE Foundry",       desc: "Build your own DSP plugins & synths" },
     ],
   },
   {
