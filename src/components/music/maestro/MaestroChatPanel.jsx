@@ -107,7 +107,7 @@ export default function MaestroChatPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <MaestroAvatar size={32} />
+        <MaestroAvatar size={48} />
         <p className="text-sm font-black text-foreground">Maestro Session</p>
         <span className="text-xs text-muted-foreground">12 master combinations · full craft treatment</span>
       </div>

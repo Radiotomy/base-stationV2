@@ -10,7 +10,7 @@ export default function MaestroChatBubble({ role, text }) {
           <User className="w-3.5 h-3.5 text-muted-foreground" />
         </div>
       ) : (
-        <MaestroAvatar size={28} />
+        <MaestroAvatar size={42} />
       )}
       <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm whitespace-pre-wrap leading-relaxed ${
         isUser ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-muted text-foreground rounded-tl-sm'
