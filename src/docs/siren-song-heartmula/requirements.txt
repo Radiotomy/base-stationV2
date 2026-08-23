@@ -25,4 +25,8 @@ git+https://github.com/Radiotomy/heartlib
 #
 # The model's dependency graph belongs to the model. Add a pin below ONLY for a
 # package heartlib does not declare at all, and never for one it does.
-soundfile
+#
+# Verified against Radiotomy/heartlib pyproject.toml: it already pins torch 2.4.1,
+# torchaudio 2.4.1, transformers 4.57.0, tokenizers 0.22.1, numpy 2.0.2, einops,
+# accelerate, bitsandbytes, torchtune/torchao/torchvision and soundfile — so there
+# is nothing left for this file to add.
