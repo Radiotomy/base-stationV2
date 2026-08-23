@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Send, Crown, Loader2 } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
+import MaestroAvatar from './MaestroAvatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import MaestroChatBubble from './MaestroChatBubble';
@@ -106,7 +107,7 @@ export default function MaestroChatPanel() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Crown className="w-4 h-4 text-amber-300" />
+        <MaestroAvatar size={32} />
         <p className="text-sm font-black text-foreground">Maestro Session</p>
         <span className="text-xs text-muted-foreground">12 master combinations · full craft treatment</span>
       </div>
