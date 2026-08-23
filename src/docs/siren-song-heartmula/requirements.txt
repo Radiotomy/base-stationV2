@@ -1,6 +1,13 @@
-# Pinned floor versions for the siren-song (HeartMuLa) Cog image.
-# heartlib's own dependencies come from `pip install -e .` in cog.yaml; these are
-# the pieces the predictor and the checkpoint download need directly.
+# Pinned versions for the siren-song (HeartMuLa) Cog image.
+#
+# heartlib is installed HERE, not via `pip install -e .` in cog.yaml's build.run:
+# Cog does not make the project source available to build.run commands, and a
+# local directory is not an accepted requirements entry either — only remote
+# direct references and local wheels/archives are. So we install from git and
+# pin the commit, which also makes the image reproducible.
+# Replace <owner>/<repo>@<commit> with the heartlib fork this image is built from.
+git+https://github.com/<owner>/<repo>@<commit>#egg=heartlib
+
 torch==2.4.0
 torchaudio==2.4.0
 transformers==4.44.2

@@ -1,19 +1,25 @@
-# Cog config for speedwolf2000/siren-song (HeartMuLa / heartlib fork).
+# Cog config for the siren-song model (HeartMuLa / heartlib fork).
 #
 # The weights are downloaded at BUILD time, not in setup(). A 3B LM plus the
 # codec is far too large to fetch on every cold boot, and a setup() that fails
-# to find weights is exactly how you end up with predictions that return null.
+# to find weights is exactly how you end up with runs that return null.
 build:
   gpu: true
   cuda: "12.1"
   python_version: "3.10"
   system_packages:
-    - "ffmpeg"          # required to write the .mp3 the pipeline saves
+    - "ffmpeg"          # required to encode mp3/ogg from the native 48kHz wav
     - "git"
   python_requirements: requirements.txt
+  # Pin the Cog SDK so a future SDK release cannot silently change the runtime
+  # this image was verified against. 0.16.0 is the minimum Cog accepts.
+  sdk_version: "0.18.0"
   run:
-    # heartlib itself, installed from the repo this image is built from.
-    - "pip install -e ."
+    # Checkpoints only. NOTE: `pip install -e .` does NOT belong here — current
+    # Cog does not mount your source code into build.run commands, so it fails
+    # (or worse, installs nothing). heartlib is installed from git via
+    # requirements.txt instead.
+    #
     # Shared generation config + tokenizer, then the recommended RL checkpoint
     # and the matching codec release. These MUST land as ./ckpt/HeartMuLa-oss-3B
     # and ./ckpt/HeartCodec-oss — the pipeline resolves those subfolder names.
@@ -22,4 +28,7 @@ build:
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
 
-predict: "predict.py:Predictor"
+# `run:` is the current entry-point key and must match run.py's class + method.
+# The old `predict: "predict.py:Predictor"` form still builds but is deprecated:
+# Cog warns on it and `cog doctor --fix` migrates it to this.
+run: "run.py:Runner"

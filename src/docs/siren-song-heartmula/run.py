@@ -1,17 +1,35 @@
 """
-Cog predictor for speedwolf2000/siren-song — a fork of HeartMuLa (heartlib).
+Cog runner for the siren-song model — a fork of HeartMuLa (heartlib).
 
-WHY THIS FILE EXISTS
---------------------
-A prediction that reports "succeeded" in ~1ms with no output is the signature of
-a predict() that never produced a value: Cog marks the run successful because
-nothing raised, and returns null because nothing was returned. The two things
-that MUST be true, and are the usual omissions:
+WHY THIS FILE REPLACES predict.py
+---------------------------------
+Current Cog has renamed the prediction entry point. `BaseRunner.run()` is the
+canonical interface; `BasePredictor`, `Predictor` and `predict()` still execute
+for existing models but are DEPRECATED — Cog emits a deprecation warning on
+build/push, `cog doctor --fix` offers to migrate the project, and the static
+schema parser now treats `run()` as primary with `predict()` only as a legacy
+fallback. Building a NEW model on the old interface therefore starts life on a
+path Cog is actively unwinding, so this file defines a Runner.
 
-  1. predict() RETURNS a cog.Path pointing at a file that exists on disk.
+Note this is a rename of the entry point, not a change to the contract: setup()
+is unchanged, Input() is unchanged, and the return value is still a cog.Path.
+
+WHY THE 1 ms SUCCESS HAPPENS
+----------------------------
+A run that reports "succeeded" in ~1 ms with `output: null` is the signature of
+an entry point that never produced a value. Cog marks the run successful because
+nothing raised, and returns null because nothing was returned. Two things MUST be
+true, and are the usual omissions:
+
+  1. run() RETURNS a cog.Path pointing at a file that exists on disk.
      Writing the file is not enough. Printing the path is not enough.
-  2. The model is loaded in setup(), with the weights present in the image. A
-     setup() that cannot find ./ckpt has nothing for predict() to run.
+  2. The model is loaded in setup(), with weights present in the image. A setup()
+     that cannot find ./ckpt has nothing for run() to execute.
+
+A third, subtler cause: if cog.yaml points at a class that has no matching entry
+method at all, the container still boots and answers instantly with nothing —
+which is why the pointer in cog.yaml and the class/method here must agree
+exactly ("run.py:Runner" → class Runner → def run).
 
 HEARTMULA'S CONDITIONING CONTRACT (this is NOT a prose-prompt model)
 -------------------------------------------------------------------
@@ -25,7 +43,7 @@ Confirmed against src/heartlib/pipelines/music_generation.py:
     This is the style channel — a prose sentence is a misuse of it.
   * `lyrics` are lowercased. Bracketed section headers ([Verse], [Chorus], …).
   * `ref_audio` raises NotImplementedError. Reference-audio conditioning does
-    NOT exist in this release, whatever heartmula.net's feature list says.
+    NOT exist in this release, whatever the marketing feature list says.
 
 OUTPUT FORMAT
 -------------
@@ -33,8 +51,8 @@ postprocess() ends with:
 
     torchaudio.save(save_path, wav.to(torch.float32).cpu(), 48000)
 
-So the model's native output is a 48 kHz float32 tensor, and torchaudio infers
-the container from the save_path EXTENSION. WAV is therefore the native, lossless
+So the native output is a 48 kHz float32 tensor, and torchaudio infers the
+container from the save_path EXTENSION. WAV is therefore the native, lossless
 form and MP3 is a lossy re-encode of it — which is why `output_format` defaults
 to wav here, per our "mark once, compress last" rule.
 """
@@ -43,7 +61,7 @@ import os
 import tempfile
 
 import torch
-from cog import BasePredictor, Input, Path
+from cog import BaseRunner, Input, Path
 
 from heartlib import HeartMuLaGenPipeline
 
@@ -57,14 +75,14 @@ KNOWN_SECTIONS = (
 )
 
 
-class Predictor(BasePredictor):
+class Runner(BaseRunner):
     def setup(self):
         """Load HeartMuLa + HeartCodec once per container boot."""
         if not os.path.isdir(MODEL_PATH):
             raise RuntimeError(
                 f"Checkpoint directory {MODEL_PATH} is missing. The weights must be "
                 "baked into the image at build time (see cog.yaml) — without them "
-                "setup() cannot load a model and every prediction returns nothing."
+                "setup() cannot load a model and every run returns nothing."
             )
 
         self.pipe = HeartMuLaGenPipeline.from_pretrained(
@@ -77,7 +95,7 @@ class Predictor(BasePredictor):
             lazy_load=False,
         )
 
-    def predict(
+    def run(
         self,
         tags: str = Input(
             description=(
@@ -119,7 +137,9 @@ class Predictor(BasePredictor):
         ),
         temperature: float = Input(default=1.0, ge=0.1, le=2.0),
         topk: int = Input(default=50, ge=1, le=200),
-        seed: int = Input(description="Leave blank for a random seed.", default=None),
+        # Optional[int] rather than a bare int with default=None: the newer Cog
+        # runtime rejects a non-optional annotation whose default is None.
+        seed: int | None = Input(description="Leave blank for a random seed.", default=None),
     ) -> Path:
         if seed is None:
             seed = int.from_bytes(os.urandom(4), "big")

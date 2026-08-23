@@ -22,9 +22,29 @@ produced a value:
 - It takes **~1ms** because no model was loaded and no audio was generated — a
   real HeartMuLa run cannot finish that fast (see §3).
 
-The fix is in `src/docs/siren-song-heartmula/`: `predict()` returns a
+**Confirmed on 2026-08-23** against the live prediction: `status: succeeded`,
+`predict_time: 0.0011s`, `logs: ""`, `output: null`, `total_time: 121s`. The
+container booted and setup ran, then the entry point returned instantly with
+nothing — the pushed build's predictor is a stub. Our pipeline correctly rejected
+it ("Siren Song returned no audio output") rather than saving a phantom track.
+
+The fix is in `src/docs/siren-song-heartmula/`: the entry point returns a
 `cog.Path`, weights are baked in at build time, and a completed pipeline call
 that produced no file raises instead of passing silently.
+
+### `predict()` is deprecated — this build uses `run()`
+
+Cog has renamed the entry point. `BaseRunner.run()` + `run: "run.py:Runner"` is
+canonical; `BasePredictor` / `Predictor` / `predict()` and the `predict:` key
+still execute for existing models but are **deprecated** — Cog warns on them and
+`cog doctor --fix` migrates them. Two related traps in the newer runtime:
+
+- `def run(x: str = Input(default=None))` is rejected — a `None` default needs an
+  optional annotation (`str | None`). Our `seed` input follows this.
+- **`pip install -e .` cannot go in `build.run`** — Cog does not mount the project
+  source into build commands, so it silently installs nothing (a fine way to get a
+  container that boots and generates no audio). heartlib is installed from a
+  pinned git reference in `requirements.txt` instead.
 
 > I could not open `replicate.com/speedwolf2000/siren-song` — it 404s for me, so
 > it is private or under a different owner slug. I have therefore diagnosed this
@@ -143,7 +163,9 @@ pipeline gives us no bit-depth argument to do it upstream.
 
 ## 5. Status
 
-- [x] Corrected Cog predictor + config authored (`src/docs/siren-song-heartmula/`)
+- [x] Corrected Cog runner + config authored (`run.py` / `cog.yaml` / `requirements.txt`)
+- [x] Migrated off the deprecated `predict()` interface to `BaseRunner.run()`
+- [ ] Rebuild & push the model, then repoint the pinned version secret
 - [ ] Verify a real prediction returns audio on Replicate
 - [x] Output formats resolved — wav/flac/mp3/ogg by extension, 48 kHz native (§4)
 - [ ] Decide the 48 kHz ingest policy (resample to 44.1k vs fix the V2 48k path)
