@@ -93,7 +93,7 @@ const ELEVEN_FAMILIES = [
 
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
 const MOOD_CHIPS = ['Energetic', 'Chill', 'Dark', 'Happy', 'Sad', 'Uplifting', 'Aggressive', 'Romantic', 'Melancholic'];
-const DURATIONS = [15, 30, 60, 90, 120];
+const DURATIONS = [15, 30, 60, 90, 120, 180, 240, 300];
 
 const PROMPT_TEMPLATES = [
   { label: '🔥 Trap Banger', prompt: 'Hard-hitting 808s, hi-hat rolls, melodic vocal chops, dark atmosphere' },

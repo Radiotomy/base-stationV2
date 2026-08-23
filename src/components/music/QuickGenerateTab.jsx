@@ -306,7 +306,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         - genre: ${selectedGenre ? `"${selectedGenre}" (MUST match user selection, or hybrid like "Red Dirt Country")` : 'one of [Hip-Hop, Trap, EDM, House, Pop, R&B, Lo-Fi, Jazz, Rock, Country, Red Dirt Country, Afrobeats, Drill, Ambient, Indie]'}
         - mood: one of [Energetic, Chill, Dark, Happy, Sad, Uplifting, Aggressive, Romantic, Melancholic]
         - bpm: integer between 60-200 appropriate for the genre
-        - duration: integer, one of [30, 60, 90, 120] in seconds
+        - duration: integer seconds, one of [60, 90, 120, 150, 180, 210, 240] — pick a REAL song length that fits the described arrangement (full songs with vocals are usually 150-240; short loops/idents only when the description clearly asks for one)
         - title: short creative track title (3-6 words)
         - sound_prompt: detailed music production description (instruments, feel, atmosphere)
         - needs_lyrics: boolean, true if the description implies vocal/song content`,

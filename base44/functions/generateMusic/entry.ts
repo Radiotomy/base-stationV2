@@ -220,6 +220,33 @@ async function generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, 
 const ELEVENLABS_API = Deno.env.get('ELEVENLABS_API');
 const ELEVEN_BASE = 'https://api.elevenlabs.io/v1';
 
+// Eleven Music length policy.
+// music_length_ms accepts 3s–600s. If we pass nothing the model picks, and it
+// tends to pick a short clip — but the real bug was that this function used to
+// default `duration` to 60, so EVERY Eleven track came back exactly 1:00 even
+// when the caller never asked for a length. Length is now derived from the
+// actual material: a lyric sheet's line count sets the song's shape, and a
+// prompt-only track gets a full arrangement rather than a one-minute stub.
+const ELEVEN_MIN_MS = 3000;
+const ELEVEN_MAX_MS = 600000;
+
+function elevenLengthMs({ duration, lyrics }) {
+  // Explicit user choice always wins.
+  if (duration) return Math.min(Math.max(Math.round(duration * 1000), ELEVEN_MIN_MS), ELEVEN_MAX_MS);
+
+  const text = (lyrics || '').trim();
+  if (text) {
+    // Sung lines land around 4s each; sections need intro/turnaround/outro room.
+    const lines = text.split('\n').filter(l => l.trim() && !/^\s*\[/.test(l)).length;
+    const sections = (text.match(/\[/g) || []).length;
+    const est = 20 + lines * 4 + sections * 6;
+    return Math.min(Math.max(Math.round(est) * 1000, 90000), ELEVEN_MAX_MS);
+  }
+
+  // Instrumental / prompt-only: a full-length arrangement, not a loop.
+  return 180000;
+}
+
 async function generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyrics, model, tempolor_mode }, base44) {
   if (!ELEVENLABS_API) throw new Error('ELEVENLABS_API key not configured');
   const modelId = model === 'music_v2' ? 'music_v2' : 'music_v1';
@@ -232,16 +259,19 @@ async function generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyr
   if (hasLyrics) prompt += `\n\nUse these lyrics:\n${lyrics.trim()}`;
   prompt = prompt.slice(0, 4100);
 
+  const lengthMs = elevenLengthMs({ duration, lyrics });
   const body = {
     prompt,
     model_id: modelId,
     force_instrumental: !hasLyrics && tempolor_mode === 'instrumental',
     sign_with_c2pa: true,
-    ...(duration && { music_length_ms: Math.min(Math.max(Math.round(duration * 1000), 3000), 600000) }),
+    music_length_ms: lengthMs,
   };
+  console.log('ElevenLabs music_length_ms:', lengthMs, 'explicit duration:', duration ?? 'none');
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 120000);
+  // Longer tracks take longer to render — the old 120s ceiling aborted full-length songs.
+  const timeout = setTimeout(() => controller.abort(), 280000);
   let res;
   try {
     res = await fetch(`${ELEVEN_BASE}/music?output_format=mp3_44100_128`, {
@@ -252,7 +282,7 @@ async function generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyr
     });
   } catch (fetchErr) {
     if (fetchErr.name === 'AbortError') {
-      const err = new Error('ElevenLabs music generation timed out after 120s. Try a shorter duration.');
+      const err = new Error('ElevenLabs music generation timed out. Try a shorter duration.');
       err.providerStatus = 504;
       err.providerType = 'timeout';
       throw err;
@@ -326,7 +356,10 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    let { provider = 'sonic', duration = 60, mood = 'Energetic', genre = 'Hip-Hop',
+    // NOTE: duration is intentionally NOT defaulted. A default here silently
+    // capped every ElevenLabs track at 1:00; absent means "let the length follow
+    // the material" (see elevenLengthMs).
+    let { provider = 'sonic', duration, mood = 'Energetic', genre = 'Hip-Hop',
           tempo, sound_prompt, lyrics, model, tempolor_mode, routing_reason,
           voice_id, cover_audio_url, voice_persona_id, title } = await req.json();
 
