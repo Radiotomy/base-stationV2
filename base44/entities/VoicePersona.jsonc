@@ -64,15 +64,16 @@
       "enum": [
         "sonic",
         "elevenlabs",
+        "inworld",
         "google",
         "azure",
         "custom"
       ],
-      "description": "Voice synthesis provider. 'sonic' = cloned via Sonic create-voice, usable in persona_music generation"
+      "description": "Voice synthesis provider. 'sonic' = cloned via Sonic create-voice, usable in persona_music generation. 'inworld' = Inworld TTS character voices, the same engine ORVO's voiceovers and AI-cast shows use."
     },
     "provider_voice_id": {
       "type": "string",
-      "description": "Provider's unique voice ID (Sonic persona_id for provider='sonic')"
+      "description": "Provider's unique voice ID (Sonic persona_id for provider='sonic', Inworld voice name for provider='inworld')"
     },
     "source_asset_id": {
       "type": "string",

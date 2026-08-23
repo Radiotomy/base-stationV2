@@ -52,16 +52,19 @@ export default function VoicePersonaForm({ persona, onSave, onCancel }) {
     try {
       const prompt = `A ${formData.age} ${formData.voice_type} voice with a ${formData.accent} accent that sounds ${selectedCharacteristics.join(', ')}. Say: "Hello, I'm ${formData.name}. This is my voice for AI music creation."`;
 
-      const result = await base44.functions.invoke('synthesizeVoice', {
+      const res = await base44.functions.invoke('synthesizeVoice', {
         text: prompt,
-        voice_description: formData.description,
+        persona_name: formData.name,
+        voice_type: formData.voice_type,
+        accent: formData.accent,
+        characteristics: selectedCharacteristics,
         provider: formData.provider,
-        stability: 0.5,
-        similarity_boost: 0.75
       });
+      const result = res.data || res;
+      if (!result.audio_url) throw new Error(result.error || 'Synthesis failed');
 
       setAudioUrl(result.audio_url);
-      setFormData({ ...formData, sample_url: result.audio_url });
+      setFormData({ ...formData, sample_url: result.audio_url, provider_voice_id: result.voice_id });
       toast.success('Voice sample generated!');
     } catch (error) {
       toast.error(error.message);
@@ -199,6 +202,7 @@ export default function VoicePersonaForm({ persona, onSave, onCancel }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
+            <SelectItem value="inworld">Inworld (TTS-2 character voices)</SelectItem>
             <SelectItem value="google">Google Cloud TTS</SelectItem>
             <SelectItem value="azure">Azure Speech</SelectItem>
             <SelectItem value="custom">Custom</SelectItem>

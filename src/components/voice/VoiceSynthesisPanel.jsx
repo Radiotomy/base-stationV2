@@ -32,6 +32,8 @@ export default function VoiceSynthesisPanel({ persona }) {
         voice_type: persona?.voice_type || 'male',
         accent: persona?.accent || 'neutral',
         characteristics: persona?.characteristics || [],
+        provider: persona?.provider || 'elevenlabs',
+        voice_id: persona?.provider_voice_id || undefined,
         speed,
         pitch,
       });

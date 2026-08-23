@@ -1,4 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { synthesizeInworldSpeech } from '../../shared/inworldTts.ts';
+
+// Inworld character voices mapped by voice_type — the same engine ORVO's
+// voiceovers and AI-cast shows already speak through.
+const INWORLD_VOICE_MAP = { male: 'Hades', female: 'Ashley', neutral: 'Dennis' };
 
 // Voice synthesis via ElevenLabs Text-to-Speech (replaces the retired Nuro TTS API).
 // Docs: POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id} — returns MP3 bytes.
@@ -25,12 +30,18 @@ Deno.serve(async (req) => {
       characteristics = [],
       speed = 1.0,
       voice_id: explicitVoiceId,
+      provider = 'elevenlabs',
     } = await req.json();
 
     if (!text) return Response.json({ error: 'Missing text' }, { status: 400 });
 
-    const key = Deno.env.get('ELEVENLABS_API');
-    if (!key) return Response.json({ error: 'ELEVENLABS_API not configured' }, { status: 500 });
+    const useInworld = provider === 'inworld';
+    const key = Deno.env.get(useInworld ? 'INWORLD_API_KEY' : 'ELEVENLABS_API');
+    if (!key) {
+      return Response.json({
+        error: `${useInworld ? 'INWORLD_API_KEY' : 'ELEVENLABS_API'} not configured`,
+      }, { status: 500 });
+    }
 
     // ── Server-side credit gate (this was previously logged but never deducted) ──
     const creditRecs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -45,7 +56,9 @@ Deno.serve(async (req) => {
     }
 
     const typeMap = VOICE_MAP[voice_type] || VOICE_MAP.male;
-    const voiceId = explicitVoiceId || typeMap[accent] || typeMap.default;
+    const voiceId = useInworld
+      ? (explicitVoiceId || INWORLD_VOICE_MAP[voice_type] || INWORLD_VOICE_MAP.neutral)
+      : (explicitVoiceId || typeMap[accent] || typeMap.default);
 
     // Characteristics steer the delivery via stability/style settings:
     // expressive traits → lower stability; monotone/calm → higher stability.
@@ -54,7 +67,14 @@ Deno.serve(async (req) => {
     const calm = traits.some((t) => ['monotone', 'calm', 'smooth', 'soft'].includes(t));
     const stability = calm ? 0.75 : expressive ? 0.3 : 0.5;
 
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
+    // Inworld path: one REST call returning MP3 bytes. It has no stability /
+    // similarity controls, so the trait steering below simply doesn't apply.
+    let inworldBytes = null;
+    if (useInworld) {
+      inworldBytes = await synthesizeInworldSpeech(key, { text: String(text).slice(0, 5000), voiceId });
+    }
+
+    const res = useInworld ? null : await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
       method: 'POST',
       headers: { 'xi-api-key': key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -68,7 +88,7 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (!res.ok) {
+    if (res && !res.ok) {
       let detail = '';
       try {
         const j = await res.json();
@@ -80,7 +100,7 @@ Deno.serve(async (req) => {
       }, { status: 502 });
     }
 
-    const bytes = await res.arrayBuffer();
+    const bytes = inworldBytes || await res.arrayBuffer();
     const file = new File([bytes], `voice-${Date.now()}.mp3`, { type: 'audio/mpeg' });
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
 
@@ -103,22 +123,26 @@ Deno.serve(async (req) => {
       amount: -VOICE_SYNTH_COST,
       balance_before: creditRecord.balance,
       balance_after: newBalance,
-      provider: 'elevenlabs',
+      provider: useInworld ? 'inworld' : 'elevenlabs',
       description: `Voice synthesis${persona_name ? ` — ${persona_name}` : ''}`,
     }).catch(() => {});
 
     await base44.asServiceRole.entities.APIUsageLog.create({
       user_id: user.id, user_email: user.email, user_name: user.full_name,
-      provider: 'elevenlabs',
+      provider: useInworld ? 'inworld' : 'elevenlabs',
       task: 'synthesize_voice',
       credits_used: VOICE_SYNTH_COST,
       status: 'success',
       timestamp: new Date().toISOString(),
-      metadata: { model_version: 'eleven_multilingual_v2', voice_id: voiceId, voice_type, accent },
+      metadata: {
+        model_version: useInworld ? 'inworld-tts-1' : 'eleven_multilingual_v2',
+        voice_id: voiceId, voice_type, accent,
+      },
     }).catch(() => {});
 
     return Response.json({
       audio_url: file_url,
+      provider: useInworld ? 'inworld' : 'elevenlabs',
       voice_id: voiceId,
       persona_name,
       credits_used: VOICE_SYNTH_COST,
