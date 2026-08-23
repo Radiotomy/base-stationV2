@@ -5,8 +5,16 @@
 # local directory is not an accepted requirements entry either — only remote
 # direct references and local wheels/archives are. So we install from git and
 # pin the commit, which also makes the image reproducible.
-# Replace <owner>/<repo>@<commit> with the heartlib fork this image is built from.
-git+https://github.com/<owner>/<repo>@<commit>#egg=heartlib
+# Swap this for your own fork (and append @<commit> to pin it) if you build from
+# a fork rather than upstream. Unpinned = whatever main holds at build time.
+git+https://github.com/HeartMuLa/heartlib
+
+# ALTERNATIVE — install the checkout you are building from, without git:
+#   python -m build --sdist   (writes dist/heartlib-<ver>.tar.gz)
+# then replace the line above with:
+#   ./dist/heartlib-0.1.0.tar.gz
+# Cog accepts a local sdist/wheel path in requirements.txt; it does NOT accept a
+# bare local directory, which is why `-e .` is not an option here.
 
 torch==2.4.0
 torchaudio==2.4.0
