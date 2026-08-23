@@ -32,7 +32,7 @@ const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
-  { value: 'tempcolor',  label: 'Tempolor',   desc: 'TemPolor, Lyria, Mureka & MiniMax models', color: 'border-amber-500 bg-amber-500/10' },
+  { value: 'tempcolor',  label: 'Tempolor',   desc: 'TemPolor, Mureka, MiniMax & Lyria models', color: 'border-amber-500 bg-amber-500/10' },
   { value: 'elevenlabs', label: 'ElevenLabs', desc: 'Eleven Music — instant results, C2PA-signed', color: 'border-violet-500 bg-violet-500/10' },
 ];
 
@@ -70,9 +70,8 @@ const TEMPOLOR_SONG_FAMILIES = [
   { name: 'Lyria', maker: 'Google DeepMind', versions: [
     { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Natural, lifelike vocals — 3 min, multilingual' },
   ]},
-  { name: 'Eleven Music', maker: 'ElevenLabs', versions: [
-    { value: 'Eleven Music V2', label: 'V2', desc: '💎 Premium tier — 5 min, 44.1kHz MP3/WAV' },
-  ]},
+  // Eleven Music is deliberately NOT listed here — we call ElevenLabs directly
+  // via its own provider, so routing it through Tempolor would be redundant.
 ];
 const TEMPOLOR_INSTRUMENTAL_FAMILIES = [
   { name: 'TemPolor', maker: 'TemPolor', versions: [
@@ -87,9 +86,6 @@ const TEMPOLOR_INSTRUMENTAL_FAMILIES = [
   ]},
   { name: 'Lyria', maker: 'Google DeepMind', versions: [
     { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Clean instrumentals — 3 min' },
-  ]},
-  { name: 'Eleven Music', maker: 'ElevenLabs', versions: [
-    { value: 'Eleven Music V2', label: 'V2', desc: '💎 Premium tier — 5 min, 44.1kHz MP3/WAV' },
   ]},
 ];
 
