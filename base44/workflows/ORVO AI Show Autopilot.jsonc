@@ -1,0 +1,47 @@
+{
+  "name": "ORVO AI Show Autopilot",
+  "description": "Safety net for fully AI-performed podcast episodes that are on air with nobody in the room. Airing is derived from each show's start instant, so the listeners present normally keep the transcript in step \u2014 cron's 5-minute floor is longer than a spoken segment and could never pace a show on its own. This sweep exists so an unattended show still finishes and archives itself as a published episode. Carries the sweep token because sweep mode is closed to anonymous callers.",
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "*/5 * * * *",
+      "one_time_date": null,
+      "timezone": "America/Chicago",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "orvo_ai_show_autopilot",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "sweep_ai_shows": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "orvoAutopilotSweep",
+            "args": {
+              "token": "bs-venue-sweep-7Qk4mR2vTx9LbYw3Zn8pHc6JdF1sAe5U"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Advance AI shows",
+            "description": "Unattended AI-cast episodes"
+          }
+        }
+      }
+    ]
+  }
+}

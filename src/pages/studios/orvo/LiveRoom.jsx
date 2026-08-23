@@ -8,6 +8,7 @@ import LiveTurnFeed from '@/components/studios/orvo/live/LiveTurnFeed';
 import LiveStagePlayer from '@/components/studios/orvo/live/LiveStagePlayer';
 import BroadcastConsole from '@/components/studios/orvo/live/BroadcastConsole';
 import ListenerToolbar from '@/components/studios/orvo/live/ListenerToolbar';
+import AutopilotConsole from '@/components/studios/orvo/live/AutopilotConsole';
 
 export default function LiveRoom() {
   const { id } = useParams();
@@ -45,6 +46,17 @@ export default function LiveRoom() {
     });
     return () => { offTurns(); offEvent(); };
   }, [id]);
+
+  // AI-cast heartbeat. The running order is derived from the show's start
+  // instant, so anyone in the room can advance it and everyone lands on the same
+  // answer — the scheduled sweep only covers a room with nobody in it.
+  useEffect(() => {
+    if (!event?.is_ai_cast || event.autopilot_status !== 'running') return;
+    const tick = () => base44.functions.invoke('orvoAutopilotTick', { event_id: id }).catch(() => {});
+    tick();
+    const timer = setInterval(tick, 10000);
+    return () => clearInterval(timer);
+  }, [id, event?.is_ai_cast, event?.autopilot_status]);
 
   // Listener presence — count in on arrival, out on leave
   useEffect(() => {
@@ -87,7 +99,9 @@ export default function LiveRoom() {
               {event.status === 'live' && (
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-red-500/15 text-red-300 border border-red-500/40">Live now</span>
               )}
-              {event.is_ai_hosted && (
+              {event.is_ai_cast ? (
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#FF9A4D]/15 text-[#FF9A4D] border border-[#FF9A4D]/30">AI cast</span>
+              ) : event.is_ai_hosted && (
                 <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-[#FF9A4D]/15 text-[#FF9A4D] border border-[#FF9A4D]/30">AI co-host</span>
               )}
             </div>
@@ -98,7 +112,9 @@ export default function LiveRoom() {
           </p>
         </div>
 
-        {!isHost && (
+        {/* An AI-cast show has no camera feed — the performance IS the turn
+            stream, so the stage player would only ever show an empty frame. */}
+        {!isHost && !event.is_ai_cast && (
           <div className="mb-4">
             <LiveStagePlayer event={event} />
           </div>
@@ -110,8 +126,14 @@ export default function LiveRoom() {
 
         {isHost && (
           <div className="space-y-4 mb-6">
-            <BroadcastConsole event={event} onArchived={setEvent} />
-            <HostConsole event={event} onStatusChange={setEvent} />
+            {event.is_ai_cast ? (
+              <AutopilotConsole event={event} onChange={setEvent} />
+            ) : (
+              <>
+                <BroadcastConsole event={event} onArchived={setEvent} />
+                <HostConsole event={event} onStatusChange={setEvent} />
+              </>
+            )}
           </div>
         )}
 

@@ -29,7 +29,13 @@ export default function LiveTurnFeed({ turns, autoPlay }) {
       {turns.map((t) => (
         <div key={t.id} className="merc-card rounded-xl p-4">
           <p className="text-[10px] font-black uppercase tracking-widest text-[#FF9A4D] mb-1.5 flex items-center gap-1">
-            <Volume2 className="w-3 h-3" /> AI co-host
+            <Volume2 className="w-3 h-3" />
+            {t.persona_name || 'AI co-host'}
+            {t.segment_type && (
+              <span className="text-white/30 font-bold normal-case tracking-normal ml-1">
+                · {t.segment_type.replace('_', ' ')}
+              </span>
+            )}
           </p>
           <p className="text-sm text-white/80 whitespace-pre-wrap">{t.text}</p>
           {t.audio_url && <audio src={t.audio_url} controls className="w-full mt-3 h-9" />}

@@ -9,7 +9,7 @@ export default function ScheduleEventForm({ podcasts, onScheduled }) {
   const [title, setTitle] = useState('');
   const [podcastId, setPodcastId] = useState(podcasts[0]?.id || '');
   const [scheduledAt, setScheduledAt] = useState('');
-  const [aiHosted, setAiHosted] = useState(true);
+  const [showMode, setShowMode] = useState('ai_cohost');
   const [mediaType, setMediaType] = useState('audio');
   const [streamUrl, setStreamUrl] = useState('');
   const [saving, setSaving] = useState(false);
