@@ -16,6 +16,8 @@ import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage 
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
+import MaestroModeToggle from '@/components/music/MaestroModeToggle';
+import { requestMaestroLyrics } from '@/lib/music/maestroLyricsBridge';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
@@ -58,6 +60,9 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   const [saving, setSaving] = useState(false);
   const [aiParams, setAiParams] = useState(null); // what AI decided
   const [lastError, setLastError] = useState(null); // persistent failure banner
+  // Maestro Mode — lyrics routed through the Maestro Superagent craft engine (default on)
+  const [maestroMode, setMaestroMode] = useState(true);
+  const [maestroStatus, setMaestroStatus] = useState(null); // 'pending' | 'processing' while waiting
   const savedRef = useRef(false); // prevent duplicate auto-saves
 
   useEffect(() => {
@@ -343,9 +348,30 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
           });
       setRoutingDecision(routing);
 
-      // Step 3: Generate lyrics if needed
+      // Step 3: Lyrics — Maestro craft engine, or the standard inline engine
       let lyrics = '';
-      if (aiDecision.needs_lyrics) {
+      let maestroSoundPrompt = '';
+      if (aiDecision.needs_lyrics && maestroMode) {
+        // File a pending work order and wait for the Maestro sweep to craft it.
+        // Nothing is generated here — the music job is only built once the
+        // craft engine has returned mastercraft lyrics + a style brief.
+        toast('👑 Maestro craft engine queued — applying master craft…');
+        const maestro = await requestMaestroLyrics({
+          prompt,
+          aiDecision,
+          title: finalTitle,
+          onStatus: (s) => setMaestroStatus(s),
+        });
+        setMaestroStatus(null);
+        lyrics = maestro.lyrics || '';
+        maestroSoundPrompt = maestro.sound_prompt || '';
+        lyricsRef.current = lyrics;
+        // Persist the crafted brief so the saved asset records what actually drove the track
+        if (maestroSoundPrompt) {
+          aiParamsRef.current = { ...aiParamsRef.current, sound_prompt: maestroSoundPrompt, maestro: true };
+        }
+        toast.success('👑 Mastercraft lyrics ready — composing track…');
+      } else if (aiDecision.needs_lyrics) {
         try {
           const lyricsRes = await base44.functions.invoke('generateLyrics', {
             topic: prompt,
@@ -371,9 +397,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
 
       // Step 4: Generate track — try primary provider, then fallback chain on failure
       const effectiveProvider = routing.provider;
+      // A Maestro-optimized style brief always wins over the draft one
+      const baseSoundPrompt = maestroSoundPrompt || aiDecision.sound_prompt;
       const effectiveSoundPrompt = effectiveProvider === 'sonic'
-        ? `${prompt}. ${aiDecision.sound_prompt || ''}`.trim()
-        : aiDecision.sound_prompt;
+        ? `${prompt}. ${baseSoundPrompt || ''}`.trim()
+        : baseSoundPrompt;
 
       const musicParams = {
         provider: effectiveProvider,
@@ -421,6 +449,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       }
     } catch (err) {
       setGenerating(false);
+      setMaestroStatus(null);
       const status = err?.response?.status;
       const data = err?.response?.data;
       // Only flag as user credit issue when our own backend says so (not upstream provider 402)
@@ -509,6 +538,9 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
           <span className="font-bold text-amber-300">100% AI-Generated:</span> Quick Generate lets the AI decide everything — lyrics, composition, and sound. Tracks made here are guaranteed fully AI-created, and are automatically rated and labeled <span className="font-semibold">AI-Generated</span> and treated as such across the platform.
         </p>
       </div>
+
+      {/* Maestro Mode — craft engine for lyrics */}
+      <MaestroModeToggle enabled={maestroMode} onChange={setMaestroMode} disabled={isProcessing} />
 
       {/* Provider — Auto-Routed with manual override */}
       <div>
@@ -739,7 +771,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
             className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 space-y-2">
             <div className="flex items-center gap-3">
               <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin flex-shrink-0" />
-              <p className="text-xs text-blue-300">AI is analyzing your prompt and composing your track…</p>
+              <p className="text-xs text-blue-300">
+                {maestroStatus
+                  ? '👑 Maestro craft engine is working your lyric — master craft, hooks and emotional arc. This can take a few minutes.'
+                  : 'AI is analyzing your prompt and composing your track…'}
+              </p>
             </div>
             <div className="h-1.5 rounded-full bg-blue-500/20 overflow-hidden">
               <motion.div className="h-full bg-blue-500 rounded-full" style={{ width: `${progress || 10}%` }} animate={{ width: `${progress || 10}%` }} />

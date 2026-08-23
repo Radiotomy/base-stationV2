@@ -33,9 +33,11 @@
         "shotstack",
         "elevenlabs",
         "harmonix",
-        "soundforge"
+        "soundforge",
+        "core",
+        "maestro"
       ],
-      "description": "Which provider handled the generation. 'nextcut' is retired and kept only for historical rows \u2014 video composition now runs on 'shotstack'."
+      "description": "Which provider handled the generation. 'nextcut' is retired and kept only for historical rows \u2014 video composition now runs on 'shotstack'. 'core' = the platform's own LLM wrote the lyrics inline. 'maestro' = the row is a WORK ORDER for the Maestro Superagent's craft engine: it is created 'pending' with nothing generated yet, and the Maestro sweep is what fills output_metadata and flips it to 'completed'. Nothing else may complete a maestro row, otherwise the craft engine would be silently bypassed."
     },
     "status": {
       "type": "string",
@@ -59,7 +61,7 @@
     },
     "input_data": {
       "type": "object",
-      "description": "Generation parameters (mood, genre, duration, etc.)"
+      "description": "Generation parameters (mood, genre, duration, etc.). For a maestro lyrics work order this is the full brief the craft engine reads: topic, genre, mood, bpm, duration, title and the draft sound_prompt."
     },
     "output_url": {
       "type": "string",
@@ -67,7 +69,7 @@
     },
     "output_metadata": {
       "type": "object",
-      "description": "BPM, key, duration, etc."
+      "description": "BPM, key, duration, etc. For a completed maestro lyrics job this carries the mastercraft results the music job is then built from: 'lyrics' (the enhanced lyric) and 'sound_prompt' (the production-optimized style brief)."
     },
     "credits_used": {
       "type": "number",
