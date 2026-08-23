@@ -26,7 +26,9 @@ export default function ScheduleEventForm({ podcasts, onScheduled }) {
         podcast_id: podcastId,
         title: title.trim(),
         scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : new Date().toISOString(),
-        is_ai_hosted: aiHosted,
+        is_ai_hosted: showMode === 'ai_cohost',
+        is_ai_cast: showMode === 'ai_cast',
+        autopilot_status: showMode === 'ai_cast' ? 'idle' : undefined,
         media_type: mediaType,
         stream_url: streamUrl.trim() || undefined,
         status: 'scheduled',
@@ -69,10 +71,27 @@ export default function ScheduleEventForm({ podcasts, onScheduled }) {
         value={streamUrl}
         onChange={(e) => setStreamUrl(e.target.value)}
       />
-      <label className="flex items-center gap-2 text-sm text-white/60">
-        <input type="checkbox" checked={aiHosted} onChange={(e) => setAiHosted(e.target.checked)} />
-        Enable AI co-host
-      </label>
+      <div className="space-y-1.5">
+        {[
+          { id: 'ai_cohost', label: 'You + AI co-host', hint: 'You are on the mic; the co-host answers your cues.' },
+          { id: 'ai_cast', label: 'AI cast only', hint: 'Scripted and performed entirely by AI characters — no human on the mic.' },
+          { id: 'human', label: 'Just me', hint: 'A straight broadcast with no AI voices.' },
+        ].map((m) => (
+          <label key={m.id} className="flex items-start gap-2 text-sm text-white/70 cursor-pointer">
+            <input
+              type="radio"
+              name="show-mode"
+              className="mt-1"
+              checked={showMode === m.id}
+              onChange={() => setShowMode(m.id)}
+            />
+            <span>
+              {m.label}
+              <span className="block text-[11px] text-white/35">{m.hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
       <button onClick={submit} disabled={saving} className="merc-button rounded-full px-5 py-2 text-sm font-black disabled:opacity-50">
         {saving ? 'Scheduling…' : 'Schedule'}
       </button>
