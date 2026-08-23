@@ -1,28 +1,9 @@
 import { Badge } from '@/components/ui/badge';
 import InfoTip from '@/components/common/InfoTip';
-
-export const LTX_MODELS = [
-  { value: 'ltx-2-5-fast', label: 'Fast', desc: 'Up to 4K · clips to 20s' },
-  { value: 'ltx-2-5-pro',  label: 'Pro',  desc: 'Highest fidelity · 1080p · to 10s' },
-];
-export const ASPECT_RATIOS = [
-  { value: '16:9', label: '16:9', desc: 'Landscape / YouTube' },
-  { value: '9:16', label: '9:16', desc: 'Portrait / Reels' },
-];
-export const RESOLUTION_TIERS = ['720p', '1080p', '1440p', '4k'];
-export const DURATIONS_FAST = [6, 8, 10, 12, 14, 16, 18, 20];
-export const DURATIONS_PRO = [6, 8, 10];
-export const CAMERA_MOTIONS = [
-  { value: '', label: 'None' },
-  { value: 'static', label: 'Static' },
-  { value: 'dolly_in', label: 'Dolly In' },
-  { value: 'dolly_out', label: 'Dolly Out' },
-  { value: 'dolly_left', label: 'Dolly Left' },
-  { value: 'dolly_right', label: 'Dolly Right' },
-  { value: 'jib_up', label: 'Jib Up' },
-  { value: 'jib_down', label: 'Jib Down' },
-  { value: 'focus_shift', label: 'Focus Shift' },
-];
+import {
+  LTX_MODELS, ASPECT_RATIOS, CAMERA_MOTIONS,
+  getModelSpec, durationsFor, maxAudioSeconds,
+} from '@/config/ltxModelSpec';
 
 const Chip = ({ active, children, ...props }) => (
   <button type="button" {...props}
@@ -41,8 +22,9 @@ const Section = ({ title, tip, children }) => (
 );
 
 /**
- * LTX-2.5 generation controls — model, aspect ratio, resolution, duration,
- * frame rate, camera motion and native audio.
+ * LTX generation controls — model (LTX-2.5 / LTX-2.3, Fast & Pro), aspect ratio,
+ * resolution, duration, frame rate, camera motion and native audio. Every option
+ * shown is one the current LTX API actually accepts for the selected model.
  */
 export default function LtxControls({
   model, setModel,
@@ -54,20 +36,23 @@ export default function LtxControls({
   generateAudio, setGenerateAudio,
   mode,
 }) {
-  const isPro = model === 'ltx-2-5-pro';
-  const durations = isPro ? DURATIONS_PRO : DURATIONS_FAST;
-  const tiers = isPro ? ['720p', '1080p'] : RESOLUTION_TIERS;
-  const highRes = resolutionTier === '1440p' || resolutionTier === '4k';
+  const spec = getModelSpec(model);
   const audioMode = mode === 'audio';
+  const durations = durationsFor(model, resolutionTier, fps);
+  // Audio-to-video is not offered by every model (LTX-2.3 Fast has no such endpoint)
+  const models = LTX_MODELS.filter(m => m.modes.includes(mode || 'text'));
 
   return (
     <div className="space-y-5">
-      <Section title="Model" tip="Fast is cheaper and reaches 4K / 20s. Pro gives the highest fidelity but caps at 1080p and 10s.">
+      <Section title="Model" tip="LTX-2.5 has the strongest prompt adherence, native multi-shot scenes and automatic duration. LTX-2.3 is cheaper per second and reaches 4K on both variants.">
         <div className="grid grid-cols-2 gap-2">
-          {LTX_MODELS.map(m => (
+          {models.map(m => (
             <button key={m.value} type="button" onClick={() => setModel(m.value)}
               className={`p-2.5 rounded-xl border text-left transition-all ${model === m.value ? 'border-indigo-500 bg-indigo-500/10' : 'border-border bg-card hover:border-indigo-500/40'}`}>
-              <p className="text-sm font-bold text-foreground">{m.label}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-bold text-foreground">{m.label}</p>
+                <Badge variant="outline" className="text-[10px] px-1 py-0">{m.family}</Badge>
+              </div>
               <p className="text-xs text-muted-foreground">{m.desc}</p>
             </button>
           ))}
@@ -86,54 +71,52 @@ export default function LtxControls({
         </div>
       </Section>
 
-      {!audioMode && (
-        <Section title="Resolution" tip="1440p and 4K are Fast-only and cap clips at 10 seconds.">
-          <div className="flex flex-wrap gap-1.5">
-            {tiers.map(t => (
-              <Chip key={t} active={resolutionTier === t} onClick={() => setResolutionTier(t)}>
-                {t.toUpperCase()}
-              </Chip>
-            ))}
-          </div>
-        </Section>
-      )}
+      <Section title="Resolution" tip="Higher tiers cost more per second, and 1440p / 4K cap a clip at 10 seconds.">
+        <div className="flex flex-wrap gap-1.5">
+          {spec.tiers.map(t => (
+            <Chip key={t} active={resolutionTier === t} onClick={() => setResolutionTier(t)}>
+              {t.toUpperCase()}
+            </Chip>
+          ))}
+        </div>
+      </Section>
 
       {!audioMode && (
         <Section title={<>Duration: <span className="text-foreground">{duration === null ? 'Auto' : `${duration}s`}</span></>}
-          tip="Auto lets LTX pick the length from your prompt. Longer clips cost more credits.">
+          tip={spec.autoDuration
+            ? 'Auto lets LTX pick the length from your prompt — billed for what it produces, but your balance has to cover the maximum up front.'
+            : 'Automatic duration is an LTX-2.5 feature — pick a fixed length on LTX-2.3.'}>
           <div className="flex flex-wrap gap-1.5">
-            <Chip active={duration === null} onClick={() => setDuration(null)}>Auto</Chip>
-            {durations.filter(d => !(highRes || fps === 48) || d <= 10).map(d => (
+            {spec.autoDuration && (
+              <Chip active={duration === null} onClick={() => setDuration(null)}>Auto</Chip>
+            )}
+            {durations.map(d => (
               <Chip key={d} active={duration === d} onClick={() => setDuration(d)}>{d}s</Chip>
             ))}
           </div>
         </Section>
       )}
 
-      {!audioMode && !isPro && (
-        <Section title="Frame Rate" tip="48 fps is Fast-only and limited to clips of 10 seconds or less.">
-          <div className="flex flex-wrap gap-1.5">
-            {[24, 48].map(f => (
-              <Chip key={f} active={fps === f} onClick={() => setFps(f)}>{f} fps</Chip>
-            ))}
-          </div>
-        </Section>
-      )}
+      <Section title="Frame Rate" tip="48 and 50 fps limit clips to 10 seconds or less.">
+        <div className="flex flex-wrap gap-1.5">
+          {spec.fps.map(f => (
+            <Chip key={f} active={fps === f} onClick={() => setFps(f)}>{f} fps</Chip>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Camera Motion" tip="Optional camera move applied across the whole clip.">
+        <div className="flex flex-wrap gap-1.5">
+          {CAMERA_MOTIONS.map(c => (
+            <Chip key={c.value || 'none'} active={cameraMotion === c.value} onClick={() => setCameraMotion(c.value)}>
+              {c.label}
+            </Chip>
+          ))}
+        </div>
+      </Section>
 
       {!audioMode && (
-        <Section title="Camera Motion" tip="Optional camera move applied across the whole clip.">
-          <div className="flex flex-wrap gap-1.5">
-            {CAMERA_MOTIONS.map(c => (
-              <Chip key={c.value || 'none'} active={cameraMotion === c.value} onClick={() => setCameraMotion(c.value)}>
-                {c.label}
-              </Chip>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {!audioMode && (
-        <Section title="Soundtrack" tip="LTX-2.5 can generate matching audio for the scene. Turn off for silent video.">
+        <Section title="Soundtrack" tip="LTX generates matching audio — dialogue, music and ambience — alongside the visuals. Turn off for silent video.">
           <button type="button" onClick={() => setGenerateAudio(!generateAudio)}
             className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all ${generateAudio ? 'border-indigo-500 bg-indigo-500/10' : 'border-border bg-card'}`}>
             <span className="text-sm font-bold text-foreground">Generate audio</span>
@@ -144,7 +127,8 @@ export default function LtxControls({
 
       {audioMode && (
         <p className="text-xs text-muted-foreground">
-          Audio-to-video renders at 1080p / 24 fps and takes its length from your uploaded track (2–{isPro ? 10 : 20}s).
+          Your uploaded track sets the length of the video — up to {maxAudioSeconds(model, resolutionTier)}s
+          on {spec.label} at {resolutionTier.toUpperCase()}.
         </p>
       )}
     </div>

@@ -19,6 +19,7 @@ import TimelineEditorTab from '@/components/video/TimelineEditorTab';
 import LtxControls from '@/components/video/LtxControls';
 import ReferenceMediaInput from '@/components/video/ReferenceMediaInput';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
+import { getModelSpec, durationsFor, maxAudioSeconds, creditCost } from '@/config/ltxModelSpec';
 
 const PROMPT_TEMPLATES = [
   { label: '🌌 Cosmic Journey',  prompt: 'A journey through a neon-lit cosmos, vibrant nebulae swirling, stars exploding in slow motion, cinematic' },
@@ -58,6 +59,7 @@ export default function VideoStudio() {
   const [versions, setVersions] = useState([]);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
+  const [lastFrameUrl, setLastFrameUrl] = useState('');
 
   // Load recent video versions from the user's library so history survives refresh
   useEffect(() => {
@@ -131,8 +133,9 @@ export default function VideoStudio() {
         fps,
         camera_motion: cameraMotion,
         generate_audio: generateAudio,
-        reference_image_url: mode === 'image' ? referenceImageUrl : undefined,
+        reference_image_url: mode === 'image' || mode === 'audio' ? referenceImageUrl || undefined : undefined,
         reference_audio_url: mode === 'audio' ? referenceAudioUrl : undefined,
+        last_frame_url: mode === 'image' && duration !== null ? lastFrameUrl || undefined : undefined,
       });
       if (res.data?.video_url) {
         setResult(res.data);
@@ -186,18 +189,29 @@ export default function VideoStudio() {
     setSaving(false);
   };
 
-  // Pro caps at 1080p / 10s and 24fps — keep the selection valid when switching models
+  // Each model supports its own resolutions, frame rates and lengths — keep the
+  // selection inside what the API will accept whenever the model or mode changes.
   useEffect(() => {
-    if (model !== 'ltx-2-5-pro') return;
-    setFps(24);
-    if (resolutionTier === '1440p' || resolutionTier === '4k') setResolutionTier('1080p');
-    setDuration(d => (d !== null && d > 10 ? 10 : d));
-  }, [model, resolutionTier]);
+    const spec = getModelSpec(model);
+    if (!spec.modes.includes(mode) && (mode === 'text' || mode === 'image' || mode === 'audio')) {
+      setModel('ltx-2-5-fast');
+      return;
+    }
+    if (!spec.tiers.includes(resolutionTier)) setResolutionTier('1080p');
+    if (!spec.fps.includes(fps)) setFps(24);
+    setDuration(d => {
+      if (d === null) return spec.autoDuration ? null : durationsFor(model, resolutionTier, fps).slice(-1)[0];
+      const allowed = durationsFor(model, resolutionTier, fps);
+      return allowed.includes(d) ? d : allowed[allowed.length - 1];
+    });
+  }, [model, mode, resolutionTier, fps]);
 
   // Auto duration and audio-driven clips are billed against the model's max length
-  const maxDuration = model === 'ltx-2-5-pro' ? 10 : 20;
-  const billedSeconds = (mode === 'audio' || duration === null) ? maxDuration : duration;
-  const creditCost = Math.max(2, Math.round(billedSeconds * 2));
+  const autoMax = durationsFor(model, resolutionTier, fps).slice(-1)[0];
+  const billedSeconds = mode === 'audio'
+    ? maxAudioSeconds(model, resolutionTier)
+    : (duration === null ? autoMax : duration);
+  const cost = creditCost(model, resolutionTier, billedSeconds);
   const estimatedSeconds = billedSeconds * 12; // rough estimate: ~12s processing per second of video
 
   return (
@@ -241,11 +255,31 @@ export default function VideoStudio() {
 
         {/* Reference media (upload / library / URL) for Image & Audio modes */}
         {mode === 'image' && (
-          <ReferenceMediaInput kind="image" value={referenceImageUrl} onChange={setReferenceImageUrl} />
+          <>
+            <ReferenceMediaInput kind="image" value={referenceImageUrl} onChange={setReferenceImageUrl} />
+            {duration !== null && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                  Last Frame — optional
+                  <InfoTip text="Give LTX an end frame and it interpolates from your first image to this one. Needs a fixed duration, so it can't be combined with Auto." />
+                </p>
+                <ReferenceMediaInput kind="image" value={lastFrameUrl} onChange={setLastFrameUrl} />
+              </div>
+            )}
+          </>
         )}
 
         {mode === 'audio' && (
-          <ReferenceMediaInput kind="audio" value={referenceAudioUrl} onChange={setReferenceAudioUrl} />
+          <>
+            <ReferenceMediaInput kind="audio" value={referenceAudioUrl} onChange={setReferenceAudioUrl} />
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
+                Reference Image — optional
+                <InfoTip text="Optional first frame that steers the look of the audio-driven video. Without one, your prompt alone describes the visuals." />
+              </p>
+              <ReferenceMediaInput kind="image" value={referenceImageUrl} onChange={setReferenceImageUrl} />
+            </div>
+          </>
         )}
 
         {/* LTX Mode UI (text / image / audio) */}
@@ -328,7 +362,7 @@ export default function VideoStudio() {
               className="w-full bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-base py-5 gap-2">
               <Zap className="w-5 h-5" />
               {isProcessing ? `Generating… ${progress || 0}%` : 'Generate Video'}
-              {!isProcessing && <CostBadge cost={creditCost} />}
+              {!isProcessing && <CostBadge cost={cost} />}
             </Button>
 
             {/* Progress */}

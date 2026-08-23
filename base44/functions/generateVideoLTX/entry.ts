@@ -1,32 +1,29 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+// generateVideoLTX — submits a video generation job to the current LTX API.
+//
+// Uses the ASYNC (V2) API: POST https://api.ltx.io/v2/{endpoint} returns 202
+// with a job id, and pollGenerationJob → jobFinalize polls
+// GET /v2/{endpoint}/{id}, persists the MP4 into our storage (LTX only keeps
+// output URLs for 24h), deducts credits and saves the asset to the library.
+//
+// Payload: {
+//   prompt, mode: 'text'|'image'|'audio',
+//   model: 'ltx-2-5-fast'|'ltx-2-5-pro'|'ltx-2-3-fast'|'ltx-2-3-pro',
+//   duration (number | null for auto), resolution_tier, aspect_ratio, fps,
+//   camera_motion, generate_audio,
+//   reference_image_url, reference_audio_url, last_frame_url
+// }
+
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
+import {
+  LTX_API_BASE, LTX_CAMERA_MOTIONS, LTX_MODELS,
+  ltxCreditCost, ltxDurations, ltxMaxAudioSeconds, ltxNormalize,
+} from '../../shared/ltxSpec.ts';
 
 const LTX_API_KEY = Deno.env.get('LTX_API_KEY');
 
-async function deductCreditsServerSide(base44, user, amount, { provider, job_id, description }) {
-  const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
-  let record = credits[0];
-  if (!record) {
-    record = await base44.asServiceRole.entities.UserCredit.create({
-      user_id: user.id, user_email: user.email,
-      balance: 0, lifetime_earned: 0, lifetime_spent: 0,
-    });
-  }
-  const newBalance = (record.balance || 0) - amount;
-  if (newBalance < 0) return { ok: false, balance: record.balance };
-  await base44.asServiceRole.entities.UserCredit.update(record.id, {
-    balance: newBalance,
-    lifetime_spent: (record.lifetime_spent || 0) + amount,
-    monthly_used: (record.monthly_used || 0) + amount,
-  });
-  await base44.asServiceRole.entities.CreditLog.create({
-    user_id: user.id, user_email: user.email,
-    transaction_type: 'generation',
-    amount: -amount,
-    balance_before: record.balance,
-    balance_after: newBalance,
-    related_job_id: job_id, provider, description,
-  }).catch(() => {});
-  return { ok: true, balance: newBalance };
+// LTX fetches inputs itself: HTTPS only, no redirects, public host.
+function validMediaUri(url: string | undefined): boolean {
+  return !!url && (/^https:\/\/[^/]+\./i.test(url) || /^ltx:\/\//i.test(url) || /^data:/i.test(url));
 }
 
 Deno.serve(async (req) => {
@@ -34,102 +31,157 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
     if (!LTX_API_KEY) return Response.json({ error: 'LTX_API_KEY not configured' }, { status: 500 });
 
-    const { prompt, duration = 5, aspect_ratio = '16:9', mode = 'text', reference_image_url, reference_audio_url } = await req.json();
-    if (!prompt) return Response.json({ error: 'Missing prompt' }, { status: 400 });
+    const body = await req.json();
+    const {
+      prompt, mode = 'text',
+      model = 'ltx-2-5-fast',
+      duration = 8,
+      resolution_tier = '1080p',
+      aspect_ratio = '16:9',
+      fps = 24,
+      camera_motion = '',
+      generate_audio = true,
+      reference_image_url, reference_audio_url, last_frame_url,
+    } = body;
 
-    // Cost: 2 credits per second of video
-    const cost = Math.max(2, Math.round(duration * 2));
+    const norm = ltxNormalize({ mode, model, tier: resolution_tier, fps, duration, aspect: aspect_ratio });
+    if (norm.error) return Response.json({ error: norm.error }, { status: 400 });
 
-    // Pre-check credit balance
+    // Per-mode input requirements straight from the API reference
+    if (mode === 'text' && !prompt) {
+      return Response.json({ error: 'A prompt is required for text-to-video' }, { status: 400 });
+    }
+    if (mode === 'image') {
+      if (!validMediaUri(reference_image_url)) {
+        return Response.json({ error: 'Image-to-video needs a public https image URL' }, { status: 400 });
+      }
+      if (!prompt) return Response.json({ error: 'Describe how the image should move' }, { status: 400 });
+    }
+    if (mode === 'audio') {
+      if (!validMediaUri(reference_audio_url)) {
+        return Response.json({ error: 'Audio-to-video needs a public https audio URL' }, { status: 400 });
+      }
+      if (!prompt && !validMediaUri(reference_image_url)) {
+        return Response.json({ error: 'Audio-to-video needs a prompt or a reference image' }, { status: 400 });
+      }
+    }
+    // A fixed last frame pins the clip length, so it cannot ride with auto duration
+    const wantsLastFrame = validMediaUri(last_frame_url) && (mode === 'image' || mode === 'audio');
+    if (wantsLastFrame && mode === 'image' && norm.duration === null) {
+      return Response.json({ error: 'A last frame requires a fixed duration — turn off Auto.' }, { status: 400 });
+    }
+
+    // Auto duration and audio-driven clips are billed against the model's ceiling
+    const billedSeconds = norm.duration
+      ?? (mode === 'audio'
+        ? ltxMaxAudioSeconds(norm.model, norm.tier)
+        : ltxDurations(norm.model, norm.tier, norm.fps).slice(-1)[0]);
+    const cost = ltxCreditCost(norm.model, norm.tier, billedSeconds);
+
     const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
     const balance = credits[0]?.balance ?? 0;
     if (balance < cost) {
       return Response.json({
         error: 'Insufficient credits',
         required: cost, balance,
-        message: `${duration}s of video costs ${cost} credits. You have ${balance}.`,
+        message: `${billedSeconds}s of ${norm.tier} ${LTX_MODELS[norm.model].label} video costs ${cost} credits. You have ${balance}.`,
       }, { status: 402 });
     }
 
-    // Create job record
+    // Build the request body exactly as the endpoint expects
+    const ltxBody: Record<string, any> = {
+      model: norm.model,
+      resolution: norm.resolution,
+      fps: norm.fps,
+    };
+    if (prompt) ltxBody.prompt = prompt;
+    if (LTX_CAMERA_MOTIONS.includes(camera_motion)) ltxBody.camera_motion = camera_motion;
+    if (wantsLastFrame) ltxBody.last_frame_uri = last_frame_url;
+
+    if (mode === 'audio') {
+      ltxBody.audio_uri = reference_audio_url;
+      if (validMediaUri(reference_image_url)) ltxBody.image_uri = reference_image_url;
+    } else {
+      // duration is REQUIRED on text/image — null means "model picks the length"
+      ltxBody.duration = norm.duration;
+      ltxBody.generate_audio = generate_audio !== false;
+      if (mode === 'image') ltxBody.image_uri = reference_image_url;
+    }
+
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
       job_type: 'video', provider: 'ltx',
       status: 'processing',
-      input_data: { prompt, duration, aspect_ratio, mode, credit_cost: cost },
+      input_data: {
+        prompt, mode, model: norm.model,
+        ltx_endpoint: norm.endpoint,
+        duration: norm.duration, billed_seconds: billedSeconds,
+        resolution: norm.resolution, resolution_tier: norm.tier,
+        aspect_ratio, fps: norm.fps,
+        camera_motion: ltxBody.camera_motion || null,
+        generate_audio: ltxBody.generate_audio ?? null,
+        has_last_frame: !!wantsLastFrame,
+        credit_cost: cost,
+      },
       started_at: new Date().toISOString(),
     });
 
-    // Build request body based on mode
-    const ltxBody = { prompt, duration, aspect_ratio, style: 'cinematic' };
-    if (mode === 'image' && reference_image_url) ltxBody.reference_image_url = reference_image_url;
-    if (mode === 'audio' && reference_audio_url) ltxBody.reference_audio_url = reference_audio_url;
-
-    // Call LTX Video API
-    const ltxRes = await fetch('https://api.ltx.video/v1/video/generate', {
+    const ltxRes = await fetch(`${LTX_API_BASE}/v2/${norm.endpoint}`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${LTX_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(ltxBody),
     });
 
+    const raw = await ltxRes.text();
+    let data: any = {};
+    try { data = JSON.parse(raw); } catch { /* non-JSON error body */ }
+
     if (!ltxRes.ok) {
-      const errText = await ltxRes.text();
-      await base44.entities.GenerationJob.update(job.id, { status: 'failed', error_message: errText });
-      return Response.json({ error: 'LTX error: ' + errText }, { status: 502 });
+      // LTX errors are { type, message } — surface the message, not the envelope
+      const message = data?.error?.message || raw.slice(0, 500) || `LTX returned ${ltxRes.status}`;
+      await base44.entities.GenerationJob.update(job.id, {
+        status: 'failed', error_message: message, completed_at: new Date().toISOString(),
+      });
+      const status = ltxRes.status === 402 ? 402 : ltxRes.status === 422 ? 422 : 502;
+      return Response.json({ error: message, job_id: job.id }, { status });
     }
 
-    const result = await ltxRes.json();
-
-    // If synchronous response with video_url
-    if (result.video_url) {
+    if (!data?.id) {
       await base44.entities.GenerationJob.update(job.id, {
-        status: 'completed',
-        output_url: result.video_url,
-        output_metadata: { duration, aspect_ratio, format: 'mp4' },
-        credits_used: cost,
-        completed_at: new Date().toISOString(),
+        status: 'failed', error_message: 'LTX accepted the request but returned no job id',
       });
+      return Response.json({ error: 'LTX returned no job id' }, { status: 502 });
+    }
 
-      // Deduct credits on sync success
-      await deductCreditsServerSide(base44, user, cost, {
-        provider: 'ltx', job_id: job.id, description: `LTX video (${duration}s)`,
-      });
+    await base44.entities.GenerationJob.update(job.id, { provider_job_id: data.id });
 
-      const enc = new TextEncoder();
-      const hashBuf = await crypto.subtle.digest('SHA-256', enc.encode(`${user.id}|ltx|${prompt}|${duration}|${aspect_ratio}|${new Date().toISOString()}`));
-      const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-      await base44.asServiceRole.entities.APIUsageLog.create({
-        user_id: user.id, user_email: user.email, user_name: user.full_name,
-        provider: 'ltx', task: 'generate_video',
-        credits_used: cost, status: 'success',
-        timestamp: new Date().toISOString(), job_id: job.id,
-        metadata: {
-          model_version: 'ltx-video-v1',
-          input_parameters: { prompt: prompt.slice(0, 200), duration, aspect_ratio, mode },
-          output_details: { video_url: result.video_url, duration, aspect_ratio, format: 'mp4' },
-          generated_timestamp: new Date().toISOString(),
-          content_hash: contentHash,
+    await base44.asServiceRole.entities.APIUsageLog.create({
+      user_id: user.id, user_email: user.email, user_name: user.full_name,
+      provider: 'ltx', task: 'generate_video',
+      credits_used: cost, status: 'pending',
+      timestamp: new Date().toISOString(), job_id: job.id,
+      metadata: {
+        model_version: norm.model,
+        input_parameters: {
+          prompt: (prompt || '').slice(0, 200), mode,
+          endpoint: norm.endpoint, resolution: norm.resolution,
+          fps: norm.fps, duration: norm.duration,
         },
-      }).catch(() => {});
+        provider_job_id: data.id,
+      },
+    }).catch(() => {});
 
-      return Response.json({ job_id: job.id, status: 'completed', video_url: result.video_url, duration, aspect_ratio, credits_used: cost });
-    }
-
-    // Async task
-    if (result.task_id || result.id) {
-      const providerJobId = result.task_id || result.id;
-      await base44.entities.GenerationJob.update(job.id, {
-        status: 'processing', provider_job_id: providerJobId,
-      });
-      return Response.json({ job_id: job.id, provider_job_id: providerJobId, status: 'processing' });
-    }
-
-    await base44.entities.GenerationJob.update(job.id, { status: 'failed', error_message: 'No output received' });
-    return Response.json({ error: 'No output received from LTX' }, { status: 502 });
+    return Response.json({
+      job_id: job.id,
+      provider_job_id: data.id,
+      status: 'processing',
+      model: norm.model,
+      resolution: norm.resolution,
+      duration: norm.duration,
+      credit_cost: cost,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
