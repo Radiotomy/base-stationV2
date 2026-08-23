@@ -16,10 +16,13 @@ git+https://github.com/Radiotomy/heartlib
 # Cog accepts a local sdist/wheel path in requirements.txt; it does NOT accept a
 # bare local directory, which is why `-e .` is not an option here.
 
-torch==2.4.0
-torchaudio==2.4.0
-transformers==4.44.2
-huggingface_hub==0.25.2
-soundfile==0.12.1
-numpy==1.26.4
-einops==0.8.0
+# NOTHING ELSE IS PINNED HERE ON PURPOSE.
+#
+# heartlib declares its own torch / transformers / tokenizers / numpy versions in
+# pyproject.toml, and a second opinion in this file can only contradict it. That
+# is exactly what broke the build: we pinned transformers==4.44.2 (which requires
+# tokenizers <0.20) while heartlib requires tokenizers==0.22.1 — ResolutionImpossible.
+#
+# The model's dependency graph belongs to the model. Add a pin below ONLY for a
+# package heartlib does not declare at all, and never for one it does.
+soundfile
