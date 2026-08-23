@@ -1,7 +1,7 @@
 {
   "name": "OrvoLiveTurn",
   "type": "object",
-  "description": "A single spoken turn inside an ORVO live event. Written ONLY server-side (host console -> AI co-host); listeners subscribe to these in realtime and play the audio as it arrives.",
+  "description": "A single spoken turn inside an ORVO live event \u2014 the live transcript listeners subscribe to and play as it arrives. Written ONLY server-side (host console, or the AI-cast autopilot as each segment goes on air).",
   "properties": {
     "event_id": {
       "type": "string"
@@ -13,9 +13,27 @@
       "type": "string",
       "enum": [
         "ai_cohost",
+        "ai_persona",
         "host_note"
       ],
-      "default": "ai_cohost"
+      "default": "ai_cohost",
+      "description": "'ai_cohost' is the single co-host beside a human host. 'ai_persona' is one member of a fully AI cast \u2014 kept distinct so the transcript can name the character instead of labelling every voice 'AI co-host'."
+    },
+    "persona_id": {
+      "type": "string",
+      "description": "Cast member who spoke this turn, when speaker is 'ai_persona'"
+    },
+    "persona_name": {
+      "type": "string",
+      "description": "Character name at the moment of airing. Snapshotted deliberately: the creator may rename or recast afterwards, and a transcript must keep saying who actually spoke."
+    },
+    "segment_type": {
+      "type": "string",
+      "description": "Which part of the show this turn belongs to (intro, interview_qa, commentary, outro)"
+    },
+    "segment_index": {
+      "type": "number",
+      "description": "Position in the AI-cast running order. Used to keep the transcript ordered and to stop the same segment being aired twice."
     },
     "text": {
       "type": "string",

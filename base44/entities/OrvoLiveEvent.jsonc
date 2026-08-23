@@ -1,7 +1,7 @@
 {
   "name": "OrvoLiveEvent",
   "type": "object",
-  "description": "ORVO scheduled live podcast event \u2014 manually produced audio or video broadcast, optionally with an AI co-host, and archived to an episode when it ends.",
+  "description": "ORVO scheduled live podcast event \u2014 a human-produced broadcast, an AI-cast autopilot show, or a human broadcast with an AI co-host. Archived to an episode when it ends.",
   "properties": {
     "host_id": {
       "type": "string"
@@ -44,7 +44,7 @@
     },
     "recording_url": {
       "type": "string",
-      "description": "Archived recording captured in the broadcast console"
+      "description": "Archived recording \u2014 a captured human broadcast, or the stitched mixdown of an AI-cast show"
     },
     "archived_episode_id": {
       "type": "string",
@@ -52,7 +52,146 @@
     },
     "is_ai_hosted": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "An AI co-host shares the mic with a human host, driven turn-by-turn from the host console."
+    },
+    "is_ai_cast": {
+      "type": "boolean",
+      "default": false,
+      "description": "The entire show is performed by AI participants \u2014 no human on the mic. Distinct from is_ai_hosted: an AI-cast show needs no human at the console at all, so the autopilot fields below become the source of truth for what airs and when."
+    },
+    "topic": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "The brief the AI cast's script was written from. Kept so a show can be re-scripted without the creator retyping their premise."
+    },
+    "ai_cast": {
+      "type": "array",
+      "description": "The AI participants performing this show. Each entry is a persona plus the voice that speaks it \u2014 a roster of 2-4 characters is not a collection worth querying, and deleting the event must take its cast with it, so this lives on the event rather than in its own entity.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "persona_id": {
+            "type": "string",
+            "description": "Stable id referenced by every script segment. Renaming a character must not orphan their lines, so the id is never derived from the name."
+          },
+          "name": {
+            "type": "string",
+            "description": "Character name shown on the transcript"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "host",
+              "cohost",
+              "guest",
+              "analyst"
+            ],
+            "default": "guest",
+            "description": "What this character does on the show. Steers the scriptwriter's brief \u2014 a host opens and hands off, a guest answers."
+          },
+          "voice_id": {
+            "type": "string",
+            "description": "Provider voice id that speaks this persona"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "inworld",
+              "elevenlabs"
+            ],
+            "default": "inworld",
+            "description": "Which TTS engine voices this character. Recorded per persona so one show can mix engines \u2014 a cloned ElevenLabs voice alongside an Inworld character."
+          },
+          "persona": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "The creator's character notes, appended to the scriptwriter's brief. Never the whole prompt: the show facts and the no-invention rules are composed server-side, so a character cannot be given licence to fabricate."
+          }
+        }
+      }
+    },
+    "ai_script": {
+      "type": "array",
+      "description": "The ordered performance. Each segment carries its own rendered audio and measured position, because rendering is done ahead of air and airing is derived from a clock \u2014 a segment with no audio can never go on air, and a segment with no offset could not be placed in the running order.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number",
+            "description": "Position in the running order"
+          },
+          "persona_id": {
+            "type": "string",
+            "description": "Which cast member speaks this segment"
+          },
+          "segment_type": {
+            "type": "string",
+            "enum": [
+              "intro",
+              "interview_qa",
+              "commentary",
+              "outro"
+            ],
+            "default": "commentary"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 4000,
+            "description": "The exact words spoken. Editable by the creator before render \u2014 the script is reviewable, never a black box."
+          },
+          "audio_url": {
+            "type": "string",
+            "description": "Rendered speech for this segment. Empty means not yet rendered."
+          },
+          "seconds": {
+            "type": "number",
+            "description": "Length of the rendered audio. Estimated from the spoken text, because MP3 cannot be decoded in this runtime to measure it exactly \u2014 the estimate only paces the running order, it never alters the audio."
+          },
+          "start_seconds": {
+            "type": "number",
+            "description": "Offset from the start of the show at which this segment goes on air. Every surface derives the current segment from this plus the show's start instant, which is what makes a listener arriving mid-show land where everyone else already is."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "rendered",
+              "aired",
+              "failed"
+            ],
+            "default": "pending"
+          },
+          "error": {
+            "type": "string",
+            "description": "Why rendering failed, surfaced on the script review row"
+          }
+        }
+      }
+    },
+    "autopilot_status": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "scripted",
+        "rendering",
+        "ready",
+        "running",
+        "finalizing",
+        "done",
+        "failed"
+      ],
+      "default": "idle",
+      "description": "Where the AI-cast show is in its lifecycle. 'ready' means every segment is rendered and the show can go on air instantly \u2014 deliberately separate from 'running' so a creator is never waiting on TTS after pressing the button."
+    },
+    "autopilot_error": {
+      "type": "string",
+      "description": "Why the autopilot stopped, surfaced to the creator instead of the show silently stalling"
+    },
+    "autopilot_started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "The instant the AI-cast show went on air \u2014 the clock origin every listener resolves the running order against. Never a stored playhead: a playhead would need a server tick to stay honest, an origin cannot drift."
     },
     "listener_count": {
       "type": "number",
