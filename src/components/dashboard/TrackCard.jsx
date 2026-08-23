@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
+import InlineMediaPlayer from '@/components/dashboard/InlineMediaPlayer';
 import OpenInStudioMenu from '@/components/studio/OpenInStudioMenu';
 import ProvenanceBadge from '@/components/common/ProvenanceBadge';
 import FoundryProvenanceRow from '@/components/studio/FoundryProvenanceRow';
@@ -19,6 +20,7 @@ const ASSET_ICONS = {
   lyric:    { icon: FileText, color: 'from-pink-600 to-rose-700' },
   coverart: { icon: Image,    color: 'from-purple-600 to-violet-700' },
   project:  { icon: Film,     color: 'from-indigo-600 to-purple-700' },
+  video:    { icon: Film,     color: 'from-indigo-600 to-purple-700' },
 };
 
 /**
@@ -67,6 +69,7 @@ export default function TrackCard({ asset, onDelete, workspaces, onAssignWorkspa
   const [audioError, setAudioError] = useState(false);
   const { icon: Icon, color } = ASSET_ICONS[asset.asset_type] || ASSET_ICONS.track;
   const isTrack = asset.asset_type === 'track';
+  const isVideo = asset.asset_type === 'video' || /\.(mp4|mov|webm|m4v)(\?|$)/i.test(asset.file_url || '');
   const m = asset.metadata || {};
 
   const createdAt = asset.created_date
@@ -140,6 +143,14 @@ export default function TrackCard({ asset, onDelete, workspaces, onAssignWorkspa
 
       {/* "What should I do next?" nudge */}
       <NextStepNudge asset={asset} />
+
+      {/* Video review player — watch the finished render right in the workspace */}
+      {!isTrack && isVideo && asset.file_url && (
+        <div className="px-4 pb-4 space-y-2">
+          <InlineMediaPlayer url={asset.file_url} title={asset.title} poster={asset.thumbnail_url} />
+          <DownloadButton url={asset.file_url} label="Download MP4" ext="mp4" title={asset.title} />
+        </div>
+      )}
 
       {/* Studio audio player (tracks only) */}
       {isTrack && asset.file_url && !audioError && (
@@ -254,7 +265,7 @@ export default function TrackCard({ asset, onDelete, workspaces, onAssignWorkspa
               )}
 
               {/* Non-track asset: download link */}
-              {!isTrack && asset.file_url && (
+              {!isTrack && !isVideo && asset.file_url && (
                 <DownloadButton url={asset.file_url} label={`Download ${asset.asset_type}`} ext="txt" title={asset.title} />
               )}
             </div>
