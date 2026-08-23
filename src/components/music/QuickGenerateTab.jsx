@@ -25,7 +25,7 @@ const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
 const ALL_PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      emoji: '🎵' },
   { value: 'tempcolor',  label: 'Tempolor',   emoji: '🎶' },
-  { value: 'elevenlabs', label: 'ElevenLabs', emoji: '🎧' },
+  // ElevenLabs is generated from the Eleven Music tab (with My Sound), not routed here.
 ];
 
 const QUICK_EXAMPLES = [

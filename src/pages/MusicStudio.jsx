@@ -9,7 +9,7 @@ import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
-  { id: 'mysound',  label: '🎙️ My Sound',        icon: AudioLines,        desc: 'Train Music v2 on your own tracks & generate in your signature style' },
+  { id: 'mysound',  label: '🎧 Eleven Music',     icon: AudioLines,        desc: 'Eleven Music base model + My Sound — train on your own tracks & generate in your signature style' },
   { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
 ];
 

@@ -5,6 +5,7 @@ import { Plus, Loader2, AudioLines } from 'lucide-react';
 import FinetuneCreateForm from './FinetuneCreateForm';
 import FinetuneCard from './FinetuneCard';
 import FinetuneGeneratePanel from './FinetuneGeneratePanel';
+import ElevenMusicPanel from './ElevenMusicPanel';
 
 export default function MySoundTab() {
   const [finetunes, setFinetunes] = useState([]);
@@ -43,15 +44,21 @@ export default function MySoundTab() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl font-black text-foreground flex items-center gap-2">
-            <AudioLines className="w-5 h-5" /> My Sound
+            <AudioLines className="w-5 h-5" /> Eleven Music &amp; My Sound
           </h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-lg">
-            Train the Eleven Music v2 model on your own original tracks, then generate new music that carries your sonic identity.
+            Generate with the Eleven Music base model, or train it on your own original tracks so new music carries your sonic identity.
           </p>
         </div>
         <Button onClick={() => setShowCreate(p => !p)} className="gap-1.5">
           <Plus className="w-4 h-4" /> Train New Sound
         </Button>
+      </div>
+
+      <ElevenMusicPanel />
+
+      <div className="pt-2">
+        <p className="text-xs font-black text-muted-foreground uppercase">Your Trained Sounds</p>
       </div>
 
       {showCreate && (
