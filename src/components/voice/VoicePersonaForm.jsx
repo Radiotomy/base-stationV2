@@ -203,9 +203,6 @@ export default function VoicePersonaForm({ persona, onSave, onCancel }) {
           <SelectContent>
             <SelectItem value="elevenlabs">ElevenLabs</SelectItem>
             <SelectItem value="inworld">Inworld (TTS-2 character voices)</SelectItem>
-            <SelectItem value="google">Google Cloud TTS</SelectItem>
-            <SelectItem value="azure">Azure Speech</SelectItem>
-            <SelectItem value="custom">Custom</SelectItem>
           </SelectContent>
         </Select>
       </div>
