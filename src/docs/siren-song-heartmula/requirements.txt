@@ -7,7 +7,7 @@
 # pin the commit, which also makes the image reproducible.
 # Swap this for your own fork (and append @<commit> to pin it) if you build from
 # a fork rather than upstream. Unpinned = whatever main holds at build time.
-git+https://github.com/HeartMuLa/heartlib
+git+https://github.com/Radiotomy/heartlib
 
 # ALTERNATIVE — install the checkout you are building from, without git:
 #   python -m build --sdist   (writes dist/heartlib-<ver>.tar.gz)
