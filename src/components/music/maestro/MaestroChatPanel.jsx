@@ -7,7 +7,9 @@ import { toast } from 'sonner';
 import MaestroChatBubble from './MaestroChatBubble';
 import MaestroDraftCard from './MaestroDraftCard';
 import MaestroTrackCard from './MaestroTrackCard';
-import { parseMaestroDraft } from '@/lib/music/maestroParse';
+import { parseMaestroDraft, parseMaestroModelRecommendation } from '@/lib/music/maestroParse';
+import MaestroModelPrompt from '@/components/music/MaestroModelPrompt';
+import { DEFAULT_SONIC_MODEL, modelLabel } from '@/config/musicModelCatalog';
 
 const OPENER = "I'm Maestro. Tell me what you're writing — genre, mood, the story, any artists you want it to feel like, and whether you want vocals. I'll pick the master synthesis combination and write it properly.";
 
@@ -30,6 +32,10 @@ export default function MaestroChatPanel() {
   const [trackStatus, setTrackStatus] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
   const [jobError, setJobError] = useState('');
+  // Sonic v5 is the platform default; Maestro can only change it by asking.
+  const [model, setModel] = useState(DEFAULT_SONIC_MODEL);
+  const [provider, setProvider] = useState('sonic');
+  const [recommendation, setRecommendation] = useState(null);
   const scrollRef = useRef(null);
 
   useEffect(() => {
@@ -73,6 +79,8 @@ export default function MaestroChatPanel() {
       setMessages(prev => [...prev, { role: 'assistant', text: reply }]);
       const parsed = parseMaestroDraft(reply);
       if (parsed) setDraft(parsed);
+      const rec = parseMaestroModelRecommendation(reply);
+      if (rec && rec.model !== model) setRecommendation(rec);
     } catch (err) {
       toast.error(err?.response?.data?.error || err.message || 'Maestro is unreachable right now.');
     }
@@ -89,6 +97,8 @@ export default function MaestroChatPanel() {
         title: draft.title,
         lyrics: draft.lyrics,
         sound_prompt: draft.sound_prompt,
+        provider,
+        model,
       });
       if (res.data?.job_id) {
         setJobId(res.data.job_id);
@@ -109,7 +119,7 @@ export default function MaestroChatPanel() {
       <div className="flex items-center gap-2">
         <MaestroAvatar size={48} />
         <p className="text-sm font-black text-foreground">Maestro Session</p>
-        <span className="text-xs text-muted-foreground">12 master combinations · full craft treatment</span>
+        <span className="text-xs text-muted-foreground">12 master combinations · {modelLabel(model)}</span>
       </div>
 
       <div ref={scrollRef} className="h-[26rem] overflow-y-auto rounded-2xl border border-border bg-card p-4 space-y-3">
@@ -144,6 +154,17 @@ export default function MaestroChatPanel() {
           <Send className="w-4 h-4" />
         </Button>
       </div>
+
+      <MaestroModelPrompt
+        recommendation={recommendation}
+        currentModel={model}
+        onAccept={() => {
+          setModel(recommendation.model);
+          setProvider(recommendation.provider);
+          setRecommendation(null);
+        }}
+        onDecline={() => setRecommendation(null)}
+      />
 
       <MaestroDraftCard draft={draft} onGenerate={generate} generating={generating} />
       <MaestroTrackCard status={trackStatus} audioUrl={audioUrl} title={draft?.title} error={jobError} />

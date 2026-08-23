@@ -2,6 +2,8 @@
 // Maestro writes prose around its craft output, so the draft is extracted
 // rather than assumed — nothing generates unless a lyric was actually found.
 
+import { resolveModelId } from '@/config/musicModelCatalog';
+
 const STYLE_LABEL = /(?:\*\*)?(?:Style Brief|Sound Prompt|Style Prompt|Production Brief)(?:\*\*)?\s*[:\-—]?\s*/i;
 
 export function parseMaestroDraft(text = '') {
@@ -24,4 +26,21 @@ export function parseMaestroDraft(text = '') {
 
   if (!lyrics) return null;
   return { title, combination, sound_prompt: soundPrompt, lyrics };
+}
+
+// Maestro may argue for a different model than the platform default. It is only
+// ever a SUGGESTION: the id is resolved against our own catalog and offered to
+// the creator, never applied on its own.
+export function parseMaestroModelRecommendation(text = '') {
+  const line = text.match(
+    /(?:Recommended Model|Suggested Model|Model Recommendation|Best Model)\s*[:\-—]\s*([^\n*]+)/i
+  )?.[1];
+  if (!line) return null;
+  const [namePart, ...rest] = line.split(/[—–|(]/);
+  const hit = resolveModelId(namePart.replace(/\*/g, '').trim());
+  if (!hit) return null;
+  return {
+    ...hit,
+    reason: rest.join(' ').replace(/[)\*]/g, '').trim(),
+  };
 }

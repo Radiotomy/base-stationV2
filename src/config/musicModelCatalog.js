@@ -64,6 +64,30 @@ export const TEMPOLOR_INSTRUMENTAL_FAMILIES = [
   ]},
 ];
 
+// Resolve free text (e.g. "Mureka V9.5", "minimax 3.0") to a catalog model id
+// plus the provider that serves it. Returns null when nothing matches, so a
+// Maestro suggestion can never silently route to a model we don't offer.
+export function resolveModelId(text = '') {
+  const t = text.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (!t) return null;
+  const groups = [
+    { provider: 'sonic', families: SONIC_FAMILIES },
+    { provider: 'tempcolor', families: TEMPOLOR_SONG_FAMILIES },
+    { provider: 'tempcolor', families: TEMPOLOR_INSTRUMENTAL_FAMILIES },
+  ];
+  for (const { provider, families } of groups) {
+    for (const fam of families) {
+      for (const v of fam.versions) {
+        const full = `${fam.name} ${v.label}`.toLowerCase();
+        if (t === v.value.toLowerCase() || t === full || t.includes(full)) {
+          return { model: v.value, provider };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // Human-readable label for any model id in the catalog
 export function modelLabel(value) {
   const all = [...SONIC_FAMILIES, ...TEMPOLOR_SONG_FAMILIES, ...TEMPOLOR_INSTRUMENTAL_FAMILIES];
