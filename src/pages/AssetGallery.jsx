@@ -47,12 +47,14 @@ export default function AssetGallery() {
     setLoading(true);
     try {
       const user = await base44.auth.me();
-      const all = await base44.entities.UserAsset.filter(
-        { user_id: user.id, asset_type: 'project' },
-        '-created_date',
-        200
-      );
-      setAssets(all.filter(isVideoAsset));
+      // Renders land as asset_type 'video' when the server auto-saves them, and
+      // as 'project' when saved manually from the composer — the gallery has to
+      // read both or completed videos look like they were never saved.
+      const [videos, projects] = await Promise.all([
+        base44.entities.UserAsset.filter({ user_id: user.id, asset_type: 'video' }, '-created_date', 200),
+        base44.entities.UserAsset.filter({ user_id: user.id, asset_type: 'project' }, '-created_date', 200),
+      ]);
+      setAssets([...videos, ...projects.filter(isVideoAsset)]);
     } catch (err) {
       toast.error('Failed to load gallery');
     }

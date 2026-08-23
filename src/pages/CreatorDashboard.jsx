@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   BarChart3, Music, Zap, TrendingUp, Eye, Heart,
   Image, FileText, ChevronRight, Clock, CheckCircle, Folder, History, RefreshCw,
-  FolderOpen, Layers, Upload, Radio, Trophy, Award, ShieldCheck, Share2, DollarSign
+  FolderOpen, Layers, Upload, Radio, Trophy, Award, ShieldCheck, Share2, DollarSign, Film
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import CreditBalanceWidget from "@/components/credits/CreditBalanceWidget";
@@ -157,6 +157,7 @@ export default function CreatorDashboard() {
     track:    wsAssets.filter(a => a.asset_type === "track"),
     lyric:    wsAssets.filter(a => a.asset_type === "lyric"),
     coverart: wsAssets.filter(a => a.asset_type === "coverart"),
+    video:    wsAssets.filter(a => a.asset_type === "video"),
   };
 
   const TABS = [
@@ -254,6 +255,7 @@ export default function CreatorDashboard() {
               { key: "track",    icon: Music,    label: `Tracks · ${assetsByType.track.length}` },
               { key: "lyric",    icon: FileText, label: `Lyrics · ${assetsByType.lyric.length}` },
               { key: "coverart", icon: Image,    label: `Cover Art · ${assetsByType.coverart.length}` },
+              { key: "video",    icon: Film,     label: `Videos · ${assetsByType.video.length}` },
             ].map(({ key, icon: Icon, label }) => (
               <button key={key} onClick={() => setAssetFilter(key)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-mono uppercase tracking-wider transition-all ${assetFilter === key ? "border-[#FF9A4D]/50 bg-[#FF9A4D]/10 text-[#FFC98A]" : "border-border/60 bg-card/40 text-muted-foreground hover:text-foreground"}`}>
