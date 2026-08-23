@@ -12,8 +12,8 @@ export default function MaestroModeToggle({ enabled, onChange, disabled }) {
           <p className="text-sm font-black text-foreground">Maestro Mode</p>
           <p className="text-xs text-muted-foreground leading-snug mt-0.5">
             {enabled
-              ? 'Lyrics get the full master craft treatment — genre-matched master combinations, narrative architecture, hook construction, emotional arc and a production-optimized style brief before the track is generated. Adds a few minutes.'
-              : 'Standard lyric engine — faster, no master craft pass.'}
+              ? 'Chat directly with Maestro — describe the song, iterate on the lyric, mood and style, then generate when it feels right. Full master craft treatment: master combinations, narrative architecture, hook construction, emotional arc and a production-optimized style brief.'
+              : 'Standard form-based Quick Generate — faster, no master craft pass.'}
           </p>
         </div>
         <Switch checked={enabled} onCheckedChange={onChange} disabled={disabled} className="mt-0.5" />

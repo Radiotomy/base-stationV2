@@ -20,6 +20,7 @@ import MaestroModeToggle from '@/components/music/MaestroModeToggle';
 import { requestMaestroLyrics } from '@/lib/music/maestroLyricsBridge';
 import QuickModelPicker from '@/components/music/QuickModelPicker';
 import MaestroModelPrompt from '@/components/music/MaestroModelPrompt';
+import MaestroChatPanel from '@/components/music/maestro/MaestroChatPanel';
 import {
   DEFAULT_SONIC_MODEL,
   DEFAULT_TEMPOLOR_SONG_MODEL,
@@ -640,8 +641,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         </p>
       </div>
 
-      {/* Maestro Mode — craft engine for lyrics */}
+      {/* Maestro Mode — ON swaps the form for a conversational session with the craft engine */}
       <MaestroModeToggle enabled={maestroMode} onChange={setMaestroMode} disabled={isProcessing} />
+
+      {maestroMode ? <MaestroChatPanel /> : (
+      <div className="space-y-6">
 
       {/* Provider — Auto-Routed with manual override */}
       <div>
@@ -990,6 +994,8 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
+      )}
     </div>
   );
 }
