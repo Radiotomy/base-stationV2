@@ -12,7 +12,7 @@
  */
 
 export const PROVIDER_DETAILS = {
-  sonic:      { label: 'Sonic',      model: 'sonic-v4-5-plus', emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
+  sonic:      { label: 'Sonic',      model: 'sonic-v5',        emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
   tempcolor:  { label: 'Tempolor',   model: 'tempolor-latest', emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
   elevenlabs: { label: 'ElevenLabs', model: 'music_v1',        emoji: '🎧', color: 'border-violet-500 bg-violet-500/10 text-violet-300' },
 };
@@ -58,8 +58,8 @@ export function routeProvider({
   if (needs_lyrics) {
     return {
       provider: 'sonic',
-      model: 'sonic-v4-5-plus',
-      reason: `Sonic v4-5-plus selected — best vocal generation quality for lyric-driven tracks.`,
+      model: 'sonic-v5',
+      reason: `Sonic v5 selected — default model, strongest vocals and 2 tracks per run.`,
       routing_key: 'vocal_track',
       fallbackChain: ['tempcolor'],
     };
@@ -69,8 +69,8 @@ export function routeProvider({
   if (want_variations) {
     return {
       provider: 'sonic',
-      model: 'sonic-v5-5',
-      reason: `Sonic selected — generates 2 track variations per call for comparison.`,
+      model: 'sonic-v5',
+      reason: `Sonic v5 selected — generates 2 track variations per call for comparison.`,
       routing_key: 'multiple_variations',
       fallbackChain: ['tempcolor'],
     };
@@ -91,18 +91,18 @@ export function routeProvider({
     }
     return {
       provider: 'sonic',
-      model: 'sonic-v4-5-plus',
-      reason: `Sonic v4-5-plus selected — fastest reliable provider for vocal tracks.`,
+      model: 'sonic-v5',
+      reason: `Sonic v5 selected — fastest reliable route for vocal tracks.`,
       routing_key: 'speed_priority',
       fallbackChain: ['tempcolor'],
     };
   }
 
-  // Rule 5: General purpose default — Sonic v4-5-plus balanced quality
+  // Rule 5: General purpose default — Sonic v5 is the platform default model
   return {
     provider: 'sonic',
-    model: 'sonic-v4-5-plus',
-    reason: `Sonic selected — best general-purpose quality for this track type.`,
+    model: 'sonic-v5',
+    reason: `Sonic v5 selected — platform default, 2 tracks per generation.`,
     routing_key: 'general_purpose',
     fallbackChain: ['tempcolor'],
   };

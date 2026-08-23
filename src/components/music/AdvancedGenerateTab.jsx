@@ -24,6 +24,12 @@ import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityChec
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { providerLabel } from '@/utils/providerRouter';
+import {
+  SONIC_FAMILIES,
+  TEMPOLOR_SONG_FAMILIES,
+  TEMPOLOR_INSTRUMENTAL_FAMILIES,
+  DEFAULT_SONIC_MODEL,
+} from '@/config/musicModelCatalog';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
@@ -37,58 +43,8 @@ const PROVIDERS = [
   // ElevenLabs only, so keeping a duplicate provider button here was redundant.
 ];
 
-// AI model catalog — grouped by PUBLIC model family, versions revealed on select/hover.
-// Tempolor is the API provider behind TemPolor, Lyria, Mureka and MiniMax, but publicly
-// each is treated as its own model family.
-const SONIC_FAMILIES = [
-  { name: 'Sonic', maker: 'Sonic AI', versions: [
-    { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
-    { value: 'sonic-v5', label: 'v5', desc: 'Latest' },
-    { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality' },
-    { value: 'sonic-v4-5-all', label: 'v4.5 All', desc: 'Fast variant' },
-    { value: 'sonic-v4-5', label: 'v4.5', desc: 'Enhanced vocals' },
-    { value: 'sonic-v4', label: 'v4', desc: 'Improved quality' },
-    { value: 'sonic-v3-5', label: 'v3.5', desc: 'Legacy' },
-  ]},
-];
+// Model catalog is shared with Quick Generate — see src/config/musicModelCatalog.js
 
-// Tempolor catalog — re-audited from platform.tempolor.com/docs/6665893m0 (2026-08-23).
-// TemPolor dropped the version numbers on its own house song model: there is now one
-// rolling "tempolor-latest" identifier instead of v4.6 / v3.5, so it is labelled
-// "Latest" here rather than given a version we'd be inventing. The instrumental line
-// is still numbered (i4 is new this update).
-const TEMPOLOR_SONG_FAMILIES = [
-  { name: 'TemPolor', maker: 'TemPolor', versions: [
-    { value: 'tempolor-latest', label: 'Latest', desc: '⭐ Flagship — best all-round, 5 min vocals, 30+ languages' },
-  ]},
-  { name: 'Mureka', maker: 'Kunlun Tech', versions: [
-    { value: 'Mureka V9.5', label: 'V9.5', desc: '✨ Newest — richest arrangements, 5.5 min, 10+ languages' },
-    { value: 'Mureka V9', label: 'V9', desc: 'Layered arrangements, 5.5 min — lower cost' },
-  ]},
-  { name: 'MiniMax', maker: 'MiniMax', versions: [
-    { value: 'MiniMax 3.0', label: '3.0', desc: 'Premium vocals — longest tracks (6 min)' },
-  ]},
-  { name: 'Lyria', maker: 'Google DeepMind', versions: [
-    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Natural, lifelike vocals — 3 min, multilingual' },
-  ]},
-  // Eleven Music is deliberately NOT listed here — we call ElevenLabs directly
-  // via its own provider, so routing it through Tempolor would be redundant.
-];
-const TEMPOLOR_INSTRUMENTAL_FAMILIES = [
-  { name: 'TemPolor', maker: 'TemPolor', versions: [
-    { value: 'TemPolor i4', label: 'i4', desc: '⭐ New flagship instrumental — best sound quality, 3 min' },
-    { value: 'TemPolor i3', label: 'i3', desc: 'Fastest (<3s) & most cost-effective — 2 min, prompt duration control' },
-  ]},
-  { name: 'Mureka', maker: 'Kunlun Tech', versions: [
-    { value: 'Mureka V9', label: 'V9', desc: 'Rich, layered arrangements — 4.5 min' },
-  ]},
-  { name: 'MiniMax', maker: 'MiniMax', versions: [
-    { value: 'MiniMax 3.0', label: '3.0', desc: 'Premium — longest instrumentals (6 min)' },
-  ]},
-  { name: 'Lyria', maker: 'Google DeepMind', versions: [
-    { value: 'Lyria 3 Pro', label: '3 Pro', desc: 'Clean instrumentals — 3 min' },
-  ]},
-];
 
 const GENRE_CHIPS = ['Hip-Hop', 'Trap', 'EDM', 'House', 'Pop', 'R&B', 'Lo-Fi', 'Jazz', 'Rock', 'Afrobeats', 'Drill', 'Ambient'];
 const MOOD_CHIPS = ['Energetic', 'Chill', 'Dark', 'Happy', 'Sad', 'Uplifting', 'Aggressive', 'Romantic', 'Melancholic'];
@@ -116,7 +72,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const { sampleId, logGeneration, markRegenerated } = useTrainingTelemetry();
   const [provider, setProvider] = useState('sonic');
   const [importedFromStudio, setImportedFromStudio] = useState(false);
-  const [sonicModel, setSonicModel] = useState('sonic-v4-5-plus');
+  const [sonicModel, setSonicModel] = useState(DEFAULT_SONIC_MODEL);
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('tempolor-latest');
   const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)

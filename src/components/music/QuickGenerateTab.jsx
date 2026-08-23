@@ -18,6 +18,14 @@ import InfoTip from '@/components/common/InfoTip';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import MaestroModeToggle from '@/components/music/MaestroModeToggle';
 import { requestMaestroLyrics } from '@/lib/music/maestroLyricsBridge';
+import QuickModelPicker from '@/components/music/QuickModelPicker';
+import MaestroModelPrompt from '@/components/music/MaestroModelPrompt';
+import {
+  DEFAULT_SONIC_MODEL,
+  DEFAULT_TEMPOLOR_SONG_MODEL,
+  DEFAULT_TEMPOLOR_INSTRUMENTAL_MODEL,
+  modelLabel,
+} from '@/config/musicModelCatalog';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
 // aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
@@ -63,6 +71,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   // Maestro Mode — lyrics routed through the Maestro Superagent craft engine (default on)
   const [maestroMode, setMaestroMode] = useState(true);
   const [maestroStatus, setMaestroStatus] = useState(null); // 'pending' | 'processing' while waiting
+  // Manual model choice — null means "use the default / auto-routed model" (Sonic v5)
+  const [modelOverride, setModelOverride] = useState(null);
+  // Maestro's model suggestion, awaiting the creator's yes/no before anything is generated
+  const [modelRecommendation, setModelRecommendation] = useState(null);
+  const pendingLaunchRef = useRef(null);
   const savedRef = useRef(false); // prevent duplicate auto-saves
 
   useEffect(() => {
@@ -287,6 +300,108 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     setExtending(false);
   };
 
+  // The creator's own pick always wins; otherwise the routed/default model (Sonic v5)
+  const resolveModel = (routing) => modelOverride
+    || routing.model
+    || (routing.provider === 'sonic' ? DEFAULT_SONIC_MODEL : DEFAULT_TEMPOLOR_SONG_MODEL);
+
+  // Fires the music generation. Split out of generate() because the Maestro
+  // model confirmation can pause between the lyric and the track, and the
+  // creator's answer has to be able to resume exactly here.
+  const launchMusic = async ({ aiDecision, finalTitle, routing, lyrics, soundPromptOverride, model }) => {
+    setGenerating(true);
+    try {
+      const effectiveProvider = routing.provider;
+      // A Maestro-optimized style brief always wins over the draft one
+      const baseSoundPrompt = soundPromptOverride || aiDecision.sound_prompt;
+      const effectiveSoundPrompt = effectiveProvider === 'sonic'
+        ? `${prompt}. ${baseSoundPrompt || ''}`.trim()
+        : baseSoundPrompt;
+
+      const musicParams = {
+        provider: effectiveProvider,
+        title: finalTitle,
+        duration: aiDecision.duration,
+        genre: aiDecision.genre,
+        mood: aiDecision.mood,
+        tempo: aiDecision.bpm,
+        sound_prompt: effectiveSoundPrompt,
+        routing_reason: routing.routing_key,
+        model,
+        ...(lyrics && { lyrics }),
+        ...(selectedPersona !== 'auto' && { voice_persona_id: selectedPersona }),
+        ...(effectiveProvider === 'tempcolor' && {
+          tempolor_mode: routing.tempolor_mode || (aiDecision.needs_lyrics ? 'song' : 'instrumental'),
+        }),
+      };
+      aiParamsRef.current = { ...aiParamsRef.current, model };
+
+      let res;
+      try {
+        res = await base44.functions.invoke('generateMusic', musicParams);
+      } catch (primaryErr) {
+        // Fallback chain — a fallback provider gets its own default model,
+        // never the model that was chosen for a different provider.
+        const fallbacks = routing.fallbackChain || [];
+        let fell = false;
+        for (const fallbackProvider of fallbacks) {
+          try {
+            toast(`⚠ ${PROVIDER_DETAILS[effectiveProvider]?.label} failed — trying ${PROVIDER_DETAILS[fallbackProvider]?.label}…`);
+            res = await base44.functions.invoke('generateMusic', {
+              ...musicParams,
+              provider: fallbackProvider,
+              model: fallbackProvider === 'sonic'
+                ? DEFAULT_SONIC_MODEL
+                : (aiDecision.needs_lyrics ? DEFAULT_TEMPOLOR_SONG_MODEL : DEFAULT_TEMPOLOR_INSTRUMENTAL_MODEL),
+              routing_reason: `fallback_from_${effectiveProvider}`,
+            });
+            fell = true;
+            break;
+          } catch { continue; }
+        }
+        if (!fell) throw primaryErr;
+      }
+
+      if (res.data?.audio_url || res.data?.output_url) {
+        setGenerating(false);
+        refreshCreditsFromResponse(res.data);
+        await onComplete(res.data);
+      } else if (res.data?.job_id) {
+        setJobId(res.data.job_id);
+        toast.success('Generation started — AI is composing…');
+      } else {
+        setGenerating(false);
+        toast.error('Unexpected response from provider');
+      }
+    } catch (err) {
+      setGenerating(false);
+      setMaestroStatus(null);
+      const data = err?.response?.data;
+      const isCredits = data?.error === 'Insufficient credits' && !data?.provider_status;
+      const friendly = getProviderErrorMessage(err);
+      const msg = friendly || data?.message || err.message || 'Generation failed';
+      setLastError({
+        type: isCredits ? 'credits' : 'error',
+        message: msg,
+        required: data?.required,
+        balance: data?.balance,
+      });
+      if (!handleCreditError(err)) toast.error(msg);
+    }
+  };
+
+  // Creator answered Maestro's model question — resume with whichever model won
+  const resolveRecommendation = (useMaestroPick) => {
+    const pending = pendingLaunchRef.current;
+    const rec = modelRecommendation;
+    setModelRecommendation(null);
+    pendingLaunchRef.current = null;
+    if (!pending) return;
+    const model = useMaestroPick ? rec.model : rec.currentModel;
+    if (useMaestroPick) setModelOverride(rec.model);
+    launchMusic({ ...pending, model });
+  };
+
   const generate = async () => {
     if (!prompt.trim()) { toast.error('Enter a description for your track'); return; }
     if (generating || (jobId && status === 'processing')) return; // hard guard against double-fire
@@ -351,6 +466,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       // Step 3: Lyrics — Maestro craft engine, or the standard inline engine
       let lyrics = '';
       let maestroSoundPrompt = '';
+      let maestroMetadata = null;
       if (aiDecision.needs_lyrics && maestroMode) {
         // File a pending work order and wait for the Maestro sweep to craft it.
         // Nothing is generated here — the music job is only built once the
@@ -365,6 +481,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         setMaestroStatus(null);
         lyrics = maestro.lyrics || '';
         maestroSoundPrompt = maestro.sound_prompt || '';
+        maestroMetadata = maestro.metadata || null;
         lyricsRef.current = lyrics;
         // Persist the crafted brief so the saved asset records what actually drove the track
         if (maestroSoundPrompt) {
@@ -395,58 +512,42 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         }
       }
 
-      // Step 4: Generate track — try primary provider, then fallback chain on failure
-      const effectiveProvider = routing.provider;
-      // A Maestro-optimized style brief always wins over the draft one
-      const baseSoundPrompt = maestroSoundPrompt || aiDecision.sound_prompt;
-      const effectiveSoundPrompt = effectiveProvider === 'sonic'
-        ? `${prompt}. ${baseSoundPrompt || ''}`.trim()
-        : baseSoundPrompt;
+      // Step 4: model choice. The creator's pick (or Sonic v5) stands unless
+      // Maestro suggests otherwise AND the creator accepts — the craft engine
+      // is never allowed to swap the model silently.
+      const chosenModel = resolveModel(routing);
+      const rec = maestroMetadata?.recommended_model
+        ? {
+            model: maestroMetadata.recommended_model,
+            provider: maestroMetadata.recommended_provider || routing.provider,
+            reason: maestroMetadata.model_reason || '',
+          }
+        : null;
 
-      const musicParams = {
-        provider: effectiveProvider,
-        title: finalTitle,
-        duration: aiDecision.duration,
-        genre: aiDecision.genre,
-        mood: aiDecision.mood,
-        tempo: aiDecision.bpm,
-        sound_prompt: effectiveSoundPrompt,
-        routing_reason: routing.routing_key,
-        ...(lyrics && { lyrics }),
-        ...(selectedPersona !== 'auto' && { voice_persona_id: selectedPersona }),
-        ...(effectiveProvider === 'sonic' && { model: routing.model || 'sonic-v4-5-plus' }),
-        ...(effectiveProvider === 'tempcolor' && { model: routing.model || 'tempolor-latest', tempolor_mode: routing.tempolor_mode || (aiDecision.needs_lyrics ? 'song' : 'instrumental') }),
-      };
-
-      let res;
-      try {
-        res = await base44.functions.invoke('generateMusic', musicParams);
-      } catch (primaryErr) {
-        // Fallback chain
-        const fallbacks = routing.fallbackChain || [];
-        let fell = false;
-        for (const fallbackProvider of fallbacks) {
-          try {
-            toast(`⚠ ${PROVIDER_DETAILS[effectiveProvider]?.label} failed — trying ${PROVIDER_DETAILS[fallbackProvider]?.label}…`);
-            res = await base44.functions.invoke('generateMusic', { ...musicParams, provider: fallbackProvider, routing_reason: `fallback_from_${effectiveProvider}` });
-            fell = true;
-            break;
-          } catch { continue; }
-        }
-        if (!fell) throw primaryErr;
+      if (rec && rec.model !== chosenModel) {
+        pendingLaunchRef.current = {
+          aiDecision,
+          finalTitle,
+          routing: rec.provider && rec.provider !== routing.provider
+            ? { ...routing, provider: rec.provider }
+            : routing,
+          lyrics,
+          soundPromptOverride: maestroSoundPrompt,
+        };
+        setModelRecommendation({ ...rec, currentModel: chosenModel });
+        setGenerating(false);
+        toast('👑 Maestro suggests a different model — your call.');
+        return;
       }
 
-      if (res.data?.audio_url || res.data?.output_url) {
-        setGenerating(false);
-        refreshCreditsFromResponse(res.data);
-        await onComplete(res.data);
-      } else if (res.data?.job_id) {
-        setJobId(res.data.job_id);
-        toast.success('Generation started — AI is composing…');
-      } else {
-        setGenerating(false);
-        toast.error('Unexpected response from provider');
-      }
+      await launchMusic({
+        aiDecision,
+        finalTitle,
+        routing,
+        lyrics,
+        soundPromptOverride: maestroSoundPrompt,
+        model: chosenModel,
+      });
     } catch (err) {
       setGenerating(false);
       setMaestroStatus(null);
@@ -549,9 +650,9 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
             AI Provider
             <InfoTip text="Auto-routing picks the best provider based on your prompt: Sonic for vocals, Tempolor for genre fidelity and instrumentals (incl. Lyria 3 Pro). Override only if you have a strong preference." />
           </p>
-          <button onClick={() => { setShowProviderOverride(p => !p); setProviderOverride(null); }}
+          <button onClick={() => { setShowProviderOverride(p => !p); setProviderOverride(null); setModelOverride(null); }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
-            {showProviderOverride ? 'Use Auto-Route' : '⚙ Override'}
+            {showProviderOverride ? 'Use Auto-Route' : '⚙ Pick model'}
             <ChevronDown className={`w-3 h-3 transition-transform ${showProviderOverride ? 'rotate-180' : ''}`} />
           </button>
         </div>
@@ -567,7 +668,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-muted text-xs text-muted-foreground">
-                <Sparkles className="w-3 h-3" /> Auto-selected after prompt analysis
+                <Sparkles className="w-3 h-3" /> Default: Sonic v5 (2 tracks per run) — auto-routed after prompt analysis
               </div>
             )}
             {routingDecision?.reason && (
@@ -592,6 +693,15 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
                 ))}
               </div>
               {providerOverride && <p className="text-xs text-amber-400 mt-1.5 flex items-center gap-1"><AlertCircle className="w-3 h-3" /> Auto-routing disabled — using {PROVIDER_DETAILS[providerOverride]?.label} for all generations.</p>}
+              <QuickModelPicker
+                provider={providerOverride || 'sonic'}
+                model={modelOverride || (providerOverride === 'tempcolor' ? DEFAULT_TEMPOLOR_SONG_MODEL : DEFAULT_SONIC_MODEL)}
+                onSelectModel={setModelOverride}
+                instrumental={false}
+              />
+              {modelOverride && (
+                <p className="text-xs text-cyan-300 mt-1.5">✓ Locked to {modelLabel(modelOverride)} — Maestro will still ask before suggesting anything else.</p>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -709,6 +819,14 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Maestro's model suggestion — nothing generates until the creator answers */}
+      <MaestroModelPrompt
+        recommendation={modelRecommendation}
+        currentModel={modelRecommendation?.currentModel}
+        onAccept={() => resolveRecommendation(true)}
+        onDecline={() => resolveRecommendation(false)}
+      />
 
       {/* Persistent error banner — survives toast dismissal so users always see why generation stopped */}
       <AnimatePresence>
