@@ -19,6 +19,7 @@ import SceneMediaSource from './SceneMediaSource';
 import TextAnimationPicker from './TextAnimationPicker';
 import CaptionsToggle from './CaptionsToggle';
 import SceneTemplatesPicker from './SceneTemplatesPicker';
+import RenderStatusMonitor from './RenderStatusMonitor';
 import ScenePreviewThumb from './ScenePreviewThumb';
 import VibePromptBar from './VibePromptBar';
 import { analyzeAudioOnsets, onsetsToSceneDurations } from '@/utils/audioOnsetDetection';
@@ -202,7 +203,11 @@ export default function MusicVideoComposer() {
     toast.error(msg || 'Composition failed');
   }, []);
 
-  const { status: renderStatus } = useJobPolling(jobId, onRenderComplete, onRenderError);
+  const {
+    status: renderStatus,
+    stage: renderStage,
+    elapsedSeconds: renderElapsed,
+  } = useJobPolling(jobId, onRenderComplete, onRenderError, 120, 5000);
 
   const totalDuration = scenes.reduce((sum, s) => sum + (s.durationSeconds || 0), 0);
 
@@ -590,6 +595,15 @@ export default function MusicVideoComposer() {
           </>
         )}
       </Button>
+
+      {!!jobId && (
+        <RenderStatusMonitor
+          stage={renderStage}
+          status={renderStatus}
+          elapsedSeconds={renderElapsed}
+          label="Shotstack render"
+        />
+      )}
 
       <p className="text-xs text-muted-foreground text-center">
         {creditCost} credits = 5 base + {scenes.length} scene{scenes.length === 1 ? '' : 's'}{audioUrl ? ' + 3 audio mux' : ''}{useCaptions ? ' + 4 auto-captions' : ''}. Rendered in full HD on Shotstack · Pexels footage included free.

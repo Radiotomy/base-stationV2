@@ -200,7 +200,10 @@ export async function pollProvider(provider, providerTaskId, job) {
     const r = await getShotstackRender(providerTaskId, job.input_data?.shotstack_base);
     if (r.status === 'completed') return { status: 'completed', video_url: r.video_url, cover_image_url: r.poster || undefined, duration: r.duration };
     if (r.status === 'failed') return { status: 'failed', error: r.error };
-    return { status: 'processing' };
+    // Shotstack reports which phase the render is in (queued → fetching →
+    // rendering → saving). Surfacing it is the difference between "something is
+    // happening" and knowing an export is seconds from being ready.
+    return { status: 'processing', stage: r.stage };
   }
 
   if (provider === 'tempcolor') {
@@ -576,5 +579,5 @@ export async function finalizeJob(base44, job) {
     return { status: 'failed', error_message: providerData.error };
   }
 
-  return { status: 'processing', job_id: job.id };
+  return { status: 'processing', job_id: job.id, stage: providerData?.stage || undefined };
 }

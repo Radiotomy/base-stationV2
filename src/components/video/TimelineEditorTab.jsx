@@ -8,6 +8,7 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 import { buildStarterTemplate } from '@/lib/video/starterTemplate';
 import TimelineAssetPanel from './TimelineAssetPanel';
+import RenderStatusMonitor from './RenderStatusMonitor';
 import InfoTip from '@/components/common/InfoTip';
 
 /**
@@ -23,7 +24,8 @@ export default function TimelineEditorTab() {
 
   const onComplete = useCallback((data) => { setResult(data); toast.success('🎬 Render complete!'); }, []);
   const onError = useCallback((msg) => toast.error(msg || 'Render failed'), []);
-  const { status, progress } = useJobPolling(jobId, onComplete, onError);
+  // 5s polling so the render phase shown here tracks Shotstack closely
+  const { status, stage, progress, elapsedSeconds } = useJobPolling(jobId, onComplete, onError, 120, 5000);
   const rendering = !!jobId && status === 'processing';
 
   const addClip = async (kind, value) => {
@@ -116,6 +118,10 @@ export default function TimelineEditorTab() {
           ? <><Loader2 className="w-4 h-4 animate-spin" /> Rendering… {progress || 0}%</>
           : <><Clapperboard className="w-5 h-5" /> Render Timeline</>}
       </Button>
+
+      {!!jobId && !result?.video_url && (
+        <RenderStatusMonitor stage={stage} status={status} elapsedSeconds={elapsedSeconds} label="Timeline render" />
+      )}
 
       {result?.video_url && (
         <div className="bg-card rounded-2xl border border-emerald-500/30 p-5 space-y-3">

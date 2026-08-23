@@ -7,8 +7,9 @@ import { invalidateCreditBalance } from '@/components/credits/CreditBalanceWidge
  * Implements exponential backoff starting at 2s, capping at 8s.
  * Tracks elapsed time for UX progress estimation.
  */
-export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
+export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60, intervalMs = 15000) {
   const [status, setStatus] = useState('pending');
+  const [stage, setStage] = useState(null);
   const [progress, setProgress] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [data, setData] = useState(null);
@@ -28,6 +29,7 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
     completedRef.current = false;
     startTimeRef.current = Date.now();
     setStatus('processing');
+    setStage(null);
     setProgress(5);
     setElapsedSeconds(0);
 
@@ -52,6 +54,8 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
         const result = await base44.functions.invoke('pollGenerationJob', { job_id: jobId });
         const jobStatus = result.data?.status || result.status;
         setStatus(jobStatus);
+        // Provider-reported phase (Shotstack: queued/fetching/rendering/saving)
+        if (result.data?.stage) setStage(result.data.stage);
 
         // Simulated progress ramp based on attempt count
         const approxProgress = Math.min(90, 10 + (attemptRef.current / maxAttempts) * 80);
@@ -61,6 +65,7 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
           if (completedRef.current) return; // prevent duplicate callbacks
           completedRef.current = true;
           setProgress(100);
+          setStage('done');
           // result.data now includes: audio_url, audio_urls, cover_image_url, lyrics, title,
           // tags, duration, bpm, key, genre, mood, vocal_gender, vocal_timbre, model_version, content_hash
           setData(result.data);
@@ -79,18 +84,17 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60) {
         console.warn('Polling error (will retry):', err.message);
       }
 
-      // Poll at 15s intervals as recommended by Sonic docs (15–25s)
       attemptRef.current++;
-      timerRef.current = setTimeout(poll, 15000);
+      timerRef.current = setTimeout(poll, intervalMs);
     };
 
-    timerRef.current = setTimeout(poll, 15000);
+    timerRef.current = setTimeout(poll, intervalMs);
 
     return () => {
       clearTimeout(timerRef.current);
       clearInterval(elapsed);
     };
-  }, [jobId]);
+  }, [jobId, intervalMs]);
 
-  return { status, progress, elapsedSeconds, data };
+  return { status, stage, progress, elapsedSeconds, data };
 }
