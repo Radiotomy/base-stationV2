@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import SubEngine from '@/lib/substation/engine';
 
-// Owns the engine instance and the transport clock. Position is polled from the
-// engine (which derives it from the audio clock) so UI frame drops never drift.
+// Owns the engine instance and transport STATE ONLY (playing / recording).
+// The playhead, clock and meters deliberately read the engine directly from
+// their own animation frames: routing the audio clock through React state
+// re-rendered the whole workstation 60x a second, which is what made playback
+// feel like it was dragging.
 export default function useSubStationEngine(session) {
   const engineRef = useRef(null);
   const sessionRef = useRef(session);
   const [playing, setPlaying] = useState(false);
   const [recording, setRecording] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [cpu, setCpu] = useState(0);
 
   sessionRef.current = session;
   if (!engineRef.current) engineRef.current = new SubEngine();
@@ -24,38 +25,28 @@ export default function useSubStationEngine(session) {
     engine.applyFx(session.fx);
   }, [engine, session.tracks, session.fx]);
 
+  // Loop wrap — a coarse timer is plenty and costs nothing between checks
   useEffect(() => {
-    let raf;
-    let last = performance.now();
-    const tick = () => {
-      const now = performance.now();
-      const frame = now - last;
-      last = now;
-      setCpu((c) => c * 0.9 + Math.min(100, (frame / 16.7) * 18) * 0.1);
-      if (engine.playing) {
-        const pos = engine.position();
-        const s = sessionRef.current;
-        if (s.loop.enabled && pos >= s.loop.end) {
-          engine.play(s, s.loop.start);
-        } else {
-          setPosition(pos);
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const id = setInterval(() => {
+      if (!engine.playing) return;
+      const s = sessionRef.current;
+      if (s.loop.enabled && engine.position() >= s.loop.end) engine.play(s, s.loop.start);
+    }, 60);
+    return () => clearInterval(id);
   }, [engine]);
 
   const play = useCallback(async (fromBeat) => {
-    const s = sessionRef.current;
-    await engine.play(s, fromBeat ?? engine.startBeat ?? 0);
+    await engine.play(sessionRef.current, fromBeat ?? engine.startBeat ?? 0);
     setPlaying(true);
   }, [engine]);
 
-  const pause = useCallback(() => { engine.pause(); setPlaying(false); setPosition(engine.startBeat); }, [engine]);
-  const stop = useCallback(() => { engine.stop(); setPlaying(false); setRecording(false); setPosition(0); }, [engine]);
-  const seek = useCallback((beat) => { engine.startBeat = Math.max(0, beat); setPosition(Math.max(0, beat)); if (engine.playing) engine.play(sessionRef.current, beat); }, [engine]);
+  const pause = useCallback(() => { engine.pause(); setPlaying(false); }, [engine]);
+  const stop = useCallback(() => { engine.stop(); setPlaying(false); setRecording(false); }, [engine]);
+  const seek = useCallback((beat) => {
+    const b = Math.max(0, beat);
+    engine.startBeat = b;
+    if (engine.playing) engine.play(sessionRef.current, b);
+  }, [engine]);
 
-  return { engine, playing, recording, setRecording, position, cpu, play, pause, stop, seek };
+  return { engine, playing, recording, setRecording, play, pause, stop, seek };
 }

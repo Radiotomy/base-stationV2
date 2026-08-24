@@ -33,7 +33,7 @@ export default function SubStation() {
 
   const active = session || emptySession();
   const engineApi = useSubStationEngine(active);
-  const { engine, playing, recording, setRecording, position, cpu, play, pause, stop, seek } = engineApi;
+  const { engine, playing, recording, setRecording, play, pause, stop, seek } = engineApi;
 
   // Persist on every change — an arrangement in progress must survive a reload
   useEffect(() => { if (session) saveSession(session); }, [session]);
@@ -139,7 +139,7 @@ export default function SubStation() {
       : active.tracks.find(t => t.kind === 'audio');
     const clip = {
       id: uid('c'), name: asset.title, kind: 'audio',
-      start: quantize(position, active.snap), length: 16,
+      start: quantize(engine.position(), active.snap), length: 16,
       url: asset.file_url, asset_id: asset.id, gain: 1, offset: 0,
     };
     if (target) {
@@ -164,7 +164,7 @@ export default function SubStation() {
     if (!target) return;
     const clip = {
       id: uid('c'), name: `Note ${midi}`, kind: 'synth',
-      start: quantize(position, active.snap), length: 1,
+      start: quantize(engine.position(), active.snap), length: 1,
       pitch: Math.round(midiToFreq(midi)), step: 1, gain: 1,
     };
     patchTrack(target.id, { clips: [...target.clips, clip] });
@@ -217,8 +217,7 @@ export default function SubStation() {
           patch={patch}
           playing={playing}
           recording={recording}
-          position={position}
-          cpu={cpu}
+          engine={engine}
           onPlay={() => play()}
           onPause={pause}
           onStop={stop}
@@ -262,7 +261,7 @@ export default function SubStation() {
                 onSelectClip={setSelectedClipId}
                 onPatchClip={patchClip}
                 onAddClip={addClip}
-                position={position}
+                engine={engine}
                 onSeek={seek}
               />
             </div>

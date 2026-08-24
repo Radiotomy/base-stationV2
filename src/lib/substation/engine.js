@@ -325,7 +325,11 @@ export default class SubEngine {
 
   levels() {
     if (!this.analyser) return { peak: 0, spectrum: null };
-    const arr = new Uint8Array(this.analyser.frequencyBinCount);
+    // Reuse one buffer — allocating a KB array 30x a second churns the GC
+    if (!this._spec || this._spec.length !== this.analyser.frequencyBinCount) {
+      this._spec = new Uint8Array(this.analyser.frequencyBinCount);
+    }
+    const arr = this._spec;
     this.analyser.getByteFrequencyData(arr);
     let peak = 0;
     for (let i = 0; i < arr.length; i++) peak = Math.max(peak, arr[i]);

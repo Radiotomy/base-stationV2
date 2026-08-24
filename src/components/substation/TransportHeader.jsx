@@ -1,13 +1,14 @@
-import { Play, Pause, Square, Circle, Repeat, Music2, Download, Cpu } from 'lucide-react';
+import { Play, Pause, Square, Circle, Repeat, Music2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import InfoTip from '@/components/common/InfoTip';
-import { barsBeats, timecode } from '@/lib/substation/session';
+import TransportClock from './TransportClock';
+import CpuMeter from './CpuMeter';
 
 const iconBtn = 'h-8 w-8 rounded-lg grid place-items-center border transition-colors';
 
 export default function TransportHeader({
-  session, patch, playing, recording, position, cpu,
+  session, patch, playing, recording, engine,
   onPlay, onPause, onStop, onToggleRecord, onExport,
 }) {
   return (
@@ -34,17 +35,7 @@ export default function TransportHeader({
         </button>
       </div>
 
-      <div className="flex items-center gap-3 px-3 py-1 rounded-lg bg-black/40 border border-white/8">
-        <div>
-          <p className="text-[8px] uppercase tracking-widest text-white/35 font-mono">Bars.Beats</p>
-          <p className="text-sm font-mono text-[#14b8a6] tabular-nums">{barsBeats(position)}</p>
-        </div>
-        <div className="w-px h-7 bg-white/10" />
-        <div>
-          <p className="text-[8px] uppercase tracking-widest text-white/35 font-mono">Timecode</p>
-          <p className="text-sm font-mono text-[#FF9A4D] tabular-nums">{timecode(position, session.bpm)}</p>
-        </div>
-      </div>
+      <TransportClock engine={engine} bpm={session.bpm} />
 
       <div className="flex items-center gap-2 min-w-[190px]">
         <span className="text-[9px] uppercase tracking-widest text-white/40 font-mono">BPM</span>
@@ -54,14 +45,7 @@ export default function TransportHeader({
         <InfoTip size="sm" side="bottom" text="Tempo drives the grid, the metronome and every bounce. Changing it re-times the whole arrangement." />
       </div>
 
-      <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-black/40 border border-white/8">
-        <Cpu className="w-3 h-3 text-white/40" />
-        <div className="w-14 h-1.5 rounded-full bg-white/10 overflow-hidden">
-          <div className="h-full rounded-full transition-all"
-            style={{ width: `${Math.min(100, cpu)}%`, background: 'linear-gradient(90deg,#14b8a6,#f59e0b,#FF9A4D)' }} />
-        </div>
-        <span className="text-[9px] font-mono text-white/50 w-7 tabular-nums">{Math.round(cpu)}%</span>
-      </div>
+      <CpuMeter />
 
       <div className="flex-1" />
 

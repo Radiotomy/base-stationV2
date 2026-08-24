@@ -3,13 +3,14 @@ import { Scissors, MousePointer2, ZoomIn, ZoomOut } from 'lucide-react';
 import InfoTip from '@/components/common/InfoTip';
 import TimelineClip from './TimelineClip';
 import AutomationLane from './AutomationLane';
+import Playhead from './Playhead';
 import { SNAP_OPTIONS, quantize, uid } from '@/lib/substation/session';
 
 const LANE_H = 56;
 
 export default function TimelineStage({
   session, patch, selectedTrackId, onSelectTrack,
-  selectedClipId, onSelectClip, onPatchClip, onAddClip, position, onSeek,
+  selectedClipId, onSelectClip, onPatchClip, onAddClip, engine, onSeek,
 }) {
   const [sliceMode, setSliceMode] = useState(false);
   const scrollRef = useRef(null);
@@ -100,9 +101,11 @@ export default function TimelineStage({
               onSeek((e.clientX - rect.left) / pxPerBeat);
             }}>
             {Array.from({ length: Math.ceil(totalBeats / 4) }).map((_, bar) => (
-              <div key={bar} className="absolute top-0 bottom-0 border-l border-white/10"
+              <div key={bar} className="absolute top-0 bottom-0 border-l border-white/10 pointer-events-none"
                 style={{ left: bar * 4 * pxPerBeat }}>
-                <span className="pl-1 text-[9px] font-mono text-white/30">{bar + 1}</span>
+                {(pxPerBeat > 22 || bar % 2 === 0) && (
+                  <span className="pl-1 text-[9px] font-mono text-white/30">{bar + 1}</span>
+                )}
               </div>
             ))}
             {session.loop.enabled && (
@@ -121,11 +124,13 @@ export default function TimelineStage({
                   onAddClip(t.id, quantize((e.clientX - rect.left) / pxPerBeat, session.snap));
                 }}
                 className={`relative border-b border-white/6 ${t.id === selectedTrackId ? 'bg-white/[0.03]' : ''}`}
-                style={{ height: LANE_H }}
+                style={{
+                  height: LANE_H,
+                  // Bar grid as one painted background instead of a div per bar —
+                  // a long arrangement otherwise creates thousands of elements.
+                  backgroundImage: `repeating-linear-gradient(to right, rgba(255,255,255,0.05) 0 1px, transparent 1px ${4 * pxPerBeat}px)`,
+                }}
               >
-                {Array.from({ length: Math.ceil(totalBeats / 4) }).map((_, bar) => (
-                  <div key={bar} className="absolute top-0 bottom-0 border-l border-white/[0.05]" style={{ left: bar * 4 * pxPerBeat }} />
-                ))}
                 {t.clips.map((c) => (
                   <div key={c.id} onPointerDown={(e) => sliceClip(e, t, c)} className="contents">
                     <TimelineClip
@@ -143,9 +148,7 @@ export default function TimelineStage({
               </div>
             ))}
 
-            {/* Playhead */}
-            <div className="absolute top-0 bottom-0 w-px bg-[#14b8a6] pointer-events-none"
-              style={{ left: position * pxPerBeat, boxShadow: '0 0 8px #14b8a6' }} />
+            <Playhead engine={engine} pxPerBeat={pxPerBeat} />
           </div>
 
           <AutomationLane
