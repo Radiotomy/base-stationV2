@@ -64,13 +64,13 @@ export function demoSession() {
   s.tracks = [newTrack('synth', 0), newTrack('synth', 1), newTrack('audio', 2), newTrack('aux', 3)];
   s.tracks[0].name = 'Lead Synth';
   s.tracks[0].clips = [
-    { id: uid('c'), name: 'Motif A', kind: 'synth', start: 0, length: 8, pitch: 220, gain: 0.9 },
-    { id: uid('c'), name: 'Motif B', kind: 'synth', start: 16, length: 8, pitch: 293.66, gain: 0.9 },
+    { id: uid('c'), name: 'Motif A', kind: 'synth', start: 0, length: 8, pitch: 220, step: 0.5, gain: 0.9 },
+    { id: uid('c'), name: 'Motif B', kind: 'synth', start: 16, length: 8, pitch: 293.66, step: 0.5, gain: 0.9 },
   ];
   s.tracks[1].name = 'Bass';
   s.tracks[1].pan = -0.15;
   s.tracks[1].clips = [
-    { id: uid('c'), name: 'Sub Bass', kind: 'synth', start: 0, length: 16, pitch: 82.41, gain: 1 },
+    { id: uid('c'), name: 'Sub Bass', kind: 'synth', start: 0, length: 16, pitch: 82.41, step: 1, gain: 1 },
   ];
   s.tracks[2].name = 'Stem Slot';
   s.tracks[3].name = 'Reverb Bus';

@@ -102,7 +102,7 @@ export default function SubStation() {
     if (!track) return;
     const clip = track.kind === 'audio'
       ? { id: uid('c'), name: 'Empty Slot', kind: 'audio', start: beat, length: 4, gain: 1, offset: 0 }
-      : { id: uid('c'), name: 'Note Clip', kind: 'synth', start: beat, length: 4, pitch: 220, gain: 1 };
+      : { id: uid('c'), name: 'Note Clip', kind: 'synth', start: beat, length: 4, pitch: 220, step: 0.5, gain: 1 };
     patchTrack(trackId, { clips: [...track.clips, clip] });
     setSelectedClipId(clip.id);
   };
@@ -165,7 +165,7 @@ export default function SubStation() {
     const clip = {
       id: uid('c'), name: `Note ${midi}`, kind: 'synth',
       start: quantize(position, active.snap), length: 1,
-      pitch: Math.round(midiToFreq(midi)), gain: 1,
+      pitch: Math.round(midiToFreq(midi)), step: 1, gain: 1,
     };
     patchTrack(target.id, { clips: [...target.clips, clip] });
   };
