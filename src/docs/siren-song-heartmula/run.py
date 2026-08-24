@@ -1,28 +1,31 @@
 """
 Cog runner for the siren-song model — a fork of HeartMuLa (heartlib).
 
-ENTRY POINT: BasePredictor.predict()
-------------------------------------
-This file defines `class Predictor(BasePredictor)` with a `predict()` method, and
-cog.yaml points at it with `predict: "run.py:Predictor"`. This is Cog's legacy
-interface and is still supported by current Cog releases.
+ENTRY POINT: BaseRunner.run()
+-----------------------------
+This file defines `class Runner(BaseRunner)` with a `run()` method, and cog.yaml
+points at it with `run: "run.py:Runner"`. This is Cog's CURRENT interface.
 
-TWO OPPOSITE FAILURES HAVE BEEN SEEN HERE — both present as a prediction stuck in
-"starting" forever, because a predictor that cannot load kills every worker slot
-during setup instead of failing the build:
+`predict: "run.py:Predictor"` + `BasePredictor.predict()` is the deprecated
+compatibility path. It still builds and runs, but Cog emits a deprecation warning
+on every build and push, which is noise that hides real problems — so this model
+is migrated rather than left on it.
 
-  1. Writing `from cog import BaseRunner` against an OLD SDK:
+HISTORY — do not "restore" the old interface on the strength of either of these:
+
+  1. Writing `from cog import BaseRunner` against an OLD SDK once failed with
          ImportError: cannot import name 'BaseRunner' from 'cog'
-     Hence this file uses BasePredictor.
+     That was an SDK too old to HAVE BaseRunner, not evidence against it.
 
-  2. Pinning `sdk_version` to an SDK OLDER than Replicate's current loader
-     (2026-08-24, SDK pinned to 0.18.0):
+  2. Pinning `sdk_version` to that same old SDK (0.18.0) later failed with
          AttributeError: module 'cog.predictor' has no attribute 'BaseRunner'
-     The loader probes for BaseRunner to detect which interface the class uses;
-     the probe raises before this Predictor is reached. Nothing in THIS file
-     mentions BaseRunner — the fix was to stop pinning the SDK in cog.yaml.
+     because Cog's loader probes for BaseRunner to detect the interface.
 
-So: keep BasePredictor here, and do not pin sdk_version there.
+Both had ONE cause: an SDK older than the runtime. cog.yaml therefore pins no
+sdk_version, the latest SDK is installed, BaseRunner exists, and both the errors
+above and the deprecation warning are gone together. Note both failures presented
+as a run stuck in "starting" forever, because a predictor that cannot load kills
+every worker slot during setup instead of failing the build.
 
 WHY THE 1 ms SUCCESS HAPPENS
 ----------------------------
@@ -31,15 +34,15 @@ an entry point that never produced a value. Cog marks the run successful because
 nothing raised, and returns null because nothing was returned. Two things MUST be
 true, and are the usual omissions:
 
-  1. predict() RETURNS a cog.Path pointing at a file that exists on disk.
+  1. run() RETURNS a cog.Path pointing at a file that exists on disk.
      Writing the file is not enough. Printing the path is not enough.
-  2. The model is loaded in setup(), with weights present in the image. A setup()
-     that cannot find ./ckpt has nothing for predict() to execute.
+     2. The model is loaded in setup(), with weights present in the image. A setup()
+     that cannot find ./ckpt has nothing for run() to execute.
 
-A third, subtler cause: if cog.yaml points at a class that has no matching entry
-method at all, the container still boots and answers instantly with nothing —
-which is why the pointer in cog.yaml and the class/method here must agree
-exactly ("run.py:Predictor" → class Predictor → def predict).
+     A third, subtler cause: if cog.yaml points at a class that has no matching entry
+     method at all, the container still boots and answers instantly with nothing —
+     which is why the pointer in cog.yaml and the class/method here must agree
+     exactly ("run.py:Runner" → class Runner → def run).
 
 HEARTMULA'S CONDITIONING CONTRACT (this is NOT a prose-prompt model)
 -------------------------------------------------------------------
@@ -71,10 +74,9 @@ import os
 import tempfile
 
 import torch
-# BasePredictor / predict() — the legacy interface, still supported. Do not import
-# BaseRunner here (see the module docstring: it fails on older SDKs, and the
-# loader's own BaseRunner probe is a separate, cog.yaml-side concern).
-from cog import BasePredictor, Input, Path
+# BaseRunner / run() — the current interface. Requires an unpinned (latest) SDK;
+# see the module docstring before changing this back to BasePredictor.
+from cog import BaseRunner, Input, Path
 
 from heartlib import HeartMuLaGenPipeline
 
@@ -88,7 +90,7 @@ KNOWN_SECTIONS = (
 )
 
 
-class Predictor(BasePredictor):
+class Runner(BaseRunner):
     def setup(self):
         """Load HeartMuLa + HeartCodec once per container boot."""
         if not os.path.isdir(MODEL_PATH):
@@ -108,7 +110,7 @@ class Predictor(BasePredictor):
             lazy_load=False,
         )
 
-    def predict(
+    def run(
         self,
         tags: str = Input(
             description=(

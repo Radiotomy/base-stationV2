@@ -38,9 +38,11 @@ build:
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
 
-# Entry point — must match run.py's class + method exactly.
-# `predict:` + BasePredictor is the legacy interface and is still supported by
-# current Cog, so it stays. The newer `run:` + BaseRunner interface is NOT used
-# here: switching both this key and the class is a second variable, and the entry
-# point was never the problem — the SDK pin above was.
-predict: "run.py:Predictor"
+# Entry point — must match run.py's class + method exactly:
+#   "run.py:Runner" → class Runner(BaseRunner) → def run(...)
+#
+# This is the CURRENT key. Do not go back to `predict: "run.py:Predictor"`: that
+# field is a deprecated compatibility shim, and Cog warns about it on every build
+# and push. It only works at all while an SDK new enough to contain BaseRunner is
+# installed, which is why `sdk_version` above must stay unpinned.
+run: "run.py:Runner"
