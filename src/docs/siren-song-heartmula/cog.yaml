@@ -11,9 +11,19 @@ build:
     - "ffmpeg"          # required to encode mp3/ogg from the native 48kHz wav
     - "git"
   python_requirements: requirements.txt
-  # Pin the Cog SDK so a future SDK release cannot silently change the runtime
-  # this image was verified against. 0.16.0 is the minimum Cog accepts.
-  sdk_version: "0.18.0"
+  # DO NOT pin sdk_version here. It was pinned to "0.18.0" to freeze the runtime,
+  # and that is what broke the 2026-08-24 push: Replicate's current loader probes
+  # `cog.predictor.BaseRunner` to decide which entry-point interface the class
+  # uses, and an SDK that predates BaseRunner has no such attribute, so the probe
+  # itself raises before our Predictor is ever reached —
+  #
+  #     Setup failed: failed to load predictor:
+  #     AttributeError: module 'cog.predictor' has no attribute 'BaseRunner'
+  #
+  # Every slot dies in setup and predictions sit in "starting" indefinitely — the
+  # SAME symptom as the old ImportError, from the opposite cause. Leaving this
+  # unpinned installs the SDK matching the CLI that builds the image, so loader
+  # and SDK always agree.
   run:
     # Checkpoints only. NOTE: `pip install -e .` does NOT belong here — current
     # Cog does not mount your source code into build.run commands, so it fails
@@ -29,8 +39,8 @@ build:
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
 
 # Entry point — must match run.py's class + method exactly.
-# This MUST stay `predict:` pointing at a BasePredictor subclass. The `run:` key
-# with a `BaseRunner` class does not work in this Cog SDK: `from cog import
-# BaseRunner` raises ImportError while loading the predictor, so every worker slot
-# fails setup and predictions hang in "starting" forever.
+# `predict:` + BasePredictor is the legacy interface and is still supported by
+# current Cog, so it stays. The newer `run:` + BaseRunner interface is NOT used
+# here: switching both this key and the class is a second variable, and the entry
+# point was never the problem — the SDK pin above was.
 predict: "run.py:Predictor"

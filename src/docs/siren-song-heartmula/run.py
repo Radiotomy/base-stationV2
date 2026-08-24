@@ -4,18 +4,25 @@ Cog runner for the siren-song model — a fork of HeartMuLa (heartlib).
 ENTRY POINT: BasePredictor.predict()
 ------------------------------------
 This file defines `class Predictor(BasePredictor)` with a `predict()` method, and
-cog.yaml points at it with `predict: "run.py:Predictor"`.
+cog.yaml points at it with `predict: "run.py:Predictor"`. This is Cog's legacy
+interface and is still supported by current Cog releases.
 
-DO NOT "modernise" this to `BaseRunner.run()`. That was tried and it hard-fails:
-the Cog SDK installed in this image exports no `BaseRunner`, so the import blows
-up while the worker is loading the predictor —
+TWO OPPOSITE FAILURES HAVE BEEN SEEN HERE — both present as a prediction stuck in
+"starting" forever, because a predictor that cannot load kills every worker slot
+during setup instead of failing the build:
 
-    Setup failed: failed to load predictor: ImportError:
-    cannot import name 'BaseRunner' from 'cog'
+  1. Writing `from cog import BaseRunner` against an OLD SDK:
+         ImportError: cannot import name 'BaseRunner' from 'cog'
+     Hence this file uses BasePredictor.
 
-Every worker slot then dies during setup, which the API surfaces as a prediction
-that sits in "starting" indefinitely rather than as an obvious build failure. The
-`run:` key in cog.yaml has the same problem and must stay `predict:`.
+  2. Pinning `sdk_version` to an SDK OLDER than Replicate's current loader
+     (2026-08-24, SDK pinned to 0.18.0):
+         AttributeError: module 'cog.predictor' has no attribute 'BaseRunner'
+     The loader probes for BaseRunner to detect which interface the class uses;
+     the probe raises before this Predictor is reached. Nothing in THIS file
+     mentions BaseRunner — the fix was to stop pinning the SDK in cog.yaml.
+
+So: keep BasePredictor here, and do not pin sdk_version there.
 
 WHY THE 1 ms SUCCESS HAPPENS
 ----------------------------
@@ -64,11 +71,9 @@ import os
 import tempfile
 
 import torch
-# BasePredictor / predict(), NOT BaseRunner / run(). `BaseRunner` does not exist in
-# the Cog SDK this image installs — importing it fails at predictor load time and
-# every slot dies with "Setup failed: failed to load predictor: ImportError:
-# cannot import name 'BaseRunner' from 'cog'", which presents as a run that hangs
-# in "starting" forever. BasePredictor is the interface the installed runtime has.
+# BasePredictor / predict() — the legacy interface, still supported. Do not import
+# BaseRunner here (see the module docstring: it fails on older SDKs, and the
+# loader's own BaseRunner probe is a separate, cog.yaml-side concern).
 from cog import BasePredictor, Input, Path
 
 from heartlib import HeartMuLaGenPipeline
