@@ -8,6 +8,41 @@ export const beatsToSec = (beats, bpm) => (beats * 60) / bpm;
 export const secToBeats = (sec, bpm) => (sec * bpm) / 60;
 export const midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
+// One synth note on any context (live or offline). Ends with an explicit hard
+// zero: setTargetAtTime only approaches zero asymptotically, so a note whose
+// oscillator outlived its envelope would keep bleeding signal.
+function renderNote(ctx, dest, freq, when, duration, gainVal) {
+  const osc = ctx.createOscillator();
+  const sub = ctx.createOscillator();
+  const filt = ctx.createBiquadFilter();
+  const g = ctx.createGain();
+  osc.type = 'sawtooth'; sub.type = 'sine';
+  osc.frequency.value = freq; sub.frequency.value = freq / 2;
+  filt.type = 'lowpass'; filt.frequency.value = Math.min(8000, freq * 8);
+  osc.connect(filt); sub.connect(filt); filt.connect(g); g.connect(dest);
+  const end = when + Math.max(0.08, duration);
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(gainVal, when + 0.015);
+  g.gain.setTargetAtTime(0.0001, end - 0.06, 0.03);
+  g.gain.setValueAtTime(0, end + 0.02);
+  osc.start(when); sub.start(when);
+  osc.stop(end + 0.05); sub.stop(end + 0.05);
+  return [osc, sub];
+}
+
+// A synth clip is a note PATTERN, not one held tone: a 16-beat clip must read as
+// a played part, so it is divided into steps (clip.step beats, default 1).
+function clipNoteTimes(clip, bpm) {
+  const step = Math.max(0.25, clip.step || 1);
+  const stepSec = (step * 60) / bpm;
+  const total = (clip.length * 60) / bpm;
+  const out = [];
+  for (let t = 0; t < total - 0.01; t += stepSec) {
+    out.push({ offset: t, dur: Math.min(stepSec * 0.85, total - t) });
+  }
+  return out;
+}
+
 function buildImpulse(ctx, seconds, decay) {
   const len = Math.max(1, Math.floor(ctx.sampleRate * seconds));
   const buf = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -142,22 +177,12 @@ export default class SubEngine {
     await Promise.all([...new Set(urls)].map(u => this.loadBuffer(u)));
   }
 
-  scheduleSynthNote(dest, freq, when, duration, gainVal = 0.6) {
-    const ctx = this.ctx;
-    const osc = ctx.createOscillator();
-    const sub = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sawtooth'; sub.type = 'sine';
-    osc.frequency.value = freq; sub.frequency.value = freq / 2;
-    const filt = ctx.createBiquadFilter();
-    filt.type = 'lowpass'; filt.frequency.value = Math.min(8000, freq * 8);
-    osc.connect(filt); sub.connect(filt); filt.connect(g); g.connect(dest);
-    g.gain.setValueAtTime(0, when);
-    g.gain.linearRampToValueAtTime(gainVal, when + 0.02);
-    g.gain.setTargetAtTime(0.0001, when + Math.max(0.05, duration - 0.08), 0.05);
-    osc.start(when); sub.start(when);
-    osc.stop(when + duration + 0.2); sub.stop(when + duration + 0.2);
-    this.sources.push(osc, sub);
+  scheduleSynthClip(dest, clip, when, bpm, skipSec = 0) {
+    clipNoteTimes(clip, bpm).forEach(({ offset, dur }) => {
+      if (offset < skipSec) return;
+      const nodes = renderNote(this.ctx, dest, clip.pitch || 220, when + (offset - skipSec), dur, (clip.gain ?? 1) * 0.45);
+      this.sources.push(...nodes);
+    });
   }
 
   async play(session, fromBeat = 0) {
@@ -196,7 +221,7 @@ export default class SubEngine {
           src.start(when, offset, Math.min(dur - skip, buf.duration - offset));
           this.sources.push(src);
         } else {
-          this.scheduleSynthNote(node.gain, clip.pitch || 220, when, dur - skip, (clip.gain ?? 1) * 0.5);
+          this.scheduleSynthClip(node.gain, clip, when, session.bpm, skip);
         }
       });
     });
@@ -225,8 +250,18 @@ export default class SubEngine {
   stopMetronome() { if (this.metroTimer) { clearInterval(this.metroTimer); this.metroTimer = null; } }
 
   stopSources() {
-    this.sources.forEach((s) => { try { s.stop(); } catch { /* already stopped */ } });
+    this.sources.forEach((s) => {
+      try { s.stop(); } catch { /* already stopped */ }
+      try { s.disconnect(); } catch { /* ignore */ }
+    });
     this.sources = [];
+  }
+
+  // Kills every held keypad voice. Reached by Stop, by pause, and by the keypad
+  // whenever the pointer is released anywhere — a voice must never outlive it.
+  allNotesOff() {
+    [...this.voices.keys()].forEach((m) => this.noteOff(m));
+    this.voices.clear();
   }
 
   pause() {
@@ -234,6 +269,7 @@ export default class SubEngine {
     this.startBeat = this.position();
     this.stopSources();
     this.stopMetronome();
+    this.allNotesOff();
   }
 
   stop() {
@@ -241,6 +277,7 @@ export default class SubEngine {
     this.startBeat = 0;
     this.stopSources();
     this.stopMetronome();
+    this.allNotesOff();
   }
 
   position() {
@@ -252,6 +289,9 @@ export default class SubEngine {
   noteOn(midi, trackId) {
     this.ensure();
     this.resume();
+    // Re-triggering a held note must release the old voice first — overwriting
+    // the map entry would orphan its oscillator, leaving a tone with no owner.
+    if (this.voices.has(midi)) this.noteOff(midi);
     const dest = this.tracks.get(trackId)?.gain || this.input;
     const ctx = this.ctx;
     const freq = midiToFreq(midi);
@@ -274,8 +314,12 @@ export default class SubEngine {
     if (!v) return;
     const now = this.ctx.currentTime;
     v.g.gain.cancelScheduledValues(now);
-    v.g.gain.setTargetAtTime(0.0001, now, 0.06);
-    try { v.osc.stop(now + 0.5); v.sub.stop(now + 0.5); } catch { /* ignore */ }
+    v.g.gain.setTargetAtTime(0.0001, now, 0.04);
+    v.g.gain.setValueAtTime(0, now + 0.3);
+    try {
+      v.osc.stop(now + 0.32); v.sub.stop(now + 0.32);
+      v.osc.onended = () => { try { v.g.disconnect(); } catch { /* ignore */ } };
+    } catch { /* ignore */ }
     this.voices.delete(midi);
   }
 
@@ -329,20 +373,10 @@ export default class SubEngine {
           src.connect(cg); cg.connect(g);
           src.start(when, clip.offset || 0, Math.min(dur, copy.duration));
         } else {
-          const freq = clip.pitch || 220;
-          const osc = off.createOscillator();
-          const sub = off.createOscillator();
-          const filt = off.createBiquadFilter();
-          const ng = off.createGain();
-          osc.type = 'sawtooth'; sub.type = 'sine';
-          osc.frequency.value = freq; sub.frequency.value = freq / 2;
-          filt.type = 'lowpass'; filt.frequency.value = Math.min(8000, freq * 8);
-          osc.connect(filt); sub.connect(filt); filt.connect(ng); ng.connect(g);
-          ng.gain.setValueAtTime(0, when);
-          ng.gain.linearRampToValueAtTime((clip.gain ?? 1) * 0.5, when + 0.02);
-          ng.gain.setTargetAtTime(0.0001, when + Math.max(0.06, dur - 0.08), 0.05);
-          osc.start(when); sub.start(when);
-          osc.stop(when + dur + 0.2); sub.stop(when + dur + 0.2);
+          // Same note pattern the live engine plays, so a bounce matches playback
+          clipNoteTimes(clip, session.bpm).forEach(({ offset, dur: nd }) => {
+            renderNote(off, g, clip.pitch || 220, when + offset, nd, (clip.gain ?? 1) * 0.45);
+          });
         }
       }
     }
@@ -368,6 +402,7 @@ export default class SubEngine {
 
   dispose() {
     this.stop();
+    this.allNotesOff();
     try { this.ctx?.close(); } catch { /* ignore */ }
     this.ctx = null;
     this.tracks.clear();
