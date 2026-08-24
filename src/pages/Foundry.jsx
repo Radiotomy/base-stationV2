@@ -10,6 +10,7 @@ import PluginCard from '@/components/foundry/PluginCard';
 import CommunityFoundryHub from '@/components/foundry/CommunityFoundryHub';
 import FeaturedPatchShelf from '@/components/foundry/FeaturedPatchShelf';
 import StarterTemplatesShelf from '@/components/foundry/StarterTemplatesShelf';
+import SubStationBanner from '@/components/substation/SubStationBanner';
 import TemplatePickerDialog from '@/components/foundry/TemplatePickerDialog';
 import PatchCollections from '@/components/foundry/PatchCollections';
 import { starterGraph } from '@/lib/foundry/nodeTypes';
@@ -105,6 +106,8 @@ export default function Foundry() {
             </Button>
           </div>
         </div>
+
+        <SubStationBanner />
 
         <StarterTemplatesShelf />
 

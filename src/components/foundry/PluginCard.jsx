@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GitFork, Waves, Globe, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import FoundryScoreBadge from './FoundryScoreBadge';
+import SendToSubStationButton from '@/components/substation/SendToSubStationButton';
 
 const CATEGORY_COLOR = {
   effect: '#FF9A4D',
@@ -46,6 +47,7 @@ export default function PluginCard({ plugin, onFork, forking }) {
         <Button asChild size="sm" className="flex-1 h-7 text-[11px] merc-button">
           <Link to={`/foundry/${plugin.id}`}>Open</Link>
         </Button>
+        <SendToSubStationButton plugin={plugin} compact />
         {onFork && (
           <Button
             size="sm"

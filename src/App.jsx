@@ -116,6 +116,10 @@ const VerifyMark = lazy(() => import('./pages/VerifyMark'));
 const Foundry = lazy(() => import('./pages/Foundry'));
 const FoundryWorkspace = lazy(() => import('./pages/FoundryWorkspace'));
 const RightsPortal = lazy(() => import('./pages/RightsPortal'));
+// SUB-Station Studio — multi-track arrangement workstation
+const SubStation = lazy(() => import('./pages/SubStation'));
+const SubStationHelp = lazy(() => import('./pages/SubStationHelp'));
+const SubStationTerms = lazy(() => import('./pages/SubStationTerms'));
 // ORVO Podcast Studio (additive module)
 import OrvoStudioLayoutBoundary from '@/components/studios/orvo/performance/StudioLayoutBoundary';
 const OrvoHome = lazy(() => import('./pages/studios/orvo/Home'));
@@ -244,6 +248,9 @@ const AuthenticatedApp = () => {
               <Route path="/base-mark" element={<BaseMarkStudio />} />
               <Route path="/foundry" element={<Foundry />} />
               <Route path="/foundry/:pluginId" element={<FoundryWorkspace />} />
+              <Route path="/sub-station" element={<SubStation />} />
+              <Route path="/sub-station/help" element={<SubStationHelp />} />
+              <Route path="/sub-station/terms" element={<SubStationTerms />} />
               <Route path="/creator-dashboard" element={<CreatorDashboard />} />
               <Route path="/rights" element={<RightsPortal />} />
               <Route path="/credits" element={<Credits />} />

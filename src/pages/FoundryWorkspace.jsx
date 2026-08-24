@@ -17,6 +17,7 @@ import ReferenceProfilePanel from '@/components/foundry/ReferenceProfilePanel';
 import TemplateInspectBanner from '@/components/foundry/TemplateInspectBanner';
 import TemplateCurationControls from '@/components/foundry/TemplateCurationControls';
 import InfoTip from '@/components/common/InfoTip';
+import SendToSubStationButton from '@/components/substation/SendToSubStationButton';
 import { forkPlugin } from '@/lib/foundry/forkPlugin';
 import useFoundryEngine from '@/hooks/useFoundryEngine';
 import { compileGraph } from '@/lib/foundry/audioEngine';
@@ -219,6 +220,7 @@ export default function FoundryWorkspace() {
             <SlidersHorizontal className="w-3 h-3 mr-1.5" />
             Load in Studio
           </Button>
+          <SendToSubStationButton plugin={{ ...plugin, graph_state: graph, dsp_definition: compileGraph(graph) }} />
           <InfoTip
             side="bottom"
             text="Auditions this patch as an insert on a track in Mastering Studio. Your source file is never overwritten — the patch only processes playback until you render."
