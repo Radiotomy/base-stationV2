@@ -100,6 +100,29 @@ class Runner(BaseRunner):
                 "setup() cannot load a model and every run returns nothing."
             )
 
+        # Dump the ACTUAL tree before handing off to the pipeline. A setup that
+        # dies on a missing checkpoint file bills the full instance-up time
+        # (~500s per dead slot), so one boot must produce enough evidence to fix
+        # the layout — never a bare FileNotFoundError that costs another boot to
+        # diagnose. This is exactly how the 2026-08-25 missing tokenizer.json
+        # ate GPU minutes for no output.
+        for root, dirs, files in os.walk(MODEL_PATH):
+            depth = root[len(MODEL_PATH):].count(os.sep)
+            if depth > 1:
+                dirs[:] = []
+                continue
+            print(f"[ckpt] {root}: dirs={sorted(dirs)} files={sorted(files)}")
+
+        for required in ("tokenizer.json", "gen_config.json"):
+            if not os.path.isfile(os.path.join(MODEL_PATH, required)):
+                raise RuntimeError(
+                    f"{MODEL_PATH}/{required} is missing from the running image. "
+                    "It IS present in HeartMuLa/HeartMuLaGen, so this is a layer "
+                    "split problem from `cog push --separate-weights`, not a bad "
+                    "repo — see the ordering note in cog.yaml. Do not retry the "
+                    "prediction; rebuild."
+                )
+
         self.pipe = HeartMuLaGenPipeline.from_pretrained(
             MODEL_PATH,
             device={"mula": torch.device("cuda"), "codec": torch.device("cuda")},

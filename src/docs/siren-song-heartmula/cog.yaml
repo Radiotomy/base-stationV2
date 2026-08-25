@@ -33,10 +33,30 @@ build:
     # Shared generation config + tokenizer, then the recommended RL checkpoint
     # and the matching codec release. These MUST land as ./ckpt/HeartMuLa-oss-3B
     # and ./ckpt/HeartCodec-oss — the pipeline resolves those subfolder names.
+    #
+    # ORDER IS LOAD-BEARING. The 2026-08-25 boot failed with
+    #     FileNotFoundError: Expected to find tokenizer.json for HeartMuLa at
+    #     ./ckpt/tokenizer.json but not found.
+    # even though HeartMuLa/HeartMuLaGen definitely contains tokenizer.json
+    # (verified against the HF API: .gitattributes, README.md, gen_config.json,
+    # tokenizer.json — that is the whole repo). The repo was not the problem;
+    # the LAYERING was. `cog push --separate-weights` splits large build
+    # artifacts into a separate weights image, and ./ckpt is overwhelmingly
+    # weights, so the small root-level files written into that same tree in an
+    # EARLIER layer are the ones at risk of not surviving the split.
+    #
+    # So: big checkpoints into their own subdirectories FIRST, then the two
+    # small shared-config files into ./ckpt root LAST, in their own layer.
     - "pip install --no-cache-dir 'huggingface_hub[cli]'"
-    - "hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen'"
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
+    - "hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen'"
+    # Fail the BUILD, not a billed GPU boot. Every failed setup still bills the
+    # full instance-up time (the 2026-08-24 dead slots cost ~500s of GPU each),
+    # so a layout mistake must surface here where it is free.
+    - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss"
+    - "test -f ./ckpt/tokenizer.json || (echo 'MISSING ./ckpt/tokenizer.json' && exit 1)"
+    - "test -f ./ckpt/gen_config.json || (echo 'MISSING ./ckpt/gen_config.json' && exit 1)"
 
 # Entry point — must match run.py's class + method exactly:
 #   "run.py:Runner" → class Runner(BaseRunner) → def run(...)
