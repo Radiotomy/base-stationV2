@@ -78,6 +78,7 @@ to wav here, per our "mark once, compress last" rule.
 """
 
 import os
+import shutil
 import tempfile
 
 import torch
@@ -88,6 +89,9 @@ from cog import BaseRunner, Input, Path
 from heartlib import HeartMuLaGenPipeline
 
 MODEL_PATH = "./ckpt"
+# Small shared-config files live here, OUTSIDE the ./ckpt weights mount, and are
+# copied into MODEL_PATH by setup(). See the note there before changing this.
+CONFIG_PATH = "./ckptcfg"
 
 # Section headers heartlib was trained on. Lyrics with no header at all tend to
 # be sung as one undifferentiated block, so we ensure at least one is present.
@@ -120,15 +124,31 @@ class Runner(BaseRunner):
                 continue
             print(f"[ckpt] {root}: dirs={sorted(dirs)} files={sorted(files)}")
 
+        # Restore the two small shared-config files into ./ckpt.
+        #
+        # They are baked into ./ckptcfg at build time and copied here at boot
+        # because ./ckpt is a MOUNT POINT under `cog push --separate-weights`:
+        # the weights image is mounted over it at container start, shadowing
+        # anything an image layer wrote to ./ckpt root. That is why the
+        # 2026-08-25 build passed its build-time `test -f ./ckpt/tokenizer.json`
+        # and still died on boot with that exact file missing. Do not "simplify"
+        # this away by downloading into ./ckpt in cog.yaml again — that has been
+        # tried, and a mount always wins.
+        os.makedirs(MODEL_PATH, exist_ok=True)
         for required in ("tokenizer.json", "gen_config.json"):
-            if not os.path.isfile(os.path.join(MODEL_PATH, required)):
+            dest = os.path.join(MODEL_PATH, required)
+            if os.path.isfile(dest):
+                continue
+            src = os.path.join(CONFIG_PATH, required)
+            if not os.path.isfile(src):
                 raise RuntimeError(
-                    f"{MODEL_PATH}/{required} is missing from the running image. "
-                    "It IS present in HeartMuLa/HeartMuLaGen, so this is a layer "
-                    "split problem from `cog push --separate-weights`, not a bad "
-                    "repo — see the ordering note in cog.yaml. Do not retry the "
-                    "prediction; rebuild."
+                    f"{required} is in neither {MODEL_PATH} nor {CONFIG_PATH}. "
+                    f"The build stages it into {CONFIG_PATH} (see cog.yaml) — if it "
+                    "is absent there, the image was built before that change. "
+                    "Do not retry the prediction; rebuild."
                 )
+            shutil.copy2(src, dest)
+            print(f"[ckpt] restored {required} from {CONFIG_PATH}")
 
         self.pipe = HeartMuLaGenPipeline.from_pretrained(
             MODEL_PATH,

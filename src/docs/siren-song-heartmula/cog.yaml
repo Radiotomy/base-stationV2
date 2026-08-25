@@ -59,16 +59,35 @@ build:
     - "hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen'"
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
-    # Re-fetch ONLY the two small shared-config files, after every large layer,
-    # so they are written by the final layer and cannot be lost to the weights
-    # split. Cheap (a few hundred KB) and idempotent.
-    - "hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json --local-dir './ckpt'"
+    # Stage the two small shared-config files OUTSIDE ./ckpt, in ./ckptcfg.
+    #
+    # WHY NOT INTO ./ckpt: the 2026-08-25 boot proved that impossible. Writing
+    # them into ./ckpt as the FINAL layer still produced, at runtime:
+    #     RuntimeError: ./ckpt/tokenizer.json is missing from the running image
+    # even though the build-time `test -f` guards below PASSED on the very same
+    # build. Both facts are true at once because `cog push --separate-weights`
+    # does not merely reorder layers — it moves ./ckpt into a separate weights
+    # image that is MOUNTED over that path at container start. A mount replaces
+    # the directory wholesale, so every file an image layer wrote to ./ckpt root
+    # is shadowed at boot regardless of which layer wrote it. Layer ordering
+    # cannot beat a mount; only writing outside the mount point can.
+    #
+    # ./ckptcfg is a few hundred KB, so the splitter leaves it in the main image,
+    # and run.py's setup() copies these files into ./ckpt before loading the
+    # pipeline. Appended (not reordered) so lines 1-4 stay byte-identical and
+    # their cached multi-gigabyte layers survive — the tail is all that rebuilds.
+    - "hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json --local-dir './ckptcfg'"
     # Fail the BUILD, not a billed GPU boot. Every failed setup still bills the
     # full instance-up time (the 2026-08-24 dead slots cost ~500s of GPU each),
     # so a layout mistake must surface here where it is free.
-    - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss"
-    - "test -f ./ckpt/tokenizer.json || (echo 'MISSING ./ckpt/tokenizer.json' && exit 1)"
-    - "test -f ./ckpt/gen_config.json || (echo 'MISSING ./ckpt/gen_config.json' && exit 1)"
+    #
+    # NOTE these guards assert ./ckptcfg, NOT ./ckpt. A guard on ./ckpt root is
+    # actively misleading: it passes at build time and tells you nothing about
+    # what survives the weights mount at run time, which is exactly how the
+    # 2026-08-25 build shipped green and died on boot.
+    - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss && ls -la ./ckptcfg"
+    - "test -f ./ckptcfg/tokenizer.json || (echo 'MISSING ./ckptcfg/tokenizer.json' && exit 1)"
+    - "test -f ./ckptcfg/gen_config.json || (echo 'MISSING ./ckptcfg/gen_config.json' && exit 1)"
 
 # Entry point — must match run.py's class exactly:
 #   "run.py:Runner" → class Runner(BaseRunner) → def run(...)
