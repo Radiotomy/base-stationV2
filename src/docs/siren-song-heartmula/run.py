@@ -134,24 +134,45 @@ class Runner(BaseRunner):
         # and still died on boot with that exact file missing. Do not "simplify"
         # this away by downloading into ./ckpt in cog.yaml again — that has been
         # tried, and a mount always wins.
-        os.makedirs(MODEL_PATH, exist_ok=True)
-        for required in ("tokenizer.json", "gen_config.json"):
-            dest = os.path.join(MODEL_PATH, required)
-            if os.path.isfile(dest):
-                continue
-            src = os.path.join(CONFIG_PATH, required)
-            if not os.path.isfile(src):
-                raise RuntimeError(
-                    f"{required} is in neither {MODEL_PATH} nor {CONFIG_PATH}. "
-                    f"The build stages it into {CONFIG_PATH} (see cog.yaml) — if it "
-                    "is absent there, the image was built before that change. "
-                    "Do not retry the prediction; rebuild."
-                )
-            shutil.copy2(src, dest)
-            print(f"[ckpt] restored {required} from {CONFIG_PATH}")
+        load_path = MODEL_PATH
+        missing = [
+            f for f in ("tokenizer.json", "gen_config.json")
+            if not os.path.isfile(os.path.join(MODEL_PATH, f))
+        ]
+        if missing:
+            for f in missing:
+                if not os.path.isfile(os.path.join(CONFIG_PATH, f)):
+                    raise RuntimeError(
+                        f"{f} is in neither {MODEL_PATH} nor {CONFIG_PATH}. "
+                        f"The build stages it into {CONFIG_PATH} (see cog.yaml) — if "
+                        "it is absent there, the image was built before that change. "
+                        "Do not retry the prediction; rebuild."
+                    )
+            try:
+                # Preferred: copy straight into ./ckpt.
+                for f in missing:
+                    shutil.copy2(os.path.join(CONFIG_PATH, f), os.path.join(MODEL_PATH, f))
+                print(f"[ckpt] restored {missing} from {CONFIG_PATH}")
+            except OSError as e:
+                # The weights mount may be READ-ONLY — never assume it is
+                # writable. Assemble a merged view in a scratch dir instead:
+                # symlinks to everything in ./ckpt plus copies of the two config
+                # files. Reads through symlinks are transparent to the pipeline.
+                merged = tempfile.mkdtemp(prefix="ckpt_run_")
+                for entry in os.listdir(MODEL_PATH):
+                    os.symlink(
+                        os.path.abspath(os.path.join(MODEL_PATH, entry)),
+                        os.path.join(merged, entry),
+                    )
+                for f in ("tokenizer.json", "gen_config.json"):
+                    dst = os.path.join(merged, f)
+                    if not os.path.exists(dst):
+                        shutil.copy2(os.path.join(CONFIG_PATH, f), dst)
+                load_path = merged
+                print(f"[ckpt] {MODEL_PATH} not writable ({e}); using merged view {merged}")
 
         self.pipe = HeartMuLaGenPipeline.from_pretrained(
-            MODEL_PATH,
+            load_path,
             device={"mula": torch.device("cuda"), "codec": torch.device("cuda")},
             # bf16 for the LM, fp32 for the codec — the upstream README warns that
             # running HeartCodec in bf16 degrades audio quality.
