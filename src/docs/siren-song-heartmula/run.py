@@ -4,12 +4,19 @@ Cog runner for the siren-song model — a fork of HeartMuLa (heartlib).
 ENTRY POINT: BaseRunner.run()
 -----------------------------
 This file defines `class Runner(BaseRunner)` with a `run()` method, and cog.yaml
-points at it with `run: "run.py:Runner"`. This is Cog's CURRENT interface.
+points at it with `predict: "run.py:Runner"`.
 
-`predict: "run.py:Predictor"` + `BasePredictor.predict()` is the deprecated
-compatibility path. It still builds and runs, but Cog emits a deprecation warning
-on every build and push, which is noise that hides real problems — so this model
-is migrated rather than left on it.
+MIND THE TWO SEPARATE THINGS — conflating them cost a wasted push:
+
+  * The cog.yaml KEY is `predict:`. There is no `run:` key. Cog's config struct
+    accepts only build/image/model/predict/train/concurrency/observability/
+    environment/weights, so a `run:` line is silently unrecognized, no entry
+    point is loaded, and every prediction "succeeds" in ~1ms with output null.
+  * The PYTHON base class is BaseRunner with run(). BasePredictor with predict()
+    is the deprecated path that warns on every build and push.
+
+So `predict: "run.py:Runner"` is both current and warning-free: the key names the
+entry-point object, and the class decides which method the loader calls.
 
 HISTORY — do not "restore" the old interface on the strength of either of these:
 

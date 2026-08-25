@@ -70,11 +70,24 @@ build:
     - "test -f ./ckpt/tokenizer.json || (echo 'MISSING ./ckpt/tokenizer.json' && exit 1)"
     - "test -f ./ckpt/gen_config.json || (echo 'MISSING ./ckpt/gen_config.json' && exit 1)"
 
-# Entry point — must match run.py's class + method exactly:
+# Entry point — must match run.py's class exactly:
 #   "run.py:Runner" → class Runner(BaseRunner) → def run(...)
 #
-# This is the CURRENT key. Do not go back to `predict: "run.py:Predictor"`: that
-# field is a deprecated compatibility shim, and Cog warns about it on every build
-# and push. It only works at all while an SDK new enough to contain BaseRunner is
-# installed, which is why `sdk_version` above must stay unpinned.
-run: "run.py:Runner"
+# The key is `predict:`, NOT `run:`. This was briefly written as `run:` on the
+# belief that it was the modern spelling; it is not. Verified against Cog's
+# config struct (pkg/config/config.go), whose ONLY top-level keys are:
+#   build, image, model, predict, train, concurrency, observability,
+#   environment, weights
+# There is no `run` field, so `run:` is an unrecognized key and Cog loads NO
+# entry point — which is precisely the failure that presents as a container
+# booting and returning `output: null` in about a millisecond.
+#
+# Do not confuse this with the Python-side deprecation. Two separate things:
+#   * cog.yaml key           -> `predict:`  (current; there is no alternative)
+#   * Python base class      -> BaseRunner + run()  (current)
+#                               BasePredictor + predict()  (deprecated, warns)
+# So `predict: "run.py:Runner"` is correct and warning-free: the config key
+# names the entry-point OBJECT, and the class it resolves to decides which
+# method the loader calls. Using BaseRunner is also why `sdk_version` above must
+# stay unpinned — an SDK predating BaseRunner cannot load this class.
+predict: "run.py:Runner"
