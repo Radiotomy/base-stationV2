@@ -1,135 +1,50 @@
 # Cog config for the siren-song model (HeartMuLa / heartlib fork).
 #
-# The weights are downloaded at BUILD time, not in setup(). A 3B LM plus the
-# codec is far too large to fetch on every cold boot, and a setup() that fails
-# to find weights is exactly how you end up with runs that return null.
+# Weights are downloaded at BUILD time, not in setup() — a 3B LM plus codec is
+# far too large to fetch on every cold boot, and a setup() that can't find them
+# is how runs return null.
 build:
   gpu: true
   cuda: "12.1"
   python_version: "3.10"
   system_packages:
-    - "ffmpeg"          # required to encode mp3/ogg from the native 48kHz wav
+    - "ffmpeg"          # encodes mp3/ogg from the native 48kHz wav
     - "git"
   python_requirements: requirements.txt
-  # DO NOT pin sdk_version here. It was pinned to "0.18.0" to freeze the runtime,
-  # and that is what broke the 2026-08-24 push: Replicate's current loader probes
-  # `cog.predictor.BaseRunner` to decide which entry-point interface the class
-  # uses, and an SDK that predates BaseRunner has no such attribute, so the probe
-  # itself raises before our Predictor is ever reached —
-  #
-  #     Setup failed: failed to load predictor:
-  #     AttributeError: module 'cog.predictor' has no attribute 'BaseRunner'
-  #
-  # Every slot dies in setup and predictions sit in "starting" indefinitely — the
-  # SAME symptom as the old ImportError, from the opposite cause. Leaving this
-  # unpinned installs the SDK matching the CLI that builds the image, so loader
-  # and SDK always agree.
+  # DO NOT pin sdk_version. An older SDK predates BaseRunner, and Cog's loader
+  # probes `cog.predictor.BaseRunner` to detect the interface — an SDK without
+  # that attribute raises before the Runner is ever reached (the 2026-08-24
+  # "starting forever" failure). Unpinned installs the SDK matching the
+  # builder's CLI, so loader and SDK always agree.
   run:
-    # Checkpoints only. NOTE: `pip install -e .` does NOT belong here — current
-    # Cog does not mount your source code into build.run commands, so it fails
-    # (or worse, installs nothing). heartlib is installed from git via
-    # requirements.txt instead.
+    # heartlib is installed from git via requirements.txt (NOT `pip install -e .`
+    # here; current Cog does not mount source into build.run commands).
     #
-    # Shared generation config + tokenizer, then the recommended RL checkpoint
-    # and the matching codec release. These MUST land as ./ckpt/HeartMuLa-oss-3B
-    # and ./ckpt/HeartCodec-oss — the pipeline resolves those subfolder names.
-    #
-    # ORDER IS LOAD-BEARING. The 2026-08-25 boot failed with
-    #     FileNotFoundError: Expected to find tokenizer.json for HeartMuLa at
-    #     ./ckpt/tokenizer.json but not found.
-    # even though HeartMuLa/HeartMuLaGen definitely contains tokenizer.json
-    # (verified against the HF API: .gitattributes, README.md, gen_config.json,
-    # tokenizer.json — that is the whole repo). The repo was not the problem;
-    # the LAYERING was. `cog push --separate-weights` splits large build
-    # artifacts into a separate weights image, and ./ckpt is overwhelmingly
-    # weights, so the small root-level files written into that same tree in an
-    # EARLIER layer are the ones at risk of not surviving the split.
-    #
-    # The fix is that the two small files must be written into ./ckpt root in the
-    # LAST layer. That is achieved by APPENDING a targeted re-fetch below rather
-    # than by reordering the lines above — and the distinction is not cosmetic.
-    # Docker caches build.run layers positionally: changing any line invalidates
-    # every layer after it. Reordering these four lines would therefore re-run
-    # both multi-gigabyte downloads AND produce fresh layer digests, forcing a
-    # full ~40GB re-upload — the exact push that keeps dropping on this
-    # connection. Leaving lines 1-4 byte-identical keeps their cached layers, so
-    # the build re-runs only the cheap tail and the push uploads only the small
-    # new layer.
+    # Keep these four download lines byte-identical across pushes so the
+    # multi-GB HF layers stay cached; only the cheap tail below rebuilds.
     - "pip install --no-cache-dir 'huggingface_hub[cli]'"
     - "hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen'"
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
-    # NOTE: ./ckptcfg is NO LONGER downloaded here. See the block below.
-    #
-    # WHY NOT INTO ./ckpt: the 2026-08-25 boot proved that impossible. Writing
-    # them into ./ckpt as the FINAL layer still produced, at runtime:
-    #     RuntimeError: ./ckpt/tokenizer.json is missing from the running image
-    # even though the build-time `test -f` guards below PASSED on the very same
-    # build. Both facts are true at once because `cog push --separate-weights`
-    # does not merely reorder layers — it moves ./ckpt into a separate weights
-    # image that is MOUNTED over that path at container start. A mount replaces
-    # the directory wholesale, so every file an image layer wrote to ./ckpt root
-    # is shadowed at boot regardless of which layer wrote it. Layer ordering
-    # cannot beat a mount; only writing outside the mount point can.
-    #
-    # AND ./ckptcfg AS A BUILD ARTIFACT ALSO FAILED (2026-08-26):
-    #     RuntimeError: tokenizer.json is in neither ./ckpt nor ./ckptcfg.
-    # on an image whose OWN build-time `test -f ./ckptcfg/tokenizer.json` guard
-    # had passed. So a file written by a build.run command into the working
-    # directory is not reliably present in the running container at all —
-    # regardless of size, path, or layer position. Two build-time proofs and two
-    # runtime absences is enough: stop treating downloaded files as durable.
-    #
-    # THE FIX: ./ckptcfg is now SOURCE, not a build artifact. Fetch the two files
-    # into the project directory ONCE on your machine, before pushing:
-    #
-    #     cd ~/heartlib
-    #     hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json \
-    #        --local-dir './ckptcfg'
-    #
-    # Cog copies the project directory into /src as part of the image, so these
-    # files travel with the code exactly like run.py does. Nothing downloads
-    # them, no layer can drop them, and the weights split does not see them.
-    # Make sure ./ckptcfg is NOT listed in .dockerignore or .cogignore.
-    #
-    # Appended (not reordered) so lines 1-4 stay byte-identical and their cached
-    # multi-gigabyte layers survive — only the cheap tail rebuilds.
-    # Fail the BUILD, not a billed GPU boot. Every failed setup still bills the
-    # full instance-up time (the 2026-08-24 dead slots cost ~500s of GPU each),
-    # so a layout mistake must surface here where it is free.
-    #
-    # NOTE these guards assert ./ckptcfg, NOT ./ckpt. A guard on ./ckpt root is
-    # actively misleading: it passes at build time and tells you nothing about
-    # what survives the weights mount at run time, which is exactly how the
-    # 2026-08-25 build shipped green and died on boot.
-    #
-    # These guards are now meaningful in a way they were not before: ./ckptcfg is
-    # SOURCE (see above), so a guard passing here proves the files are in the
-    # image, not merely that a download succeeded in a layer. If either guard
-    # fails, you skipped the one-time `hf download ... --local-dir './ckptcfg'`
-    # step in the project directory — run it and push again.
-    - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss && ls -la ./ckptcfg"
-    - "test -f ./ckptcfg/tokenizer.json || (echo 'MISSING ./ckptcfg/tokenizer.json' && exit 1)"
-    - "test -f ./ckptcfg/gen_config.json || (echo 'MISSING ./ckptcfg/gen_config.json' && exit 1)"
+    # Guards. On a PLAIN push (no --separate-weights) the first `hf download`
+    # (HeartMuLaGen) places tokenizer.json + gen_config.json at ./ckpt root, so
+    # they are already where setup() looks — no shadowing mount to beat.
+    # (Under --separate-weights the weights image is MOUNTED over ./ckpt at
+    # boot and shadows these files; run.py's ./ckptcfg fallback covers that
+    # mode. See run.py setup() before reintroducing the flag.)
+    # Fail the BUILD, not a billed GPU boot: a layout mistake must surface here
+    # where it is free, not in setup() where it bills the full instance-up time.
+    - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss"
+    - "test -f ./ckpt/tokenizer.json || (echo 'MISSING ./ckpt/tokenizer.json' && exit 1)"
+    - "test -f ./ckpt/gen_config.json || (echo 'MISSING ./ckpt/gen_config.json' && exit 1)"
 
-# Entry point — must match run.py's class exactly:
-#   "run.py:Runner" → class Runner(BaseRunner) → def run(...)
-#
-# The key is `predict:`, NOT `run:`. This was briefly written as `run:` on the
-# belief that it was the modern spelling; it is not. Verified against Cog's
-# config struct (pkg/config/config.go), whose ONLY top-level keys are:
-#   build, image, model, predict, train, concurrency, observability,
-#   environment, weights
-# There is no `run` field, so `run:` is an unrecognized key and Cog loads NO
-# entry point — which is precisely the failure that presents as a container
-# booting and returning `output: null` in about a millisecond.
-#
-# Do not confuse this with the Python-side deprecation. Two separate things:
-#   * cog.yaml key           -> `predict:`  (current; there is no alternative)
-#   * Python base class      -> BaseRunner + run()  (current)
-#                               BasePredictor + predict()  (deprecated, warns)
-# So `predict: "run.py:Runner"` is correct and warning-free: the config key
-# names the entry-point OBJECT, and the class it resolves to decides which
-# method the loader calls. Using BaseRunner is also why `sdk_version` above must
-# stay unpinned — an SDK predating BaseRunner cannot load this class.
-predict: "run.py:Runner"
+# Entry point. Current Cog's cog.yaml field is `run:`; the old `predict:` field
+# still loads but prints:  ⚠ deprecated field "predict": use "run" instead
+# (Historical note: an EARLIER Cog release had no `run:` field at all, and a
+# `run:` line there was silently ignored — instant null output. That is why the
+# project once documented `predict:` as the only key. Cog renamed the field
+# since; the deprecation warning from the current CLI is authoritative.)
+# The field points at the entry-point OBJECT; the class it resolves to decides
+# which method the loader calls. run.py defines `class Runner(BaseRunner)` with
+# `run()`, so `run: "run.py:Runner"` → Runner.run() — current and warning-free.
+run: "run.py:Runner"
