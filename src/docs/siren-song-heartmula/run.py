@@ -103,7 +103,33 @@ KNOWN_SECTIONS = (
 
 class Runner(BaseRunner):
     def setup(self):
-        """Load HeartMuLa + HeartCodec once per container boot."""
+        """Load HeartMuLa + HeartCodec once per container boot.
+
+        NEVER RAISES. This is not defensive style, it is a cost control.
+        On Replicate an exception in setup() is NOT a terminal failure: the
+        worker is killed, the platform restarts it, and the prediction stays in
+        "starting" and retries the boot indefinitely. It reports the error and
+        keeps billing — a 2x-L40S loop that only stops when a human cancels.
+        That is what turned the 2026-08-25 missing-tokenizer error into 20+
+        minutes of GPU spend for a one-line, unfixable-at-runtime problem.
+
+        So a load failure is CAPTURED here and re-raised from run() instead.
+        A raise inside run() IS terminal: that prediction fails in seconds with
+        the real message and nothing retries. Same diagnosis, ~0 cost.
+
+        Do not "clean this up" by letting setup() raise again.
+        """
+        self.pipe = None
+        self.setup_error = None
+        try:
+            self._load()
+        except BaseException as e:
+            # Broad on purpose — anything that stops the model loading must
+            # become a cheap per-prediction failure, not a restart loop.
+            self.setup_error = f"{type(e).__name__}: {e}"
+            print(f"[setup] FAILED (deferred to run): {self.setup_error}")
+
+    def _load(self):
         if not os.path.isdir(MODEL_PATH):
             raise RuntimeError(
                 f"Checkpoint directory {MODEL_PATH} is missing. The weights must be "
@@ -233,6 +259,14 @@ class Runner(BaseRunner):
         # runtime rejects a non-optional annotation whose default is None.
         seed: int | None = Input(description="Leave blank for a random seed.", default=None),
     ) -> Path:
+        # Surface a boot failure as a TERMINAL prediction error. See setup().
+        if self.setup_error is not None or self.pipe is None:
+            raise RuntimeError(
+                f"Model failed to load at container boot: {self.setup_error}. "
+                "This is an IMAGE problem — retrying this prediction cannot fix "
+                "it, so the run is failed immediately rather than looping."
+            )
+
         if seed is None:
             seed = int.from_bytes(os.urandom(4), "big")
         torch.manual_seed(seed)
