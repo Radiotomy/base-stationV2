@@ -126,7 +126,7 @@ class Runner(BaseRunner):
 
         # Restore the two small shared-config files into ./ckpt.
         #
-        # They are baked into ./ckptcfg at build time and copied here at boot
+        # They ship in ./ckptcfg as SOURCE files and are copied here at boot
         # because ./ckpt is a MOUNT POINT under `cog push --separate-weights`:
         # the weights image is mounted over it at container start, shadowing
         # anything an image layer wrote to ./ckpt root. That is why the
@@ -144,9 +144,15 @@ class Runner(BaseRunner):
                 if not os.path.isfile(os.path.join(CONFIG_PATH, f)):
                     raise RuntimeError(
                         f"{f} is in neither {MODEL_PATH} nor {CONFIG_PATH}. "
-                        f"The build stages it into {CONFIG_PATH} (see cog.yaml) — if "
-                        "it is absent there, the image was built before that change. "
-                        "Do not retry the prediction; rebuild."
+                        f"{CONFIG_PATH} is SOURCE, committed alongside this file and "
+                        "copied into the image with the code — it is no longer "
+                        "downloaded at build time, because a downloaded copy twice "
+                        "passed its build guard and was still absent at boot. So this "
+                        "error now means the project directory had no ./ckptcfg when "
+                        "you pushed. Run, in the project dir:\n"
+                        "  hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json "
+                        "gen_config.json --local-dir './ckptcfg'\n"
+                        "then push again. Do not retry the prediction; rebuild."
                     )
             try:
                 # Preferred: copy straight into ./ckpt.

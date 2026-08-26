@@ -59,7 +59,7 @@ build:
     - "hf download --local-dir './ckpt' 'HeartMuLa/HeartMuLaGen'"
     - "hf download --local-dir './ckpt/HeartMuLa-oss-3B' 'HeartMuLa/HeartMuLa-RL-oss-3B-20260123'"
     - "hf download --local-dir './ckpt/HeartCodec-oss' 'HeartMuLa/HeartCodec-oss-20260123'"
-    # Stage the two small shared-config files OUTSIDE ./ckpt, in ./ckptcfg.
+    # NOTE: ./ckptcfg is NO LONGER downloaded here. See the block below.
     #
     # WHY NOT INTO ./ckpt: the 2026-08-25 boot proved that impossible. Writing
     # them into ./ckpt as the FINAL layer still produced, at runtime:
@@ -72,11 +72,28 @@ build:
     # is shadowed at boot regardless of which layer wrote it. Layer ordering
     # cannot beat a mount; only writing outside the mount point can.
     #
-    # ./ckptcfg is a few hundred KB, so the splitter leaves it in the main image,
-    # and run.py's setup() copies these files into ./ckpt before loading the
-    # pipeline. Appended (not reordered) so lines 1-4 stay byte-identical and
-    # their cached multi-gigabyte layers survive — the tail is all that rebuilds.
-    - "hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json --local-dir './ckptcfg'"
+    # AND ./ckptcfg AS A BUILD ARTIFACT ALSO FAILED (2026-08-26):
+    #     RuntimeError: tokenizer.json is in neither ./ckpt nor ./ckptcfg.
+    # on an image whose OWN build-time `test -f ./ckptcfg/tokenizer.json` guard
+    # had passed. So a file written by a build.run command into the working
+    # directory is not reliably present in the running container at all —
+    # regardless of size, path, or layer position. Two build-time proofs and two
+    # runtime absences is enough: stop treating downloaded files as durable.
+    #
+    # THE FIX: ./ckptcfg is now SOURCE, not a build artifact. Fetch the two files
+    # into the project directory ONCE on your machine, before pushing:
+    #
+    #     cd ~/heartlib
+    #     hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json gen_config.json \
+    #        --local-dir './ckptcfg'
+    #
+    # Cog copies the project directory into /src as part of the image, so these
+    # files travel with the code exactly like run.py does. Nothing downloads
+    # them, no layer can drop them, and the weights split does not see them.
+    # Make sure ./ckptcfg is NOT listed in .dockerignore or .cogignore.
+    #
+    # Appended (not reordered) so lines 1-4 stay byte-identical and their cached
+    # multi-gigabyte layers survive — only the cheap tail rebuilds.
     # Fail the BUILD, not a billed GPU boot. Every failed setup still bills the
     # full instance-up time (the 2026-08-24 dead slots cost ~500s of GPU each),
     # so a layout mistake must surface here where it is free.
@@ -85,6 +102,12 @@ build:
     # actively misleading: it passes at build time and tells you nothing about
     # what survives the weights mount at run time, which is exactly how the
     # 2026-08-25 build shipped green and died on boot.
+    #
+    # These guards are now meaningful in a way they were not before: ./ckptcfg is
+    # SOURCE (see above), so a guard passing here proves the files are in the
+    # image, not merely that a download succeeded in a layer. If either guard
+    # fails, you skipped the one-time `hf download ... --local-dir './ckptcfg'`
+    # step in the project directory — run it and push again.
     - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss && ls -la ./ckptcfg"
     - "test -f ./ckptcfg/tokenizer.json || (echo 'MISSING ./ckptcfg/tokenizer.json' && exit 1)"
     - "test -f ./ckptcfg/gen_config.json || (echo 'MISSING ./ckptcfg/gen_config.json' && exit 1)"
