@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { finalizeJob } from '../../shared/jobFinalize.ts';
+import { cancelStuckSirenSongPredictions } from '../../shared/sirenSong.ts';
 
 /**
  * Safety-net poller — scheduled every 5 minutes.
@@ -43,11 +44,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Reap stranded Siren Song predictions on the same 5-minute cadence.
+    // Deliberately independent of the job loop above: a boot-crash loop bills
+    // 2x-L40S time while retrying setup(), and it can happen with no matching
+    // GenerationJob row at all (a probe, or a job already finalized as failed).
+    // Its own failure must never abort the job sweep, so it is caught here.
+    let sirenSong = null;
+    try {
+      sirenSong = await cancelStuckSirenSongPredictions();
+    } catch (err) {
+      errors.push({ job_id: 'siren_song_sweep', error: err.message });
+    }
+
     return Response.json({
       success: true,
       scanned: stuck.length,
       candidates: toProcess.length,
       finalized,
+      siren_song: sirenSong,
       errors,
       timestamp: new Date().toISOString(),
     });
