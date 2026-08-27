@@ -173,10 +173,13 @@ Operational notes:
 - **Local Docker builds are retired.** All the local-disk/proxy push failures
   in the history (Docker Desktop 40GB layer drops, VM disk exhaustion) are
   moot — do not revisit them.
-- **Every merge to `main` produces a NEW Replicate version id.** BASE Station
-  pins the version via the `SIREN_SONG_VERSION` secret, so after a push that is
-  meant to go live, the secret must be updated to the new version id. A CI push
-  alone does not change what the app calls.
+- **Every merge to `main` produces a NEW Replicate version id — and the app
+  follows it automatically.** Backend code resolves the model's latest published
+  version at call time via `base44/shared/sirenSong.ts`
+  (`resolveSirenSongVersion()`), so a CI push goes live with no secret update.
+  `SIREN_SONG_VERSION` survives only as a fallback for when the Replicate models
+  endpoint is unreachable; it does not need to be kept current. Any future
+  Siren Song backend function MUST use the resolver, never the secret directly.
 - The source of truth for `run.py` / `cog.yaml` / `requirements.txt` is the
   model's GitHub repo; the copies in this folder are reference documentation
   and should be kept in sync when the contract changes.
