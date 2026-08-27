@@ -1,0 +1,101 @@
+// NOTE: reference documentation, not an app file. Copy this job into the model
+// repo's .github/workflows/replicate.yml — it belongs to the model repo, which
+// is the source of truth for CI.
+//
+// WHY THIS STEP EXISTS
+// --------------------
+// A green Cog build proves the image ASSEMBLED. It does not prove the model
+// BOOTS. Those are separate phases:
+//
+//   build  → layers, weights download, pip install   ← what CI verifies today
+//   boot   → container starts, setup() imports+loads ← never verified
+//
+// The 2026-08-27 failure lived entirely in the second phase: the workflow
+// reported a successful build and push, and the resulting version crashed on
+// `import torchao` (torch.int1 missing under Torch 2.4.1). Nothing in CI ran
+// the container, so a broken version was promoted to "latest" — and because the
+// backend resolver follows latest_version automatically, it went straight live.
+//
+// This step closes that gap by making CI actually boot the thing it just pushed.
+//
+// WHAT IT CHECKS — and what it deliberately does NOT
+// -------------------------------------------------
+// It waits for the prediction to acquire `started_at` and produce its first log
+// output, which is only possible once setup() has run far enough to import the
+// deps and load the model. It does NOT wait for audio: generation runs at
+// RTF ~1.0, so a full track would add minutes of GPU billing to every merge.
+// max_audio_length_ms is pinned to the 10000 floor for the same reason — this is
+// a boot probe, not a quality gate.
+//
+// A boot failure surfaces here as a FAILED workflow with the real traceback in
+// the log, costing one short prediction — instead of a silent restart loop
+// billing 2x-L40S until a human notices.
+
+name: boot-health
+// Runs after the cog push step in the same workflow. Needs the pushed version.
+steps:
+  - name: Boot-health check the pushed version
+    env:
+      REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+      MODEL: speedwolf2000/siren-song
+    run: |
+      set -euo pipefail
+
+      # Resolve the version that was just pushed — do not hardcode an id.
+      VERSION=$(curl -sf -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+        "https://api.replicate.com/v1/models/$MODEL" | jq -r '.latest_version.id')
+      echo "Boot-checking version $VERSION"
+
+      # Smallest legal request: shortest audio, trivial conditioning.
+      PRED=$(curl -sf -X POST \
+        -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"version\":\"$VERSION\",\"input\":{\"tags\":\"piano\",\"lyrics\":\"[Instrumental]\",\"max_audio_length_ms\":10000}}" \
+        https://api.replicate.com/v1/predictions)
+      ID=$(echo "$PRED" | jq -r '.id')
+      echo "Prediction $ID created"
+
+      # Poll for evidence of a successful boot. 15m ceiling covers a cold pull
+      # of the multi-GB weights image; a boot crash fails well before that.
+      DEADLINE=$(( $(date +%s) + 900 ))
+      while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+        P=$(curl -sf -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+          "https://api.replicate.com/v1/predictions/$ID")
+        STATUS=$(echo "$P" | jq -r '.status')
+        STARTED=$(echo "$P" | jq -r '.started_at // empty')
+        LOGS=$(echo "$P" | jq -r '.logs // ""')
+
+        if [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ]; then
+          echo "::error::Version $VERSION FAILED TO BOOT"
+          echo "$P" | jq -r '.error'
+          echo "--- logs ---"
+          echo "$LOGS"
+          exit 1
+        fi
+
+        # setup() got far enough to import deps, load the model and log.
+        if [ -n "$STARTED" ] && [ -n "$LOGS" ]; then
+          echo "Booted OK — setup() reached logging. Cancelling probe."
+          curl -sf -X POST -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+            "https://api.replicate.com/v1/predictions/$ID/cancel" > /dev/null || true
+          exit 0
+        fi
+
+        # A succeeded run this early is the null-output signature: the entry
+        # point returned nothing. Treat it as a failure, never a pass.
+        if [ "$STATUS" = "succeeded" ]; then
+          if [ "$(echo "$P" | jq -r '.output // "null"')" = "null" ]; then
+            echo "::error::Version $VERSION returned null output — entry point produced no value"
+            exit 1
+          fi
+          echo "Booted OK (completed)."
+          exit 0
+        fi
+
+        sleep 15
+      done
+
+      echo "::error::Version $VERSION never booted within 15m — cancelling"
+      curl -sf -X POST -H "Authorization: Bearer $REPLICATE_API_TOKEN" \
+        "https://api.replicate.com/v1/predictions/$ID/cancel" > /dev/null || true
+      exit 1
