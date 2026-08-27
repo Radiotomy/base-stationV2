@@ -206,9 +206,20 @@ class Runner(BaseRunner):
                 load_path = merged
                 print(f"[ckpt] {MODEL_PATH} not writable ({e}); using merged view {merged}")
 
+        # Device placement per the upstream README: with multiple GPUs, HeartMuLa
+        # and HeartCodec go on SEPARATE devices (their multi-GPU guidance is
+        # `--mula_device cuda:0 --codec_device cuda:1`); on a single GPU both
+        # share cuda:0. Replicate's 2x-L40S hardware has two GPUs, so detecting
+        # at runtime serves both layouts with one image. lazy_load stays False:
+        # upstream recommends it only as a single-GPU OOM workaround, and an
+        # L40S (48GB) fits the 3B bf16 LM + fp32 codec comfortably — lazy
+        # loading would just reload modules on every run.
+        codec_device = torch.device("cuda:1" if torch.cuda.device_count() > 1 else "cuda:0")
+        print(f"[setup] GPUs visible: {torch.cuda.device_count()} — mula on cuda:0, codec on {codec_device}")
+
         self.pipe = HeartMuLaGenPipeline.from_pretrained(
             load_path,
-            device={"mula": torch.device("cuda"), "codec": torch.device("cuda")},
+            device={"mula": torch.device("cuda:0"), "codec": codec_device},
             # bf16 for the LM, fp32 for the codec — the upstream README warns that
             # running HeartCodec in bf16 degrades audio quality.
             dtype={"mula": torch.bfloat16, "codec": torch.float32},
