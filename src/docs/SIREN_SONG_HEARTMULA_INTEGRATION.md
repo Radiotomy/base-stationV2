@@ -161,7 +161,27 @@ Also note `torchaudio` writes **32-bit float** WAV for a float tensor. Some DAWs
 and our own tooling prefer 24-bit PCM; converting on ingest is cheap, and the
 pipeline gives us no bit-depth argument to do it upstream.
 
-## 5. Status
+## 5. Build & deploy pipeline (2026-08-27)
+
+Builds no longer run on local Docker. The model repo has a GitHub Actions
+workflow (`.github/workflows/replicate.yml`) triggered on every push to `main`:
+the runner clears disk space, downloads the weights, builds the Cog container,
+and pushes the new version straight to `speedwolf2000/siren-song` on Replicate.
+
+Operational notes:
+
+- **Local Docker builds are retired.** All the local-disk/proxy push failures
+  in the history (Docker Desktop 40GB layer drops, VM disk exhaustion) are
+  moot — do not revisit them.
+- **Every merge to `main` produces a NEW Replicate version id.** BASE Station
+  pins the version via the `SIREN_SONG_VERSION` secret, so after a push that is
+  meant to go live, the secret must be updated to the new version id. A CI push
+  alone does not change what the app calls.
+- The source of truth for `run.py` / `cog.yaml` / `requirements.txt` is the
+  model's GitHub repo; the copies in this folder are reference documentation
+  and should be kept in sync when the contract changes.
+
+## 6. Status
 
 - [x] Corrected Cog runner + config authored (`run.py` / `cog.yaml` / `requirements.txt`)
 - [x] Migrated off the deprecated `predict()` interface to `BaseRunner.run()`
