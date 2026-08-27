@@ -95,6 +95,9 @@ MODEL_PATH = "./ckpt"
 # Small shared-config files live here, OUTSIDE the ./ckpt weights mount, and are
 # copied into MODEL_PATH by setup(). See the note there before changing this.
 CONFIG_PATH = "./ckptcfg"
+# Where the two small config files are fetched from when they are not already on
+# disk at boot. Public repo, no token required.
+HF_CONFIG_REPO = "HeartMuLa/HeartMuLaGen"
 
 # Section headers heartlib was trained on. Lyrics with no header at all tend to
 # be sung as one undifferentiated block, so we ensure at least one is present.
@@ -124,6 +127,7 @@ class Runner(BaseRunner):
         """
         self.pipe = None
         self.setup_error = None
+        self.cfg_dir = CONFIG_PATH
         try:
             self._load()
         except BaseException as e:
@@ -131,6 +135,30 @@ class Runner(BaseRunner):
             # become a cheap per-prediction failure, not a restart loop.
             self.setup_error = f"{type(e).__name__}: {e}"
             print(f"[setup] FAILED (deferred to run): {self.setup_error}")
+
+    def _fetch_configs(self, names):
+        """Guarantee `names` exist in a readable dir, and record it as self.cfg_dir.
+
+        Order: a source-shipped ./ckptcfg if it happens to be in the image, else
+        download from Hugging Face. The download is the reliable path and the
+        local dir is only a free shortcut — do not invert this, or a forgotten
+        `hf download` at push time becomes a boot failure again.
+
+        The files are ~1MB combined and public (no HF token needed), so this adds
+        a second or two to a cold boot and nothing to a warm one.
+        """
+        scratch = tempfile.mkdtemp(prefix="ckptcfg_")
+        for f in names:
+            local = os.path.join(CONFIG_PATH, f)
+            if os.path.isfile(local):
+                shutil.copy2(local, os.path.join(scratch, f))
+                print(f"[cfg] {f} taken from {CONFIG_PATH}")
+                continue
+            from huggingface_hub import hf_hub_download
+            got = hf_hub_download(repo_id=HF_CONFIG_REPO, filename=f)
+            shutil.copy2(got, os.path.join(scratch, f))
+            print(f"[cfg] {f} downloaded from {HF_CONFIG_REPO}")
+        self.cfg_dir = scratch
 
     def _load(self):
         if not os.path.isdir(MODEL_PATH):
@@ -153,41 +181,46 @@ class Runner(BaseRunner):
                 continue
             print(f"[ckpt] {root}: dirs={sorted(dirs)} files={sorted(files)}")
 
-        # Restore the two small shared-config files into ./ckpt.
+        # Ensure the two small shared-config files are present in ./ckpt.
         #
-        # They ship in ./ckptcfg as SOURCE files and are copied here at boot
-        # because ./ckpt is a MOUNT POINT under `cog push --separate-weights`:
-        # the weights image is mounted over it at container start, shadowing
-        # anything an image layer wrote to ./ckpt root. That is why the
-        # 2026-08-25 build passed its build-time `test -f ./ckpt/tokenizer.json`
-        # and still died on boot with that exact file missing. Do not "simplify"
-        # this away by downloading into ./ckpt in cog.yaml again — that has been
-        # tried, and a mount always wins.
+        # ./ckpt is a MOUNT POINT under `cog push --separate-weights`: the weights
+        # image is mounted over it at container start, shadowing anything an image
+        # layer wrote to ./ckpt root. That is why builds passed their build-time
+        # `test -f ./ckpt/tokenizer.json` and still died on boot with that exact
+        # file missing. Anything decided at BUILD time can be invalidated before
+        # boot, so the source of truth for these files is a RUNTIME fetch — see
+        # _fetch_configs. A locally shipped ./ckptcfg is used first when present.
         load_path = MODEL_PATH
         missing = [
             f for f in ("tokenizer.json", "gen_config.json")
             if not os.path.isfile(os.path.join(MODEL_PATH, f))
         ]
         if missing:
-            for f in missing:
-                if not os.path.isfile(os.path.join(CONFIG_PATH, f)):
-                    raise RuntimeError(
-                        f"{f} is in neither {MODEL_PATH} nor {CONFIG_PATH}. "
-                        f"{CONFIG_PATH} is SOURCE, committed alongside this file and "
-                        "copied into the image with the code — it is no longer "
-                        "downloaded at build time, because a downloaded copy twice "
-                        "passed its build guard and was still absent at boot. So this "
-                        "error now means the project directory had no ./ckptcfg when "
-                        "you pushed. Run, in the project dir:\n"
-                        "  hf download 'HeartMuLa/HeartMuLaGen' tokenizer.json "
-                        "gen_config.json --local-dir './ckptcfg'\n"
-                        "then push again. Do not retry the prediction; rebuild."
-                    )
+            # Fetch anything still absent from Hugging Face AT BOOT.
+            #
+            # This is the third attempt at getting these two ~1MB files to exist
+            # at runtime, and the previous two both failed for the same reason:
+            # every build-time strategy depends on something that is only true at
+            # BUILD time. Downloading into ./ckpt is defeated by the weights
+            # image mounting over it; shipping ./ckptcfg as source is defeated by
+            # the folder simply not being in the project dir at push time. Both
+            # passed their build guards and were still missing at boot, because a
+            # build guard cannot observe a mount that happens later.
+            #
+            # A runtime download has no such dependency: nothing can shadow it,
+            # no push flag changes it, and no local folder has to be remembered.
+            # It costs ~1-2s on a cold boot. Do NOT move this back into cog.yaml.
+            self._fetch_configs(missing)
+            missing = [
+                f for f in missing
+                if not os.path.isfile(os.path.join(MODEL_PATH, f))
+            ]
+        if missing:
             try:
                 # Preferred: copy straight into ./ckpt.
                 for f in missing:
-                    shutil.copy2(os.path.join(CONFIG_PATH, f), os.path.join(MODEL_PATH, f))
-                print(f"[ckpt] restored {missing} from {CONFIG_PATH}")
+                    shutil.copy2(os.path.join(self.cfg_dir, f), os.path.join(MODEL_PATH, f))
+                print(f"[ckpt] restored {missing} from {self.cfg_dir}")
             except OSError as e:
                 # The weights mount may be READ-ONLY — never assume it is
                 # writable. Assemble a merged view in a scratch dir instead:
@@ -202,7 +235,7 @@ class Runner(BaseRunner):
                 for f in ("tokenizer.json", "gen_config.json"):
                     dst = os.path.join(merged, f)
                     if not os.path.exists(dst):
-                        shutil.copy2(os.path.join(CONFIG_PATH, f), dst)
+                        shutil.copy2(os.path.join(self.cfg_dir, f), dst)
                 load_path = merged
                 print(f"[ckpt] {MODEL_PATH} not writable ({e}); using merged view {merged}")
 

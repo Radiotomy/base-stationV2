@@ -35,8 +35,14 @@ build:
     # Fail the BUILD, not a billed GPU boot: a layout mistake must surface here
     # where it is free, not in setup() where it bills the full instance-up time.
     - "ls -la ./ckpt && ls -la ./ckpt/HeartMuLa-oss-3B && ls -la ./ckpt/HeartCodec-oss"
-    - "test -f ./ckpt/tokenizer.json || (echo 'MISSING ./ckpt/tokenizer.json' && exit 1)"
-    - "test -f ./ckpt/gen_config.json || (echo 'MISSING ./ckpt/gen_config.json' && exit 1)"
+    # These are WARNINGS, not build failures. A passing check here proved nothing:
+    # under --separate-weights the weights image mounts over ./ckpt at boot and
+    # shadows both files, so builds passed this guard three times and still died
+    # at boot with the file missing. run.py now fetches them at RUNTIME, which no
+    # mount and no push flag can defeat. Do not restore `exit 1` here — it would
+    # fail builds that boot perfectly well.
+    - "test -f ./ckpt/tokenizer.json || echo 'NOTE: ./ckpt/tokenizer.json absent — run.py will fetch it at boot'"
+    - "test -f ./ckpt/gen_config.json || echo 'NOTE: ./ckpt/gen_config.json absent — run.py will fetch it at boot'"
 
 # Entry point. Current Cog's cog.yaml field is `run:`; the old `predict:` field
 # still loads but prints:  ⚠ deprecated field "predict": use "run" instead
