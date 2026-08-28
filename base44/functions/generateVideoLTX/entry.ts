@@ -115,6 +115,47 @@ Deno.serve(async (req) => {
           started_at: completedAt, completed_at: completedAt,
         }).catch(() => ({ id: null }));
 
+        // Save into the creator's library. The file_url is already our own
+        // permanent storage copy (persisted at fetch time), never the pod URL.
+        // BASE Mark / ID3 are audio-only and deliberately not applied to an
+        // MP4; on-chain anchoring only covers whole audio works (opt-in), so
+        // neither pipeline is triggered for a video asset.
+        const title = (prompt || 'Generated video').slice(0, 60);
+        const asset = await base44.entities.UserAsset.create({
+          user_id: user.id, user_email: user.email,
+          asset_type: 'video',
+          title,
+          file_url: priv.video_url,
+          is_public: false,
+          metadata: {
+            prompt, seed: priv.seed,
+            generated_at: completedAt,
+            provider: 'ltx', engine: 'runpod_private',
+            model_version: 'ltx-2-5-private-runpod',
+            resolution: '768x512', fps: 24,
+            generation_job_id: privJob?.id || null,
+          },
+        }).catch((e) => { console.warn('Asset save failed:', e.message); return null; });
+
+        // Pin the MP4 to IPFS via the existing Pinata function and record the
+        // CID on the asset. Non-fatal: a pin failure must not fail a finished
+        // generation — the permanent storage copy is already the file of record.
+        let ipfs = null;
+        if (asset) {
+          try {
+            const pinRes = await base44.functions.invoke('pinToIPFS', {
+              mode: 'file', file_url: priv.video_url, name: `${title}.mp4`,
+            });
+            if (pinRes?.data?.cid) {
+              ipfs = pinRes.data;
+              await base44.entities.UserAsset.update(asset.id, {
+                metadata: { ...asset.metadata, generation_job_id: privJob?.id || null,
+                  ipfs_cid: ipfs.cid, ipfs_uri: ipfs.ipfs_uri, ipfs_gateway_url: ipfs.gateway_url },
+              }).catch(() => {});
+            }
+          } catch (e) { console.warn('IPFS pin failed (non-fatal):', e.message); }
+        }
+
         // Deduct now — the async finalizer never sees a synchronously completed job.
         let remaining = balance;
         try {
@@ -155,6 +196,9 @@ Deno.serve(async (req) => {
           status: 'completed',
           video_url: priv.video_url,
           job_id: privJob?.id,
+          asset_id: asset?.id || null,
+          ipfs_cid: ipfs?.cid || null,
+          ipfs_gateway_url: ipfs?.gateway_url || null,
           model: 'ltx-2-5-private-runpod',
           credits_used: cost,
           credits_remaining: remaining,
