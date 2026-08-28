@@ -18,7 +18,7 @@ import {
   LTX_API_BASE, LTX_CAMERA_MOTIONS, LTX_MODELS,
   ltxCreditCost, ltxDurations, ltxMaxAudioSeconds, ltxNormalize,
 } from '../../shared/ltxSpec.ts';
-import { tryRunpodPrivateVideo } from '../../shared/runpodLtx.ts';
+import { tryPrivateLtxVideo } from '../../shared/privateLtx.ts';
 
 const LTX_API_KEY = Deno.env.get('LTX_API_KEY');
 
@@ -91,14 +91,14 @@ Deno.serve(async (req) => {
       }, { status: 402 });
     }
 
-    // ── Node 1: private RunPod A100 engine (primary, text-to-video only) ────
-    // Synchronous: success returns the finished MP4 already persisted into our
-    // storage. Any failure (pod asleep, busy, timeout, unfetchable output)
+    // ── Node 1: private Hugging Face LTX engine (primary, text-to-video only) ──
+    // Submit-and-poll: success returns the finished MP4 already persisted into
+    // our storage. Any failure (Space asleep, busy, timeout, unfetchable output)
     // returns null and execution falls through to the public LTX path below —
     // Node 2's IF/ELSE is simply this null check. Invisible to the user: the
     // frontend already handles both a synchronous video_url and an async job_id.
     if (mode === 'text') {
-      const priv = await tryRunpodPrivateVideo(base44, { prompt, seed: body.seed });
+      const priv = await tryPrivateLtxVideo(base44, { prompt, seed: body.seed });
       if (priv?.video_url) {
         const completedAt = new Date().toISOString();
         const privJob = await base44.entities.GenerationJob.create({
@@ -106,11 +106,11 @@ Deno.serve(async (req) => {
           job_type: 'video', provider: 'ltx',
           status: 'completed',
           input_data: {
-            prompt, mode, model: 'ltx-2-5-private-runpod', engine: 'runpod_private',
+            prompt, mode, model: 'ltx-2-5-private-hf', engine: 'hf_private',
             seed: priv.seed, resolution: '768x512', fps: 24, credit_cost: cost,
           },
           output_url: priv.video_url,
-          output_metadata: { duration: 4, resolution: '768x512', fps: 24, model_version: 'ltx-2-5-private-runpod' },
+          output_metadata: { duration: 4, resolution: '768x512', fps: 24, model_version: 'ltx-2-5-private-hf' },
           credits_used: cost,
           started_at: completedAt, completed_at: completedAt,
         }).catch(() => ({ id: null }));
@@ -130,8 +130,8 @@ Deno.serve(async (req) => {
           metadata: {
             prompt, seed: priv.seed,
             generated_at: completedAt,
-            provider: 'ltx', engine: 'runpod_private',
-            model_version: 'ltx-2-5-private-runpod',
+            provider: 'ltx', engine: 'hf_private',
+            model_version: 'ltx-2-5-private-hf',
             resolution: '768x512', fps: 24,
             generation_job_id: privJob?.id || null,
           },
@@ -174,7 +174,7 @@ Deno.serve(async (req) => {
               balance_before: rec.balance,
               balance_after: remaining,
               related_job_id: privJob?.id, provider: 'ltx',
-              description: 'Private RunPod LTX video generation',
+              description: 'Private LTX engine video generation',
             }).catch(() => {});
           }
         } catch (e) { console.warn('Credit deduction failed:', e.message); }
@@ -185,8 +185,8 @@ Deno.serve(async (req) => {
           credits_used: cost, status: 'success',
           timestamp: completedAt, job_id: privJob?.id || null,
           metadata: {
-            model_version: 'ltx-2-5-private-runpod',
-            engine: 'runpod_private',
+            model_version: 'ltx-2-5-private-hf',
+            engine: 'hf_private',
             input_parameters: { prompt: (prompt || '').slice(0, 200), mode, seed: priv.seed, resolution: '768x512', fps: 24 },
             output_details: { video_url: priv.video_url },
           },
@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
           asset_id: asset?.id || null,
           ipfs_cid: ipfs?.cid || null,
           ipfs_gateway_url: ipfs?.gateway_url || null,
-          model: 'ltx-2-5-private-runpod',
+          model: 'ltx-2-5-private-hf',
           credits_used: cost,
           credits_remaining: remaining,
         });

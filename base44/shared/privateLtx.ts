@@ -1,5 +1,5 @@
-// Private LTX engine — PRIMARY video engine for text-to-video, now hosted on
-// a Hugging Face Space (moved off RunPod: its proxy killed any HTTP request at
+// Private LTX engine — PRIMARY video engine for text-to-video, hosted on a
+// Hugging Face Space (moved off RunPod: its proxy killed any HTTP request at
 // ~100s with a 524, which no client-side timeout could survive).
 //
 // The engine is ASYNC (submit-and-poll), fixed-format: 768x512, 97 frames
@@ -20,12 +20,13 @@ const ENGINE_BASE = 'https://radiotomy-basestation-ltx-engine.hf.space';
 
 const SUBMIT_TIMEOUT_MS = 30000;
 const POLL_INTERVAL_MS = 5000;
-// Rendering 97 frames at 40 steps runs ~2-3 minutes on a warm GPU. Past this
-// ceiling the engine is treated as unavailable and the public engine takes over.
+// Rendering 97 frames at 40 steps runs well under a minute on a warm GPU, but
+// a cold Space adds model-load time. Past this ceiling the engine is treated
+// as unavailable and the public engine takes over.
 const POLL_DEADLINE_MS = 300000;
 const DOWNLOAD_TIMEOUT_MS = 60000;
 
-export async function tryRunpodPrivateVideo(base44, { prompt, seed }) {
+export async function tryPrivateLtxVideo(base44, { prompt, seed }) {
   try {
     const usedSeed = Number.isFinite(Number(seed)) ? Number(seed) : 42;
 
