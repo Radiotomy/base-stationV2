@@ -53,12 +53,15 @@ export async function tryRunpodPrivateVideo(base44, { prompt, seed }) {
 
     const filePath = String(data.file_path || '');
     const filename = String(data.filename || filePath.split('/').pop() || 'video.mp4');
+    // The pod returns `download_url` as a path ("/outputs/{file}.mp4") to append
+    // to the proxy base — that is the documented retrieval contract, so it is
+    // tried first. The rest stay only as a safety net if the server changes.
+    const dl = String(data.download_url || '');
     const candidates = [
+      dl ? (/^https?:/i.test(dl) ? dl : `${RUNPOD_BASE}${dl.startsWith('/') ? '' : '/'}${dl}`) : null,
       data.video_url, data.url, data.file_url,
       /^https?:/i.test(filePath) ? filePath : null,
       filePath.startsWith('/') ? `${RUNPOD_BASE}${filePath}` : null,
-      `${RUNPOD_BASE}/videos/${filename}`,
-      `${RUNPOD_BASE}/download/${filename}`,
       `${RUNPOD_BASE}/outputs/${filename}`,
     ].filter(Boolean);
 
