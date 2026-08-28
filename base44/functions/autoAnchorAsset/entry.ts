@@ -16,10 +16,18 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 import { prepareAnchorRecord, broadcastAnchor } from '../../shared/chainAnchor.ts';
 
-// Only whole works are anchored. A stem, a visualizer or a cover art is a
-// component of a release, and anchoring each one would spend real gas to make
-// dozens of near-identical public claims about a single piece of music.
-const ANCHORABLE_TYPES = ['track', 'master', 'mashup'];
+// Only whole works are anchored. A stem or a cover art is a component of a
+// release, and anchoring each one would spend real gas to make dozens of
+// near-identical public claims about a single piece of music.
+//
+// 'master' is also how an ORVO podcast episode reaches this policy: an episode
+// mints a master asset from its audio, so podcasts are anchored through the same
+// path as music rather than a parallel one.
+//
+// 'video' covers a finished generated video — a whole deliverable a creator
+// publishes, unlike a 'visualizer', which is a derived accompaniment to a track
+// that is itself already anchorable.
+const ANCHORABLE_TYPES = ['track', 'master', 'mashup', 'video'];
 
 // Same reasoning as autoBaseMarkV2: the automation body is caller-supplied and
 // authorizes nothing, so every gate is re-derived from the stored record and
