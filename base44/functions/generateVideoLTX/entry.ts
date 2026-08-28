@@ -18,6 +18,7 @@ import {
   LTX_API_BASE, LTX_CAMERA_MOTIONS, LTX_MODELS,
   ltxCreditCost, ltxDurations, ltxMaxAudioSeconds, ltxNormalize,
 } from '../../shared/ltxSpec.ts';
+import { tryRunpodPrivateVideo } from '../../shared/runpodLtx.ts';
 
 const LTX_API_KEY = Deno.env.get('LTX_API_KEY');
 
@@ -89,6 +90,80 @@ Deno.serve(async (req) => {
         message: `${billedSeconds}s of ${norm.tier} ${LTX_MODELS[norm.model].label} video costs ${cost} credits. You have ${balance}.`,
       }, { status: 402 });
     }
+
+    // ── Node 1: private RunPod A100 engine (primary, text-to-video only) ────
+    // Synchronous: success returns the finished MP4 already persisted into our
+    // storage. Any failure (pod asleep, busy, timeout, unfetchable output)
+    // returns null and execution falls through to the public LTX path below —
+    // Node 2's IF/ELSE is simply this null check. Invisible to the user: the
+    // frontend already handles both a synchronous video_url and an async job_id.
+    if (mode === 'text') {
+      const priv = await tryRunpodPrivateVideo(base44, { prompt, seed: body.seed });
+      if (priv?.video_url) {
+        const completedAt = new Date().toISOString();
+        const privJob = await base44.entities.GenerationJob.create({
+          user_id: user.id, user_email: user.email,
+          job_type: 'video', provider: 'ltx',
+          status: 'completed',
+          input_data: {
+            prompt, mode, model: 'ltx-2-5-private-runpod', engine: 'runpod_private',
+            seed: priv.seed, resolution: '768x512', fps: 24, credit_cost: cost,
+          },
+          output_url: priv.video_url,
+          output_metadata: { duration: 4, resolution: '768x512', fps: 24, model_version: 'ltx-2-5-private-runpod' },
+          credits_used: cost,
+          started_at: completedAt, completed_at: completedAt,
+        }).catch(() => ({ id: null }));
+
+        // Deduct now — the async finalizer never sees a synchronously completed job.
+        let remaining = balance;
+        try {
+          const rec = credits[0];
+          if (rec) {
+            remaining = Math.max(0, (rec.balance || 0) - cost);
+            await base44.asServiceRole.entities.UserCredit.update(rec.id, {
+              balance: remaining,
+              lifetime_spent: (rec.lifetime_spent || 0) + cost,
+              monthly_used: (rec.monthly_used || 0) + cost,
+            });
+            await base44.asServiceRole.entities.CreditLog.create({
+              user_id: user.id, user_email: user.email,
+              transaction_type: 'generation',
+              amount: -cost,
+              balance_before: rec.balance,
+              balance_after: remaining,
+              related_job_id: privJob?.id, provider: 'ltx',
+              description: 'Private RunPod LTX video generation',
+            }).catch(() => {});
+          }
+        } catch (e) { console.warn('Credit deduction failed:', e.message); }
+
+        base44.asServiceRole.entities.APIUsageLog.create({
+          user_id: user.id, user_email: user.email, user_name: user.full_name,
+          provider: 'ltx', task: 'generate_video',
+          credits_used: cost, status: 'success',
+          timestamp: completedAt, job_id: privJob?.id || null,
+          metadata: {
+            model_version: 'ltx-2-5-private-runpod',
+            engine: 'runpod_private',
+            input_parameters: { prompt: (prompt || '').slice(0, 200), mode, seed: priv.seed, resolution: '768x512', fps: 24 },
+            output_details: { video_url: priv.video_url },
+          },
+        }).catch(() => {});
+
+        return Response.json({
+          status: 'completed',
+          video_url: priv.video_url,
+          job_id: privJob?.id,
+          model: 'ltx-2-5-private-runpod',
+          credits_used: cost,
+          credits_remaining: remaining,
+        });
+      }
+      console.log('Private engine unavailable — routing to public LTX API');
+    }
+
+    // ── Node 3: public LTX API (fallback, and the only path for image/audio) ──
 
     // Build the request body exactly as the endpoint expects
     const ltxBody: Record<string, any> = {
