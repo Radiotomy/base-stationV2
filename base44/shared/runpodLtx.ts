@@ -1,31 +1,36 @@
-// Private RunPod A100 LTX engine — PRIMARY video engine for text-to-video.
+// Private LTX engine — PRIMARY video engine for text-to-video, now hosted on
+// a Hugging Face Space (moved off RunPod: its proxy killed any HTTP request at
+// ~100s with a 524, which no client-side timeout could survive).
 //
-// The pod is SYNCHRONOUS (one POST returns when the MP4 is rendered) and
-// fixed-format: 768x512, 97 frames @ 24fps, 40 inference steps. It can be
-// asleep, busy, or gone entirely — so every failure path here returns null,
-// and the caller falls through silently to the public LTX API. This function
-// must NEVER throw: an exception would fail the whole generation instead of
-// triggering the fallback the routing exists for.
+// The engine is ASYNC (submit-and-poll), fixed-format: 768x512, 97 frames
+// @ 24fps, 40 inference steps.
+//   POST /generate/video          → { job_id }         (returns immediately)
+//   GET  /status/{job_id}         → { status, download_url? }  status: "completed" when done
+//   GET  {BASE}{download_url}     → the rendered MP4
 //
-// Expected pod response: {"status": "success", "file_path": "...", "filename": "..."}
-// That is a path on the pod, not a URL — the actual MP4 location isn't
-// documented, so retrieval tries the common serving conventions in order and
-// treats "none fetchable" as a private-engine failure (→ public fallback).
-// The fetched bytes are uploaded into Base44 storage immediately: pods are
-// ephemeral, so a proxy.runpod.net link must never be handed to the player.
+// The Space can be asleep, busy, or gone entirely — so every failure path here
+// returns null, and the caller falls through silently to the public LTX API.
+// This function must NEVER throw: an exception would fail the whole generation
+// instead of triggering the fallback the routing exists for.
+//
+// The fetched bytes are uploaded into Base44 storage immediately: Space
+// storage is ephemeral, so an hf.space link must never be handed to the player.
 
-const RUNPOD_BASE = 'https://ka9byhua0n7657-8000.proxy.runpod.net';
+const ENGINE_BASE = 'https://radiotomy-basestation-ltx-engine.hf.space';
 
-// Rendering 97 frames at 40 steps runs ~1-2 minutes on a warm A100. Past this
-// ceiling the pod is treated as unavailable and the public engine takes over.
-const GENERATE_TIMEOUT_MS = 120000;
+const SUBMIT_TIMEOUT_MS = 30000;
+const POLL_INTERVAL_MS = 5000;
+// Rendering 97 frames at 40 steps runs ~2-3 minutes on a warm GPU. Past this
+// ceiling the engine is treated as unavailable and the public engine takes over.
+const POLL_DEADLINE_MS = 300000;
 const DOWNLOAD_TIMEOUT_MS = 60000;
 
 export async function tryRunpodPrivateVideo(base44, { prompt, seed }) {
   try {
     const usedSeed = Number.isFinite(Number(seed)) ? Number(seed) : 42;
 
-    const res = await fetch(`${RUNPOD_BASE}/generate/video`, {
+    // ── Submit ──────────────────────────────────────────────────────────────
+    const res = await fetch(`${ENGINE_BASE}/generate/video`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -38,49 +43,75 @@ export async function tryRunpodPrivateVideo(base44, { prompt, seed }) {
         fps: 24,
         seed: usedSeed,
       }),
-      signal: AbortSignal.timeout(GENERATE_TIMEOUT_MS),
+      signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
     });
 
     if (!res.ok) {
-      console.warn(`RunPod private engine HTTP ${res.status} — falling back to public LTX`);
+      console.warn(`Private LTX engine HTTP ${res.status} on submit — falling back to public LTX`);
       return null;
     }
-    const data = await res.json().catch(() => null);
-    if (data?.status !== 'success') {
-      console.warn('RunPod private engine returned non-success — falling back to public LTX');
+    const submitted = await res.json().catch(() => null);
+    const jobId = submitted?.job_id;
+    if (!jobId) {
+      console.warn('Private LTX engine returned no job_id — falling back to public LTX');
       return null;
     }
 
-    const filePath = String(data.file_path || '');
-    const filename = String(data.filename || filePath.split('/').pop() || 'video.mp4');
-    // The pod returns `download_url` as a path ("/outputs/{file}.mp4") to append
-    // to the proxy base — that is the documented retrieval contract, so it is
-    // tried first. The rest stay only as a safety net if the server changes.
-    const dl = String(data.download_url || '');
-    const candidates = [
-      dl ? (/^https?:/i.test(dl) ? dl : `${RUNPOD_BASE}${dl.startsWith('/') ? '' : '/'}${dl}`) : null,
-      data.video_url, data.url, data.file_url,
-      /^https?:/i.test(filePath) ? filePath : null,
-      filePath.startsWith('/') ? `${RUNPOD_BASE}${filePath}` : null,
-      `${RUNPOD_BASE}/outputs/${filename}`,
-    ].filter(Boolean);
-
-    for (const url of candidates) {
+    // ── Poll ────────────────────────────────────────────────────────────────
+    const deadline = Date.now() + POLL_DEADLINE_MS;
+    let downloadUrl = null;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+      let status: any = null;
       try {
-        const f = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
-        if (!f.ok) continue;
-        const blob = await f.blob();
-        if (blob.size < 10000) continue; // an error page or JSON, not a video
-        const file = new File([blob], filename.replace(/[^\w.\-]/g, '_'), { type: 'video/mp4' });
-        const up = await base44.integrations.Core.UploadFile({ file });
-        if (up?.file_url) return { video_url: up.file_url, seed: usedSeed };
-      } catch { /* try the next serving convention */ }
+        const s = await fetch(`${ENGINE_BASE}/status/${jobId}`, {
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!s.ok) continue; // transient — keep polling until the deadline
+        status = await s.json().catch(() => null);
+      } catch { continue; }
+
+      const state = String(status?.status || '').toLowerCase();
+      if (state === 'completed') {
+        downloadUrl = String(status.download_url || status.file_url || status.url || '');
+        break;
+      }
+      if (state === 'failed' || state === 'error') {
+        console.warn(`Private LTX job ${jobId} failed: ${status?.error || 'no detail'} — falling back to public LTX`);
+        return null;
+      }
+      // pending / processing → keep polling
     }
 
-    console.warn('RunPod generated but no output URL was fetchable — falling back to public LTX');
+    if (!downloadUrl) {
+      console.warn(`Private LTX job ${jobId} did not complete within ${POLL_DEADLINE_MS / 1000}s — falling back to public LTX`);
+      return null;
+    }
+
+    // ── Fetch + persist ─────────────────────────────────────────────────────
+    const url = /^https?:/i.test(downloadUrl)
+      ? downloadUrl
+      : `${ENGINE_BASE}${downloadUrl.startsWith('/') ? '' : '/'}${downloadUrl}`;
+    const filename = (url.split('/').pop() || 'video.mp4').replace(/[^\w.\-]/g, '_');
+
+    const f = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+    if (!f.ok) {
+      console.warn(`Private LTX output fetch HTTP ${f.status} — falling back to public LTX`);
+      return null;
+    }
+    const blob = await f.blob();
+    if (blob.size < 10000) {
+      console.warn('Private LTX output too small to be a video — falling back to public LTX');
+      return null;
+    }
+    const file = new File([blob], filename, { type: 'video/mp4' });
+    const up = await base44.integrations.Core.UploadFile({ file });
+    if (up?.file_url) return { video_url: up.file_url, seed: usedSeed };
+
+    console.warn('Private LTX output could not be persisted — falling back to public LTX');
     return null;
   } catch (e) {
-    console.warn('RunPod private engine unavailable — falling back to public LTX:', e.message);
+    console.warn('Private LTX engine unavailable — falling back to public LTX:', e.message);
     return null;
   }
 }
