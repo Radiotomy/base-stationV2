@@ -17,7 +17,7 @@ import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
 const TIERS = [
   { key: 'micro', name: 'Micro', tagline: 'Lite / Fast', icon: Zap, cost: 3, color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300', desc: 'Quick draft generation & real-time previewing' },
-  { key: 'pro', name: 'Pro', tagline: 'Core Model · v1', icon: Sparkles, cost: 10, color: 'border-blue-500 bg-blue-500/10 text-blue-300', desc: 'Full-track generation for the standard pipeline' },
+  { key: 'pro', name: 'Pro', tagline: 'Coda · XL Turbo', icon: Sparkles, cost: 10, color: 'border-blue-500 bg-blue-500/10 text-blue-300', desc: 'Full-track generation for the standard pipeline' },
   { key: 'vault', name: 'Vault', tagline: 'Watermarked / Verified · COS', icon: ShieldCheck, cost: 15, color: 'border-amber-500 bg-amber-500/10 text-amber-300', desc: 'Pro quality + acoustic watermarking & DDEX metadata' },
 ];
 
@@ -28,8 +28,7 @@ export default function HarmonixGenerateTab() {
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(60);
   const [groove, setGroove] = useState({
-    bpm: null, key_scale: '', time_signature: 'auto',
-    guidance_scale: 7.5, thinking: true, seed: null,
+    bpm: null, key_scale: '', time_signature: 'auto', seed: null,
   });
   const [generating, setGenerating] = useState(false);
   const [jobId, setJobId] = useState('');
@@ -79,7 +78,8 @@ export default function HarmonixGenerateTab() {
         metadata: {
           provider: 'harmonix',
           tier: usedTier,
-          model: 'ACE-Step v1.5',
+          model: 'Coda (ACE-Step 1.5 XL Turbo · 4B DiT)',
+          engine: 'coda_hf',
           prompt,
           lyrics: lyrics || '',
           duration: data?.duration || duration,
@@ -167,8 +167,6 @@ export default function HarmonixGenerateTab() {
         bpm: groove.bpm || undefined,
         key_scale: groove.key_scale || undefined,
         time_signature: groove.time_signature,
-        guidance_scale: groove.guidance_scale,
-        thinking: groove.thinking,
         seed: groove.seed || undefined,
       });
       refreshCreditsFromResponse(res.data);
@@ -205,7 +203,7 @@ export default function HarmonixGenerateTab() {
       <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5">
         <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-emerald-200/90">
-          <span className="font-bold text-emerald-300">BASE-Harmonix:</span> our in-house studio built on ACE-Step v1.5, an open-source foundation model — generates full instrumental or vocal tracks from a single prompt. Pick a tier below.
+          <span className="font-bold text-emerald-300">BASE-Harmonix:</span> our in-house studio, now powered by <span className="font-semibold">Coda</span> — ACE-Step 1.5 XL Turbo (4B DiT) self-hosted on our Hugging Face engine. Full instrumental or vocal tracks from a single prompt, rendered in 8 distilled steps. Pick a tier below.
         </p>
       </div>
 

@@ -1,6 +1,7 @@
 import { finalizeMashupAsset } from './mashupFinalize.ts';
 import { autoSaveJobAsset } from './autoSaveAsset.ts';
 import { getHarmonixPrediction, extractAudioUrl } from './harmonix.ts';
+import { getCodaStatus, codaAbsoluteUrl, CODA_MODEL_VERSION } from './codaEngine.ts';
 import { getSoundForgePrediction, extractSoundForgeAudioUrl } from './soundForge.ts';
 import { fetchPolishUpload } from './loopPolish.ts';
 import { getRender as getShotstackRender } from './shotstack.ts';
@@ -291,6 +292,19 @@ export async function pollProvider(provider, providerTaskId, job) {
   }
 
   if (provider === 'harmonix') {
+    // Coda engine (HF Space) — the current Harmonix backend. Rows carry
+    // input_data.engine = 'coda_hf'; legacy Replicate rows keep the path below.
+    if (job.input_data?.engine === 'coda_hf') {
+      const st = await getCodaStatus(providerTaskId);
+      if (st.status === 'completed') {
+        if (!st.downloadUrl) return { status: 'failed', error: 'Coda completed without a download URL' };
+        return { status: 'completed', audio_url: codaAbsoluteUrl(st.downloadUrl), model_version: CODA_MODEL_VERSION };
+      }
+      if (st.status === 'failed' || st.status === 'error') {
+        return { status: 'failed', error: st.error || st.progress || 'BASE-Harmonix (Coda) generation failed' };
+      }
+      return { status: 'processing' };
+    }
     const data = await getHarmonixPrediction(providerTaskId);
     if (data.status === 'succeeded') {
       const audioUrl = extractAudioUrl(data.output);

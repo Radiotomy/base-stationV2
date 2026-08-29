@@ -1,16 +1,19 @@
-// BASE-Harmonix — our tiered product line built on ACE-Step v1.5, hosted on
-// Replicate (fishaudio/ace-step-1.5).
+// BASE-Harmonix — our tiered product line, now backed by the Coda engine
+// (ACE-Step 1.5 XL Turbo, 4B DiT) self-hosted on our Hugging Face Space.
+// See base44/shared/codaEngine.ts for the engine client. The Replicate
+// deployment (fishaudio/ace-step-1.5) is RETIRED — the constants and poll
+// helpers below survive only so legacy in-flight jobs can still finalize.
 //
 // LICENSE (verified 2026-08-02): Apache 2.0 — see github.com/ace-step/ACE-Step.
 // Irrevocable, no revenue cap, no registration required. Commercial use,
-// modification, derivative works and fine-tunes (LoRA) are all permitted, so
-// this model is safe to fork, wrap, and train on top of.
-// Generates full songs — instrumental AND vocal — from a text prompt + optional lyrics.
+// modification, derivative works and fine-tunes (LoRA) are all permitted.
+// Generates full songs — instrumental AND vocal — from style tags + optional lyrics.
 //
-// Three tiers, same base model, different inference budgets / feature set:
-//   Micro  — fast draft/preview generation (fewest steps, shortest duration)
-//   Pro    — full studio-quality generation (core pipeline)
-//   Vault  — Pro quality + auto BASE Mark neural watermark + DDEX provenance (COS-verified)
+// Three tiers, same engine (inference is FIXED at 8 steps / CFG 1.0 by XL
+// Turbo), different duration ceilings / feature set:
+//   Micro  — fast draft/preview generation (shortest duration)
+//   Pro    — full-track generation (core pipeline)
+//   Vault  — Pro + auto BASE Mark neural watermark + DDEX provenance (COS-verified)
 
 export const HARMONIX_MODEL = 'fishaudio/ace-step-1.5';
 export const HARMONIX_VERSION = '74e3a7d383b18815e277de5223f5fe9d53d38832de15aa567fe729fa129d0d85';

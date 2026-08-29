@@ -11,12 +11,12 @@ const TIME_SIGS = [
 ];
 
 /**
- * Groove & inference anchors for BASE-Harmonix.
+ * Groove anchors for BASE-Harmonix (Coda engine).
  *
- * These are the parameters that stop the instrumental hesitating around the
- * vocal: an explicit tempo/key/time signature so the model isn't guessing the
- * pocket, plus the two inference controls that govern how tightly it commits to
- * the caption.
+ * Tempo/key/time signature fold into the engine's tags channel so the model
+ * isn't guessing the pocket. Inference controls are gone deliberately: the
+ * XL Turbo engine fixes steps at 8 and disables CFG (guidance 1.0) — exposing
+ * knobs the engine ignores would be misleading.
  */
 export default function HarmonixGrooveControls({ value, onChange, disabled }) {
   const [open, setOpen] = useState(false);
@@ -68,30 +68,6 @@ export default function HarmonixGrooveControls({ value, onChange, disabled }) {
               </select>
             </div>
           </div>
-
-          <div>
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 flex items-center gap-1">
-              Prompt Adherence — {value.guidance_scale}
-              <InfoTip text="Higher keeps the arrangement committed to your description. Above ~9 the model overfits, so the range stops there. Ignored by the Micro tier." />
-            </p>
-            <input type="range" min={4} max={9} step={0.5} disabled={disabled}
-              value={value.guidance_scale}
-              onChange={e => set({ guidance_scale: Number(e.target.value) })}
-              className="w-full accent-emerald-500 touch-none" />
-            <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>More freedom</span><span>Follows prompt tightly</span>
-            </div>
-          </div>
-
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input type="checkbox" checked={value.thinking !== false} disabled={disabled}
-              onChange={e => set({ thinking: e.target.checked })}
-              className="mt-0.5 accent-emerald-500" />
-            <span className="text-[11px] text-muted-foreground">
-              <span className="font-semibold text-foreground">Let the model plan the arrangement</span> — on by
-              default. Turning it off often steadies the band when your description is already detailed.
-            </span>
-          </label>
 
           <div>
             <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1 flex items-center gap-1">

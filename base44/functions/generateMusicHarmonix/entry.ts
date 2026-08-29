@@ -1,37 +1,27 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
-import { resolveTier, startHarmonix, extractAudioUrl } from '../../shared/harmonix.ts';
-import { markGeneratedAudio, FORENSIC_AUDIO_FORMAT } from '../../shared/harmonixForensics.ts';
+// generateMusicHarmonix — BASE-Harmonix generation on the Coda engine (ACE-Step
+// 1.5 XL Turbo, 4B DiT) hosted on our Hugging Face Space. Replaces the retired
+// Replicate deployment.
+//
+// Async submit-and-poll: this function checks credits, submits to Coda's
+// POST /generate/audio and returns a GenerationJob id immediately. The studio's
+// existing useJobPolling → pollGenerationJob → finalizeJob loop polls Coda's
+// /status/{job_id}, persists the WAV, deducts credits (stamped in
+// input_data.credit_cost), auto-saves to the library and — because the saved
+// asset carries no base_mark — hands the WAV to the BASE Mark forensic cascade.
+//
+// Hyperparameters are FIXED by the XL Turbo engine (steps=8, CFG=1.0) and only
+// recorded here for provenance. Groove anchors (bpm/key/time signature) fold
+// into the tags channel, which is how ACE-Step reads them.
+
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { resolveTier } from '../../shared/harmonix.ts';
+import { submitCodaGeneration, CODA_MODEL_VERSION, CODA_FIXED_PARAMS } from '../../shared/codaEngine.ts';
 
 async function checkCreditBalance(base44, user, requiredCredits) {
   const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
   const record = credits[0];
   const balance = record?.balance ?? 0;
   return { ok: balance >= requiredCredits, balance };
-}
-
-async function deductCredits(base44, user, amount, jobId, description) {
-  const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
-  let record = recs[0];
-  if (!record) {
-    record = await base44.asServiceRole.entities.UserCredit.create({
-      user_id: user.id, user_email: user.email, balance: 0, lifetime_earned: 0, lifetime_spent: 0,
-    });
-  }
-  const newBalance = Math.max(0, (record.balance || 0) - amount);
-  await base44.asServiceRole.entities.UserCredit.update(record.id, {
-    balance: newBalance,
-    lifetime_spent: (record.lifetime_spent || 0) + amount,
-    monthly_used: (record.monthly_used || 0) + amount,
-  });
-  await base44.asServiceRole.entities.CreditLog.create({
-    user_id: user.id, user_email: user.email,
-    transaction_type: 'generation',
-    amount: -amount,
-    balance_before: record.balance,
-    balance_after: newBalance,
-    related_job_id: jobId, provider: 'harmonix', description,
-  }).catch(() => {});
-  return newBalance;
 }
 
 Deno.serve(async (req) => {
@@ -42,9 +32,7 @@ Deno.serve(async (req) => {
 
     const {
       tier = 'pro', prompt, lyrics, duration = 60, title,
-      // Groove anchors + inference controls. All optional: unset means the
-      // model's own LM decides, which is the old behaviour.
-      bpm, key_scale, time_signature, guidance_scale, thinking, seed,
+      bpm, key_scale, time_signature, seed,
     } = await req.json();
     if (!prompt || !prompt.trim()) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
@@ -62,141 +50,65 @@ Deno.serve(async (req) => {
     const safeDuration = Math.min(Math.max(Number(duration) || 60, 5), tierConfig.max_duration);
     const hasLyrics = !!(lyrics && lyrics.trim());
 
-    // Vault is the forensic-native tier: ask the model for PCM WAV so the mark
-    // can be embedded in-memory before the single upload. Other tiers stay mp3.
-    const forensicNative = tier === 'vault';
-
-    // Groove anchors. Leaving bpm/key/time-signature unset makes the LM guess the
-    // pocket, which is what lets the band drift against the vocal phrasing — so
-    // whatever the creator (or the Masters brief) supplies is passed straight
-    // through, clamped to the model's accepted ranges.
+    // Groove anchors fold into the tags channel — Coda's payload has no separate
+    // bpm/key/time-signature parameters, but ACE-Step reads them from tags.
     const numBpm = Number(bpm);
-    const safeBpm = Number.isFinite(numBpm) && numBpm >= 30 && numBpm <= 300
-      ? Math.round(numBpm) : null;
-    const safeTimeSig = ['2', '3', '4', '6'].includes(String(time_signature))
-      ? String(time_signature) : 'auto';
-    const numGuidance = Number(guidance_scale);
-    // Only the base/SFT checkpoint honours CFG — turbo ignores it — and above ~9
-    // the model overfits the caption, so the range is deliberately narrower than
-    // Replicate's 1-15.
-    const safeGuidance = Number.isFinite(numGuidance)
-      ? Math.min(Math.max(numGuidance, 1), 9) : 7;
+    const safeBpm = Number.isFinite(numBpm) && numBpm >= 30 && numBpm <= 300 ? Math.round(numBpm) : null;
+    const safeKey = key_scale && String(key_scale).trim() ? String(key_scale).trim().slice(0, 40) : '';
+    const safeTimeSig = ['2', '3', '4', '6'].includes(String(time_signature)) ? String(time_signature) : '';
+    const tagParts = [prompt.slice(0, 512).trim()];
+    if (safeBpm) tagParts.push(`${safeBpm} bpm`);
+    if (safeKey) tagParts.push(safeKey);
+    if (safeTimeSig) tagParts.push(`${safeTimeSig}/4 time signature`);
+    const tags = tagParts.join(', ');
+
+    // Preserved for deterministic iteration and asset fingerprinting.
     const numSeed = Number(seed);
-    const safeSeed = Number.isFinite(numSeed) && numSeed > 0 ? Math.round(numSeed) : -1;
+    const safeSeed = Number.isFinite(numSeed) && numSeed > 0 ? Math.round(numSeed) : 42;
 
-    const replicateInput = {
-      prompt: prompt.slice(0, 512),
-      lyrics: hasLyrics ? lyrics.slice(0, 4000) : '[Instrumental]',
-      duration: safeDuration,
-      inference_steps: tierConfig.inference_steps,
-      guidance_scale: safeGuidance,
-      // Thinking mode weakens caption generalisation vs the DiT, so a dense,
-      // well-specified prompt often lands a steadier band with it off.
-      thinking: thinking !== false,
-      time_signature: safeTimeSig,
-      ...(safeBpm ? { bpm: safeBpm } : {}),
-      ...(key_scale && String(key_scale).trim() ? { key_scale: String(key_scale).trim().slice(0, 40) } : {}),
-      seed: safeSeed,
-      batch_size: 1,
-      audio_format: forensicNative ? FORENSIC_AUDIO_FORMAT : 'mp3',
-    };
-
-    let pred;
+    let submitted;
     try {
-      pred = await startHarmonix(replicateInput);
+      submitted = await submitCodaGeneration({
+        tags,
+        // Vocal mode: structured [Verse]/[Chorus]/[Bridge]/[Outro] lyrics drive
+        // the multi-layer vocal synthesis. Instrumental mode: exactly
+        // '[Instrumental]' dedicates the full DiT budget to the instrumental bed.
+        lyrics: hasLyrics ? lyrics.slice(0, 4000) : '[Instrumental]',
+        maxMs: safeDuration * 1000,
+        seed: safeSeed,
+      });
     } catch (err) {
       return Response.json({ error: err.message }, { status: 502 });
     }
 
-    const generatedAt = new Date().toISOString();
-    const encoder = new TextEncoder();
-    const hashBuf = await crypto.subtle.digest('SHA-256', encoder.encode(`${user.id}|harmonix|${tier}|${prompt}|${generatedAt}`));
-    const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-
-    const baseInputData = {
-      tier, tier_name: tierConfig.name,
-      prompt, lyrics: lyrics || '', duration: safeDuration,
-      title: title || '', credit_cost: cost,
-      // Recorded so a take with a good pocket can be reproduced exactly.
-      bpm: safeBpm, key_scale: replicateInput.key_scale || '',
-      time_signature: safeTimeSig, guidance_scale: safeGuidance,
-      thinking: replicateInput.thinking, seed: safeSeed,
-      inference_steps: tierConfig.inference_steps,
-    };
-
-    // Settled synchronously within the 55s wait window (typical for ACE-Step)
-    if (pred.status === 'succeeded') {
-      const providerAudioUrl = extractAudioUrl(pred.output);
-      if (!providerAudioUrl) return Response.json({ error: 'BASE-Harmonix did not return audio output' }, { status: 502 });
-
-      const r = await fetch(providerAudioUrl);
-      const safeName = (title || 'harmonix-track').replace(/[^\w.\-]/g, '_');
-
-      // Forensic-native path: the generated master is marked in this function's
-      // memory and uploaded ONCE — no intermediate save, no second marking job.
-      let file;
-      let markProvenance = null;
-      let markSkipped = null;
-      if (forensicNative) {
-        const raw = new Uint8Array(await r.arrayBuffer());
-        const res = markGeneratedAudio(raw, `${user.id}|${contentHash}`);
-        markProvenance = res.provenance;
-        markSkipped = res.skipped;
-        file = new File([res.bytes], `${safeName}.wav`, { type: 'audio/wav' });
-      } else {
-        file = new File([await r.blob()], `${safeName}.mp3`, { type: 'audio/mpeg' });
-      }
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-
-      const job = await base44.entities.GenerationJob.create({
-        user_id: user.id, user_email: user.email,
-        job_type: 'music', provider: 'harmonix',
-        status: 'completed',
-        ai_label: 'ai_generated',
-        input_data: baseInputData,
-        output_url: file_url,
-        output_metadata: {
-          duration: safeDuration, tier, tier_name: tierConfig.name,
-          model_version: 'ACE-Step v1.5', content_hash: contentHash,
-          // Marked inline at generation time — only still "needs" marking if the
-          // inline pass could not run (non-WAV output, unexpected container).
-          needs_basemark: forensicNative && !markProvenance,
-          ...(markProvenance ? { base_mark: markProvenance } : {}),
-          ...(markSkipped ? { base_mark_skipped: markSkipped } : {}),
-        },
-        credits_used: cost,
-        started_at: generatedAt,
-        completed_at: generatedAt,
-      });
-
-      const remaining = await deductCredits(base44, user, cost, job.id, `${tierConfig.name} generation`);
-
-      return Response.json({
-        status: 'completed', audio_url: file_url, job_id: job.id,
-        tier, tier_name: tierConfig.name,
-        needs_basemark: forensicNative && !markProvenance,
-        base_mark: markProvenance,
-        content_hash: contentHash,
-        credits_used: cost, credits_remaining: remaining,
-      });
-    }
-
-    if (pred.status === 'failed' || pred.status === 'canceled') {
-      return Response.json({ error: pred.error || 'BASE-Harmonix generation failed' }, { status: 502 });
-    }
-
-    // Still processing after the wait window — create job for pollGenerationJob to finish
+    const startedAt = new Date().toISOString();
     const job = await base44.entities.GenerationJob.create({
       user_id: user.id, user_email: user.email,
       job_type: 'music', provider: 'harmonix',
       status: 'processing',
       ai_label: 'ai_generated',
-      input_data: baseInputData,
-      provider_job_id: pred.id,
-      started_at: generatedAt,
+      input_data: {
+        tier, tier_name: tierConfig.name,
+        prompt, lyrics: lyrics || '', duration: safeDuration,
+        title: title || '', credit_cost: cost,
+        // Engine stamp — this is what routes the job to Coda in finalizeJob.
+        // Legacy rows without it keep the old Replicate poll path.
+        engine: 'coda_hf', model: CODA_MODEL_VERSION,
+        tags,
+        bpm: safeBpm, key_scale: safeKey, time_signature: safeTimeSig || 'auto',
+        seed: safeSeed,
+        // Fixed by the XL Turbo engine — recorded for provenance only.
+        ...CODA_FIXED_PARAMS,
+      },
+      provider_job_id: submitted.jobId,
+      started_at: startedAt,
     });
 
-    return Response.json({ job_id: job.id, status: 'processing' });
+    return Response.json({
+      job_id: job.id,
+      status: 'processing',
+      tier, tier_name: tierConfig.name,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
