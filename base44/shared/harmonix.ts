@@ -25,7 +25,7 @@ export const HARMONIX_TIERS = {
     tagline: 'Lite / Fast',
     description: 'Quick draft generation & real-time previewing',
     inference_steps: 4,
-    max_duration: 30,
+    max_duration: 60,
     credit_cost: 3,
   },
   pro: {
@@ -37,7 +37,9 @@ export const HARMONIX_TIERS = {
     // sat just under it, which is exactly where the instrumental bed wavers
     // around the vocal instead of committing to a groove.
     inference_steps: 36,
-    max_duration: 120,
+    // ACE-Step 1.5 XL Turbo generates up to 600s (10 min) in one pass. Typical
+    // full tracks land at 240-360s; the creator sets the length per generation.
+    max_duration: 600,
     credit_cost: 10,
   },
   vault: {
@@ -46,7 +48,7 @@ export const HARMONIX_TIERS = {
     tagline: 'Watermarked / Verified · COS',
     description: 'Pro quality, embedded with acoustic watermarking & DDEX metadata',
     inference_steps: 60,
-    max_duration: 180,
+    max_duration: 600,
     credit_cost: 15,
   },
 };

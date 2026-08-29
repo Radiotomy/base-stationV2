@@ -17,9 +17,9 @@ import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
 const TIERS = [
-  { key: 'micro', name: 'Micro', tagline: 'Lite / Fast', icon: Zap, cost: 3, color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300', desc: 'Quick draft generation & real-time previewing' },
-  { key: 'pro', name: 'Pro', tagline: 'Coda · XL Turbo', icon: Sparkles, cost: 10, color: 'border-blue-500 bg-blue-500/10 text-blue-300', desc: 'Full-track generation for the standard pipeline' },
-  { key: 'vault', name: 'Vault', tagline: 'Watermarked / Verified · COS', icon: ShieldCheck, cost: 15, color: 'border-amber-500 bg-amber-500/10 text-amber-300', desc: 'Pro quality + acoustic watermarking & DDEX metadata' },
+  { key: 'micro', name: 'Micro', tagline: 'Lite / Fast', icon: Zap, cost: 3, maxDuration: 60, color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300', desc: 'Quick draft generation & real-time previewing' },
+  { key: 'pro', name: 'Pro', tagline: 'Coda · XL Turbo', icon: Sparkles, cost: 10, maxDuration: 600, color: 'border-blue-500 bg-blue-500/10 text-blue-300', desc: 'Full-track generation up to 10 minutes' },
+  { key: 'vault', name: 'Vault', tagline: 'Watermarked / Verified · COS', icon: ShieldCheck, cost: 15, maxDuration: 600, color: 'border-amber-500 bg-amber-500/10 text-amber-300', desc: 'Pro quality + acoustic watermarking & DDEX metadata' },
 ];
 
 export default function HarmonixGenerateTab() {
@@ -217,7 +217,7 @@ export default function HarmonixGenerateTab() {
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Model Tier</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {TIERS.map(t => (
-            <button key={t.key} onClick={() => setTier(t.key)}
+            <button key={t.key} onClick={() => { setTier(t.key); setDuration(d => Math.min(d, t.maxDuration)); }}
               className={`text-left p-3 rounded-xl border transition-all ${tier === t.key ? t.color : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
               <div className="flex items-center gap-1.5 font-bold text-sm mb-0.5">
                 <t.icon className="w-4 h-4" /> BASE-Harmonix {t.name}
@@ -278,8 +278,8 @@ export default function HarmonixGenerateTab() {
             className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Duration (sec, max {tierConfig.key === 'micro' ? 30 : tierConfig.key === 'pro' ? 120 : 180})</p>
-          <input type="number" min={5} max={tierConfig.key === 'micro' ? 30 : tierConfig.key === 'pro' ? 120 : 180} value={duration}
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Duration (sec, max {tierConfig.maxDuration})</p>
+          <input type="number" min={5} max={tierConfig.maxDuration} value={duration}
             onChange={e => setDuration(Number(e.target.value))}
             className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
