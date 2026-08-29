@@ -33,11 +33,12 @@
         "shotstack",
         "elevenlabs",
         "harmonix",
+        "sirensong",
         "soundforge",
         "core",
         "maestro"
       ],
-      "description": "Which provider handled the generation. 'nextcut' is retired and kept only for historical rows \u2014 video composition now runs on 'shotstack'. 'core' = the platform's own LLM wrote the lyrics inline. 'maestro' = the row is a WORK ORDER for the Maestro Superagent's craft engine: it is created 'pending' with nothing generated yet, and the Maestro sweep is what fills output_metadata and flips it to 'completed'. Nothing else may complete a maestro row, otherwise the craft engine would be silently bypassed."
+      "description": "Which provider handled the generation. 'nextcut' is retired and kept only for historical rows \u2014 video composition now runs on 'shotstack'. 'core' = the platform's own LLM wrote the lyrics inline. 'sirensong' = Siren Song (HeartMuLa 3B) audio generation on our self-hosted Hugging Face Space engine; the row is created 'processing' at submit and finalized to 'completed' by pollSirenSongJob once the L4 GPU render is fetched and persisted. 'maestro' = the row is a WORK ORDER for the Maestro Superagent's craft engine: it is created 'pending' with nothing generated yet, and the Maestro sweep is what fills output_metadata and flips it to 'completed'. Nothing else may complete a maestro row, otherwise the craft engine would be silently bypassed."
     },
     "status": {
       "type": "string",

@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles } from 'lucide-react';
+import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles, Waves } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import MySoundTab from '@/components/music/mysound/MySoundTab';
 import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
+import SirenSongGenerateTab from '@/components/music/SirenSongGenerateTab';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
   { id: 'mysound',  label: '🎧 Eleven Music',     icon: AudioLines,        desc: 'Eleven Music base model + My Sound — train on your own tracks & generate in your signature style' },
   { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
+  { id: 'sirensong', label: '🌊 Siren Song',       icon: Waves,             desc: 'Self-hosted HeartMuLa 3B — tag & lyric conditioned generation on our Hugging Face engine' },
 ];
 
 export default function MusicStudio() {
@@ -74,6 +76,7 @@ export default function MusicStudio() {
         {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
         {activeTab === 'mysound' && <MySoundTab />}
         {activeTab === 'harmonix' && <HarmonixGenerateTab />}
+        {activeTab === 'sirensong' && <SirenSongGenerateTab />}
       </div>
     </div>
   );
