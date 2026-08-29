@@ -70,10 +70,11 @@ Deno.serve(async (req) => {
     try {
       submitted = await submitCodaGeneration({
         tags,
-        // Vocal mode: structured [Verse]/[Chorus]/[Bridge]/[Outro] lyrics drive
-        // the multi-layer vocal synthesis. Instrumental mode: exactly
-        // '[Instrumental]' dedicates the full DiT budget to the instrumental bed.
-        lyrics: hasLyrics ? lyrics.slice(0, 4000) : '[Instrumental]',
+        // Vocal mode: lowercase [verse]/[chorus]/[bridge]/[outro] structure tags
+        // (normalized client-side by aceStepLyrics.js) drive the vocal synthesis.
+        // Instrumental mode: exactly '[instrumental]' dedicates the full DiT
+        // budget to the instrumental bed.
+        lyrics: hasLyrics ? lyrics.slice(0, 4000) : '[instrumental]',
         maxMs: safeDuration * 1000,
         seed: safeSeed,
       });

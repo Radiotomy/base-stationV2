@@ -10,6 +10,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
+import { toAceStepLyrics } from '@/utils/aceStepLyrics';
 import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel';
 import HarmonixGrooveControls from '@/components/music/HarmonixGrooveControls';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
@@ -163,7 +164,11 @@ export default function HarmonixGenerateTab() {
 
     try {
       const res = await base44.functions.invoke('generateMusicHarmonix', {
-        tier, prompt, lyrics: lyrics || undefined, duration, title: title || undefined,
+        // Manually typed/pasted lyrics get the same ACE-Step structure-tag
+        // normalization the Masters panel applies — stray "[Verse 1 (build)]"
+        // headers would otherwise be sung literally by the model.
+        tier, prompt, lyrics: lyrics.trim() ? toAceStepLyrics(lyrics) : undefined,
+        duration, title: title || undefined,
         bpm: groove.bpm || undefined,
         key_scale: groove.key_scale || undefined,
         time_signature: groove.time_signature,

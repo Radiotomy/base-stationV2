@@ -16,9 +16,10 @@
 //
 // Conditioning contract:
 //   Instrumental — tags carry genre/instrumentation/mood; lyrics is exactly
-//                  '[Instrumental]' so the full 4B DiT budget goes to the bed.
-//   Vocal        — lyrics carries structured arrangement tags ([Verse], [Chorus],
-//                  [Bridge], [Outro]) alongside complementary style tags.
+//                  '[instrumental]' so the full 4B DiT budget goes to the bed.
+//   Vocal        — lyrics carries ACE-Step's lowercase structure tags
+//                  ([verse], [chorus], [bridge], [outro], …) — see
+//                  src/utils/aceStepLyrics.js for the normalization grammar.
 
 export const CODA_BASE_URL = 'https://radiotomy-coda.hf.space';
 export const CODA_MODEL_VERSION = 'Coda (ACE-Step 1.5 XL Turbo · 4B DiT)';
@@ -39,7 +40,7 @@ export async function submitCodaGeneration({ tags, lyrics, maxMs, seed }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tags,
-        lyrics: lyrics && lyrics.trim() ? lyrics : '[Instrumental]',
+        lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
         max_audio_length_ms: maxMs || 30000,
         seed: seed || 42,
       }),
