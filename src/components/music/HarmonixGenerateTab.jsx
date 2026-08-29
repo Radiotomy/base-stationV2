@@ -44,6 +44,9 @@ export default function HarmonixGenerateTab() {
   const { sampleId, logGeneration, markRegenerated } = useTrainingTelemetry();
   const savedRef = useRef(false);
   const tierRef = useRef('pro');
+  // The engine the backend reported for THIS generation, captured at submit so
+  // the async completion path stamps the truth instead of a hardcoded name.
+  const engineRef = useRef({ engine: '', model: '' });
 
   const tierConfig = TIERS.find(t => t.key === tier);
 
@@ -79,8 +82,11 @@ export default function HarmonixGenerateTab() {
         metadata: {
           provider: 'harmonix',
           tier: usedTier,
-          model: 'Coda (ACE-Step 1.5 XL Turbo · 4B DiT)',
-          engine: 'coda_hf',
+          // Recorded from what the engine actually reported — never hardcoded.
+          // A stamped-in engine name made a Replicate render look like a Coda
+          // render in the library, which is exactly what provenance must not do.
+          model: data?.model || engineRef.current.model,
+          engine: data?.engine || engineRef.current.engine,
           prompt,
           lyrics: lyrics || '',
           duration: data?.duration || duration,
@@ -175,6 +181,7 @@ export default function HarmonixGenerateTab() {
         seed: groove.seed || undefined,
       });
       refreshCreditsFromResponse(res.data);
+      engineRef.current = { engine: res.data?.engine || '', model: res.data?.model || '' };
 
       if (res.data?.audio_url) {
         setGenerating(false);

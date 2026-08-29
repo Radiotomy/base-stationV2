@@ -109,6 +109,9 @@ Deno.serve(async (req) => {
       job_id: job.id,
       status: 'processing',
       tier, tier_name: tierConfig.name,
+      // Returned so the client records the engine that actually rendered the
+      // track rather than assuming one.
+      engine: 'coda_hf', model: CODA_MODEL_VERSION,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
