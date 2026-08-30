@@ -36,8 +36,14 @@ const STATUS_TIMEOUT_MS = 15000;
 // Long-form output means a much larger WAV than Siren Song's 60s ceiling.
 const DOWNLOAD_TIMEOUT_MS = 180000;
 
-// Hard ceiling of the fork's long-form window, in seconds.
-export const SKYE_MAX_DURATION = 285;
+// The fork's validated long-form window, in seconds. DiffRhythm *1* generated up
+// to 285s, and the upstream playground slider still advertises that — but
+// DiffRhythm *2* (what this fork is built on) trades that ceiling for structural
+// coherence and is only validated to 210s. Rendering past 210s produces audio
+// that drifts structurally, so the ceiling tracks the MODEL we actually run, not
+// the number inherited from v1.
+export const SKYE_MIN_DURATION = 95;
+export const SKYE_MAX_DURATION = 210;
 export const SKYE_DEFAULT_DURATION = 95;
 
 // Cost of one Skye generation, in credits. Above Siren Song (12) because the

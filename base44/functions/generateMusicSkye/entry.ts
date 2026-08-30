@@ -9,7 +9,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import {
   submitSkyeAudio, skyeBalance,
-  SKYE_COST, SKYE_MAX_DURATION, SKYE_DEFAULT_DURATION, SKYE_DEFAULT_NEGATIVE,
+  SKYE_COST, SKYE_MIN_DURATION, SKYE_MAX_DURATION, SKYE_DEFAULT_DURATION,
+  SKYE_DEFAULT_NEGATIVE,
 } from '../../shared/skyeEngine.ts';
 
 Deno.serve(async (req) => {
@@ -39,9 +40,12 @@ Deno.serve(async (req) => {
     // load-bearing for phonetic alignment, so reformatting them would break it.
     const safeLyrics = lyrics && String(lyrics).trim() ? String(lyrics).slice(0, 6000) : '';
 
+    // Clamped to the model's real floor, not 10s: DiffRhythm 2 cannot render
+    // below 95s, so a shorter request was previously forwarded straight to the
+    // engine to be rejected or padded.
     const numDur = Number(duration);
     const safeDuration = Number.isFinite(numDur)
-      ? Math.min(Math.max(Math.round(numDur), 10), SKYE_MAX_DURATION)
+      ? Math.min(Math.max(Math.round(numDur), SKYE_MIN_DURATION), SKYE_MAX_DURATION)
       : SKYE_DEFAULT_DURATION;
 
     const numSeed = Number(seed);

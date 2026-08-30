@@ -14,7 +14,10 @@ import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 
 const COST = 14;
-const MAX_DURATION = 285;
+// DiffRhythm 2's validated window. The 285s figure belongs to DiffRhythm 1 —
+// v2 is only coherent to 210s, and it cannot render below 95s at all.
+const MIN_DURATION = 95;
+const MAX_DURATION = 210;
 const POLL_INTERVAL_MS = 5000;
 const DEFAULT_NEGATIVE = 'low quality, distorted, muffled, amateur recording, artifacts';
 
@@ -119,7 +122,7 @@ export default function SkyeGenerateTab() {
       <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-start gap-2.5">
         <Info className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-violet-200/90">
-          <span className="font-bold text-violet-300">Skye:</span> our open-source fork of <span className="font-semibold">DiffRhythm 2</span>, self-hosted on our own Hugging Face engine. Semi-autoregressive block flow matching with phonetic lyric alignment — <span className="font-semibold">prose style steering</span>, a separate negative prompt, zero-shot reference cloning, and long-form output up to {MAX_DURATION}s.
+          <span className="font-bold text-violet-300">Skye:</span> our open-source fork of <span className="font-semibold">DiffRhythm 2</span>, self-hosted on our own Hugging Face engine. Semi-autoregressive block flow matching with phonetic lyric alignment — <span className="font-semibold">prose style steering</span>, a separate negative prompt, zero-shot reference cloning, and long-form output from {MIN_DURATION}s up to {MAX_DURATION}s.
         </p>
       </div>
 
@@ -153,9 +156,9 @@ export default function SkyeGenerateTab() {
             className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Duration (sec, max {MAX_DURATION})</p>
-          <input type="number" min={10} max={MAX_DURATION} value={duration} disabled={isBusy}
-            onChange={(e) => setDuration(Math.min(Math.max(Number(e.target.value) || 10, 10), MAX_DURATION))}
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Duration ({MIN_DURATION}–{MAX_DURATION}s)</p>
+          <input type="number" min={MIN_DURATION} max={MAX_DURATION} value={duration} disabled={isBusy}
+            onChange={(e) => setDuration(Math.min(Math.max(Number(e.target.value) || MIN_DURATION, MIN_DURATION), MAX_DURATION))}
             className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
         <div>

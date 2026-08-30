@@ -47,7 +47,9 @@ Deno.serve(async (req) => {
       }, { status: 402 });
     }
 
-    const safeDuration = Math.min(Math.max(Number(duration) || 60, 5), tierConfig.max_duration);
+    // ACE-Step 1.5's documented floor is 10s — a shorter request was previously
+    // forwarded for the engine to silently pad.
+    const safeDuration = Math.min(Math.max(Number(duration) || 60, 10), tierConfig.max_duration);
     const hasLyrics = !!(lyrics && lyrics.trim());
 
     // Groove anchors fold into the tags channel — Coda's payload has no separate
