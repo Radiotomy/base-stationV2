@@ -10,6 +10,7 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { getSirenSongStatus, persistSirenSongWav, sirenDeduct } from '../../shared/sirenSongHf.ts';
+import { generateTrackCover } from '../../shared/trackCoverArt.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -85,6 +86,16 @@ Deno.serve(async (req) => {
 
     const completedAt = new Date().toISOString();
 
+    // Cover artwork — a Siren Song render is a SONG, so it gets album art like
+    // every other track. This path finalizes itself instead of going through the
+    // shared job finalizer, which is why it had no artwork at all. Never fatal:
+    // the audio is already rendered and paid for, so a failed image returns null
+    // and the track still saves and plays.
+    const coverUrl = await generateTrackCover(base44, {
+      title,
+      tags: job.input_data?.tags || '',
+    });
+
     // Save to the creator's library. base_mark is set to a skip sentinel so the
     // "Auto BASE Mark V2 on new audio assets" workflow does NOT fire: Siren Song
     // emits 48kHz float WAV, a rate the V2 detector currently cannot recover a
@@ -96,6 +107,7 @@ Deno.serve(async (req) => {
       asset_type: 'track',
       title,
       file_url: fileUrl,
+      thumbnail_url: coverUrl || '',
       is_public: false,
       ai_label: 'ai_generated',
       ai_disclosure_label: 'ai_generated',
@@ -119,6 +131,7 @@ Deno.serve(async (req) => {
       output_metadata: {
         format: 'wav', sample_rate: 48000, model_version: 'HeartMuLa 3B',
         asset_id: asset?.id || null,
+        cover_image_url: coverUrl || null,
       },
       credits_used: job.input_data?.credit_cost || 0,
       completed_at: completedAt,
@@ -131,6 +144,7 @@ Deno.serve(async (req) => {
     return Response.json({
       status: 'completed', job_id: job.id,
       audio_url: fileUrl,
+      cover_image_url: coverUrl || null,
       asset_id: asset?.id || null,
       credits_used: cost,
       credits_remaining: remaining,

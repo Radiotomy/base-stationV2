@@ -1,5 +1,23 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-import { autoSaveJobAsset } from '../../shared/autoSaveAsset.ts';
+// generateCoverArtTiered — cover artwork for the Cover Art Studio.
+//
+// Renders with the platform's own image model. The previous implementation
+// POSTed to https://api.tempolor.com/v1/image/generate, which does not exist
+// (Tempolor is a music API), and it read {track_title, mood, style} while the
+// studio sends {prompt, quality} — so every request failed twice over: an
+// undefined prompt sent to a dead endpoint, then an update on an undefined
+// job id. Both are fixed here.
+//
+// Tiers match what the studio actually advertises on its buttons:
+//   cheap  — chip-composed prompt ......... 1 credit
+//   modest — creator's own custom prompt .. 3 credits
+
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { buildTrackCoverPrompt } from '../../shared/trackCoverArt.ts';
+
+const TIERS = {
+  cheap: { credits: 1, label: 'Cheap' },
+  modest: { credits: 3, label: 'Modest' },
+};
 
 async function deductCreditsServerSide(base44, user, amount, { provider, job_id, description }) {
   const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -34,104 +52,68 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { track_title, mood, style, tier = 'auto', job_id } = await req.json();
-    const apiKey = Deno.env.get('TEMPCOLOR_API_KEY');
-    if (!apiKey) return Response.json({ error: 'API key not configured' }, { status: 500 });
+    const body = await req.json();
+    const { prompt, quality = 'cheap' } = body;
 
-    // Tiered strategy: 'auto' = low-cost, 'deep' = higher quality
-    const qualityTier = tier === 'deep' ? 'high' : 'standard';
-    const credits = tier === 'deep' ? 50 : 10; // Estimated credit costs
+    // Legacy callers passed structured fields instead of a prompt — still honored
+    // so an older surface cannot silently break.
+    const finalPrompt = (prompt && String(prompt).trim())
+      || buildTrackCoverPrompt({ title: body.track_title, mood: body.mood, genre: body.style });
+    if (!finalPrompt) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
-    // Pre-check credit balance
+    const tier = TIERS[quality] || TIERS.cheap;
+
     const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
     const balance = recs[0]?.balance ?? 0;
-    if (balance < credits) {
+    if (balance < tier.credits) {
       return Response.json({
         error: 'Insufficient credits',
-        required: credits, balance,
-        message: `${tier === 'deep' ? 'Deep' : 'Standard'} cover art costs ${credits} credits. You have ${balance}.`,
+        required: tier.credits, balance,
+        message: `${tier.label} cover art costs ${tier.credits} credits. You have ${balance}.`,
       }, { status: 402 });
     }
 
-    // IDOR guard: the GenerationJob is updated via asServiceRole (bypasses
-    // RLS), so verify the supplied job_id belongs to the caller before any
-    // update — otherwise an attacker could overwrite another user's job by
-    // passing its id. Covers both the failure-path and success-path updates.
-    if (job_id) {
-      const job = await base44.asServiceRole.entities.GenerationJob.get(job_id).catch(() => null);
-      if (!job) return Response.json({ error: 'Job not found' }, { status: 404 });
-      if (job.user_id !== user.id) {
-        return Response.json({ error: 'Forbidden: job does not belong to caller' }, { status: 403 });
-      }
-    }
-
-    // Call Tempcolor API - https://platform.tempolor.com/docs
-    const tempcolorResponse = await fetch('https://api.tempolor.com/v1/image/generate', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        prompt: `Album cover art for "${track_title}", mood: ${mood}, style: ${style}`,
-        width: 1024,
-        height: 1024,
-        quality: qualityTier,
-        format: 'png'
-      })
+    const job = await base44.entities.GenerationJob.create({
+      user_id: user.id, user_email: user.email,
+      job_type: 'cover_art', provider: 'core',
+      status: 'processing',
+      input_data: { prompt: finalPrompt.slice(0, 1000), quality, credit_cost: tier.credits },
+      started_at: new Date().toISOString(),
     });
 
-    if (!tempcolorResponse.ok) {
-      const error = await tempcolorResponse.text();
-      await base44.asServiceRole.entities.GenerationJob.update(job_id, {
-        status: 'failed',
-        error_message: `Tempcolor API error: ${error}`
-      });
-      return Response.json({ error: 'Failed to generate cover art' }, { status: 500 });
-    }
-
-    const result = await tempcolorResponse.json();
-
-    const updated = await base44.asServiceRole.entities.GenerationJob.update(job_id, {
-      status: 'completed',
-      output_url: result.image_url,
-      output_metadata: {
-        tier,
-        quality: qualityTier,
-        mood,
-        style
-      },
-      credits_used: credits,
-      provider_job_id: result.id,
-      completed_at: new Date().toISOString()
-    });
-
-    // Deduct credits on success
-    const ded = await deductCreditsServerSide(base44, user, credits, {
-      provider: 'tempcolor', job_id, description: `Cover art (${qualityTier})`,
-    });
-
-    // Save the artwork as a library asset carrying its label, Creative Ownership
-    // Score and content hash. Until now cover art only ever existed as a job
-    // output URL, so a generated image had no provenance record at all — and an
-    // image cannot carry an audio watermark, which makes the stored record the
-    // only provenance it will ever have. Idempotent by file URL.
+    let imageUrl;
     try {
-      await autoSaveJobAsset(
-        base44,
-        { ...updated, user_id: user.id, user_email: user.email },
-        {},
-        result.image_url,
-      );
-    } catch (e) { console.warn('Cover art provenance save failed:', e.message); }
+      const img = await base44.integrations.Core.GenerateImage({ prompt: finalPrompt });
+      imageUrl = img?.url;
+      if (!imageUrl) throw new Error('Image model returned no image');
+    } catch (err) {
+      await base44.entities.GenerationJob.update(job.id, {
+        status: 'failed',
+        error_message: err.message,
+        completed_at: new Date().toISOString(),
+      });
+      return Response.json({ error: err.message }, { status: 502 });
+    }
+
+    await base44.entities.GenerationJob.update(job.id, {
+      status: 'completed',
+      output_url: imageUrl,
+      output_metadata: { quality, tier: tier.label },
+      credits_used: tier.credits,
+      completed_at: new Date().toISOString(),
+    });
+
+    const ded = await deductCreditsServerSide(base44, user, tier.credits, {
+      provider: 'core', job_id: job.id, description: `Cover art (${tier.label})`,
+    });
 
     return Response.json({
-      job_id,
+      job_id: job.id,
       status: 'completed',
-      image_url: result.image_url,
-      credits_used: credits,
+      image_url: imageUrl,
+      credits_used: tier.credits,
       credits_remaining: ded.balance,
-      tier: qualityTier
+      tier: tier.label,
     });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
