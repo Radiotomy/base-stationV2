@@ -13,6 +13,8 @@ import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
 const COST = 12;
+// HeartMuLa 3B's own architectural ceiling (6 min) — not a cost cap.
+const MAX_LENGTH_SEC = 360;
 const POLL_INTERVAL_MS = 4000;
 
 export default function SirenSongGenerateTab() {
@@ -153,9 +155,9 @@ export default function SirenSongGenerateTab() {
             className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Length (sec, max 60)</p>
-          <input type="number" min={5} max={60} value={lengthSec}
-            onChange={(e) => setLengthSec(Math.min(Math.max(Number(e.target.value) || 5, 5), 60))}
+          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Length (sec, max {MAX_LENGTH_SEC})</p>
+          <input type="number" min={5} max={MAX_LENGTH_SEC} value={lengthSec}
+            onChange={(e) => setLengthSec(Math.min(Math.max(Number(e.target.value) || 5, 5), MAX_LENGTH_SEC))}
             className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
         </div>
         <div>

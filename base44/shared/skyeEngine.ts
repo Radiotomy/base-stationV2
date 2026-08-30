@@ -129,11 +129,46 @@ export function readWavFormat(bytes: Uint8Array) {
   }
 }
 
+// Peak amplitude of a 16-bit PCM WAV, 0 = digital silence. A byte-size check
+// alone cannot tell a real render from a placeholder: a 1-second silent stub is
+// ~88KB and sails past any size floor. Returns null when the container isn't
+// 16-bit PCM, so an unmeasurable file is never treated as proof of silence.
+function wavPeakAmplitude(bytes: Uint8Array): number | null {
+  try {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const tag = (o: number) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
+    if (bytes.length < 44 || tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return null;
+    if (dv.getUint16(34, true) !== 16) return null;
+    let off = 12, dataOff = -1, dataSize = 0;
+    while (off + 8 <= bytes.length) {
+      const id = tag(off), sz = dv.getUint32(off + 4, true);
+      if (id === 'data') { dataOff = off + 8; dataSize = sz; break; }
+      off += 8 + sz + (sz % 2);
+    }
+    if (dataOff < 0) return null;
+    const end = Math.min(dataOff + dataSize, bytes.length);
+    let peak = 0;
+    for (let i = dataOff; i + 1 < end; i += 2) {
+      const v = Math.abs(dv.getInt16(i, true));
+      if (v > peak) peak = v;
+    }
+    return peak;
+  } catch {
+    return null;
+  }
+}
+
 // Fetch the finished WAV and copy it into Base44 storage immediately: Space
 // storage is ephemeral, so an hf.space link must never be handed to the player.
 // Returns the stored URL plus the measured format, so the caller never has to
 // assume the engine's output rate.
-export async function persistSkyeWav(base44, downloadUrl, name) {
+//
+// Throws on a silent or implausibly short render. The Space can report
+// 'completed' while having written only a placeholder stub, and a job that
+// persisted that stub would charge the creator, save silence to their library
+// and hand it to the BASE Mark cascade — so a stub must fail the job loudly
+// rather than be dressed up as a finished track.
+export async function persistSkyeWav(base44, downloadUrl, name, requestedDuration = 0) {
   const url = /^https?:/i.test(downloadUrl)
     ? downloadUrl
     : `${ENGINE_BASE}${downloadUrl.startsWith('/') ? '' : '/'}${downloadUrl}`;
@@ -144,6 +179,20 @@ export async function persistSkyeWav(base44, downloadUrl, name) {
   const safeName = (name || 'skye').replace(/[^\w.\-]/g, '_').slice(0, 60) || 'skye';
   const buf = new Uint8Array(await blob.arrayBuffer());
   const format = readWavFormat(buf);
+
+  const peak = wavPeakAmplitude(buf);
+  if (peak === 0) {
+    throw new Error('Skye returned a silent file — the engine reported success but rendered no audio. The Space is likely running a placeholder handler rather than the loaded DiffRhythm 2 model.');
+  }
+  // A render far shorter than asked for is the same stub failure wearing a
+  // different size. Only enforced when the rate is actually readable.
+  if (format.sampleRate && format.channels && format.bitDepth) {
+    const frameBytes = format.channels * (format.bitDepth / 8);
+    const seconds = (buf.length - 44) / frameBytes / format.sampleRate;
+    if (requestedDuration > 0 && seconds < Math.min(10, requestedDuration * 0.5)) {
+      throw new Error(`Skye returned ${seconds.toFixed(1)}s of audio for a ${requestedDuration}s request — the engine did not perform a full render.`);
+    }
+  }
   const file = new File([buf], `${safeName}.wav`, { type: 'audio/wav' });
   const up = await base44.integrations.Core.UploadFile({ file });
   if (!up?.file_url) throw new Error('Skye output could not be persisted');

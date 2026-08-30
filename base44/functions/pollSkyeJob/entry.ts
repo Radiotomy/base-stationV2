@@ -78,7 +78,9 @@ Deno.serve(async (req) => {
 
     let persisted;
     try {
-      persisted = await persistSkyeWav(base44, st.downloadUrl, title);
+      persisted = await persistSkyeWav(
+        base44, st.downloadUrl, title, Number(job.input_data?.duration) || 0,
+      );
     } catch (err) {
       await base44.entities.GenerationJob.update(job.id, {
         status: 'failed', error_message: err.message, completed_at: new Date().toISOString(),

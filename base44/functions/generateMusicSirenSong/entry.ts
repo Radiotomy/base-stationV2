@@ -30,9 +30,11 @@ Deno.serve(async (req) => {
 
     const safeLyrics = lyrics && String(lyrics).trim() ? String(lyrics).slice(0, 4000) : '';
 
-    // RTF ~1.0 — a longer ceiling is proportionally more GPU time. Cap at 60s.
+    // Bounded only by what HeartMuLa 3B can actually render (360s / 6 min), not
+    // by a GPU-cost ceiling. The previous 60s cap was an artificial cost guard
+    // that hid 6x of the model's real range.
     const numMs = Number(max_audio_length_ms);
-    const safeMs = Number.isFinite(numMs) ? Math.min(Math.max(numMs, 5000), 60000) : 30000;
+    const safeMs = Number.isFinite(numMs) ? Math.min(Math.max(numMs, 5000), 360000) : 30000;
 
     const numSeed = Number(seed);
     const safeSeed = Number.isFinite(numSeed) && numSeed > 0 ? Math.round(numSeed) : 42;
