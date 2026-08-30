@@ -50,26 +50,31 @@ export const SKYE_DEFAULT_DURATION = 95;
 // long-form window is nearly 5x the GPU time for a full-length render.
 export const SKYE_COST = 14;
 
-// What the model should steer away from unless the creator says otherwise.
-// Sent as a real default rather than left blank: an empty negative channel is a
-// wasted conditioning input on a model that has one.
-export const SKYE_DEFAULT_NEGATIVE =
-  'low quality, distorted, muffled, amateur recording, artifacts';
+// DiffRhythm 2's real steering controls, verified against upstream inference.py.
+// There is NO negative-prompt channel in the model — style is a single MuLan
+// embedding from either text or audio — so classifier-free guidance strength is
+// the only steering dial besides the prompt itself.
+//
+// cfg_strength 2.0 and 16 sampling steps are upstream's own CLI defaults.
+export const SKYE_CFG_STRENGTH = 2.0;
+export const SKYE_SAMPLE_STEPS = 16;
 
 // Submit a job. Throws on any transport or contract failure so the caller can
 // surface a clean 502 — a submit that half-succeeds must never look accepted.
 export async function submitSkyeAudio({
-  lyrics, stylePrompt, negativeStylePrompt, referenceAudioUrl, duration, seed,
+  lyrics, stylePrompt, referenceAudioUrl, duration, seed,
 }) {
   const body: Record<string, unknown> = {
     lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
     style_prompt: stylePrompt,
-    negative_style_prompt: negativeStylePrompt || SKYE_DEFAULT_NEGATIVE,
     duration,
     seed,
+    cfg_strength: SKYE_CFG_STRENGTH,
+    sample_steps: SKYE_SAMPLE_STEPS,
   };
   // Only sent when actually supplied — an empty string would make the Space
   // attempt a download of nothing and fail a job that needed no reference.
+  // Mutually exclusive with style_prompt: MuLan reads one or the other.
   if (referenceAudioUrl) body.reference_audio_url = referenceAudioUrl;
 
   const res = await fetch(`${ENGINE_BASE}/generate/audio`, {

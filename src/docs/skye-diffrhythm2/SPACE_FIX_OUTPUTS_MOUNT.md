@@ -70,8 +70,10 @@ rather than a render.
 
 Already implemented and verified:
 
-- `base44/shared/skyeEngine.ts` — submit / status / persist, with the ceiling at
-  285 s and the default negative prompt.
+- `base44/shared/skyeEngine.ts` — submit / status / persist, ceiling 210 s, cfg
+  strength 2.0 and 16 sampling steps. (Superseded detail: the 285 s ceiling and
+  the negative prompt described in earlier revisions of this doc were both wrong —
+  see `SPACE_APP.md`.)
 - `base44/functions/generateMusicSkye` — validated submit; returned a `job_id` in
   1.3 s on the live Space.
 - `base44/functions/pollSkyeJob` — persists the WAV into Base44 storage, generates

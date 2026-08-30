@@ -8,7 +8,10 @@
 // overlapping finalizations cannot happen for one job.
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { getSkyeStatus, persistSkyeWav, skyeDeduct } from '../../shared/skyeEngine.ts';
+import {
+  getSkyeStatus, persistSkyeWav, skyeDeduct,
+  SKYE_CFG_STRENGTH, SKYE_SAMPLE_STEPS,
+} from '../../shared/skyeEngine.ts';
 import { generateTrackCover } from '../../shared/trackCoverArt.ts';
 
 Deno.serve(async (req) => {
@@ -123,8 +126,9 @@ Deno.serve(async (req) => {
       metadata: {
         provider: 'skye', engine: 'hf_space', model: 'DiffRhythm 2 (Skye)',
         style_prompt: job.input_data?.style_prompt || '',
-        negative_style_prompt: job.input_data?.negative_style_prompt || '',
         lyrics: job.input_data?.lyrics || '',
+        cfg_strength: SKYE_CFG_STRENGTH,
+        sample_steps: SKYE_SAMPLE_STEPS,
         reference_style_cloned: usedReference,
         reference_audio_url: job.input_data?.reference_audio_url || '',
         duration: job.input_data?.duration,

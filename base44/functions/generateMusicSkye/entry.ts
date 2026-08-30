@@ -10,7 +10,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import {
   submitSkyeAudio, skyeBalance,
   SKYE_COST, SKYE_MIN_DURATION, SKYE_MAX_DURATION, SKYE_DEFAULT_DURATION,
-  SKYE_DEFAULT_NEGATIVE,
 } from '../../shared/skyeEngine.ts';
 
 Deno.serve(async (req) => {
@@ -20,21 +19,31 @@ Deno.serve(async (req) => {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const {
-      style_prompt, negative_style_prompt, lyrics,
+      style_prompt, lyrics,
       reference_audio_url, duration, seed, title,
     } = await req.json();
 
-    if (!style_prompt || !String(style_prompt).trim()) {
-      return Response.json({ error: 'A style prompt is required' }, { status: 400 });
+    const hasPrompt = !!(style_prompt && String(style_prompt).trim());
+    const hasRef = !!(reference_audio_url && String(reference_audio_url).trim());
+
+    // MuLan embeds style from EITHER text or a reference recording. Supplying
+    // both is rejected rather than silently resolved, because the engine would
+    // discard one of them and the creator would never be told which.
+    if (!hasPrompt && !hasRef) {
+      return Response.json({ error: 'A style prompt or a reference audio URL is required' }, { status: 400 });
+    }
+    if (hasPrompt && hasRef) {
+      return Response.json({
+        error: 'Use a style prompt OR a reference recording, not both — Skye reads only one.',
+      }, { status: 400 });
     }
 
     // Prose channel — kept as written. Unlike Siren Song's tag channel there is
     // nothing to tokenize here; collapsing whitespace is the only normalization
     // that cannot change the meaning the text encoder reads.
-    const safeStyle = String(style_prompt).replace(/\s+/g, ' ').trim().slice(0, 600);
-    const safeNegative = negative_style_prompt && String(negative_style_prompt).trim()
-      ? String(negative_style_prompt).replace(/\s+/g, ' ').trim().slice(0, 400)
-      : SKYE_DEFAULT_NEGATIVE;
+    const safeStyle = hasPrompt
+      ? String(style_prompt).replace(/\s+/g, ' ').trim().slice(0, 600)
+      : '';
 
     // Lyrics pass through untouched: LRC timestamps ("[00:12.50] line") are
     // load-bearing for phonetic alignment, so reformatting them would break it.
@@ -54,7 +63,7 @@ Deno.serve(async (req) => {
     // Only https URLs are forwarded — the Space fetches this itself, so an
     // arbitrary scheme or internal host must never reach it.
     let safeRef = '';
-    if (reference_audio_url && String(reference_audio_url).trim()) {
+    if (hasRef) {
       const raw = String(reference_audio_url).trim();
       if (!/^https:\/\//i.test(raw)) {
         return Response.json({ error: 'Reference audio must be a public https URL' }, { status: 400 });
@@ -76,7 +85,6 @@ Deno.serve(async (req) => {
       submitted = await submitSkyeAudio({
         lyrics: safeLyrics,
         stylePrompt: safeStyle,
-        negativeStylePrompt: safeNegative,
         referenceAudioUrl: safeRef,
         duration: safeDuration,
         seed: safeSeed,
@@ -92,7 +100,6 @@ Deno.serve(async (req) => {
       ai_label: 'ai_generated',
       input_data: {
         style_prompt: safeStyle,
-        negative_style_prompt: safeNegative,
         lyrics: safeLyrics,
         reference_audio_url: safeRef,
         duration: safeDuration, seed: safeSeed,

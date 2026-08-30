@@ -19,12 +19,9 @@ const COST = 14;
 const MIN_DURATION = 95;
 const MAX_DURATION = 210;
 const POLL_INTERVAL_MS = 5000;
-const DEFAULT_NEGATIVE = 'low quality, distorted, muffled, amateur recording, artifacts';
 
 export default function SkyeGenerateTab() {
-  const [style, setStyle] = useState({
-    stylePrompt: '', negativePrompt: DEFAULT_NEGATIVE, referenceUrl: '',
-  });
+  const [style, setStyle] = useState({ stylePrompt: '', referenceUrl: '' });
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(95);
@@ -71,7 +68,12 @@ export default function SkyeGenerateTab() {
   }, [updateSample]);
 
   const generate = async () => {
-    if (!style.stylePrompt.trim()) { toast.error('Describe the sound you want Skye to make'); return; }
+    // Either conditioning path is enough — a reference recording carries the
+    // style on its own, so a prompt is not required when one is attached.
+    if (!style.stylePrompt.trim() && !style.referenceUrl.trim()) {
+      toast.error('Describe the sound you want, or paste a reference track');
+      return;
+    }
     if (phase === 'submitting' || phase === 'rendering') return;
     cancelledRef.current = false;
     setPhase('submitting');
@@ -81,8 +83,7 @@ export default function SkyeGenerateTab() {
     try {
       const numSeed = Number(seed);
       const res = await base44.functions.invoke('generateMusicSkye', {
-        style_prompt: style.stylePrompt,
-        negative_style_prompt: style.negativePrompt || undefined,
+        style_prompt: style.stylePrompt || undefined,
         lyrics: lyrics || undefined,
         reference_audio_url: style.referenceUrl.trim() || undefined,
         duration,
@@ -122,7 +123,7 @@ export default function SkyeGenerateTab() {
       <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-start gap-2.5">
         <Info className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-violet-200/90">
-          <span className="font-bold text-violet-300">Skye:</span> our open-source fork of <span className="font-semibold">DiffRhythm 2</span>, self-hosted on our own Hugging Face engine. Semi-autoregressive block flow matching with phonetic lyric alignment — <span className="font-semibold">prose style steering</span>, a separate negative prompt, zero-shot reference cloning, and long-form output from {MIN_DURATION}s up to {MAX_DURATION}s.
+          <span className="font-bold text-violet-300">Skye:</span> our open-source fork of <span className="font-semibold">DiffRhythm 2</span>, self-hosted on our own Hugging Face engine. Semi-autoregressive block flow matching with phonetic lyric alignment — <span className="font-semibold">prose style steering</span>, or zero-shot reference cloning, and long-form output from {MIN_DURATION}s up to {MAX_DURATION}s.
         </p>
       </div>
 
@@ -185,7 +186,7 @@ export default function SkyeGenerateTab() {
         )}
       </AnimatePresence>
 
-      <Button onClick={generate} disabled={isBusy || !style.stylePrompt.trim()}
+      <Button onClick={generate} disabled={isBusy || (!style.stylePrompt.trim() && !style.referenceUrl.trim())}
         className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 rounded-xl font-bold text-base py-5 gap-2">
         <Feather className="w-5 h-5" />
         {isBusy ? (phase === 'submitting' ? 'Starting…' : 'Composing…') : 'Generate with Skye'}
