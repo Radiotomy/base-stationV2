@@ -76,9 +76,9 @@ Deno.serve(async (req) => {
       || String(job.input_data?.style_prompt || 'Skye Track').split(',')[0].slice(0, 60)
       || 'Skye Track';
 
-    let fileUrl;
+    let persisted;
     try {
-      fileUrl = await persistSkyeWav(base44, st.downloadUrl, title);
+      persisted = await persistSkyeWav(base44, st.downloadUrl, title);
     } catch (err) {
       await base44.entities.GenerationJob.update(job.id, {
         status: 'failed', error_message: err.message, completed_at: new Date().toISOString(),
@@ -86,7 +86,16 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'failed', job_id: job.id, error: err.message });
     }
 
+    const fileUrl = persisted.fileUrl;
     const completedAt = new Date().toISOString();
+
+    // BASE Mark eligibility is decided by the MEASURED rate, not by what the
+    // model is assumed to emit. The V2 detector cannot currently recover a mark
+    // from a 48kHz master, so a 48kHz render is explicitly skipped — embedding an
+    // unrecoverable watermark is worse than embedding none. Anything else is left
+    // un-sentinelled so the "Auto BASE Mark V2 on new audio assets" workflow
+    // picks the track up like any other.
+    const skipMark = persisted.sampleRate === 48000;
 
     // Album artwork — a Skye render is a SONG, so it gets cover art like every
     // other track. Never fatal: the audio already rendered, so a failed image
@@ -119,8 +128,14 @@ Deno.serve(async (req) => {
         duration: job.input_data?.duration,
         seed: job.input_data?.seed,
         format: 'wav',
+        sample_rate: persisted.sampleRate,
+        channels: persisted.channels,
+        bit_depth: persisted.bitDepth,
         generated_at: completedAt,
         generation_job_id: job.id,
+        ...(skipMark
+          ? { base_mark: { skipped: true, reason: 'skye_48khz_pending_v2_rate_support' } }
+          : {}),
       },
     }).catch((e) => { console.warn('Asset save failed:', e.message); return null; });
 
@@ -129,6 +144,7 @@ Deno.serve(async (req) => {
       output_url: fileUrl,
       output_metadata: {
         format: 'wav', model_version: 'DiffRhythm 2 (Skye)',
+        sample_rate: persisted.sampleRate,
         duration: job.input_data?.duration,
         asset_id: asset?.id || null,
         cover_image_url: coverUrl || null,

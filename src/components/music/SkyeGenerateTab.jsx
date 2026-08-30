@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import SkyeStyleControls from '@/components/music/SkyeStyleControls';
+import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
@@ -122,6 +123,16 @@ export default function SkyeGenerateTab() {
         </p>
       </div>
 
+      {/* Masters brief lands BEFORE the style controls so the creator sees the
+          generated prose appear in the field they are about to edit. Tempo and
+          key are folded into the prose — Skye has no numeric BPM input. */}
+      <ModelMastersPanel dialect="skye" fallbackTopic={style.stylePrompt}
+        onApply={({ style: s, lyrics: l, title: t }) => {
+          setStyle((prev) => ({ ...prev, stylePrompt: s }));
+          setLyrics(l);
+          if (t && !title.trim()) setTitle(t);
+        }} />
+
       <SkyeStyleControls value={style} onChange={setStyle} disabled={isBusy} />
 
       <div>
@@ -221,7 +232,7 @@ export default function SkyeGenerateTab() {
             )}
 
             <audio controls className="w-full rounded-xl" src={audioUrl} />
-            <TrainingFeedback sampleId={sampleId} />
+            <TrainingFeedback sampleId={sampleId} modelName="Skye" />
             <div className="flex gap-2 flex-wrap">
               <a href={audioUrl} download className="flex-1">
                 <Button variant="outline" className="w-full gap-2 rounded-xl">

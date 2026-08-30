@@ -28,7 +28,10 @@
 
 const ENGINE_BASE = 'https://radiotomy-skye.hf.space';
 
-const SUBMIT_TIMEOUT_MS = 30000;
+// Generous, because a Space that has scaled to zero (or just had its GPU
+// changed) has to cold-start before it can even acknowledge a submit. A tight
+// timeout here reports "engine down" for a Space that was merely waking up.
+const SUBMIT_TIMEOUT_MS = 90000;
 const STATUS_TIMEOUT_MS = 15000;
 // Long-form output means a much larger WAV than Siren Song's 60s ceiling.
 const DOWNLOAD_TIMEOUT_MS = 180000;
@@ -98,8 +101,32 @@ export async function getSkyeStatus(jobId) {
   };
 }
 
+// Read the format block out of a RIFF/WAVE header. The sample rate is
+// load-bearing for BASE Mark: the V2 detector currently cannot recover a mark
+// from a 48kHz master, so whether a track may be watermarked is decided by the
+// MEASURED rate rather than an assumption about what the model emits. Returns
+// nulls for anything that isn't a WAVE container instead of throwing — an
+// unreadable header must not fail a render that already succeeded.
+export function readWavFormat(bytes: Uint8Array) {
+  try {
+    if (bytes.length < 44) return { sampleRate: null, channels: null, bitDepth: null };
+    const tag = (o: number) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
+    if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return { sampleRate: null, channels: null, bitDepth: null };
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    return {
+      channels: dv.getUint16(22, true),
+      sampleRate: dv.getUint32(24, true),
+      bitDepth: dv.getUint16(34, true),
+    };
+  } catch {
+    return { sampleRate: null, channels: null, bitDepth: null };
+  }
+}
+
 // Fetch the finished WAV and copy it into Base44 storage immediately: Space
 // storage is ephemeral, so an hf.space link must never be handed to the player.
+// Returns the stored URL plus the measured format, so the caller never has to
+// assume the engine's output rate.
 export async function persistSkyeWav(base44, downloadUrl, name) {
   const url = /^https?:/i.test(downloadUrl)
     ? downloadUrl
@@ -109,10 +136,12 @@ export async function persistSkyeWav(base44, downloadUrl, name) {
   const blob = await f.blob();
   if (blob.size < 10000) throw new Error('Skye output too small to be audio');
   const safeName = (name || 'skye').replace(/[^\w.\-]/g, '_').slice(0, 60) || 'skye';
-  const file = new File([blob], `${safeName}.wav`, { type: 'audio/wav' });
+  const buf = new Uint8Array(await blob.arrayBuffer());
+  const format = readWavFormat(buf);
+  const file = new File([buf], `${safeName}.wav`, { type: 'audio/wav' });
   const up = await base44.integrations.Core.UploadFile({ file });
   if (!up?.file_url) throw new Error('Skye output could not be persisted');
-  return up.file_url;
+  return { fileUrl: up.file_url, ...format };
 }
 
 // Current credit balance (service-role read).

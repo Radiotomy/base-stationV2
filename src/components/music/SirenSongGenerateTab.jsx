@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
+import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
+import TrainingFeedback from '@/components/training/TrainingFeedback';
+import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
 const COST = 12;
 const POLL_INTERVAL_MS = 4000;
@@ -23,6 +26,7 @@ export default function SirenSongGenerateTab() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const cancelledRef = useRef(false);
+  const { sampleId, logGeneration, updateSample, markRegenerated } = useTrainingTelemetry();
 
   useEffect(() => () => { cancelledRef.current = true; }, []);
 
@@ -44,6 +48,7 @@ export default function SirenSongGenerateTab() {
         setResult(data);
         setStatusMsg('');
         setPhase('done');
+        if (data.asset_id) updateSample({ outcome: 'saved', asset_id: data.asset_id });
         toast.success('🎵 Siren Song track ready!');
         return;
       }
@@ -55,7 +60,7 @@ export default function SirenSongGenerateTab() {
       }
       setStatusMsg(data?.progress || 'Rendering on the L4 GPU…');
     }
-  }, []);
+  }, [updateSample]);
 
   const generate = async () => {
     if (!tags.trim()) { toast.error('Add at least one style tag'); return; }
@@ -63,6 +68,7 @@ export default function SirenSongGenerateTab() {
     cancelledRef.current = false;
     setPhase('submitting');
     setResult(null); setError(null); setStatusMsg('');
+    markRegenerated();
     try {
       const numSeed = Number(seed);
       const res = await base44.functions.invoke('generateMusicSirenSong', {
@@ -77,6 +83,11 @@ export default function SirenSongGenerateTab() {
         setPhase('rendering');
         setStatusMsg('Siren Song accepted the job…');
         toast.success('Siren Song is composing…');
+        // Opt-in telemetry — no-ops server-side without consent.
+        logGeneration({
+          provider: 'sirensong', model: 'HeartMuLa 3B',
+          prompt: tags, lyrics, duration: lengthSec,
+        });
         pollUntilDone(res.data.job_id);
       } else {
         setPhase('error');
@@ -103,6 +114,16 @@ export default function SirenSongGenerateTab() {
           <span className="font-bold text-cyan-300">Siren Song:</span> our self-hosted HeartMuLa 3B engine, running on a Hugging Face L4 GPU. This model is <span className="font-semibold">tag &amp; lyric conditioned</span> — describe the sound with comma-separated style tags, not a sentence.
         </p>
       </div>
+
+      {/* Songwriting assistance encoded into HeartMuLa's TAG dialect — the same
+          243 Masters craft engine the other studios use, translated rather than
+          pasted, since a prose brief in a tag channel steers almost nothing. */}
+      <ModelMastersPanel dialect="sirensong" fallbackTopic={tags}
+        onApply={({ style, lyrics: l, title: t }) => {
+          setTags(style);
+          setLyrics(l);
+          if (t && !title.trim()) setTitle(t);
+        }} />
 
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
@@ -196,7 +217,15 @@ export default function SirenSongGenerateTab() {
               <Badge variant="outline" className="text-xs">Siren Song · HeartMuLa 3B</Badge>
               <Badge variant="outline" className="text-xs">48kHz WAV</Badge>
             </div>
+            {result?.cover_image_url && (
+              <div className="flex items-center gap-3">
+                <img src={result.cover_image_url} alt="Cover" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-border" />
+                <p className="text-xs text-muted-foreground">Auto-generated cover art</p>
+              </div>
+            )}
+
             <audio controls className="w-full rounded-xl" src={audioUrl} />
+            <TrainingFeedback sampleId={sampleId} modelName="Siren Song" />
             <div className="flex gap-2 flex-wrap">
               <a href={audioUrl} download className="flex-1">
                 <Button variant="outline" className="w-full gap-2 rounded-xl">

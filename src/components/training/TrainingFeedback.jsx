@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
  * rating controls, and nothing is recorded until they accept. The backend
  * re-checks the flag, so declining here genuinely means no data is collected.
  */
-export default function TrainingFeedback({ sampleId, onOptIn }) {
+export default function TrainingFeedback({ sampleId, onOptIn, modelName = 'BASE-Harmonix' }) {
   const [optedIn, setOptedIn] = useState(null);
   const [rated, setRated] = useState(null);
 
@@ -23,7 +23,7 @@ export default function TrainingFeedback({ sampleId, onOptIn }) {
     await base44.auth.updateMe({ training_opt_in: true, training_opt_in_date: new Date().toISOString() });
     setOptedIn(true);
     onOptIn?.();
-    toast.success('Thanks — your ratings will help BASE-Harmonix improve');
+    toast.success(`Thanks — your ratings will help ${modelName} improve`);
   };
 
   const rate = async (rating) => {
@@ -39,7 +39,7 @@ export default function TrainingFeedback({ sampleId, onOptIn }) {
     return (
       <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
         <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Help improve BASE-Harmonix?
+          <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Help improve {modelName}?
         </p>
         <p className="text-[11px] text-muted-foreground leading-snug">
           If you opt in, we record the prompt and settings you used plus your rating — never your audio,
