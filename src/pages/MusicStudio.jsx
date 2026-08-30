@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles, Waves } from 'lucide-react';
+import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles, Waves, Feather } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import MySoundTab from '@/components/music/mysound/MySoundTab';
 import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
 import SirenSongGenerateTab from '@/components/music/SirenSongGenerateTab';
+import SkyeGenerateTab from '@/components/music/SkyeGenerateTab';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
@@ -13,6 +14,7 @@ const TABS = [
   { id: 'mysound',  label: '🎧 Eleven Music',     icon: AudioLines,        desc: 'Eleven Music base model + My Sound — train on your own tracks & generate in your signature style' },
   { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
   { id: 'sirensong', label: '🌊 Siren Song',       icon: Waves,             desc: 'Self-hosted HeartMuLa 3B — tag & lyric conditioned generation on our Hugging Face engine' },
+  { id: 'skye',     label: '🪶 Skye',             icon: Feather,           desc: 'Our DiffRhythm 2 fork — prose style steering, negative prompts, reference style cloning & long-form output up to 285s' },
 ];
 
 export default function MusicStudio() {
@@ -77,6 +79,7 @@ export default function MusicStudio() {
         {activeTab === 'mysound' && <MySoundTab />}
         {activeTab === 'harmonix' && <HarmonixGenerateTab />}
         {activeTab === 'sirensong' && <SirenSongGenerateTab />}
+        {activeTab === 'skye' && <SkyeGenerateTab />}
       </div>
     </div>
   );

@@ -1,0 +1,145 @@
+// Skye — our open-source fork of DiffRhythm 2, self-hosted on a Hugging Face
+// Space (huggingface.co/spaces/Radiotomy/Skye). Async submit-and-poll, the same
+// architectural shape as Siren Song and Coda, but a COMPLETELY different model
+// with a different conditioning contract.
+//
+//   POST /generate/audio  { lyrics, style_prompt, negative_style_prompt,
+//                           reference_audio_url, duration, seed }
+//        → { status: "accepted", job_id }
+//   GET  /status/{job_id}
+//        → { status: pending|processing|completed|failed, progress,
+//            download_url?, filename?, file_path? }
+//   GET  {BASE}{download_url}
+//        → the rendered WAV
+//
+// Conditioning notes that drive the UI and the sanitizing below:
+//   style_prompt          — PROSE, not comma tokens. DiffRhythm 2 steers on a
+//                           natural-language description of the production.
+//                           (This is the opposite of Siren Song's tag channel —
+//                           feeding tags here wastes the model's text encoder.)
+//   negative_style_prompt — what to steer AWAY from. Distinct channel, so a
+//                           creator never has to phrase a negative as a positive.
+//   lyrics                — raw OR LRC-timestamped ("[00:12.50] line"). The fork
+//                           does phonetic alignment, so timestamps are optional
+//                           and are passed through untouched when present.
+//   reference_audio_url   — zero-shot style cloning. The Space downloads the URL
+//                           itself and cleans up its own temp file, so we only
+//                           ever hand it a public https URL, never file bytes.
+
+const ENGINE_BASE = 'https://radiotomy-skye.hf.space';
+
+const SUBMIT_TIMEOUT_MS = 30000;
+const STATUS_TIMEOUT_MS = 15000;
+// Long-form output means a much larger WAV than Siren Song's 60s ceiling.
+const DOWNLOAD_TIMEOUT_MS = 180000;
+
+// Hard ceiling of the fork's long-form window, in seconds.
+export const SKYE_MAX_DURATION = 285;
+export const SKYE_DEFAULT_DURATION = 95;
+
+// Cost of one Skye generation, in credits. Above Siren Song (12) because the
+// long-form window is nearly 5x the GPU time for a full-length render.
+export const SKYE_COST = 14;
+
+// What the model should steer away from unless the creator says otherwise.
+// Sent as a real default rather than left blank: an empty negative channel is a
+// wasted conditioning input on a model that has one.
+export const SKYE_DEFAULT_NEGATIVE =
+  'low quality, distorted, muffled, amateur recording, artifacts';
+
+// Submit a job. Throws on any transport or contract failure so the caller can
+// surface a clean 502 — a submit that half-succeeds must never look accepted.
+export async function submitSkyeAudio({
+  lyrics, stylePrompt, negativeStylePrompt, referenceAudioUrl, duration, seed,
+}) {
+  const body: Record<string, unknown> = {
+    lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
+    style_prompt: stylePrompt,
+    negative_style_prompt: negativeStylePrompt || SKYE_DEFAULT_NEGATIVE,
+    duration,
+    seed,
+  };
+  // Only sent when actually supplied — an empty string would make the Space
+  // attempt a download of nothing and fail a job that needed no reference.
+  if (referenceAudioUrl) body.reference_audio_url = referenceAudioUrl;
+
+  const res = await fetch(`${ENGINE_BASE}/generate/audio`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`Skye engine HTTP ${res.status}${t ? `: ${t.slice(0, 200)}` : ''}`);
+  }
+  const data = await res.json().catch(() => null);
+  const jobId = data?.job_id;
+  if (!jobId) throw new Error('Skye accepted the request but returned no job_id');
+  return { jobId };
+}
+
+// One status read. Normalizes the engine's field names into a stable shape.
+export async function getSkyeStatus(jobId) {
+  const res = await fetch(`${ENGINE_BASE}/status/${jobId}`, {
+    signal: AbortSignal.timeout(STATUS_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`Skye status HTTP ${res.status}`);
+  const data = await res.json().catch(() => null);
+  if (!data) throw new Error('Skye status returned no body');
+  return {
+    status: String(data.status || '').toLowerCase(),
+    progress: data.progress || '',
+    error: data.error || '',
+    // file_path is a path INSIDE the Space container and is never fetchable from
+    // here, so it is deliberately not treated as a download candidate.
+    downloadUrl: String(data.download_url || data.file_url || data.url || ''),
+    filename: String(data.filename || ''),
+  };
+}
+
+// Fetch the finished WAV and copy it into Base44 storage immediately: Space
+// storage is ephemeral, so an hf.space link must never be handed to the player.
+export async function persistSkyeWav(base44, downloadUrl, name) {
+  const url = /^https?:/i.test(downloadUrl)
+    ? downloadUrl
+    : `${ENGINE_BASE}${downloadUrl.startsWith('/') ? '' : '/'}${downloadUrl}`;
+  const f = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+  if (!f.ok) throw new Error(`Skye output fetch HTTP ${f.status}`);
+  const blob = await f.blob();
+  if (blob.size < 10000) throw new Error('Skye output too small to be audio');
+  const safeName = (name || 'skye').replace(/[^\w.\-]/g, '_').slice(0, 60) || 'skye';
+  const file = new File([blob], `${safeName}.wav`, { type: 'audio/wav' });
+  const up = await base44.integrations.Core.UploadFile({ file });
+  if (!up?.file_url) throw new Error('Skye output could not be persisted');
+  return up.file_url;
+}
+
+// Current credit balance (service-role read).
+export async function skyeBalance(base44, userId) {
+  const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: userId });
+  return { record: recs[0] || null, balance: recs[0]?.balance ?? 0 };
+}
+
+// Deduct on completion — never on submit — so a job that never renders is free.
+export async function skyeDeduct(base44, user, amount, jobId) {
+  const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
+  const record = recs[0];
+  if (!record) return 0;
+  const newBalance = Math.max(0, (record.balance || 0) - amount);
+  await base44.asServiceRole.entities.UserCredit.update(record.id, {
+    balance: newBalance,
+    lifetime_spent: (record.lifetime_spent || 0) + amount,
+    monthly_used: (record.monthly_used || 0) + amount,
+  });
+  await base44.asServiceRole.entities.CreditLog.create({
+    user_id: user.id, user_email: user.email,
+    transaction_type: 'generation',
+    amount: -amount,
+    balance_before: record.balance,
+    balance_after: newBalance,
+    related_job_id: jobId, provider: 'skye',
+    description: 'Skye (DiffRhythm 2) audio generation',
+  }).catch(() => {});
+  return newBalance;
+}
