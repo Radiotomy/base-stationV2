@@ -8,11 +8,24 @@ FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# pkg-config and the libav* headers are here because audiocraft depends on
+# av==11.0.0. If pip cannot match a prebuilt PyAV wheel it builds from source,
+# and that build dies with "pkg-config is required for building PyAV" — which is
+# how the first build of this Space failed. The ffmpeg binary alone is NOT enough;
+# the source build needs the dev headers.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip ffmpeg git \
+    python3 python3-pip python3-dev ffmpeg git \
+    pkg-config build-essential \
+    libavformat-dev libavcodec-dev libavdevice-dev libavutil-dev \
+    libavfilter-dev libswscale-dev libswresample-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN ln -sf /usr/bin/python3 /usr/bin/python
+
+# Ubuntu 22.04 ships pip 22.0.2, which is old enough to miss the manylinux PyAV
+# wheel and fall back to a source build. Upgrading pip is the actual fix — the
+# dev headers above are the safety net if a wheel still isn't matched.
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 WORKDIR /app
 
