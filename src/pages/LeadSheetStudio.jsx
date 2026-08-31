@@ -51,6 +51,11 @@ export default function LeadSheetStudio() {
       setBanks(list);
       const firstUsable = list.find(b => b.renderable !== false);
       if (firstUsable) setVoicebank(v => v || firstUsable.id);
+    } catch {
+      // The picker renders its own empty state; without this the failure was
+      // silent and looked like "this engine has no voices".
+      setBanks([]);
+      toast.error('Could not reach the voice engine — try refreshing the voice list.');
     } finally {
       setLoadingBanks(false);
     }
@@ -122,8 +127,16 @@ export default function LeadSheetStudio() {
       const r = await base44.functions.invoke('generateVocalsDiffSinger', {
         leadSheetId: saved.id, voicebank,
       });
+      // Without this guard a missing job id polled `undefined` 120 times over ten
+      // minutes and then reported a timeout, hiding the real failure.
+      const jobId = r.data?.job_id;
+      if (!jobId) {
+        setRendering(false);
+        toast.error('The engine did not start a render — nothing was charged.');
+        return;
+      }
       toast.success('Render started — this takes a few minutes.');
-      poll(r.data?.job_id);
+      poll(jobId);
     } catch (e) {
       setRendering(false);
       toast.error(e?.response?.data?.error || 'Could not start the render');

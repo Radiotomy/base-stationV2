@@ -62,8 +62,14 @@ export default function BedRenderPanel({ chords, onSaveScore }) {
       const r = await base44.functions.invoke('generateBedMusicGenChord', {
         leadSheetId: saved.id, style, duration: seconds,
       });
+      const jobId = r.data?.job_id;
+      if (!jobId) {
+        setRunning(false);
+        toast.error('The engine did not start a render — nothing was charged.');
+        return;
+      }
       toast.success('Bed render started.');
-      poll(r.data?.job_id);
+      poll(jobId);
     } catch (e) {
       setRunning(false);
       toast.error(e?.response?.data?.error || 'Could not start the bed render');

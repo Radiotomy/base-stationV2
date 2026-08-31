@@ -74,8 +74,14 @@ export default function StemCreatorStudio() {
     setStems(null);
     try {
       const r = await base44.functions.invoke('separateStemsSever', { assetId: selected[0] });
+      const jobId = r.data?.job_id;
+      if (!jobId) {
+        setRunning(false);
+        toast.error('The engine did not start a separation — nothing was charged.');
+        return;
+      }
       toast.success('Separation started — this takes a minute or two.');
-      poll(r.data?.job_id);
+      poll(jobId);
     } catch (e) {
       setRunning(false);
       toast.error(e?.response?.data?.error || 'Stem separation failed');
