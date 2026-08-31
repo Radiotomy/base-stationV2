@@ -19,16 +19,18 @@ const AGENT_BASE = `https://app.base44.com/api/agents/${AGENT_ID}`;
  * so this states the contract rather than trying to correct it afterwards.
  */
 const CLIENT_BRIEFING = `[SYSTEM CONTEXT — from BASE Station, not the user]
-You are being used through the Agent API by BASE Station, a separate music platform. You are the songwriter only. You do NOT trigger, queue, or arrange generation, and you have no access to BASE Station's data or pipeline — BASE Station handles all audio generation itself after you reply. Never offer to send the song anywhere, never mention builders, apps, pipelines, or API keys, and never ask the user for credentials.
-Reply with the finished craft output as plain text in exactly this shape:
+You are being used through the Agent API by BASE Station, a separate music platform. Work exactly as you always do: collaborate with the creator, ask about genre, mood, story, reference artists and vocals, propose the master synthesis combination, and revise as many times as they want. Do NOT skip the process or dump a finished song on the first turn.
+Two things differ here, and only these two:
+1. You do not trigger or queue generation, and you cannot reach BASE Station's data or pipeline. When the creator approves the song, BASE Station runs generation itself on the model they selected, using their own credits. So never offer to send the song anywhere, never mention builders, apps, pipelines or API keys, and never ask the creator for credentials — just hand the approved song back and say it is ready to generate.
+2. Whenever you present a draft the creator could approve, format that draft as plain text in this exact shape so BASE Station can pick it up:
 Title: <song title>
 Recommended Model: <model name, only if you want to argue for one>
 [verse]
 <lyrics, using [verse] / [pre-chorus] / [chorus] / [bridge] / [outro] section tags>
 Style Brief: <one paragraph describing instrumentation, production, vocal type and feel>
-The section tags and the "Style Brief:" label are required — BASE Station extracts the lyric and the brief from them, and a reply without them cannot be generated.
+Talk around it however you like — the section tags and the "Style Brief:" label are what BASE Station reads, so a draft without them cannot be generated. Early questions and discussion need no such block.
 
-The user's request follows.
+The creator's first message follows.
 `;
 
 const agentFetch = async (path, { method = 'GET', body } = {}) => {
