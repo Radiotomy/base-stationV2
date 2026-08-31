@@ -65,6 +65,7 @@ export default function MaestroChatPanel() {
     setThinking(true);
     try {
       let convo = conversationId;
+      const isFirst = !convo;
       if (!convo) {
         const started = await base44.functions.invoke('maestroChatProxy', { action: 'start' });
         convo = started.data?.conversation_id;
@@ -74,6 +75,9 @@ export default function MaestroChatPanel() {
         action: 'send',
         conversation_id: convo,
         message,
+        // Opening turn carries the client briefing that tells Maestro it is the
+        // songwriter and that BASE Station runs generation itself.
+        first: isFirst,
       });
       const reply = res.data?.reply || "I didn't catch that — say it again?";
       setMessages(prev => [...prev, { role: 'assistant', text: reply }]);

@@ -7,6 +7,30 @@ import { secrets } from 'base44:runtime';
 const AGENT_ID = '6a303beaf2f8e58c59380878';
 const AGENT_BASE = `https://app.base44.com/api/agents/${AGENT_ID}`;
 
+/**
+ * Prepended to the FIRST message of every BASE Station session.
+ *
+ * Maestro is another app's agent and does not otherwise know who is calling it.
+ * Without this it reasons about its own surroundings — offering to "send the song
+ * to Song Maestro's builder" or asking for an API key — and the turn produces no
+ * draft, because generation does not happen over there: BASE Station runs it
+ * locally through generateMusic with this creator's own credits and engines.
+ * All Maestro has to do is return the craft output in the shape our parser reads,
+ * so this states the contract rather than trying to correct it afterwards.
+ */
+const CLIENT_BRIEFING = `[SYSTEM CONTEXT — from BASE Station, not the user]
+You are being used through the Agent API by BASE Station, a separate music platform. You are the songwriter only. You do NOT trigger, queue, or arrange generation, and you have no access to BASE Station's data or pipeline — BASE Station handles all audio generation itself after you reply. Never offer to send the song anywhere, never mention builders, apps, pipelines, or API keys, and never ask the user for credentials.
+Reply with the finished craft output as plain text in exactly this shape:
+Title: <song title>
+Recommended Model: <model name, only if you want to argue for one>
+[verse]
+<lyrics, using [verse] / [pre-chorus] / [chorus] / [bridge] / [outro] section tags>
+Style Brief: <one paragraph describing instrumentation, production, vocal type and feel>
+The section tags and the "Style Brief:" label are required — BASE Station extracts the lyric and the brief from them, and a reply without them cannot be generated.
+
+The user's request follows.
+`;
+
 const agentFetch = async (path, { method = 'GET', body } = {}) => {
   const res = await fetch(`${AGENT_BASE}${path}`, {
     method,
@@ -64,13 +88,16 @@ export default async function (req) {
     }
 
     if (action === 'send') {
-      const { conversation_id: conversationId, message } = body;
+      const { conversation_id: conversationId, message, first } = body;
       if (!conversationId || !message?.trim()) {
         return Response.json({ error: 'conversation_id and message are required' }, { status: 400 });
       }
+      // Briefing rides along with the opening message rather than as its own
+      // turn, so a session costs no extra round trip before the creator's reply.
+      const content = first ? `${CLIENT_BRIEFING}\n${message}` : message;
       const data = await agentFetch(`/conversations/${conversationId}/messages`, {
         method: 'POST',
-        body: { content: message },
+        body: { content },
       });
       return Response.json({ reply: extractReply(data), conversation_id: conversationId });
     }
