@@ -4,9 +4,11 @@ import LoopDiscoverTab from '@/components/loops/LoopDiscoverTab';
 import MyLoopsTab from '@/components/loops/MyLoopsTab';
 import CommunityLoopsTab from '@/components/loops/CommunityLoopsTab';
 import GenerateLoopTab from '@/components/loops/GenerateLoopTab';
+import SemanticLoopSearch from '@/components/loops/SemanticLoopSearch';
 
 const TABS = [
   { key: 'generate', label: 'Generate (BASE Forge)' },
+  { key: 'smart', label: 'Search by Sound' },
   { key: 'discover', label: 'Discover Free Loops' },
   { key: 'mine', label: 'My Loops' },
   { key: 'community', label: 'Community Library' },
@@ -42,6 +44,7 @@ export default function LoopStudio() {
         </div>
 
         {tab === 'generate' && <GenerateLoopTab />}
+        {tab === 'smart' && <SemanticLoopSearch />}
         {tab === 'discover' && <LoopDiscoverTab />}
         {tab === 'mine' && <MyLoopsTab />}
         {tab === 'community' && <CommunityLoopsTab />}

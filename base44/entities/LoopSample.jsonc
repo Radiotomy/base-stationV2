@@ -98,6 +98,17 @@
       "default": "unregistered",
       "description": "BASE Mark registration state for this loop's audio. Only generated loops are registered \u2014 an imported CC0 sample is somebody else's recording and must never be marked as this creator's work."
     },
+    "clap_embedding": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "description": "512-d L2-normalized CLAP audio embedding used for semantic ('sounds like\u2026') search. Normalized at the source so similarity is a plain dot product. Deliberately NOT a forensic signal: an embedding describes what a sound resembles, never who owns it, so it must never be read as provenance the way a BASE Mark payload or a BASE Print match is."
+    },
+    "clap_model": {
+      "type": "string",
+      "description": "Checkpoint the embedding came from. Load-bearing: embeddings from two different CLAP checkpoints are NOT comparable, so a stored vector is meaningless without knowing its model, and a checkpoint change means re-embedding rather than mixing."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000,
