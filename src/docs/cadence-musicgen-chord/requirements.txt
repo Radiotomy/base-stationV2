@@ -19,6 +19,17 @@ transformers==4.40.2
 
 # Written with soundfile rather than torchaudio.save — torchcodec fails to load
 # on the HF Space image.
+# Capped below 1.0 deliberately. audiocraft and transformers 4.40.2 both call
+# hf_hub_download(resume_download=...), which 1.0.0 REMOVES — the current
+# FutureWarning becomes a TypeError on the first weight fetch, i.e. the Space
+# stops loading the model at all. The other two warnings in the boot log
+# (torch weight_norm, encodec torch.tensor copy-construct) are cosmetic and
+# originate inside the pinned torch/transformers, so they cannot rot while
+# those pins hold and there is nothing to fix in our own code.
+huggingface_hub>=0.20,<1.0
+
+# Written with soundfile rather than torchaudio.save — torchcodec fails to load
+# on the HF Space image.
 soundfile==0.12.1
 numpy<2.0
 
