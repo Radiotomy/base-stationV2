@@ -59,6 +59,11 @@ export const SKYE_COST = 14;
 export const SKYE_CFG_STRENGTH = 2.0;
 export const SKYE_SAMPLE_STEPS = 16;
 
+// Sweep bounds, mirroring the clamps the Space enforces. Kept here so a caller
+// is corrected before spending GPU time rather than silently after it.
+export const SKYE_CFG_RANGE = { min: 1.0, max: 8.0 };
+export const SKYE_STEPS_RANGE = { min: 8, max: 64 };
+
 // Submit a job. Throws on any transport or contract failure so the caller can
 // surface a clean 502 — a submit that half-succeeds must never look accepted.
 //
@@ -67,8 +72,15 @@ export const SKYE_SAMPLE_STEPS = 16;
 // → { task_id, status }. cfg/steps are fixed inside the Space now, and
 // reference-audio cloning is not exposed — the caller must reject a reference
 // rather than send one the engine would silently ignore.
+// cfgStrength / sampleSteps are OPTIONAL and exist for calibration sweeps only.
+// Omitting them sends nothing, so the Space applies its own defaults and normal
+// creator generation is byte-for-byte unchanged — a tuning dial must never
+// quietly become part of the paid path before it has been measured.
 export async function submitSkyeAudio({
-  lyrics, stylePrompt, duration, seed,
+  lyrics, stylePrompt, duration, seed, cfgStrength, sampleSteps,
+}: {
+  lyrics?: string; stylePrompt: string; duration: number; seed?: number;
+  cfgStrength?: number; sampleSteps?: number;
 }) {
   const body: Record<string, unknown> = {
     prompt: stylePrompt,
@@ -79,6 +91,12 @@ export async function submitSkyeAudio({
     duration,
     seed,
   };
+  if (cfgStrength !== undefined) {
+    body.cfg_strength = Math.max(SKYE_CFG_RANGE.min, Math.min(cfgStrength, SKYE_CFG_RANGE.max));
+  }
+  if (sampleSteps !== undefined) {
+    body.sample_steps = Math.round(Math.max(SKYE_STEPS_RANGE.min, Math.min(sampleSteps, SKYE_STEPS_RANGE.max)));
+  }
 
   const res = await fetch(`${ENGINE_BASE}/generate`, {
     method: 'POST',

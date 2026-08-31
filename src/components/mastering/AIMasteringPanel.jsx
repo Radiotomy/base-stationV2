@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError, refreshCreditsFromResponse } from '@/utils/creditErrors';
 import StereoVUMeter from './StereoVUMeter';
 import ScrubWaveformPlayer from './ScrubWaveformPlayer';
@@ -581,7 +580,6 @@ export default function AIMasteringPanel() {
           className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 rounded-xl font-bold py-6 gap-2">
           {mastering ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
           {mastering ? 'Mastering…' : 'Master with AI'}
-          {!mastering && <CostBadge cost={6} />}
         </Button>
 
         {/* Result */}
