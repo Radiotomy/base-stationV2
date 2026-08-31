@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { sendAssetToSubStation } from '@/lib/substation/handoff';
+import BedLicenseNotice from '@/components/leadsheet/BedLicenseNotice';
 
 /**
  * Instrumental bed from the authored chord chart.
@@ -117,6 +118,7 @@ export default function BedRenderPanel({ chords, onSaveScore }) {
       {asset && (
         <div className="space-y-3 pt-1">
           <audio src={asset.file_url} controls className="w-full" />
+          <BedLicenseNotice />
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" asChild className="rounded-xl gap-2 text-xs font-bold">
               <a href={asset.file_url} download>

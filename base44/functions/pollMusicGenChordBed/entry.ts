@@ -100,6 +100,15 @@ Deno.serve(async (req) => {
       metadata: {
         render_kind: 'lead_sheet_bed',
         engine: CADENCE_ENGINE,
+        // Cadence runs Meta's musicgen-melody weights, which are CC-BY-NC 4.0.
+        // Recorded ON THE ASSET rather than only in docs: a bed that reaches a
+        // distribution or store surface must carry its own restriction, because by
+        // then nobody is reading the engine's README. Flips to true once the engine
+        // moves to a commercially-clear checkpoint.
+        model_weights_license: 'CC-BY-NC-4.0',
+        cleared_for_commercial_release: false,
+        license_note:
+          'Generated with non-commercial model weights (Meta musicgen-melody, CC-BY-NC 4.0). Cleared for personal use, testing and evaluation only — not for sale, paid bundles or commercial release.',
         chord_chart: job.input_data?.chord_chart,
         chord_chart_normalized: job.input_data?.chord_chart_normalized,
         bar_count: job.input_data?.bar_count,
@@ -112,7 +121,7 @@ Deno.serve(async (req) => {
         score_hash: job.input_data?.score_hash,
         provider_job_id: job.provider_job_id,
       },
-      tags: ['lead-sheet', 'instrumental', 'cadence'],
+      tags: ['lead-sheet', 'instrumental', 'cadence', 'non-commercial'],
     });
 
     if (leadSheetId) {
