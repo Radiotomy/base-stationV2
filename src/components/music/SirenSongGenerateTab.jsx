@@ -9,6 +9,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
+import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
@@ -116,6 +117,15 @@ export default function SirenSongGenerateTab() {
           <span className="font-bold text-cyan-300">Siren Song:</span> our self-hosted HeartMuLa 3B engine, running on a Hugging Face L4 GPU. This model is <span className="font-semibold">tag &amp; lyric conditioned</span> — describe the sound with comma-separated style tags, not a sentence.
         </p>
       </div>
+
+      {/* Free assistant first — a complete draft in HeartMuLa's tag dialect at
+          no cost, before the creator decides to spend on the craft engine. */}
+      <SongIdeaAssistant dialect="sirensong" duration={lengthSec} disabled={isBusy}
+        onApply={({ style, lyrics: l, title: t }) => {
+          setTags(style);
+          setLyrics(l);
+          if (t && !title.trim()) setTitle(t);
+        }} />
 
       {/* Songwriting assistance encoded into HeartMuLa's TAG dialect — the same
           243 Masters craft engine the other studios use, translated rather than

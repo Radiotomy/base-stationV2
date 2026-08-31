@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import SkyeStyleControls from '@/components/music/SkyeStyleControls';
+import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
@@ -123,6 +124,16 @@ export default function SkyeGenerateTab() {
           <span className="font-bold text-violet-300">Skye:</span> our open-source fork of <span className="font-semibold">DiffRhythm 2</span>, self-hosted on our own Hugging Face engine. Semi-autoregressive block flow matching with phonetic lyric alignment — <span className="font-semibold">prose style steering</span> and long-form output from {MIN_DURATION}s up to {MAX_DURATION}s.
         </p>
       </div>
+
+      {/* Free assistant sits above the paid Masters engine deliberately — a
+          creator should be able to get a complete usable draft without spending
+          anything, and only reach for the craft engine when they want more. */}
+      <SongIdeaAssistant dialect="skye" duration={duration} disabled={isBusy}
+        onApply={({ style: s, lyrics: l, title: t }) => {
+          setStyle((prev) => ({ ...prev, stylePrompt: s }));
+          setLyrics(l);
+          if (t && !title.trim()) setTitle(t);
+        }} />
 
       {/* Masters brief lands BEFORE the style controls so the creator sees the
           generated prose appear in the field they are about to edit. Tempo and

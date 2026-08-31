@@ -33,6 +33,11 @@ export const LIMITS = {
   // than its cheapness suggests.
   basemark_verify_gpu: { max: 30, windowMs: 60 * 60 * 1000 },
   basemark_v2_embed: { max: 30, windowMs: 60 * 60 * 1000 },
+  // The free song assistant. Costs the creator nothing, so the platform carries
+  // every call — generous enough that drafting and re-drafting an idea a dozen
+  // times never hits it, tight enough that a runaway client cannot bill us for
+  // thousands of LLM calls.
+  song_assist: { max: 60, windowMs: 60 * 60 * 1000 },
 };
 
 function windowStart(windowMs) {

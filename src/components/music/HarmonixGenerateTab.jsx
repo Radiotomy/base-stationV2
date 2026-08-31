@@ -12,6 +12,7 @@ import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage 
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { toAceStepLyrics } from '@/utils/aceStepLyrics';
 import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel';
+import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import HarmonixGrooveControls from '@/components/music/HarmonixGrooveControls';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
@@ -251,6 +252,18 @@ export default function HarmonixGenerateTab() {
           placeholder="e.g. Uplifting synth-pop with bright plucks, punchy drums and a soaring chorus…"
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
       </div>
+
+      {/* Free assistant — same draft, translated into Coda's packed-token
+          dialect. BPM is applied because an unset tempo is what makes ACE-Step
+          improvise a different pocket per section; key_scale is deliberately
+          left alone since the groove control offers a fixed option list. */}
+      <SongIdeaAssistant dialect="coda" duration={duration} disabled={isProcessing}
+        onApply={({ style, lyrics: l, title: t, brief }) => {
+          setPrompt(style);
+          setLyrics(l);
+          if (t && !title.trim()) setTitle(t);
+          if (brief?.bpm) setGroove((g) => ({ ...g, bpm: brief.bpm }));
+        }} />
 
       <HarmonixMastersPanel fallbackTopic={prompt} onApply={({ lyrics: l, prompt: p, title: t, bpm, key_scale, time_signature }) => {
         setLyrics(l);

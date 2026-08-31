@@ -22,6 +22,11 @@
 // other humans ("Verse 2 (half-time, whispered)") must never survive into the
 // lyric channel, because every one of these models will sing them out loud.
 
+// Coda's converters already live in aceStepLyrics.js and are re-exported into the
+// dialect registry below rather than reimplemented, so the Harmonix tab and the
+// shared assistant cannot drift apart on what ACE-Step actually accepts.
+import { toHarmonixPrompt, toAceStepLyrics } from '@/utils/aceStepLyrics';
+
 // ── shared section cleaning ─────────────────────────────────────────────────
 
 const CANON = ['intro', 'verse', 'pre-chorus', 'chorus', 'hook', 'bridge', 'breakdown', 'instrumental', 'outro'];
@@ -178,10 +183,19 @@ export function toSkyeLyrics(lyrics = '') {
 
 // ── dialect registry ────────────────────────────────────────────────────────
 
+
 // Drives the shared Masters panel so a new engine needs a dialect entry, not a
 // new panel. `styleLabel` and `styleHint` exist because telling a creator to
 // "write tags" on a prose model is worse than saying nothing.
 export const MODEL_DIALECTS = {
+  coda: {
+    name: 'Coda',
+    engine: 'ACE-Step 1.5 XL Turbo',
+    styleLabel: 'Style Prompt',
+    styleHint: 'a dense comma-separated sonic description, because this model conditions on packed tokens rather than narrative prose.',
+    toStyle: toHarmonixPrompt,
+    toLyrics: toAceStepLyrics,
+  },
   sirensong: {
     name: 'Siren Song',
     engine: 'HeartMuLa 3B',
