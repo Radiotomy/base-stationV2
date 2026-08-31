@@ -344,7 +344,10 @@ export default class SubEngine {
       session.loop.enabled ? session.loop.end : 0
     );
     const seconds = beatsToSec(lengthBeats, session.bpm) + 1.5;
-    const rate = 44100;
+    // 48 kHz, not 44.1: every source here is 32 kHz (Cadence) or 48 kHz (Cantor),
+    // so 44.1 was a downsample no material asked for — and video and DSP delivery
+    // both expect 48 kHz, which would force a second resample downstream.
+    const rate = 48000;
     const off = new OfflineAudioContext(2, Math.ceil(seconds * rate), rate);
 
     const master = off.createGain();
