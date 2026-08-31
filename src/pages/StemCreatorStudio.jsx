@@ -11,11 +11,15 @@ import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 
+// Sever runs HTDemucs-6s, which produces six sources — guitar and piano are
+// pulled out separately instead of being buried in "other".
 const OUTPUT_STEMS = [
   { id: 'vocals', label: 'Vocals', emoji: '🎤' },
   { id: 'drums', label: 'Drums', emoji: '🥁' },
-  { id: 'bass', label: 'Bass', emoji: '🎸' },
-  { id: 'other', label: 'Other (Instruments)', emoji: '🎹' },
+  { id: 'bass', label: 'Bass', emoji: '🎵' },
+  { id: 'guitar', label: 'Guitar', emoji: '🎸' },
+  { id: 'piano', label: 'Piano', emoji: '🎹' },
+  { id: 'other', label: 'Other', emoji: '🎺' },
 ];
 
 export default function StemCreatorStudio() {
@@ -30,15 +34,16 @@ export default function StemCreatorStudio() {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const poll = (jobId, attempt = 0) => {
-    // Separation runs provider-side; give it up to ~5 minutes before giving up.
-    if (attempt > 60) {
+    // Sever separates on CPU and runs one job at a time, so a queued job can
+    // wait behind another creator's track — allow ~10 minutes before giving up.
+    if (attempt > 120) {
       setRunning(false);
       toast.error('Separation is taking longer than expected — check your library shortly.');
       return;
     }
     timer.current = setTimeout(async () => {
       try {
-        const r = await base44.functions.invoke('pollTempolorStems', { job_id: jobId });
+        const r = await base44.functions.invoke('pollSeverStems', { job_id: jobId });
         if (r.data?.status === 'completed') {
           setStems(r.data.stems || []);
           setRunning(false);
@@ -60,7 +65,7 @@ export default function StemCreatorStudio() {
     setRunning(true);
     setStems(null);
     try {
-      const r = await base44.functions.invoke('generateStems', { assetId: selected[0] });
+      const r = await base44.functions.invoke('separateStemsSever', { assetId: selected[0] });
       toast.success('Separation started — this takes a minute or two.');
       poll(r.data?.job_id);
     } catch (e) {
@@ -73,8 +78,8 @@ export default function StemCreatorStudio() {
     <div className="min-h-screen bg-background">
       <StudioPageHeader icon={Layers} accent="emerald"
         title="Stem Creator Studio"
-        subtitle="Split any track into individual stems — vocals, drums, bass, and instruments."
-        badge="Phase 3" />
+        subtitle="Split any track into six stems — vocals, drums, bass, guitar, piano and other."
+        badge="Sever engine" />
 
       <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Controls */}
@@ -87,8 +92,9 @@ export default function StemCreatorStudio() {
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
             <h3 className="text-sm font-black">2. What You Get</h3>
             <p className="text-xs text-muted-foreground">
-              Stems v2 splits the whole mix in one pass and returns all four together, so
-              there's no subset to pick. Sources must be under 50MB.
+              Sever splits the whole mix in one pass and returns all six together, so there's
+              no subset to pick. It runs on our own engine — one track at a time, so a busy
+              queue means a longer wait rather than a failure.
             </p>
             <div className="grid grid-cols-2 gap-2">
               {OUTPUT_STEMS.map(s => (
@@ -106,7 +112,7 @@ export default function StemCreatorStudio() {
             {running ? 'Separating…' : 'Separate Stems'}
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            Costs 8 credits — charged only if separation succeeds.
+            Costs 2 credits — charged only if separation succeeds.
           </p>
         </div>
 
@@ -137,7 +143,9 @@ export default function StemCreatorStudio() {
                   <p className="text-sm font-bold">{stem.title}</p>
                 </div>
                 <Badge variant="outline" className="capitalize">
-                  {stem.stem_type || stem.metadata?.stem_type}
+                  {/* metadata first: guitar and piano have no schema enum slot and
+                      are filed as 'other', so the enum would mislabel them */}
+                  {stem.metadata?.stem_type || stem.stem_type}
                 </Badge>
               </div>
               <StudioAudioPlayer src={stem.file_url} title={stem.title} compact />

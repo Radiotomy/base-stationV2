@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
 import { queryStemTask, normalizeStemUrls, expandStemArchive } from '../../shared/tempolorStems.ts';
+import { finalizeStemJob } from '../../shared/stemFinalize.ts';
 
 /**
  * Poll a Tempolor stem-separation job and finalize it.
@@ -109,11 +110,7 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'failed', error: 'Tempolor returned no stem files' });
     }
 
-    // Load source for provenance inheritance
-    const srcList = await base44.entities.UserAsset.filter({ id: job.input_data?.assetId });
-    const source = srcList[0];
-
-    const titleStem = (source?.title || 'track').slice(0, 40);
+    const titleStem = (job.input_data?.source_title || 'track').slice(0, 40);
     const files = await collectStemFiles(base44, parts, titleStem);
     if (files.length === 0) {
       await base44.asServiceRole.entities.GenerationJob.update(job.id, {
@@ -122,107 +119,13 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'failed', error: 'Could not read the separated stem files' });
     }
 
-    const stems = [];
-    for (const part of files) {
-      const fileUrl = part.file_url;
-      const asset = await base44.entities.UserAsset.create({
-        user_id: job.user_id,
-        user_email: job.user_email,
-        asset_type: 'stem',
-        title: `${source?.title || 'Track'} — ${part.stem_type}`,
-        description: `${part.stem_type} stem separated from ${source?.title || 'source track'}`,
-        file_url: fileUrl,
-        thumbnail_url: source?.thumbnail_url,
-        origin: source?.origin || 'creator',
-        // Separation is non-generative — inherit the source's GenAI label.
-        ...(source?.ai_label && { ai_label: source.ai_label }),
-        ai_disclosure_label: source?.ai_disclosure_label || 'ai_generated',
-        ai_disclosure_basis: 'Derived asset — stem separated from a source recording.',
-        human_participation_score: 25,
-        participation_signals: { reference_material: 15, iteration: 10 },
-        parent_asset_id: source?.id,
-        // 'bundle' is not a valid stem_type enum value, so it is recorded in
-        // metadata only rather than forced into the schema.
-        ...(part.stem_type !== 'bundle' && { stem_type: part.stem_type }),
-        tags: ['stem', part.stem_type, ...(source?.tags || [])],
-        metadata: {
-          stem_type: part.stem_type,
-          is_bundle: part.stem_type === 'bundle',
-          source_asset_id: source?.id,
-          source_title: source?.title,
-          provider: 'tempcolor',
-          separation_model: 'stems_v2',
-          bpm: source?.metadata?.bpm,
-          key: source?.metadata?.key,
-          provenance: {
-            created_by: 'stem_creator',
-            providers_used: ['tempcolor'],
-            stems_used: [],
-            remix_sources: source?.id ? [source.id] : [],
-          },
-        },
-      });
-      stems.push(asset);
-    }
-
-    const completedAt = new Date().toISOString();
-    const cost = job.input_data?.credit_cost ?? 8;
-
-    await base44.asServiceRole.entities.GenerationJob.update(job.id, {
-      status: 'completed',
-      output_url: stems[0]?.file_url,
-      output_metadata: { stems: files.map(p => p.stem_type), stem_asset_ids: stems.map(s => s.id) },
-      credits_used: cost,
-      completed_at: completedAt,
+    const stems = await finalizeStemJob(base44, {
+      job,
+      files: files.map(p => ({ stem_type: p.stem_type, label: p.stem_type, file_url: p.file_url })),
+      provider: 'tempcolor',
+      separationModel: 'stems_v2',
+      cost: job.input_data?.credit_cost ?? 8,
     });
-
-    // Deduct once
-    if (!job.credits_used) {
-      try {
-        const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: job.user_id });
-        let record = recs[0];
-        if (!record) {
-          record = await base44.asServiceRole.entities.UserCredit.create({
-            user_id: job.user_id, user_email: job.user_email,
-            balance: 0, lifetime_earned: 0, lifetime_spent: 0,
-          });
-        }
-        const newBalance = Math.max(0, (record.balance || 0) - cost);
-        await base44.asServiceRole.entities.UserCredit.update(record.id, {
-          balance: newBalance,
-          lifetime_spent: (record.lifetime_spent || 0) + cost,
-          monthly_used: (record.monthly_used || 0) + cost,
-        });
-        await base44.asServiceRole.entities.CreditLog.create({
-          user_id: job.user_id, user_email: job.user_email,
-          transaction_type: 'generation', amount: -cost,
-          balance_before: record.balance, balance_after: newBalance,
-          related_job_id: job.id, provider: 'tempcolor',
-          description: `Stem separation — ${stems.length} stems`,
-        });
-      } catch (e) { console.warn('Stem credit deduction failed:', e.message); }
-    }
-
-    // Finalize pending usage log
-    try {
-      const logs = await base44.asServiceRole.entities.APIUsageLog.filter({ job_id: job.id });
-      const pending = logs.find(l => l.status === 'pending');
-      if (pending) {
-        await base44.asServiceRole.entities.APIUsageLog.update(pending.id, {
-          status: 'success', credits_used: cost, timestamp: completedAt,
-          metadata: { ...(pending.metadata || {}), stems: files.map(p => p.stem_type) },
-        });
-      }
-    } catch { /* non-blocking */ }
-
-    await base44.asServiceRole.entities.StudioHistory.create({
-      user_id: job.user_id, user_email: job.user_email,
-      tool: 'stem_creator',
-      asset_id: stems[0]?.id,
-      source_asset_ids: source?.id ? [source.id] : [],
-      title: `Separated ${stems.length} stems from "${source?.title || 'track'}"`,
-      metadata: { provider: 'tempcolor', stems: files.map(p => p.stem_type) },
-    }).catch(() => {});
 
     return Response.json({ status: 'completed', stems });
   } catch (error) {
