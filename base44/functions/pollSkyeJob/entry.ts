@@ -94,13 +94,19 @@ Deno.serve(async (req) => {
     const fileUrl = persisted.fileUrl;
     const completedAt = new Date().toISOString();
 
-    // BASE Mark eligibility is decided by the MEASURED rate, not by what the
-    // model is assumed to emit. The V2 detector cannot currently recover a mark
-    // from a 48kHz master, so a 48kHz render is explicitly skipped — embedding an
-    // unrecoverable watermark is worse than embedding none. Anything else is left
-    // un-sentinelled so the "Auto BASE Mark V2 on new audio assets" workflow
-    // picks the track up like any other.
-    const skipMark = persisted.sampleRate === 48000;
+    // NOTE ON 48kHz: this used to skip BASE Mark for 48kHz renders, on the
+    // premise that the V2 detector could not recover a mark from a 48kHz master.
+    // That premise was measured and is false for the current V2 container, which
+    // embeds via a 44.1kHz DELTA added back to the untouched master (see
+    // src/docs/basemark-v2-neural/predict.py). Benchmarked 2026-08-31 at 48kHz vs
+    // a 44.1kHz baseline: neural recovery succeeded on an untouched file and
+    // through 15kHz band-limiting at BOTH rates, and the marked file came back at
+    // 48kHz with its rate, depth and channel count intact.
+    //
+    // So Skye renders are now marked like any other track and the "Auto BASE Mark
+    // V2 on new audio assets" workflow picks them up normally. The guard is gone
+    // rather than inverted: with the header reader fixed it would finally have
+    // started firing, which would have disabled marking that demonstrably works.
 
     // Album artwork — a Skye render is a SONG, so it gets cover art like every
     // other track. Never fatal: the audio already rendered, so a failed image
@@ -139,9 +145,6 @@ Deno.serve(async (req) => {
         bit_depth: persisted.bitDepth,
         generated_at: completedAt,
         generation_job_id: job.id,
-        ...(skipMark
-          ? { base_mark: { skipped: true, reason: 'skye_48khz_pending_v2_rate_support' } }
-          : {}),
       },
     }).catch((e) => { console.warn('Asset save failed:', e.message); return null; });
 

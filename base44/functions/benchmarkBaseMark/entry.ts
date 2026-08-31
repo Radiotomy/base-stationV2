@@ -31,9 +31,14 @@ function attackKeys(requested) {
   return requested;
 }
 
-async function loadSource(base44, fileUrl, seconds) {
+// `sampleRate` only applies to synthetic sources — an uploaded file is measured
+// at whatever rate it actually is. It exists so the 48kHz path can be measured
+// at all: the V2 container embeds 48kHz via a resampled delta, and its own
+// docstring requires that 48kHz recovery be benchmarked against the 44.1kHz
+// figure before 48kHz is trusted on the production path.
+async function loadSource(base44, fileUrl, seconds, sampleRate = 44100) {
   if (!fileUrl) {
-    return { audio: synthesizeBenchmarkSource(seconds), kind: 'synthetic' };
+    return { audio: synthesizeBenchmarkSource(seconds, sampleRate), kind: 'synthetic' };
   }
   const r = await fetch(fileUrl);
   if (!r.ok) throw new Error(`Could not download benchmark source (${r.status})`);
@@ -188,18 +193,25 @@ Deno.serve(async (req) => {
     if (action === 'v2_start') {
       const seconds = Math.max(4, Math.min(30, body.seconds || 12));
       const runId = body.run_id || crypto.randomUUID();
-      const { audio, kind } = await loadSource(base44, body.fileUrl, seconds);
+      const sampleRate = Number(body.sample_rate) === 48000 ? 48000 : 44100;
+      const { audio, kind } = await loadSource(base44, body.fileUrl, seconds, sampleRate);
       const payloadHex = payloadFromId(`benchmark-${runId}-v2`);
       const v1Bytes = embedMark(encodeWav(audio), payloadHex);
       const file = new File([v1Bytes], 'benchmark-v1.wav', { type: 'audio/wav' });
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const pred = await startV2({ action: 'encode', audio: file_url, message: JSON.stringify(packMessage(payloadHex)) });
+      // packMessage is ASYNC (the validity byte is an HMAC). Without the await
+      // this serialized a Promise as "{}" and the engine embedded a message that
+      // could never unpack — so every V2 benchmark row was measuring a broken
+      // embed rather than the layer's real robustness.
+      const message = JSON.stringify(await packMessage(payloadHex));
+      const pred = await startV2({ action: 'encode', audio: file_url, message });
       return Response.json({
         run_id: runId,
         payload_hex: payloadHex,
         prediction_id: pred.id,
         v1_marked_url: file_url,
         source_kind: kind,
+        sample_rate: audio.sampleRate,
         note: 'Poll with action:"v2_poll" and this prediction_id to get the cascaded file URL.',
       });
     }
@@ -247,7 +259,10 @@ Deno.serve(async (req) => {
           if (rr.ok) {
             const v2 = await rr.json();
             if (v2.detected && Array.isArray(v2.messages) && v2.messages.length > 0) {
-              const { valid, payload_hex: ph } = unpackMessage(v2.messages[0]);
+              // Async for the same reason as packMessage — the un-awaited call
+              // destructured a Promise, so `valid` was always undefined and a
+              // perfectly recovered mark was recorded as a failure.
+              const { valid, payload_hex: ph } = await unpackMessage(v2.messages[0]);
               v2Ok = valid && ph === payload_hex;
               if (valid && !v2Ok) v2Note = `wrong payload ${ph}`;
             } else {

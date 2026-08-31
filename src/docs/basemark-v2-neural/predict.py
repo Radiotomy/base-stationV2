@@ -36,11 +36,25 @@ A 44.1kHz master takes the same path, and `_resample` is a no-op identity when
 the rates already match, so 44.1kHz behavior is byte-comparable to the previous
 revision apart from the delta round trip.
 
-UNVERIFIED until benchmarked: recombination is mathematically lossless in the
-marked band, but resampling ripple at the band edge may cost bit accuracy. The
-40-bit message has a magic byte and no error correction, so a few flipped bits
-is a TOTAL loss, not a degraded one. Benchmark 48kHz recovery against the
-44.1kHz figure BEFORE enabling 48kHz on the production path.
+VERIFIED 2026-08-31. The concern was that resampling ripple at the band edge
+might cost bit accuracy — and because the 40-bit message has no error
+correction, a few flipped bits is a TOTAL loss rather than a degraded one. So
+48kHz recovery was measured against a 44.1kHz baseline (synthetic 20s source,
+benchmarkBaseMark v2_start/v2_attack, rows under BaseMarkBenchmark):
+
+    attack             44.1kHz neural   48kHz neural
+    control            recovered        recovered
+    lowpass 15kHz      recovered        recovered
+    noise 20dB SNR     not recovered    not recovered
+
+48kHz tracks 44.1kHz on every case measured, and the marked file returns at
+48kHz with rate, depth and channel count intact. The noise_20dB failure is a
+property of the NEURAL layer at both rates, not a 48kHz regression — the
+spectral layer carried it, which is the cascade working as designed. 48kHz is
+therefore enabled on the production path.
+
+Still unmeasured: 24-bit 48kHz masters, and the full attack grid at 48kHz
+(pitch/stretch/crop). Those are gaps in coverage, not known failures.
 
 ── I/O CONTRACT — DO NOT CHANGE WITHOUT CHANGING THE APP ───────────────────────
 The app treats the output as a SINGLE FILE URL (it reads `pred.output` as a

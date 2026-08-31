@@ -122,18 +122,41 @@ export async function getSkyeStatus(jobId) {
 // nulls for anything that isn't a WAVE container instead of throwing — an
 // unreadable header must not fail a render that already succeeded.
 export function readWavFormat(bytes: Uint8Array) {
+  const miss = { sampleRate: null, channels: null, bitDepth: null, dataBytes: null };
   try {
-    if (bytes.length < 44) return { sampleRate: null, channels: null, bitDepth: null };
+    if (bytes.length < 44) return miss;
     const tag = (o: number) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
-    if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return { sampleRate: null, channels: null, bitDepth: null };
+    if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return miss;
     const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    return {
-      channels: dv.getUint16(22, true),
-      sampleRate: dv.getUint32(24, true),
-      bitDepth: dv.getUint16(34, true),
-    };
+
+    // Chunks MUST be walked, never assumed to start at offset 12. Skye's engine
+    // writes via soundfile, which emits a 52-byte JUNK padding chunk BEFORE
+    // 'fmt ' — so the old fixed-offset read (22/24/34) landed inside JUNK's zero
+    // fill and reported a 0Hz, 0-channel, 0-bit file for every single render.
+    // That silently disabled the 48kHz BASE Mark guard below, which is the whole
+    // reason this reader exists.
+    let off = 12, fmt = null, dataBytes = null;
+    while (off + 8 <= bytes.length) {
+      const id = tag(off);
+      const size = dv.getUint32(off + 4, true);
+      if (id === 'fmt ' && off + 8 + 16 <= bytes.length) {
+        fmt = {
+          channels: dv.getUint16(off + 10, true),
+          sampleRate: dv.getUint32(off + 12, true),
+          bitDepth: dv.getUint16(off + 22, true),
+        };
+      } else if (id === 'data') {
+        // Trust the smaller of declared vs actual: a truncated download must not
+        // report the duration the header claims it should have had.
+        dataBytes = Math.min(size, bytes.length - (off + 8));
+        break;
+      }
+      off += 8 + size + (size % 2);
+    }
+    if (!fmt) return miss;
+    return { ...fmt, dataBytes };
   } catch {
-    return { sampleRate: null, channels: null, bitDepth: null };
+    return miss;
   }
 }
 
@@ -196,7 +219,10 @@ export async function persistSkyeWav(base44, downloadUrl, name, requestedDuratio
   // different size. Only enforced when the rate is actually readable.
   if (format.sampleRate && format.channels && format.bitDepth) {
     const frameBytes = format.channels * (format.bitDepth / 8);
-    const seconds = (buf.length - 44) / frameBytes / format.sampleRate;
+    // Measured from the data chunk, not `buf.length - 44`: the header is not a
+    // fixed 44 bytes (soundfile prepends a 52-byte JUNK chunk), so the old
+    // arithmetic silently over-reported duration by whatever the real header cost.
+    const seconds = (format.dataBytes ?? Math.max(0, buf.length - 44)) / frameBytes / format.sampleRate;
     if (requestedDuration > 0 && seconds < Math.min(10, requestedDuration * 0.5)) {
       throw new Error(`Skye returned ${seconds.toFixed(1)}s of audio for a ${requestedDuration}s request — the engine did not perform a full render.`);
     }
