@@ -10,6 +10,7 @@ import AssetPicker from '@/components/studio/AssetPicker';
 import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
+import OnDeviceStemPanel from '@/components/stems/OnDeviceStemPanel';
 
 // Sever runs HTDemucs-6s, which produces six sources — guitar and piano are
 // pulled out separately instead of being buried in "other".
@@ -29,9 +30,17 @@ export default function StemCreatorStudio() {
   const [selected, setSelected] = useState(preselected ? [preselected] : []);
   const [running, setRunning] = useState(false);
   const [stems, setStems] = useState(null);
+  // The on-device path needs the actual file to decode, not just an id.
+  const [sourceAsset, setSourceAsset] = useState(null);
   const timer = useRef(null);
 
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  useEffect(() => {
+    if (!selected[0]) { setSourceAsset(null); return; }
+    base44.entities.UserAsset.filter({ id: selected[0] })
+      .then(rows => setSourceAsset(rows[0] || null));
+  }, [selected]);
 
   const poll = (jobId, attempt = 0) => {
     // Sever separates on CPU and runs one job at a time, so a queued job can
@@ -114,6 +123,8 @@ export default function StemCreatorStudio() {
           <p className="text-[11px] text-muted-foreground text-center">
             Costs 2 credits — charged only if separation succeeds.
           </p>
+
+          <OnDeviceStemPanel asset={sourceAsset} onComplete={setStems} />
         </div>
 
         {/* Results */}
