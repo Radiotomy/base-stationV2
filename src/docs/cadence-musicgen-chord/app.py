@@ -64,7 +64,13 @@ from pydantic import BaseModel
 OUTPUT_DIR = "/tmp/outputs"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-MODEL_NAME = "facebook/musicgen-melody"
+# STEREO checkpoint. Same architecture and the same multi-hot chroma conditioning
+# as musicgen-melody — the stereo variant just decodes two channels — so the
+# ChordInjector below needs no change. Still 32 kHz: that is MusicGen's native
+# decoder rate and no checkpoint raises it. Resampling to 48 kHz would add bytes,
+# not information, so it is done at the SUB-Station import boundary (for format
+# compatibility with 48 kHz vocal renders) rather than pretended at here.
+MODEL_NAME = "facebook/musicgen-stereo-melody"
 SAMPLE_RATE = 32000
 
 # One worker, on purpose. See header.
@@ -260,7 +266,12 @@ def run_job(job_id, payload):
                 progress=False,
             )
 
-        audio = wav[0].cpu().numpy().T  # [samples, channels] for soundfile
+        # wav[0] is [channels, samples]; soundfile wants [samples, channels].
+        # The stereo checkpoint yields 2 channels here, mono yields 1 — the
+        # transpose covers both, so nothing downstream has to know which
+        # checkpoint produced the file.
+        audio = wav[0].cpu().numpy().T
+        channels = audio.shape[1] if audio.ndim > 1 else 1
         path = os.path.join(OUTPUT_DIR, f"{job_id}.wav")
         # soundfile, not torchaudio.save — torchcodec fails to load on the HF
         # Space image, the same wall Cantor hit.
@@ -274,6 +285,7 @@ def run_job(job_id, payload):
                 "audio": f"/outputs/{job_id}.wav",
                 "duration": duration,
                 "sample_rate": SAMPLE_RATE,
+                "channels": channels,
             }
     except Exception as e:
         traceback.print_exc()
@@ -312,6 +324,8 @@ def health():
         "engine": "cadence",
         "model": MODEL_NAME,
         "conditioning": "multi-hot chord chroma",
+        "sample_rate": SAMPLE_RATE,
+        "stereo": "stereo" in MODEL_NAME,
         "loaded": _model is not None,
         "cuda": torch.cuda.is_available(),
         "in_flight": queued,
