@@ -13,6 +13,7 @@ import MelodySheetInput from '@/components/leadsheet/MelodySheetInput';
 import VoicebankPicker from '@/components/leadsheet/VoicebankPicker';
 import ScoreProvenanceCard from '@/components/leadsheet/ScoreProvenanceCard';
 import VocalResultPanel from '@/components/leadsheet/VocalResultPanel';
+import BedRenderPanel from '@/components/leadsheet/BedRenderPanel';
 import { parseMelody, scoreSeconds } from '@/utils/leadSheetScore';
 
 /**
@@ -198,6 +199,8 @@ export default function LeadSheetStudio() {
           )}
 
           {asset && <VocalResultPanel asset={asset} />}
+
+          <BedRenderPanel chords={chords} onSaveScore={save} />
 
           <ScoreProvenanceCard leadSheet={sheet} />
         </div>
