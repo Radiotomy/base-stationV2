@@ -272,6 +272,15 @@ def run_job(job_id, payload):
         # checkpoint produced the file.
         audio = wav[0].cpu().numpy().T
         channels = audio.shape[1] if audio.ndim > 1 else 1
+
+        # Leave 1 dB of headroom. MusicGen normalizes loudness and lands hard on
+        # 0 dBFS, which left nothing for SUB-Station's limiter or a video mix.
+        # Scaled DOWN only, never lifted: raising a quiet render would change the
+        # balance the model chose rather than protect it.
+        peak = float(np.max(np.abs(audio))) if audio.size else 0.0
+        ceiling = 10 ** (-1.0 / 20.0)  # -1 dBFS
+        if peak > ceiling:
+            audio = audio * (ceiling / peak)
         path = os.path.join(OUTPUT_DIR, f"{job_id}.wav")
         # soundfile, not torchaudio.save — torchcodec fails to load on the HF
         # Space image, the same wall Cantor hit.
