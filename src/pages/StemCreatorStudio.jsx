@@ -2,12 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Layers, Loader2, Wand2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 import StudioPageHeader from '@/components/studio/StudioPageHeader';
 import AssetPicker from '@/components/studio/AssetPicker';
-import StudioAudioPlayer from '@/components/audio/StudioAudioPlayer';
+import StemDeck from '@/components/stems/StemDeck';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 import OnDeviceStemPanel from '@/components/stems/OnDeviceStemPanel';
@@ -146,25 +145,18 @@ export default function StemCreatorStudio() {
             </div>
           )}
 
-          {stems?.map(stem => (
-            <div key={stem.id} className="bg-card rounded-2xl border border-border p-4 space-y-3">
+          {stems?.length > 0 && (
+            <>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  <p className="text-sm font-bold">{stem.title}</p>
+                  <p className="text-sm font-bold">{stems.length} stems ready</p>
                 </div>
-                <Badge variant="outline" className="capitalize">
-                  {/* metadata first: guitar and piano have no schema enum slot and
-                      are filed as 'other', so the enum would mislabel them */}
-                  {stem.metadata?.stem_type || stem.stem_type}
-                </Badge>
+                <AddToProjectButton asset={stems[0]} tool="stem_creator" toolRoute="/stem-creator" />
               </div>
-              <StudioAudioPlayer src={stem.file_url} title={stem.title} compact />
-              <div className="flex flex-wrap gap-2">
-                <AddToProjectButton asset={stem} tool="stem_creator" toolRoute="/stem-creator" />
-              </div>
-            </div>
-          ))}
+              <StemDeck stems={stems} />
+            </>
+          )}
 
           {stems?.[0] && <ProvenancePanel asset={stems[0]} />}
         </div>
