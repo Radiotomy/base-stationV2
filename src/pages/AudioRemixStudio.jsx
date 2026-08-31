@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import WaveformVisualizer from '@/components/audio/WaveformVisualizer';
 import StemTrack from '@/components/audio/StemTrack';
+import CodaEditPanel from '@/components/remix/CodaEditPanel';
 
 const EDIT_TASKS = [
   { value: 'extract_stems', label: '🎚️ Extract Stems', desc: 'Separate vocals, drums, bass & other' },
@@ -393,6 +394,9 @@ export default function AudioRemixStudio() {
                     </div>
                   </div>
                 )}
+
+                {/* Coda engine edit tasks — cover / repaint / extract on our own GPU */}
+                <CodaEditPanel audioUrl={audioUrl} selectedSegment={selectedSegment} />
 
                 {/* BPM / Metadata Analysis */}
                 <div className="bg-card rounded-2xl border border-border p-5">

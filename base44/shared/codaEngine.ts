@@ -75,6 +75,55 @@ export async function getCodaStatus(jobId) {
   };
 }
 
+// ── Edit tasks (Phase 2 of the Coda engine) ─────────────────────────────────
+// The same loaded ACE-Step 1.5 pipeline natively supports audio-to-audio task
+// modes; the Space's /generate/audio route accepts them since engine v1.1.
+// All tasks condition on a SOURCE audio URL the Space downloads itself
+// (WAV/FLAC — the libsndfile path; MP3 sources are not guaranteed).
+export const CODA_EDIT_COST = 10;
+export const CODA_EDIT_TASKS = ['cover', 'repaint', 'extract'];
+
+// Submit an edit-task job. Same accept contract as submitCodaGeneration.
+export async function submitCodaEdit({
+  task, srcAudioUrl, tags, lyrics, refAudioUrl,
+  repaintStart, repaintEnd, coverStrength, trackName, seed,
+}) {
+  const body: Record<string, unknown> = {
+    task_type: task,
+    src_audio_url: srcAudioUrl,
+    tags: tags || '',
+    lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
+    seed: seed || 42,
+  };
+  if (refAudioUrl) body.ref_audio_url = refAudioUrl;
+  if (repaintStart !== undefined && repaintStart !== null) body.repainting_start = repaintStart;
+  if (repaintEnd !== undefined && repaintEnd !== null) body.repainting_end = repaintEnd;
+  if (task === 'cover' && coverStrength !== undefined) {
+    body.audio_cover_strength = Math.max(0, Math.min(Number(coverStrength), 1));
+  }
+  if (trackName) body.track_name = String(trackName).slice(0, 40);
+
+  let res;
+  try {
+    res = await fetch(`${CODA_BASE_URL}/generate/audio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
+    });
+  } catch (e) {
+    throw new Error(`Coda engine unreachable (it may be warming up — try again in a minute): ${e.message}`);
+  }
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    throw new Error(`Coda engine HTTP ${res.status}${t ? `: ${t.slice(0, 200)}` : ''}`);
+  }
+  const data = await res.json().catch(() => null);
+  const jobId = data?.job_id;
+  if (!jobId) throw new Error('Coda accepted the request but returned no job_id');
+  return { jobId };
+}
+
 // The engine returns /outputs/… paths — resolve them against the Space host.
 export function codaAbsoluteUrl(downloadUrl) {
   return /^https?:/i.test(downloadUrl)
