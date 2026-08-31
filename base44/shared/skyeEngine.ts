@@ -61,23 +61,26 @@ export const SKYE_SAMPLE_STEPS = 16;
 
 // Submit a job. Throws on any transport or contract failure so the caller can
 // surface a clean 502 — a submit that half-succeeds must never look accepted.
+//
+// Contract of the REBUILT Space (2026-08-30, verified against its live
+// /openapi.json): POST /generate { prompt, lyrics, style, duration, seed }
+// → { task_id, status }. cfg/steps are fixed inside the Space now, and
+// reference-audio cloning is not exposed — the caller must reject a reference
+// rather than send one the engine would silently ignore.
 export async function submitSkyeAudio({
-  lyrics, stylePrompt, referenceAudioUrl, duration, seed,
+  lyrics, stylePrompt, duration, seed,
 }) {
   const body: Record<string, unknown> = {
+    prompt: stylePrompt,
+    // `style` has a server-side default of "rock" — always sent explicitly so
+    // an omitted field can never inject a genre the creator didn't ask for.
+    style: '',
     lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
-    style_prompt: stylePrompt,
     duration,
     seed,
-    cfg_strength: SKYE_CFG_STRENGTH,
-    sample_steps: SKYE_SAMPLE_STEPS,
   };
-  // Only sent when actually supplied — an empty string would make the Space
-  // attempt a download of nothing and fail a job that needed no reference.
-  // Mutually exclusive with style_prompt: MuLan reads one or the other.
-  if (referenceAudioUrl) body.reference_audio_url = referenceAudioUrl;
 
-  const res = await fetch(`${ENGINE_BASE}/generate/audio`, {
+  const res = await fetch(`${ENGINE_BASE}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -88,8 +91,8 @@ export async function submitSkyeAudio({
     throw new Error(`Skye engine HTTP ${res.status}${t ? `: ${t.slice(0, 200)}` : ''}`);
   }
   const data = await res.json().catch(() => null);
-  const jobId = data?.job_id;
-  if (!jobId) throw new Error('Skye accepted the request but returned no job_id');
+  const jobId = data?.task_id || data?.job_id;
+  if (!jobId) throw new Error('Skye accepted the request but returned no task_id');
   return { jobId };
 }
 
@@ -105,9 +108,9 @@ export async function getSkyeStatus(jobId) {
     status: String(data.status || '').toLowerCase(),
     progress: data.progress || '',
     error: data.error || '',
-    // file_path is a path INSIDE the Space container and is never fetchable from
-    // here, so it is deliberately not treated as a download candidate.
-    downloadUrl: String(data.download_url || data.file_url || data.url || ''),
+    // result_url is the rebuilt Space's field; the older names are kept as
+    // fallbacks so an engine rollback degrades to working rather than breaking.
+    downloadUrl: String(data.result_url || data.download_url || data.file_url || data.url || ''),
     filename: String(data.filename || ''),
   };
 }
