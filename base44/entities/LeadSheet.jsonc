@@ -1,0 +1,148 @@
+{
+  "name": "LeadSheet",
+  "type": "object",
+  "description": "A human-authored score: chord chart, key/BPM/time signature, lyrics and an optional syllable-level melody. This is the PROVENANCE SOURCE ARTIFACT for anything rendered from it \u2014 unlike a text prompt, a lead sheet is the human's actual musical contribution in a storable, hashable form, so a track built from it can point at authorship rather than inferring it from telemetry. Deliberately separate from GenerationJob: a score outlives any single render and is normally rendered many times.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Author of the score"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "key": {
+      "type": "string",
+      "description": "Musical key, e.g. 'C major', 'F# minor'"
+    },
+    "bpm": {
+      "type": "number",
+      "description": "Tempo in beats per minute. Load-bearing: the melody's durations are written in beats, so the renderer cannot convert them to seconds without this."
+    },
+    "time_signature": {
+      "type": "string",
+      "default": "4/4"
+    },
+    "chord_chart": {
+      "type": "string",
+      "maxLength": 4000,
+      "description": "The progression as the writer typed it, e.g. 'C | Am | F | G7'. Stored verbatim rather than normalized \u2014 the human's own notation is the artifact, and rewriting it would replace the thing being attested to."
+    },
+    "lyrics": {
+      "type": "string",
+      "maxLength": 8000,
+      "description": "Full lyric sheet as written. Kept alongside `melody` even though the melody carries its own syllables, because the lyric is the readable work and the melody is the sung breakdown of it."
+    },
+    "melody": {
+      "type": "string",
+      "maxLength": 20000,
+      "description": "Raw syllable/note/beats text exactly as entered, one note per line ('Twin C4 1'). Preserved as typed so the score can be reopened and edited losslessly, independent of how the parser happened to read it."
+    },
+    "score": {
+      "type": "array",
+      "description": "Parsed melody the renderer actually consumes. Derived from `melody`, stored so a render is reproducible even if the parser changes later \u2014 a score that silently re-parses differently would break the provenance claim it exists to support.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "syllable": {
+            "type": "string",
+            "description": "Sung text for this note"
+          },
+          "note": {
+            "type": "string",
+            "description": "Scientific pitch, e.g. 'C4', 'F#3'"
+          },
+          "midi": {
+            "type": "number",
+            "description": "MIDI note number the pitch resolved to"
+          },
+          "beats": {
+            "type": "number",
+            "description": "Length in beats at this score's BPM"
+          }
+        }
+      }
+    },
+    "score_hash": {
+      "type": "string",
+      "description": "SHA-256 over the canonicalized score (key, bpm, time signature, chords, lyrics, parsed notes). Computed SERVER-SIDE only: a hash a client could supply would attest to nothing. This is what an anchored provenance record points at, so it must change whenever the authored content changes."
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "typed",
+        "midi_import"
+      ],
+      "default": "typed",
+      "description": "How the score reached the platform. Recorded because a typed score and an imported MIDI file are different authorship claims, and blurring them would overstate what is known."
+    },
+    "vocal_midi_url": {
+      "type": "string",
+      "description": "Uploaded MIDI the melody was imported from, when source is 'midi_import'. Kept as the original evidence file rather than being discarded after parsing."
+    },
+    "rendered_asset_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "UserAsset ids rendered from this score. One score to many renders \u2014 a voicebank swap or a retake is a new render of the SAME authorship, not new authorship."
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Writer's private working notes"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
+    }
+  },
+  "required": [
+    "user_id",
+    "title"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -72,6 +72,10 @@
       "type": "string",
       "description": "LoopSample this registry row was created for, when asset_type is 'loop'. Kept so a recovered payload can be traced back to the loop a creator actually sees in their library."
     },
+    "lead_sheet_id": {
+      "type": "string",
+      "description": "LeadSheet this asset was rendered from, when the audio performs a human-authored score. Load-bearing for attribution: it is the difference between a participation score that was INFERRED from prompt telemetry and one that is asserted because every pitch, syllable and duration came from a stored, hashed score. Absent on prompt-generated audio, and never inferred after the fact."
+    },
     "origin": {
       "type": "string",
       "enum": [
