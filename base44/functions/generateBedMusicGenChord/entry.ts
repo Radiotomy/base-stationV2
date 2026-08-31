@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { startBed, MUSICGEN_CHORD_MODEL, MAX_BED_SECONDS } from '../../shared/musicGenChord.ts';
+import { submitBed, CADENCE_ENGINE, MAX_BED_SECONDS } from '../../shared/cadenceEngine.ts';
+import { normalizeChordChart, countBars } from '../../shared/chordNotation.ts';
 
 /**
  * Render an instrumental bed that plays a lead sheet's authored progression.
@@ -7,16 +8,18 @@ import { startBed, MUSICGEN_CHORD_MODEL, MAX_BED_SECONDS } from '../../shared/mu
  * Payload: { leadSheetId, style, duration }
  * Returns: { data: { job_id, status, provider: 'musicgenchord' } }
  *
- * The progression is read from the stored LeadSheet, never from the request body —
- * same rule as the vocal path. A bed conditioned on chords the platform never
- * recorded could not be traced back to an authored score, which is the only thing
- * that makes this different from prompt-to-audio.
+ * Runs on Cadence, our own HF Space (see base44/shared/cadenceEngine.ts). The
+ * progression is read from the STORED LeadSheet, never from the request body: a bed
+ * conditioned on chords the platform never recorded could not be traced back to an
+ * authored score, which is the only thing separating this from prompt-to-audio.
+ *
+ * The normalized Harte form is recorded alongside the writer's own notation so a
+ * render stays reproducible even if the normalizer is later improved.
  *
  * Credits are deducted by pollMusicGenChordBed on completion.
  */
 
-// Replicate GPU time is a real per-call cost, unlike our self-hosted engines.
-const BED_COST = 6;
+const BED_COST = 4;
 
 Deno.serve(async (req) => {
   try {
@@ -33,9 +36,16 @@ Deno.serve(async (req) => {
     if (!sheet) return Response.json({ error: 'Lead sheet not found' }, { status: 404 });
     if (sheet.user_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    const chords = (sheet.chord_chart || '').trim();
-    if (!chords) {
+    const authored = (sheet.chord_chart || '').trim();
+    if (!authored) {
       return Response.json({ error: 'This score has no chord chart to play' }, { status: 400 });
+    }
+
+    const textChords = normalizeChordChart(authored);
+    if (!textChords) {
+      return Response.json({
+        error: 'No chords could be read from this chart. Use symbols like "C | Am | F | G7".',
+      }, { status: 400 });
     }
 
     const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -51,9 +61,9 @@ Deno.serve(async (req) => {
 
     const seconds = Math.min(Math.max(Math.round(Number(duration) || 30), 8), MAX_BED_SECONDS);
 
-    const prediction = await startBed({
+    const engineJobId = await submitBed({
       prompt: String(style).slice(0, 400),
-      text_chords: chords,
+      text_chords: textChords,
       bpm: sheet.bpm || 120,
       time_sig: sheet.time_signature || '4/4',
       duration: seconds,
@@ -73,16 +83,18 @@ Deno.serve(async (req) => {
         lead_sheet_id: leadSheetId,
         score_hash: sheet.score_hash,
         source_title: sheet.title,
-        chord_chart: chords,
+        chord_chart: authored,
+        chord_chart_normalized: textChords,
+        bar_count: countBars(authored),
         style,
         bpm: sheet.bpm,
         key: sheet.key,
         time_signature: sheet.time_signature,
         duration: seconds,
         credit_cost: BED_COST,
-        engine: MUSICGEN_CHORD_MODEL,
+        engine: CADENCE_ENGINE,
       },
-      provider_job_id: prediction.id,
+      provider_job_id: engineJobId,
       started_at: startedAt,
     });
 
@@ -94,8 +106,8 @@ Deno.serve(async (req) => {
       metadata: {
         action: 'lead_sheet_bed',
         lead_sheet_id: leadSheetId,
-        provider_job_id: prediction.id,
-        engine: MUSICGEN_CHORD_MODEL,
+        provider_job_id: engineJobId,
+        engine: CADENCE_ENGINE,
       },
     }).catch(() => {});
 

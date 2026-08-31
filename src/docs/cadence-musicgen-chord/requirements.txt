@@ -1,0 +1,17 @@
+# Cadence engine dependencies.
+# torch / torchaudio are installed separately in the Dockerfile from the CUDA
+# 12.1 index and are deliberately absent here.
+
+# Meta's AudioCraft supplies MusicGen + the melody chroma conditioner we patch.
+# Pinned: audiocraft's conditioner internals are what our chord injection wraps,
+# and an unpinned bump could rename the method we patch.
+audiocraft==1.3.0
+
+# Written with soundfile rather than torchaudio.save — torchcodec fails to load
+# on the HF Space image.
+soundfile==0.12.1
+numpy<2.0
+
+fastapi==0.115.0
+uvicorn==0.30.6
+pydantic==2.9.2

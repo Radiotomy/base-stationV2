@@ -1,14 +1,14 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
-import { getBedPrediction, extractBedUrl, MUSICGEN_CHORD_MODEL } from '../../shared/musicGenChord.ts';
+import { pollBed, resolveAudioUrl, CADENCE_ENGINE } from '../../shared/cadenceEngine.ts';
 
 /**
- * Poll a MusicGen-Chord bed render and file the result.
+ * Poll a Cadence bed render and file the result.
  *
  * Payload: { job_id }
  * Returns: { status: 'processing' } | { status: 'completed', asset } | { status: 'failed', error }
  *
- * Replicate purges prediction output after a retention window, so the WAV is copied
- * into Base44 storage here rather than linked.
+ * The WAV is copied into Base44 storage rather than linked: the Space writes to /tmp,
+ * so its output does not survive a restart or a rebuild.
  *
  * The bed is filed as its OWN asset, never merged with the score's vocal render. The
  * two carry different authorship claims — an authored melody versus an AI arrangement
@@ -47,37 +47,29 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'failed', error: job.error_message || 'Bed render failed' });
     }
 
-    let prediction: any = null;
-    try {
-      prediction = await getBedPrediction(job.provider_job_id);
-    } catch {
-      // A transient Replicate error is not a failed render — keep polling.
+    const state = await pollBed(job.provider_job_id);
+
+    if (state.status === 'failed') {
+      const message = state.error || 'Cadence bed render failed';
+      await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+        status: 'failed', error_message: message,
+      });
+      return Response.json({ status: 'failed', error: message });
+    }
+
+    // 'not_found' means the Space restarted mid-render and lost its job table. Kept
+    // as processing rather than failed only until the caller's own attempt budget
+    // runs out — inventing a failure here would be as wrong as claiming success.
+    if (state.status !== 'completed' || !state.audio) {
       return Response.json({ status: 'processing' });
     }
 
-    if (prediction.status === 'failed' || prediction.status === 'canceled') {
-      const message = prediction.error || 'MusicGen-Chord bed render failed';
-      await base44.asServiceRole.entities.GenerationJob.update(job.id, {
-        status: 'failed', error_message: message,
-      });
-      return Response.json({ status: 'failed', error: message });
-    }
-
-    if (prediction.status !== 'succeeded') return Response.json({ status: 'processing' });
-
-    const bedUrl = extractBedUrl(prediction.output);
-    if (!bedUrl) {
-      const message = prediction.data_removed
-        ? 'The bed expired on the provider before it could be retrieved — please regenerate.'
-        : 'MusicGen-Chord returned no audio';
-      await base44.asServiceRole.entities.GenerationJob.update(job.id, {
-        status: 'failed', error_message: message,
-      });
-      return Response.json({ status: 'failed', error: message });
-    }
-
     const title = job.input_data?.source_title || 'Lead sheet bed';
-    const fileUrl = await persist(base44, bedUrl, `${String(title).slice(0, 40)}_bed.wav`);
+    const fileUrl = await persist(
+      base44,
+      resolveAudioUrl(state.audio),
+      `${String(title).slice(0, 40)}_bed.wav`,
+    );
 
     const leadSheetId = job.input_data?.lead_sheet_id;
 
@@ -103,22 +95,24 @@ Deno.serve(async (req) => {
         authored_melody: false,
         score_hash: job.input_data?.score_hash || null,
         harmony_source: 'human_lead_sheet',
-        arrangement_source: 'musicgen_chord',
+        arrangement_source: 'cadence_musicgen_chord',
       },
       metadata: {
         render_kind: 'lead_sheet_bed',
-        engine: MUSICGEN_CHORD_MODEL,
+        engine: CADENCE_ENGINE,
         chord_chart: job.input_data?.chord_chart,
+        chord_chart_normalized: job.input_data?.chord_chart_normalized,
+        bar_count: job.input_data?.bar_count,
         style: job.input_data?.style,
         bpm: job.input_data?.bpm,
         key: job.input_data?.key,
         time_signature: job.input_data?.time_signature,
-        duration: job.input_data?.duration,
+        duration: state.duration || job.input_data?.duration,
         lead_sheet_id: leadSheetId,
         score_hash: job.input_data?.score_hash,
         provider_job_id: job.provider_job_id,
       },
-      tags: ['lead-sheet', 'instrumental', 'musicgen-chord'],
+      tags: ['lead-sheet', 'instrumental', 'cadence'],
     });
 
     if (leadSheetId) {
@@ -133,14 +127,14 @@ Deno.serve(async (req) => {
       } catch { /* the bed is filed; a broken back-link must not fail the job */ }
     }
 
-    const cost = job.input_data?.credit_cost ?? 6;
+    const cost = job.input_data?.credit_cost ?? 4;
 
     await base44.asServiceRole.entities.GenerationJob.update(job.id, {
       status: 'completed',
       output_url: fileUrl,
       output_metadata: {
         asset_id: asset.id,
-        duration: job.input_data?.duration,
+        duration: state.duration || job.input_data?.duration,
         title,
       },
       credits_used: cost,
@@ -166,7 +160,7 @@ Deno.serve(async (req) => {
             balance_before: record.balance,
             balance_after: after,
             related_job_id: job.id, provider: 'musicgenchord',
-            description: 'MusicGen-Chord instrumental bed',
+            description: 'Cadence instrumental bed',
           });
         }
       } catch (e) { console.warn('Credit deduction failed:', e.message); }

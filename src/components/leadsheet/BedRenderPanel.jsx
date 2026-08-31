@@ -110,7 +110,8 @@ export default function BedRenderPanel({ chords, onSaveScore }) {
         {running ? 'Rendering bed…' : 'Play My Chords'}
       </Button>
       <p className="text-[11px] text-muted-foreground text-center">
-        Costs 6 credits — charged only if the render succeeds.
+        Costs 4 credits — charged only if the render succeeds. Cadence renders one
+        bed at a time, so a busy queue means a longer wait rather than a failure.
       </p>
 
       {asset && (
