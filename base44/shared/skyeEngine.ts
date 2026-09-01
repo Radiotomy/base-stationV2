@@ -78,6 +78,23 @@ export const SKYE_STEPS_RANGE = { min: 8, max: 64 };
 // Omitting them sends nothing, so the Space applies its own defaults and normal
 // creator generation is byte-for-byte unchanged — a tuning dial must never
 // quietly become part of the paid path before it has been measured.
+// DiffRhythm 2's lyric parser only recognises these bracketed structure tokens:
+// [start] [end] [intro] [verse] [chorus] [outro] [inst] [solo] [bridge] [hook]
+// [break] [stop] [space]. '[instrumental]' is NOT one of them — the parser drops
+// the line, so the model received an EMPTY text sequence and collapsed into a
+// sustained drone (verified 2026-09-01: every '[instrumental]' render measured
+// ~0.03 frame-to-frame energy flux; the same seed with a structure skeleton
+// measured ~0.3). An instrumental therefore has to be described as a SONG with
+// no sung lines, not as an absence of lyrics.
+export const SKYE_INSTRUMENTAL_SKELETON =
+  '[start]\n[intro]\n[inst]\n[verse]\n[chorus]\n[inst]\n[bridge]\n[chorus]\n[outro]\n[end]';
+
+// True when the creator gave nothing the engine can use as a text track.
+export function isSkyeInstrumental(lyrics?: string) {
+  const t = (lyrics || '').trim().toLowerCase();
+  return !t || t === '[instrumental]' || t === '[inst]';
+}
+
 export async function submitSkyeAudio({
   lyrics, stylePrompt, duration, seed, cfgStrength, sampleSteps,
 }: {
@@ -89,7 +106,7 @@ export async function submitSkyeAudio({
     // `style` has a server-side default of "rock" — always sent explicitly so
     // an omitted field can never inject a genre the creator didn't ask for.
     style: '',
-    lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
+    lyrics: isSkyeInstrumental(lyrics) ? SKYE_INSTRUMENTAL_SKELETON : lyrics,
     duration,
     seed,
   };
