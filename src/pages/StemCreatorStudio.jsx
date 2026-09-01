@@ -10,6 +10,7 @@ import StemDeck from '@/components/stems/StemDeck';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 import OnDeviceStemPanel from '@/components/stems/OnDeviceStemPanel';
+import { pollJob } from '@/lib/polling/pollJob';
 
 // Sever runs HTDemucs-6s, which produces six sources — guitar and piano are
 // pulled out separately instead of being buried in "other".
@@ -31,9 +32,9 @@ export default function StemCreatorStudio() {
   const [stems, setStems] = useState(null);
   // The on-device path needs the actual file to decode, not just an id.
   const [sourceAsset, setSourceAsset] = useState(null);
-  const timer = useRef(null);
+  const watchRef = useRef(null);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => watchRef.current?.cancel(), []);
 
   useEffect(() => {
     if (!selected[0]) { setSourceAsset(null); return; }
@@ -41,31 +42,25 @@ export default function StemCreatorStudio() {
       .then(rows => setSourceAsset(rows[0] || null));
   }, [selected]);
 
-  const poll = (jobId, attempt = 0) => {
-    // Sever separates on CPU and runs one job at a time, so a queued job can
-    // wait behind another creator's track — allow ~10 minutes before giving up.
-    if (attempt > 120) {
+  // Sever separates on CPU one job at a time, so a queued job can wait behind
+  // another creator's track. Cadence and deadline come from the shared 'engine'
+  // polling policy — hammering a busy single-worker engine cannot speed it up.
+  const poll = (jobId) => {
+    watchRef.current = pollJob(
+      async () => (await base44.functions.invoke('pollSeverStems', { job_id: jobId })).data || {},
+      'engine',
+    );
+    watchRef.current.promise.then(({ outcome, data, error }) => {
       setRunning(false);
-      toast.error('Separation is taking longer than expected — check your library shortly.');
-      return;
-    }
-    timer.current = setTimeout(async () => {
-      try {
-        const r = await base44.functions.invoke('pollSeverStems', { job_id: jobId });
-        if (r.data?.status === 'completed') {
-          setStems(r.data.stems || []);
-          setRunning(false);
-          toast.success(`Separated ${r.data.stems?.length || 0} stems`, { icon: '🎛️' });
-        } else if (r.data?.status === 'failed') {
-          setRunning(false);
-          toast.error(r.data.error || 'Stem separation failed');
-        } else {
-          poll(jobId, attempt + 1);
-        }
-      } catch {
-        poll(jobId, attempt + 1);
+      if (outcome === 'completed') {
+        setStems(data.stems || []);
+        toast.success(`Separated ${data.stems?.length || 0} stems`, { icon: '🎛️' });
+      } else if (outcome === 'failed') {
+        toast.error(error || 'Stem separation failed');
+      } else {
+        toast.error('Separation is taking longer than expected — the stems will land in your library when it finishes.');
       }
-    }, 5000);
+    });
   };
 
   const generate = async () => {

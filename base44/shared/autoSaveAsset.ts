@@ -30,13 +30,37 @@ export async function autoSaveJobAsset(base44, job, providerData, outputUrl) {
   if (!assetType || !outputUrl || !job.user_id) return null;
   if (job.input_data?.task_kind === 'mashup') return null;
 
+  const p = providerData || {};
+
+  // Sonic and Producer return SEVERAL takes per generation, and the creator paid
+  // one credit charge for all of them. Only the first was ever written to the
+  // library, so the alternates existed as stored files that nothing pointed at —
+  // invisible in the workspace and unrecoverable without reading the job row.
+  // Each take is its own recording (own duration, own cover, own BASE Mark), so
+  // each gets its own asset rather than being folded into one.
+  const takes = Array.isArray(p.audio_urls) && p.audio_urls.length > 1 ? p.audio_urls : [outputUrl];
+  let primary = null;
+  for (let i = 0; i < takes.length; i++) {
+    const asset = await saveOneTake(base44, job, p, takes[i], i, takes.length);
+    if (i === 0) primary = asset;
+  }
+  return primary;
+}
+
+async function saveOneTake(base44, job, p, outputUrl, index, total) {
+  const assetType = ASSET_TYPE_BY_JOB[job.job_type];
   const svc = base44.asServiceRole || base44;
 
   const existing = await svc.entities.UserAsset.filter({ file_url: outputUrl }).catch(() => []);
   if (existing.length > 0) return existing[0];
 
-  const p = providerData || {};
-  const title = job.input_data?.title || p.title || `${job.provider} ${job.job_type}`;
+  const baseTitle = job.input_data?.title || p.title || `${job.provider} ${job.job_type}`;
+  const title = total > 1 ? `${baseTitle} (Take ${index + 1})` : baseTitle;
+  // Only the primary take's measurements were reported. An alternate take has a
+  // different length, so copying the primary's duration onto it would state a
+  // figure that is simply wrong — better to leave it unknown.
+  const isPrimary = index === 0;
+  const cover = (Array.isArray(p.cover_image_urls) && p.cover_image_urls[index]) || p.cover_image_url || null;
 
   // Score EVERY generated asset, not just audio. A video or a cover art carries
   // creative-process telemetry exactly as a track does, and an asset saved with
@@ -53,7 +77,7 @@ export async function autoSaveJobAsset(base44, job, providerData, outputUrl) {
     asset_type: assetType,
     title: String(title).slice(0, 120),
     file_url: outputUrl,
-    thumbnail_url: p.cover_image_url || undefined,
+    thumbnail_url: cover || undefined,
     origin: 'creator',
     is_public: false,
     // RIAA/IFPI track-level label applies to sound recordings only, per the
@@ -68,14 +92,17 @@ export async function autoSaveJobAsset(base44, job, providerData, outputUrl) {
       provider: job.provider,
       tier: job.input_data?.tier || null,
       prompt: job.input_data?.prompt || job.input_data?.sound_prompt || null,
-      duration: p.duration || job.input_data?.duration || null,
+      duration: isPrimary ? (p.duration || job.input_data?.duration || null) : null,
+      take_number: total > 1 ? index + 1 : null,
       bpm: p.bpm || null,
       key: p.key || null,
       genre: p.genre || job.input_data?.genre || null,
       mood: p.mood || job.input_data?.mood || null,
       lyrics: p.lyrics || null,
-      cover_image_url: p.cover_image_url || null,
-      wav_url: p.wav_url || null,
+      cover_image_url: cover || null,
+      // The lossless master is fetched for the primary clip only, so an
+      // alternate take must not claim to have one.
+      wav_url: isPrimary ? (p.wav_url || null) : null,
       model_version: p.model_version || job.input_data?.model || null,
       auto_saved: true,
       ...(p.needs_basemark && { needs_basemark: true }),

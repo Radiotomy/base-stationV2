@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { sendAssetToSubStation } from '@/lib/substation/handoff';
+import { pollJob } from '@/lib/polling/pollJob';
 import BedLicenseNotice from '@/components/leadsheet/BedLicenseNotice';
 
 /**
@@ -20,33 +21,28 @@ export default function BedRenderPanel({ chords, onSaveScore }) {
   const [seconds, setSeconds] = useState(30);
   const [running, setRunning] = useState(false);
   const [asset, setAsset] = useState(null);
-  const timer = useRef(null);
+  const watchRef = useRef(null);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => watchRef.current?.cancel(), []);
 
-  const poll = (jobId, attempt = 0) => {
-    if (attempt > 60) {
+  // Cadence renders one bed at a time, so cadence and deadline come from the
+  // shared 'engine' polling policy rather than a flat 5s loop of our own.
+  const poll = (jobId) => {
+    watchRef.current = pollJob(
+      async () => (await base44.functions.invoke('pollMusicGenChordBed', { job_id: jobId })).data || {},
+      'engine',
+    );
+    watchRef.current.promise.then(({ outcome, data, error }) => {
       setRunning(false);
-      toast.error('The bed is taking longer than expected — check your library shortly.');
-      return;
-    }
-    timer.current = setTimeout(async () => {
-      try {
-        const r = await base44.functions.invoke('pollMusicGenChordBed', { job_id: jobId });
-        if (r.data?.status === 'completed') {
-          setAsset(r.data.asset);
-          setRunning(false);
-          toast.success('Instrumental bed ready', { icon: '🎸' });
-        } else if (r.data?.status === 'failed') {
-          setRunning(false);
-          toast.error(r.data.error || 'Bed render failed');
-        } else {
-          poll(jobId, attempt + 1);
-        }
-      } catch {
-        poll(jobId, attempt + 1);
+      if (outcome === 'completed') {
+        setAsset(data.asset);
+        toast.success('Instrumental bed ready', { icon: '🎸' });
+      } else if (outcome === 'failed') {
+        toast.error(error || 'Bed render failed');
+      } else {
+        toast.error('The bed is taking longer than expected — it will land in your library when it finishes.');
       }
-    }, 5000);
+    });
   };
 
   const render = async () => {

@@ -1,23 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { invalidateCreditBalance } from '@/components/credits/CreditBalanceWidget';
+import { pollJob, POLL_PROFILES } from '@/lib/polling/pollJob';
 
 /**
- * Polls a GenerationJob by job_id until completed or failed.
- * Implements exponential backoff starting at 2s, capping at 8s.
- * Tracks elapsed time for UX progress estimation.
+ * Watches a GenerationJob until it settles.
+ *
+ * Cadence and the giving-up rule come from the shared polling policy rather than
+ * from arguments here — see src/lib/polling/pollJob.js for why a ramped delay and
+ * a wall-clock deadline replaced a flat interval and an attempt count.
+ *
+ * `maxAttempts` and `intervalMs` are still accepted so existing callers keep
+ * working, but they are deliberately ignored: an attempt count says nothing
+ * about elapsed time once the delay ramps, and letting each studio pick its own
+ * interval is what put the app under provider rate pressure in the first place.
  */
-export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60, intervalMs = 15000) {
+export function useJobPolling(jobId, onComplete, onError, _maxAttempts, _intervalMs) {
   const [status, setStatus] = useState('pending');
   const [stage, setStage] = useState(null);
   const [progress, setProgress] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [data, setData] = useState(null);
-  const attemptRef = useRef(0);
-  const timerRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const completedRef = useRef(false);
-  // Keep callbacks in refs so polling loop always uses latest without re-triggering effect
+  // Callbacks live in refs so a re-render never restarts the watch.
   const onCompleteRef = useRef(onComplete);
   const onErrorRef = useRef(onError);
   onCompleteRef.current = onComplete;
@@ -25,76 +29,57 @@ export function useJobPolling(jobId, onComplete, onError, maxAttempts = 60, inte
 
   useEffect(() => {
     if (!jobId) return;
-    attemptRef.current = 0;
-    completedRef.current = false;
-    startTimeRef.current = Date.now();
     setStatus('processing');
     setStage(null);
     setProgress(5);
     setElapsedSeconds(0);
 
-    // Elapsed seconds ticker — only runs while actively processing
-    const elapsed = setInterval(() => {
-      if (completedRef.current) {
-        clearInterval(elapsed);
+    const startedAt = Date.now();
+    const deadline = POLL_PROFILES.music.deadlineMs;
+
+    // Progress is derived from elapsed time, not from how many times we asked —
+    // with a ramped delay those two have nothing to do with each other.
+    const ticker = setInterval(() => {
+      const ms = Date.now() - startedAt;
+      setElapsedSeconds(Math.floor(ms / 1000));
+      setProgress(Math.min(90, 5 + Math.round((ms / deadline) * 170)));
+    }, 5000);
+
+    const watch = pollJob(async () => {
+      const result = await base44.functions.invoke('pollGenerationJob', { job_id: jobId });
+      const payload = result.data || {};
+      if (payload.stage) setStage(payload.stage);
+      return payload;
+    }, 'music');
+
+    watch.promise.then(({ outcome, data: payload, error }) => {
+      clearInterval(ticker);
+      if (outcome === 'completed') {
+        setStatus('completed');
+        setProgress(100);
+        setStage('done');
+        setData(payload);
+        // Credits are deducted server-side at finalize — refresh the widget.
+        invalidateCreditBalance();
+        onCompleteRef.current?.(payload);
         return;
       }
-      setElapsedSeconds(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 5000); // 5s is sufficient for UX display
-
-    const poll = async () => {
-      if (attemptRef.current >= maxAttempts) {
+      if (outcome === 'failed') {
         setStatus('failed');
-        clearInterval(elapsed);
-        onError?.('Generation timed out after ' + maxAttempts + ' attempts');
+        onErrorRef.current?.(error || 'Generation failed');
         return;
       }
-
-      try {
-        const result = await base44.functions.invoke('pollGenerationJob', { job_id: jobId });
-        const jobStatus = result.data?.status || result.status;
-        setStatus(jobStatus);
-        // Provider-reported phase (Shotstack: queued/fetching/rendering/saving)
-        if (result.data?.stage) setStage(result.data.stage);
-
-        // Simulated progress ramp based on attempt count
-        const approxProgress = Math.min(90, 10 + (attemptRef.current / maxAttempts) * 80);
-        setProgress(Math.round(approxProgress));
-
-        if (jobStatus === 'completed') {
-          if (completedRef.current) return; // prevent duplicate callbacks
-          completedRef.current = true;
-          setProgress(100);
-          setStage('done');
-          // result.data now includes: audio_url, audio_urls, cover_image_url, lyrics, title,
-          // tags, duration, bpm, key, genre, mood, vocal_gender, vocal_timbre, model_version, content_hash
-          setData(result.data);
-          clearInterval(elapsed);
-          // Credits were deducted server-side on completion — refresh the widget
-          invalidateCreditBalance();
-          onCompleteRef.current?.(result.data);
-          return;
-        } else if (jobStatus === 'failed') {
-          clearInterval(elapsed);
-          onErrorRef.current?.(result.data?.error_message || 'Generation failed');
-          return;
-        }
-      } catch (err) {
-        // Network error — keep retrying
-        console.warn('Polling error (will retry):', err.message);
-      }
-
-      attemptRef.current++;
-      timerRef.current = setTimeout(poll, intervalMs);
-    };
-
-    timerRef.current = setTimeout(poll, intervalMs);
+      // Timed out watching. The render is still running server-side and will
+      // land in the library on its own, so say that rather than calling it dead.
+      setStatus('processing');
+      onErrorRef.current?.('Still rendering — this one is taking a while. It will appear in your library when it finishes.');
+    });
 
     return () => {
-      clearTimeout(timerRef.current);
-      clearInterval(elapsed);
+      watch.cancel();
+      clearInterval(ticker);
     };
-  }, [jobId, intervalMs]);
+  }, [jobId]);
 
   return { status, stage, progress, elapsedSeconds, data };
 }
