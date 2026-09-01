@@ -69,9 +69,11 @@ export const SKYE_STEPS_RANGE = { min: 8, max: 64 };
 //
 // Contract of the REBUILT Space (2026-08-30, verified against its live
 // /openapi.json): POST /generate { prompt, lyrics, style, duration, seed }
-// → { task_id, status }. cfg/steps are fixed inside the Space now, and
-// reference-audio cloning is not exposed — the caller must reject a reference
-// rather than send one the engine would silently ignore.
+// → { task_id, status }. cfg_strength / sample_steps ARE honoured (verified
+// 2026-09-01: same seed+prompt, steps 16→8 halved render time and changed the
+// output hash; cfg 2→6 changed the hash; an exact repeat reproduced the hash
+// byte-for-byte). Reference-audio cloning is not exposed — the caller must
+// reject a reference rather than send one the engine would silently ignore.
 // cfgStrength / sampleSteps are OPTIONAL and exist for calibration sweeps only.
 // Omitting them sends nothing, so the Space applies its own defaults and normal
 // creator generation is byte-for-byte unchanged — a tuning dial must never
