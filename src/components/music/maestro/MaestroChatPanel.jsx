@@ -10,6 +10,7 @@ import MaestroTrackCard from './MaestroTrackCard';
 import { parseMaestroDraft, parseMaestroModelRecommendation } from '@/lib/music/maestroParse';
 import MaestroModelPrompt from '@/components/music/MaestroModelPrompt';
 import { DEFAULT_SONIC_MODEL, modelLabel } from '@/config/musicModelCatalog';
+import { pollJob } from '@/lib/polling/pollJob';
 
 const OPENER = "I'm Maestro. Tell me what you're writing — genre, mood, the story, any artists you want it to feel like, and whether you want vocals. I'll pick the master synthesis combination and write it properly.";
 
@@ -42,19 +43,30 @@ export default function MaestroChatPanel() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, thinking]);
 
-  // Poll the committed track until it lands
+  // Poll the committed track until it lands. This read the job row on a flat 8s
+  // interval with no stopping condition at all — a stuck job polled forever for
+  // as long as the session stayed open. Now it follows the shared 'music' policy,
+  // which ramps the delay and stops watching at a wall-clock deadline.
   useEffect(() => {
     if (!jobId || audioUrl) return;
-    const timer = setInterval(async () => {
+    const watch = pollJob(async () => {
       const job = await base44.entities.GenerationJob.get(jobId);
-      if (job.status === 'completed') {
+      return { status: job.status, error: job.error_message, job };
+    }, 'music');
+
+    watch.promise.then(({ outcome, data, error }) => {
+      if (outcome === 'completed') {
+        const job = data.job;
         setAudioUrl(job.output_url || job.output_metadata?.audio_url || '');
         setTrackStatus('completed');
-      } else if (job.status === 'failed') {
-        setJobError(job.error_message || 'Generation failed.');
+      } else if (outcome === 'failed') {
+        setJobError(error || 'Generation failed.');
+      } else {
+        setJobError('Still rendering — it will appear in your library when it finishes.');
       }
-    }, 8000);
-    return () => clearInterval(timer);
+    });
+
+    return () => watch.cancel();
   }, [jobId, audioUrl]);
 
   const send = async (text) => {

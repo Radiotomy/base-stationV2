@@ -15,6 +15,7 @@ import ScoreProvenanceCard from '@/components/leadsheet/ScoreProvenanceCard';
 import VocalResultPanel from '@/components/leadsheet/VocalResultPanel';
 import BedRenderPanel from '@/components/leadsheet/BedRenderPanel';
 import { parseMelody, scoreSeconds } from '@/utils/leadSheetScore';
+import { pollJob } from '@/lib/polling/pollJob';
 
 /**
  * Lead Sheet Studio — write the score, then have it sung.
@@ -39,9 +40,9 @@ export default function LeadSheetStudio() {
 
   const [rendering, setRendering] = useState(false);
   const [asset, setAsset] = useState(null);
-  const timer = useRef(null);
+  const watchRef = useRef(null);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => watchRef.current?.cancel(), []);
 
   const loadBanks = async () => {
     setLoadingBanks(true);
@@ -86,31 +87,25 @@ export default function LeadSheetStudio() {
     }
   };
 
-  const poll = (jobId, attempt = 0) => {
-    // Cantor renders one job at a time on CPU, so a queued render can wait behind
-    // another creator's. Allow ~10 minutes before giving up.
-    if (attempt > 120) {
+  // Cantor renders one job at a time on CPU, so a queued render can wait behind
+  // another creator's. Cadence and deadline come from the shared 'engine' polling
+  // policy — asking a busy single-worker engine more often cannot speed it up.
+  const poll = (jobId) => {
+    watchRef.current = pollJob(
+      async () => (await base44.functions.invoke('pollDiffSingerVocals', { job_id: jobId })).data || {},
+      'engine',
+    );
+    watchRef.current.promise.then(({ outcome, data, error }) => {
       setRendering(false);
-      toast.error('The render is taking longer than expected — check your library shortly.');
-      return;
-    }
-    timer.current = setTimeout(async () => {
-      try {
-        const r = await base44.functions.invoke('pollDiffSingerVocals', { job_id: jobId });
-        if (r.data?.status === 'completed') {
-          setAsset(r.data.asset);
-          setRendering(false);
-          toast.success('Vocal rendered', { icon: '🎤' });
-        } else if (r.data?.status === 'failed') {
-          setRendering(false);
-          toast.error(r.data.error || 'Vocal render failed');
-        } else {
-          poll(jobId, attempt + 1);
-        }
-      } catch {
-        poll(jobId, attempt + 1);
+      if (outcome === 'completed') {
+        setAsset(data.asset);
+        toast.success('Vocal rendered', { icon: '🎤' });
+      } else if (outcome === 'failed') {
+        toast.error(error || 'Vocal render failed');
+      } else {
+        toast.error('The render is taking longer than expected — the vocal will land in your library when it finishes.');
       }
-    }, 5000);
+    });
   };
 
   const render = async () => {
