@@ -28,12 +28,19 @@ export const SIREN_SONG_COST = 12;
 // Submit a job. Throws on any transport or contract failure so the caller can
 // surface a clean 502 — a submit that half-succeeds must never look accepted.
 export async function submitSirenSongAudio({ tags, lyrics, maxMs, seed }) {
+  const instrumental = !(lyrics && lyrics.trim());
+  // '[instrumental]' in the lyric channel alone does NOT stop HeartMuLa singing —
+  // probe A-instrumental-seed42 came back with improvised non-English vocals.
+  // The style channel is what the model actually steers on, so an instrumental
+  // request must also carry the 'instrumental' tag.
+  const tagList = String(tags).split(',').map(t => t.trim()).filter(Boolean);
+  if (instrumental && !tagList.includes('instrumental')) tagList.unshift('instrumental');
   const res = await fetch(`${ENGINE_BASE}/generate/audio`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      tags,
-      lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
+      tags: tagList.join(','),
+      lyrics: instrumental ? '[instrumental]' : lyrics,
       max_audio_length_ms: maxMs,
       seed,
     }),

@@ -55,9 +55,14 @@ export const SKYE_COST = 14;
 // embedding from either text or audio — so classifier-free guidance strength is
 // the only steering dial besides the prompt itself.
 //
-// cfg_strength 2.0 and 16 sampling steps are upstream's own CLI defaults.
-export const SKYE_CFG_STRENGTH = 2.0;
-export const SKYE_SAMPLE_STEPS = 16;
+// Upstream's CLI defaults are cfg 2.0 / 16 steps. The 2026-09-01 seed-9001
+// sweep (takes A–H, structured instrumental skeleton) was reviewed by ear and
+// cfg 4.0 / 32 steps (take H) was the clear best for overall audio quality with
+// no stray vocals, so that is what every creator render now sends. Measured
+// on H: peak -2.9 dBFS, RMS -17.6 → -14.7 dB first→last third (arrangement
+// builds toward the chorus/outro), low-band share flat across the track.
+export const SKYE_CFG_STRENGTH = 4.0;
+export const SKYE_SAMPLE_STEPS = 32;
 
 // Sweep bounds, mirroring the clamps the Space enforces. Kept here so a caller
 // is corrected before spending GPU time rather than silently after it.
@@ -74,10 +79,10 @@ export const SKYE_STEPS_RANGE = { min: 8, max: 64 };
 // output hash; cfg 2→6 changed the hash; an exact repeat reproduced the hash
 // byte-for-byte). Reference-audio cloning is not exposed — the caller must
 // reject a reference rather than send one the engine would silently ignore.
-// cfgStrength / sampleSteps are OPTIONAL and exist for calibration sweeps only.
-// Omitting them sends nothing, so the Space applies its own defaults and normal
-// creator generation is byte-for-byte unchanged — a tuning dial must never
-// quietly become part of the paid path before it has been measured.
+// cfgStrength / sampleSteps are OPTIONAL overrides for calibration sweeps.
+// When omitted the calibrated defaults (SKYE_CFG_STRENGTH / SKYE_SAMPLE_STEPS)
+// are sent explicitly, so creator renders never fall back to the Space's own
+// uncalibrated defaults.
 // DiffRhythm 2's lyric parser only recognises these bracketed structure tokens:
 // [start] [end] [intro] [verse] [chorus] [outro] [inst] [solo] [bridge] [hook]
 // [break] [stop] [space]. '[instrumental]' is NOT one of them — the parser drops
@@ -110,12 +115,11 @@ export async function submitSkyeAudio({
     duration,
     seed,
   };
-  if (cfgStrength !== undefined) {
-    body.cfg_strength = Math.max(SKYE_CFG_RANGE.min, Math.min(cfgStrength, SKYE_CFG_RANGE.max));
-  }
-  if (sampleSteps !== undefined) {
-    body.sample_steps = Math.round(Math.max(SKYE_STEPS_RANGE.min, Math.min(sampleSteps, SKYE_STEPS_RANGE.max)));
-  }
+  // Calibrated defaults are sent explicitly; a sweep caller may override them.
+  const cfg = cfgStrength ?? SKYE_CFG_STRENGTH;
+  const steps = sampleSteps ?? SKYE_SAMPLE_STEPS;
+  body.cfg_strength = Math.max(SKYE_CFG_RANGE.min, Math.min(cfg, SKYE_CFG_RANGE.max));
+  body.sample_steps = Math.round(Math.max(SKYE_STEPS_RANGE.min, Math.min(steps, SKYE_STEPS_RANGE.max)));
 
   const res = await fetch(`${ENGINE_BASE}/generate`, {
     method: 'POST',
