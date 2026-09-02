@@ -54,8 +54,8 @@ const OPERATIONS = [
   { provider: "tempcolor", model: "tempolor-latest", operation: "Reference-based Cover (keeps vocal melody)", api_credits: 10, api_usd: 10 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "edit" },
   { provider: "tempcolor", model: "Mureka V9", operation: "Reference-based Remix (mp3/m4a source)", api_credits: 20, api_usd: 20 * TEMPOLOR_CREDIT_USD, output: "1 track", category: "edit" },
   { provider: "tempcolor", model: "Lyric v1", operation: "Lyrics Generation", api_credits: 1, api_usd: 1 * TEMPOLOR_CREDIT_USD, output: "Lyrics", category: "lyrics" },
-  { provider: "tempcolor", model: "Stems v2", operation: "Stem Separation — 4 stems (vocals/drums/bass/other)", api_credits: 5, api_usd: 5 * TEMPOLOR_CREDIT_USD, output: "4 stems", category: "stems" },
-  { provider: "tempcolor", model: "Stems v3", operation: "Stem Separation — 8 stems (pro fidelity)", api_credits: 15, api_usd: 15 * TEMPOLOR_CREDIT_USD, output: "8 stems", category: "stems" },
+  // Stem separation is no longer bought from any provider: Sever (self-hosted
+  // HTDemucs-6s) and the on-device path replaced Tempolor Stems in Sep 2026.
 ];
 
 const PROVIDER_STYLE = {

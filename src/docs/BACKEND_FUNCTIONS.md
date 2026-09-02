@@ -84,7 +84,9 @@ Lead sheet: `saveLeadSheet`, `generateVocalsDiffSinger`/`pollDiffSingerVocals`
 (Cantor), `listDiffSingerVoicebanks`, `generateBedMusicGenChord`/
 `pollMusicGenChordBed` (Cadence)
 Stems: `separateStemsSever`/`pollSeverStems` (Sever), `finalizeLocalStems`
-(on-device ONNX results), `generateStems`/`pollTempolorStems` (legacy Tempolor)
+(on-device ONNX results). The Tempolor separation path (`generateStems`,
+`pollTempolorStems`, `shared/tempolorStems.ts`) was removed Sep 2026; historical
+`provider: 'tempcolor'` rows with `action: 'stem_separation'` are read-only.
 Loops: `embedLoopSemantic`, `backfillLoopEmbeddings`, `searchLoopsSemantic`
 (CLAP), `registerLoopProvenance`
 Voice: `synthesizeVoice`, `createSonicVoice`, `createMusicFinetune`,

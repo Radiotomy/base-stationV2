@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
-import { Music, Upload, Zap, Save, ArrowLeft, Loader2, Download, CheckCircle, Activity } from 'lucide-react';
+import { Music, Upload, Zap, Save, ArrowLeft, Loader2, Download, CheckCircle, Activity, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,11 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import WaveformVisualizer from '@/components/audio/WaveformVisualizer';
-import StemTrack from '@/components/audio/StemTrack';
 import CodaEditPanel from '@/components/remix/CodaEditPanel';
 
+// Stem separation lives in Stem Creator (Sever / on-device) — the third-party
+// stem providers this studio used to offer are retired.
 const EDIT_TASKS = [
-  { value: 'extract_stems', label: '🎚️ Extract Stems', desc: 'Separate vocals, drums, bass & other' },
   { value: 'remaster', label: '✨ Remaster', desc: 'Enhance & normalize audio levels' },
   { value: 'vox_isolate', label: '🎙️ VOX Isolate', desc: 'Extract clean vocal track only', group: 'vox' },
   { value: 'vox_remove', label: '🔇 VOX Remove', desc: 'Remove vocals — instrumental only', group: 'vox' },
@@ -21,37 +21,11 @@ const EDIT_TASKS = [
   { value: 'replace_section', label: '✂️ Replace Section', desc: 'Swap a segment of the audio' },
 ];
 
-const STEM_PROVIDERS = {
-  sonic: {
-    label: 'Sonic',
-    tiers: [
-      { value: 'basic', label: 'Basic', desc: '4 stems — vocals, drums, bass, other' },
-      { value: 'advanced', label: 'Advanced', desc: 'Full multi-stem breakdown (vocals, backing vocals, drums, kick, snare, bass, guitar, piano, synth, strings, fx & more)' },
-    ],
-  },
-  tempcolor: {
-    label: 'Tempolor',
-    tiers: [
-      { value: 'basic', label: 'Basic', desc: '2 stems — vocals & instrumental only' },
-    ],
-  },
-  elevenlabs: {
-    label: 'ElevenLabs',
-    tiers: [
-      { value: 'basic', label: 'Basic', desc: '2 stems — vocals & instrumental' },
-      { value: 'advanced', label: 'Advanced', desc: '6 stems for detailed mixing & production control' },
-    ],
-  },
-};
-
 export default function AudioRemixStudio() {
   const [uploadedFile, setUploadedFile] = useState(null);
   const [audioUrl, setAudioUrl] = useState('');
-  const [selectedTask, setSelectedTask] = useState('extract_stems');
-  const [stemProvider, setStemProvider] = useState('sonic');
-  const [stemTier, setStemTier] = useState('basic');
+  const [selectedTask, setSelectedTask] = useState('remaster');
   const [taskParams, setTaskParams] = useState('');
-  const [stems, setStems] = useState([]);
   const [processing, setProcessing] = useState(false);
   const [editedAudio, setEditedAudio] = useState(null);
   const [assetTitle, setAssetTitle] = useState('Edited Mix');
@@ -71,15 +45,7 @@ export default function AudioRemixStudio() {
         const status = res.data?.status;
         setJobStatus(status);
         if (status === 'completed') {
-          const output = res.data?.output_url;
-          if (selectedTask === 'extract_stems') {
-            // output is an object keyed by stem name — basic tier returns 4 keys,
-            // advanced tier returns the full multi-stem breakdown
-            const stemData = res.data?.stems || {};
-            setStems(Object.entries(stemData).map(([name, url]) => ({ name, url })).filter(s => s.url));
-          } else {
-            setEditedAudio(output);
-          }
+          setEditedAudio(res.data?.output_url);
           setProcessing(false);
           toast.success('Processing complete!');
           clearInterval(interval);
@@ -101,7 +67,6 @@ export default function AudioRemixStudio() {
       const result = await base44.integrations.Core.UploadFile({ file });
       setAudioUrl(result.file_url);
       setUploadedFile(file);
-      setStems([]);
       setEditedAudio(null);
       setJobId(null);
       toast.success('Audio uploaded!');
@@ -112,14 +77,12 @@ export default function AudioRemixStudio() {
   const processAudio = async () => {
     if (!audioUrl) { toast.error('Upload audio first'); return; }
     setProcessing(true);
-    setStems([]);
     setEditedAudio(null);
     setJobId(null);
     setJobStatus(null);
     try {
       let params = {};
       if (taskParams) { try { params = JSON.parse(taskParams); } catch { toast.error('Invalid JSON params'); setProcessing(false); return; } }
-      if (selectedTask === 'extract_stems') { params.provider = stemProvider; params.tier = stemTier; }
       const res = await base44.functions.invoke('processMusicEdits', { task: selectedTask, audioUrl, parameters: params });
       const data = res.data;
       if (data?.task_id) {
@@ -127,14 +90,6 @@ export default function AudioRemixStudio() {
         setJobId(data.task_id);
         setJobStatus('pending');
         toast.success('Processing started — polling for results…');
-      } else if (data?.stems) {
-        // Synchronous stem result (array or object)
-        const stemArr = Array.isArray(data.stems)
-          ? data.stems.map((url, i) => ({ name: `Stem ${i + 1}`, url }))
-          : Object.entries(data.stems).map(([name, url]) => ({ name, url })).filter(s => s.url);
-        setStems(stemArr);
-        setProcessing(false);
-        toast.success('Stems extracted!');
       } else if (data?.outputUrl) {
         setEditedAudio(data.outputUrl);
         setProcessing(false);
@@ -222,7 +177,7 @@ export default function AudioRemixStudio() {
       <div className="relative overflow-hidden pt-20 pb-12 px-6 bg-gradient-to-br from-blue-900/30 to-black">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-white mb-3 tracking-tight">🎛️ Audio Remix Studio</h1>
-          <p className="text-white/60 text-lg">Extract stems, VOX isolation, remaster, add vocals or instruments via AI.</p>
+          <p className="text-white/60 text-lg">VOX isolation, remaster, section replacement and Coda edit tasks — cover, repaint, extract.</p>
         </div>
       </div>
 
@@ -271,35 +226,6 @@ export default function AudioRemixStudio() {
                     <p className="text-xs text-muted-foreground">{EDIT_TASKS.find(t => t.value === selectedTask)?.desc}</p>
                   </div>
 
-                  {/* Stem provider + tiered separation selector */}
-                  {selectedTask === 'extract_stems' && (
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">Provider</label>
-                        <div className="grid grid-cols-3 gap-1.5">
-                          {Object.entries(STEM_PROVIDERS).map(([key, p]) => (
-                            <button key={key} onClick={() => { setStemProvider(key); setStemTier(p.tiers[0].value); }}
-                              className={`px-2 py-2 rounded-lg border text-xs font-bold transition-all ${stemProvider === key ? 'border-purple-500 bg-purple-500/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
-                              {p.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase">Separation Tier</label>
-                        <div className="grid grid-cols-1 gap-2">
-                          {STEM_PROVIDERS[stemProvider].tiers.map(t => (
-                            <button key={t.value} onClick={() => setStemTier(t.value)}
-                              className={`p-2.5 rounded-xl border text-left transition-all ${stemTier === t.value ? 'border-purple-500 bg-purple-500/10' : 'border-border bg-card hover:border-border/80'}`}>
-                              <p className="text-xs font-bold text-foreground">{t.label}</p>
-                              <p className="text-xs text-muted-foreground">{t.desc}</p>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Extra params for replace section */}
                   {selectedTask === 'replace_section' && (
                     <div className="space-y-2">
@@ -324,6 +250,15 @@ export default function AudioRemixStudio() {
                       <span>{jobStatusLabel}</span>
                     </div>
                   )}
+
+                  {/* Stem separation moved to Stem Creator (Sever / on-device) */}
+                  <Link to="/stem-creator" className="flex items-start gap-2.5 p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/40 transition-colors">
+                    <Layers className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-foreground">Need stems?</p>
+                      <p className="text-[11px] text-muted-foreground">Stem Creator splits any library track into six stems on our own Sever engine (2 credits) or free in your browser.</p>
+                    </div>
+                  </Link>
 
                   {/* Save */}
                   <div className="space-y-2 pt-2 border-t border-border">
@@ -418,19 +353,6 @@ export default function AudioRemixStudio() {
                     <p className="text-xs text-muted-foreground">Click Analyze to extract BPM, musical key, duration and loudness.</p>
                   )}
                 </div>
-
-                {/* Stems */}
-                {stems.length > 0 && (
-                  <div className="bg-card rounded-2xl border border-border p-6">
-                    <h3 className="font-black text-foreground mb-4">🎚️ Extracted Stems</h3>
-                    <p className="text-xs text-muted-foreground mb-4">Play, volume-control, and mute each stem independently.</p>
-                    <div className="space-y-3">
-                      {stems.map((stem, i) => (
-                        <StemTrack key={i} name={stem.name} url={stem.url} index={i} />
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Edited Output */}
                 {editedAudio && (

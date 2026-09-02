@@ -77,7 +77,6 @@ problem.
 | `safeUrl.ts` | URL allow-listing / SSRF guard |
 | `persistMedia.ts` | Copy provider-hosted output onto our own storage |
 | `flacDecoder.ts` | Server-side FLAC decode for analysis paths |
-| `tempolorStems.ts` | Tempolor stem separation client, stem-label normalisation, and archive expansion (legacy — Sever is the live separation engine) |
 | `privateLtx.ts` | Self-hosted LTX video engine client — submit/poll/persist, never throws, `null` = fall back to the public LTX API |
 | `ltxSpec.ts` | Public LTX API capability table: live models, tiers, fps, durations, credit rates; coerces every request onto an accepted combination |
 | `codaEngine.ts`, `sirenSongHf.ts`, `skyeEngine.ts` | Self-hosted music engine clients (submit-and-poll, WAV persist, credit deduction) |

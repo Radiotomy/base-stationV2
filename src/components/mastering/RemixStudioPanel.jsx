@@ -8,7 +8,7 @@ import { ExternalLink, Music, Mic2, Volume2, Sparkles } from 'lucide-react';
  * the dedicated full-screen experience.
  */
 const FEATURES = [
-  { icon: Music,    label: 'Stem Extraction',  desc: 'Separate vocals, drums, bass & other',   color: 'text-purple-400' },
+  { icon: Music,    label: 'Coda Edit Tasks',  desc: 'Cover, repaint a section, or extract a part', color: 'text-purple-400' },
   { icon: Mic2,     label: 'VOX Isolate',      desc: 'Pull a clean vocal track from any song', color: 'text-pink-400' },
   { icon: Volume2,  label: 'VOX Remove',       desc: 'Instrumental-only version of a track',   color: 'text-cyan-400' },
   { icon: Sparkles, label: 'Vocal Enhance',    desc: 'De-noise & polish vocal clarity',        color: 'text-emerald-400' },
@@ -22,7 +22,7 @@ export default function RemixStudioPanel() {
           <div>
             <h3 className="text-2xl font-black text-foreground mb-1">🎛️ Audio Remix Studio</h3>
             <p className="text-sm text-muted-foreground max-w-xl">
-              Full-featured remix bay with stem separation, VOX isolation, AI vocal enhancement, segment effects, and BPM/key analysis.
+              Full-featured remix bay with Coda edit tasks, VOX isolation, AI vocal enhancement, segment effects, and BPM/key analysis.
             </p>
           </div>
           <Link to="/audio-remix-studio">
@@ -47,7 +47,7 @@ export default function RemixStudioPanel() {
         <Link to="/stem-creator" className="bg-card rounded-2xl border border-border p-5 hover:border-purple-500/40 transition-all group">
           <p className="text-2xl mb-2">🎚️</p>
           <p className="font-bold text-foreground">Stem Creator</p>
-          <p className="text-xs text-muted-foreground mt-1">Build custom stem packs from any track</p>
+          <p className="text-xs text-muted-foreground mt-1">Six-stem split — Sever engine or free on-device</p>
         </Link>
         <Link to="/mashup-studio" className="bg-card rounded-2xl border border-border p-5 hover:border-pink-500/40 transition-all group">
           <p className="text-2xl mb-2">🎤</p>
