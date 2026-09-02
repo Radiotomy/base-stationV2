@@ -63,16 +63,30 @@ OUT = Path("/tmp/outputs")
 OUT.mkdir(parents=True, exist_ok=True)
 
 
+def _is_persistent_mount(path: Path) -> bool:
+    """
+    True only when the path sits on a real Hugging Face persistent-storage mount.
+    A bare `mkdir /data` on an ephemeral disk is WRITABLE but not persistent — the
+    banks vanish on the next restart — so writability must never be read as
+    persistence. HF mounts persistent storage at /data; check the mount table.
+    """
+    try:
+        mounts = Path("/proc/mounts").read_text().split("\n")
+    except Exception:
+        return False
+    return any(len(m.split()) > 1 and m.split()[1] == "/data" for m in mounts)
+
+
 def _writable_dir(preferred: str, fallback: str) -> Tuple[Path, bool]:
     """Use the persistent mount when it exists and is writable; otherwise fall back
     to /tmp and SAY SO in /health, rather than silently losing banks on restart."""
-    for candidate, persistent in ((Path(preferred), True), (Path(fallback), False)):
+    for candidate in (Path(preferred), Path(fallback)):
         try:
             candidate.mkdir(parents=True, exist_ok=True)
             probe = candidate / ".write_probe"
             probe.write_text("ok")
             probe.unlink()
-            return candidate, persistent
+            return candidate, _is_persistent_mount(Path("/data")) and str(candidate).startswith("/data")
         except Exception:
             continue
     raise RuntimeError("no writable storage for voicebanks")
