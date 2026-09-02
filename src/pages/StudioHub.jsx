@@ -15,6 +15,8 @@ const CATEGORIES = [
       { to: "/music-studio",       emoji: "🎵", label: "Music Studio",       desc: "Generate full tracks with AI" },
       { to: "/cover-song-studio",  emoji: "🎙️", label: "Cover & Extend Studio", desc: "Cover or extend any uploaded track" },
       { to: "/lyrics-studio",      emoji: "🎤", label: "Lyrics Studio",      desc: "Write song lyrics with AI" },
+      { to: "/lead-sheet-studio",  emoji: "🎼", label: "Lead Sheet Studio",  desc: "Compose a score — Cantor sings it, Cadence plays your chords" },
+      { to: "/sub-station",        emoji: "🎛️", label: "SUB-Station",        desc: "Multi-track arrangement & mixdown workstation" },
       { to: "/voice-creator",      emoji: "🗣️", label: "Voice Creator",      desc: "Custom AI voices & personas" },
       { to: "/sfx-studio",         emoji: "💥", label: "Sound FX Studio",    desc: "Text-to-SFX with ElevenLabs" },
       { to: "/loop-studio",        emoji: "🥁", label: "Loops & Samples",    desc: "Generate loops, discover free samples & build your library" },
@@ -29,7 +31,7 @@ const CATEGORIES = [
     studios: [
       { to: "/mastering-studio",  emoji: "🎚️", label: "Mastering Studio",  desc: "AI mastering & polish" },
       { to: "/audio-remix-studio", emoji: "🎛️", label: "Audio Remix",       desc: "Edit, effects & remix" },
-      { to: "/stem-creator",       emoji: "🧬", label: "Stem Creator",       desc: "Split vocals, drums, bass" },
+      { to: "/stem-creator",       emoji: "🧬", label: "Stem Creator",       desc: "Six-stem split — Sever engine or free on-device" },
       { to: "/mashup-studio",      emoji: "🔀", label: "Mashup Studio",      desc: "Blend multiple tracks" },
       { to: "/vocal-harmonizer",   emoji: "🎼", label: "Vocal Harmonizer",   desc: "Add AI harmony layers" },
       { to: "/id3-studio",         emoji: "🏷️", label: "ID3 Tag Editor",     desc: "Edit metadata & tags" },

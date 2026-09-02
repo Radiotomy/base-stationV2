@@ -14,7 +14,7 @@ const TABS = [
   { id: 'mysound',  label: '🎧 Eleven Music',     icon: AudioLines,        desc: 'Eleven Music base model + My Sound — train on your own tracks & generate in your signature style' },
   { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
   { id: 'sirensong', label: '🌊 Siren Song',       icon: Waves,             desc: 'Self-hosted HeartMuLa 3B — tag & lyric conditioned generation on our Hugging Face engine' },
-  { id: 'skye',     label: '🪶 Skye',             icon: Feather,           desc: 'Our DiffRhythm 2 fork — prose style steering, negative prompts, reference style cloning & long-form output up to 285s' },
+  { id: 'skye',     label: '🪶 Skye',             icon: Feather,           desc: 'Our DiffRhythm 2 fork — prose style steering, seed-reproducible, long-form output from 95s to 210s' },
 ];
 
 export default function MusicStudio() {

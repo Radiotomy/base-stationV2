@@ -289,7 +289,7 @@ export default function VideoStudio() {
             apply when that engine is unavailable and the LTX cloud takes over. */}
         {mode === 'text' && (
           <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-muted-foreground">
-            <span className="font-bold text-emerald-300">BASE Station LTX Engine</span> — text prompts render on our own self-hosted model first: 768×512, ~4 s, silent, seed-reproducible. If our engine is asleep or busy, the request falls back to the LTX cloud, where the model, resolution, duration and soundtrack settings below apply.
+            <span className="font-bold text-emerald-300">BASE Station LTX Engine</span> — text prompts render on our own self-hosted model first: 768×512, ~4 s, silent, seed-reproducible, <span className="font-bold text-foreground">6 credits flat</span>. If our engine is asleep or busy, the request falls back to the LTX cloud, where the model, resolution, duration and soundtrack settings below apply and the per-second price shown on the button is charged.
           </div>
         )}
 
@@ -407,8 +407,17 @@ export default function VideoStudio() {
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-emerald-400" />
                     <span className="text-sm font-bold text-emerald-400">Video Ready</span>
-                    <Badge variant="outline" className="text-xs">{aspectRatio}</Badge>
-                    <Badge variant="outline" className="text-xs">{duration === null ? 'Auto' : `${duration}s`}</Badge>
+                    {result.engine === 'hf_private' ? (
+                      <>
+                        <Badge variant="outline" className="text-xs">BASE Station engine</Badge>
+                        <Badge variant="outline" className="text-xs">{result.resolution} · {result.duration}s · silent</Badge>
+                      </>
+                    ) : (
+                      <>
+                        <Badge variant="outline" className="text-xs">{aspectRatio}</Badge>
+                        <Badge variant="outline" className="text-xs">{duration === null ? 'Auto' : `${duration}s`}</Badge>
+                      </>
+                    )}
                   </div>
                   <video controls className="w-full rounded-xl" src={result.video_url} />
                   <div className="flex gap-2 flex-wrap">

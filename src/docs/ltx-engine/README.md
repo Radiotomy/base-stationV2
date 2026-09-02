@@ -92,21 +92,18 @@ IPFS pinning is best-effort and non-fatal.
 
 ## Known gaps (open — decide before promoting out of beta)
 
-1. **Controls vs. output mismatch.** The studio shows model / resolution /
-   duration / fps / camera motion / soundtrack controls, and the cost badge is
-   computed from them (`ltxCreditCost` on the *selected* model, tier and
-   seconds). A text render that lands on the private engine ignores all of those
-   and returns a 4 s, 768×512, silent clip — but is billed at the public price
-   for what was selected. Options: (a) bill private renders at a flat private
-   rate, (b) show a "renders on BASE Station engine: 4 s · 768×512 · silent"
-   notice whenever the mode is Text, or (c) honour the selection by sending it
-   to the Space once the engine accepts variable formats.
+1. **Controls vs. output.** The studio's model / resolution / duration / fps /
+   soundtrack controls only apply on the public fallback. A private render is
+   billed a **flat `PRIVATE_LTX_COST` (6 credits)** regardless of selection, the
+   response carries `engine: 'hf_private'` plus the real `resolution` /
+   `duration`, and the studio shows those on the result instead of the selected
+   values. The Text tab also states this up front. The credit *pre-check* still
+   uses the public estimate, so a creator must hold enough for the fallback —
+   deliberate, since which engine answers is not known until it does. Remaining
+   option: honour the selection once the Space accepts variable formats.
 2. **Text-to-video only.** Image and audio conditioning are not exposed by the
    Space yet.
 3. **No queue on the Space.** Same single-CUDA-model risk as Coda / Siren Song;
    concurrent submits should be serialised Space-side.
-4. **Result badges** in Video Studio still show the *selected* aspect ratio and
-   duration, not the rendered ones, after a private render.
-
 Nothing here changes the fallback contract: the public LTX API remains the
 correctness floor for every mode.

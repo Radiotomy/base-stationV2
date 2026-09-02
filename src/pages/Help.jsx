@@ -12,6 +12,7 @@ import ProTips from '@/components/help/ProTips';
 import PODCAST_HELP_SECTIONS from '@/components/help/podcastHelpSections';
 import FOUNDRY_HELP_SECTIONS from '@/components/help/foundryHelpSections';
 import VENUE_HELP_SECTIONS from '@/components/help/venueHelpSections';
+import ENGINE_HELP_SECTIONS from '@/components/help/engineHelpSections';
 
 const SECTIONS = [
   {
@@ -78,18 +79,17 @@ const SECTIONS = [
     id: 'music',
     title: 'Music Studio — generating tracks',
     icon: Music,
-    keywords: 'music generate sonic tempolor producer ai song track',
+    keywords: 'music generate sonic tempolor mureka minimax lyria eleven music coda harmonix siren song skye ai song track maestro',
     body: (
       <>
-        <p><strong className="text-foreground">Quick Generate</strong> auto-routes to the best provider for your inputs. Just type a sound prompt + pick mood/genre, and we choose Sonic, Tempolor, or Producer for you.</p>
-        <p><strong className="text-foreground">Advanced Generate</strong> gives you full control: pick the provider, model version, BPM, voice persona, and attach your own lyrics.</p>
-        <p><strong className="text-foreground">Providers at a glance:</strong></p>
+        <p>Music Studio has six tabs:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Tempolor (tempolor-latest, i3 / i4)</strong> — the current default for both vocal and instrumental generation: strong genre fidelity, reference-based cover mode, and the stem separation engine behind Stem Creator.</li>
-          <li><strong>Sonic v4-5+</strong> — vocal tracks and song extension. Custom mode for lyrics; auto-lyrics if you only have a vibe.</li>
-          <li><strong>Producer (FUZZ-2.0)</strong> — instrumentals with quick turnaround.</li>
+          <li><strong>⚡ Quick Generate</strong> — type a sound prompt, pick mood/genre, and we route to the best cloud model (Sonic, TemPolor, Mureka, MiniMax or Lyria). Turn on <strong>Maestro</strong> to have a songwriting agent craft the brief, enhance lyrics and recommend a model.</li>
+          <li><strong>🎛️ Advanced</strong> — pick the model family and version yourself, set BPM, attach a voice persona and your own lyrics.</li>
+          <li><strong>🎧 Eleven Music</strong> — Eleven Music plus <em>My Sound</em>: train a fine-tune on your own tracks (with your consent) and generate in your signature style.</li>
+          <li><strong>🧬 BASE-Harmonix · 🌊 Siren Song · 🪶 Skye</strong> — our own self-hosted engines; see "Our own music engines" below.</li>
         </ul>
-        <p className="text-xs text-muted-foreground">Note: ElevenLabs is no longer a default music generator here — it stays in service for voice cloning, text-to-speech, and podcast voiceover.</p>
+        <p className="text-xs text-muted-foreground">ElevenLabs is not a default music generator — it stays in service for voice cloning, text-to-speech, and podcast voiceover. Stem separation no longer runs on Tempolor; see the Stems section.</p>
         <p><strong className="text-foreground">Sound prompt tips:</strong> describe instruments + atmosphere ("808 sub, brushed snare, distant choir, late-night intimate") — not just genre. 200–400 chars is the sweet spot.</p>
       </>
     ),
@@ -115,9 +115,10 @@ const SECTIONS = [
           <p className="text-amber-300 font-bold text-sm mb-1">⚠️ Character limits per music model</p>
           <p>Each downstream AI music generator enforces its own lyrics character cap. <strong className="text-foreground">If your lyrics exceed the limit, music generation will fail.</strong> Approximate caps:</p>
           <ul className="list-disc pl-5 space-y-0.5 mt-1.5">
-            <li><strong>Sonic v4-5+</strong> — ~3,000 chars</li>
-            <li><strong>Tempolor v4.6 / i3.5</strong> — ~2,500 chars</li>
-            <li><strong>Producer (FUZZ-2.0)</strong> — instrumental only (no lyrics)</li>
+            <li><strong>Sonic v5 / v4.5+</strong> — ~3,000 chars</li>
+            <li><strong>TemPolor / Mureka / MiniMax / Lyria</strong> — ~2,500 chars</li>
+            <li><strong>Skye</strong> — ~6,000 chars · <strong>BASE-Harmonix (Coda)</strong> — ~4,000 chars</li>
+            <li><strong>TemPolor i3 / i4</strong> — instrumental only (no lyrics)</li>
           </ul>
           <p className="mt-1.5">Pro Songwriter auto-clamps to the safest limit (defaults: Short 1.5k · Medium 2.5k · Long 4k · Full 5k). Keep verses concise; trim ad-libs if you hit the cap.</p>
         </div>
@@ -174,7 +175,7 @@ const SECTIONS = [
         </div>
         <p><strong className="text-foreground">Five modes:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Text to Video</strong> — describe the scene; our engine renders it (LTX cloud as fallback).</li>
+          <li><strong>Text to Video</strong> — describe the scene; our engine renders it for a flat 6 credits (LTX cloud as fallback, billed per second).</li>
           <li><strong>Image to Video</strong> — animate a reference still.</li>
           <li><strong>Audio to Video</strong> — a visual synced to your track.</li>
           <li><strong>Music Video</strong> — a storyboard of scenes stitched to your song, with transitions, title text and auto-captions.</li>
@@ -257,12 +258,13 @@ const SECTIONS = [
         <p>Credits power every generation. Approximate costs:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li>Lyrics: 2 credits</li>
-          <li>Music (Sonic/Tempolor/Producer): 10 credits per track</li>
+          <li>Music (cloud models): 10 credits per track</li>
+          <li>Siren Song: 12 · Skye: 14 · BASE-Harmonix: priced by tier (shown on the button) · Coda edit tasks (cover / repaint / extract): 10</li>
           <li>Cover art: 1 (Cheap) / 3 (Modest)</li>
-          <li>Video (LTX): ~2 credits per second of video</li>
+          <li>Video — Text to Video on our own engine: 6 credits flat · LTX cloud: 1–7 credits per second depending on model and resolution</li>
           <li>Music Video / Timeline render: 5 base + 1 per scene or clip (+3 audio, +4 captions)</li>
           <li>Visualizer: 12 credits</li>
-          <li>Stem separation: 8 credits per track</li>
+          <li>Stem separation: 2 credits (Sever) · free on-device</li>
           <li>BASE Foundry: free — patches, presets, collections and the visualizer modulation tap all run in your browser</li>
         </ul>
         <div className="p-3 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
@@ -321,11 +323,11 @@ const SECTIONS = [
       <>
         <p>Beyond generation, a full rack of audio tools works on any track in your library or uploaded from your PC:</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Stem Creator</strong> — real separation (Tempolor Stems) into vocals, drums, bass, and instruments. Bundled results are unpacked server-side, so each stem lands in your library as its own playable, remixable asset (8 credits, 50 MB source limit).</li>
+          <li><strong>Stem Creator</strong> — six-stem separation (vocals, drums, bass, guitar, piano, other) on our Sever engine for 2 credits, or free on-device in your browser. Each stem lands in your library as its own playable asset. See the Stems section for details.</li>
           <li><strong>Mashup Studio</strong> — blend two tracks into a new hybrid arrangement.</li>
           <li><strong>Vocal Harmonizer</strong> — layer AI-generated harmonies onto an existing vocal.</li>
           <li><strong>Cover Song Studio</strong> — reimagine a track in a new genre or style using reference-based generation, with preset transformations.</li>
-          <li><strong>Audio Remix Studio</strong> — edit, extend, and apply effects to existing audio.</li>
+          <li><strong>Audio Remix Studio</strong> — edit, extend, and apply effects to existing audio, plus Coda edit tasks: <strong>Cover</strong> (re-render a track in a new style), <strong>Repaint</strong> (regenerate just a time range) and <strong>Extract</strong> (pull a part out) — 10 credits each.</li>
           <li><strong>Sound FX Studio</strong> — generate custom sound effects from text descriptions.</li>
           <li><strong>Promo Studio</strong> — build shareable promo packages and social cards for a release.</li>
         </ul>
@@ -333,6 +335,8 @@ const SECTIONS = [
       </>
     ),
   },
+  // Self-hosted engines, lead sheet workflow, stems & loops
+  ...ENGINE_HELP_SECTIONS,
   // BASE Foundry — DSP tool module, content in its own file
   ...FOUNDRY_HELP_SECTIONS,
   // 3D venues, idle programming and AI staff

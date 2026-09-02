@@ -22,6 +22,13 @@ import { tryPrivateLtxVideo } from '../../shared/privateLtx.ts';
 
 const LTX_API_KEY = Deno.env.get('LTX_API_KEY');
 
+// Flat price for a render on our own engine. The private Space ignores the
+// creator's model/resolution/duration selection and always returns a 768x512,
+// ~4s, silent clip — so billing it at the public per-second rate for whatever
+// was selected would charge for a 4K 20s video and deliver something else.
+const PRIVATE_LTX_COST = 6;
+const PRIVATE_LTX_META = { duration: 4, resolution: '768x512', fps: 24, model_version: 'ltx-2-5-private-hf' };
+
 // LTX fetches inputs itself: HTTPS only, no redirects, public host.
 function validMediaUri(url: string | undefined): boolean {
   return !!url && (/^https:\/\/[^/]+\./i.test(url) || /^ltx:\/\//i.test(url) || /^data:/i.test(url));
@@ -101,6 +108,8 @@ Deno.serve(async (req) => {
       const priv = await tryPrivateLtxVideo(base44, { prompt, seed: body.seed });
       if (priv?.video_url) {
         const completedAt = new Date().toISOString();
+        // Shadow the public estimate: everything below bills the private flat rate.
+        const cost = PRIVATE_LTX_COST;
         const privJob = await base44.entities.GenerationJob.create({
           user_id: user.id, user_email: user.email,
           job_type: 'video', provider: 'ltx',
@@ -110,7 +119,7 @@ Deno.serve(async (req) => {
             seed: priv.seed, resolution: '768x512', fps: 24, credit_cost: cost,
           },
           output_url: priv.video_url,
-          output_metadata: { duration: 4, resolution: '768x512', fps: 24, model_version: 'ltx-2-5-private-hf' },
+          output_metadata: PRIVATE_LTX_META,
           credits_used: cost,
           started_at: completedAt, completed_at: completedAt,
         }).catch(() => ({ id: null }));
@@ -200,6 +209,8 @@ Deno.serve(async (req) => {
           ipfs_cid: ipfs?.cid || null,
           ipfs_gateway_url: ipfs?.gateway_url || null,
           model: 'ltx-2-5-private-hf',
+          engine: 'hf_private',
+          ...PRIVATE_LTX_META,
           credits_used: cost,
           credits_remaining: remaining,
         });
