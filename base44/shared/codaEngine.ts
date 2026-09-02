@@ -30,6 +30,13 @@ export const CODA_FIXED_PARAMS = { num_inference_steps: 8, guidance_scale: 1.0 }
 const SUBMIT_TIMEOUT_MS = 90000;
 const STATUS_TIMEOUT_MS = 15000;
 
+// Production steer appended to every Coda tags string. The 2026-09-01 vocal
+// test (seed 9002) came back excellent but slightly soft on top; ACE-Step reads
+// tonal descriptors from the tags channel, so a light "air" hint is the lever.
+// Deliberately gentle — "crisp/airy", not "bright/harsh" — to lift the top a tad
+// without tipping the balance we already like.
+export const CODA_TONE_HINT = 'crisp airy high end, clear detailed treble, polished master';
+
 // Submit a job. Throws on any transport or contract failure so the caller can
 // surface a clean 502.
 export async function submitCodaGeneration({ tags, lyrics, maxMs, seed }) {
@@ -39,7 +46,7 @@ export async function submitCodaGeneration({ tags, lyrics, maxMs, seed }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tags,
+        tags: `${String(tags).trim().replace(/[,\s]+$/, '')}, ${CODA_TONE_HINT}`,
         lyrics: lyrics && lyrics.trim() ? lyrics : '[instrumental]',
         max_audio_length_ms: maxMs || 30000,
         seed: seed || 42,
