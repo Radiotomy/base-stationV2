@@ -55,6 +55,7 @@ import numpy as np
 import onnxruntime as ort
 import soundfile as sf
 import yaml
+from huggingface_hub import HfApi, snapshot_download
 from fastapi import FastAPI, Header, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -100,6 +101,39 @@ VOCODER_DIR, _ = _writable_dir(
 )
 INSTALL_TMP = Path("/tmp/install")
 INSTALL_TMP.mkdir(parents=True, exist_ok=True)
+
+# DURABLE STORE = A PRIVATE HUB DATASET REPO, NOT THE SPACE DISK. This Space has no
+# persistent-storage add-on, so /data is wiped on every restart. The owner's Hub
+# account has repo storage instead, so every validated install is pushed to
+# HUB_REPO (layout: voicebanks/<id>/…, vocoders/<id>/…) and pulled back into
+# /data at boot. The repo is private on purpose: several community banks forbid
+# redistribution, and a public mirror would be exactly that.
+HUB_REPO = os.environ.get("CANTOR_HUB_REPO", "Radiotomy/cantor-voicebanks")
+HUB_TOKEN = os.environ.get("HF_TOKEN")
+HUB_SYNCED = False
+
+
+def _hub_path(kind: str, bank_id: str) -> str:
+    return f"{'vocoders' if kind == 'vocoder' else 'voicebanks'}/{bank_id}"
+
+
+def _sync_from_hub():
+    """Pull every stored bank into /data. Boot-blocking on purpose: a render that
+    arrives before the banks exist would fail as 'not installed', which is false."""
+    global HUB_SYNCED
+    if not HUB_TOKEN:
+        return
+    try:
+        snapshot_download(
+            repo_id=HUB_REPO, repo_type="dataset", token=HUB_TOKEN,
+            local_dir=str(BANK_DIR.parent), local_dir_use_symlinks=False,
+        )
+        HUB_SYNCED = True
+    except Exception as exc:
+        print(f"[cantor] hub sync skipped: {type(exc).__name__}: {exc}")
+
+
+_sync_from_hub()
 
 # The Hugging Face account that owns this Space. Only its tokens may install or
 # remove banks.
@@ -602,7 +636,7 @@ class InstallRequest(BaseModel):
     replace: bool = False
 
 
-def _install(job_id: str, req: InstallRequest):
+def _install(job_id: str, req: InstallRequest, token: str):
     work = INSTALL_TMP / job_id
     target = (VOCODER_DIR if req.kind == "vocoder" else BANK_DIR) / req.bank_id
     try:
@@ -688,6 +722,18 @@ def _install(job_id: str, req: InstallRequest):
                 "test_audio_url": f"/outputs/{probe.name}",
             }
 
+        # Validated — now make it survive a restart. The owner's token that
+        # authorised the install is what authorises the push.
+        JOBS[job_id]["stage"] = "persisting"
+        api = HfApi(token=token)
+        api.create_repo(HUB_REPO, repo_type="dataset", private=True, exist_ok=True)
+        api.upload_folder(
+            folder_path=str(target), path_in_repo=_hub_path(req.kind, req.bank_id),
+            repo_id=HUB_REPO, repo_type="dataset",
+            commit_message=f"install {req.kind} {req.bank_id}",
+        )
+        report["persisted_to"] = f"{HUB_REPO}/{_hub_path(req.kind, req.bank_id)}"
+
         JOBS[job_id].update(status="completed", stage="done", report=report, bank_id=req.bank_id)
     except Exception as exc:
         # A bank that failed validation must not remain pickable.
@@ -710,7 +756,9 @@ def health():
         "engine": "diffsinger",
         "voicebank_dir": str(BANK_DIR),
         "vocoder_dir": str(VOCODER_DIR),
-        "persistent": BANKS_PERSISTENT,
+        "persistent": BANKS_PERSISTENT or HUB_SYNCED,
+        "hub_repo": HUB_REPO,
+        "hub_synced": HUB_SYNCED,
         "installed": len(banks),
         "renderable": len([b for b in banks if b["renderable"]]),
         "vocoders": [p.parent.name for p in VOCODER_DIR.glob("*/vocoder.onnx")],
@@ -755,7 +803,7 @@ def install(req: InstallRequest, response: Response, authorization: Optional[str
     job_id = uuid.uuid4().hex
     target = (VOCODER_DIR if req.kind == "vocoder" else BANK_DIR) / bank_id
     JOBS[job_id] = {"status": "queued", "kind": "install", "bank_id": bank_id, "preexisting": target.exists()}
-    POOL.submit(_install, job_id, req)
+    POOL.submit(_install, job_id, req, authorization.split(" ", 1)[1].strip())
     return {"job_id": job_id, "status": "queued", "bank_id": bank_id}
 
 
@@ -770,6 +818,12 @@ def remove(bank_id: str, response: Response, authorization: Optional[str] = Head
         return {"error": f"voicebank '{bank_id}' is not installed"}
     _sessions.pop(bank_id, None)
     shutil.rmtree(target, ignore_errors=True)
+    try:
+        HfApi(token=authorization.split(" ", 1)[1].strip()).delete_folder(
+            _hub_path("voicebank", bank_id), repo_id=HUB_REPO, repo_type="dataset"
+        )
+    except Exception as exc:
+        return {"removed": bank_id, "hub_warning": f"{type(exc).__name__}: {exc}"}
     return {"removed": bank_id}
 
 
