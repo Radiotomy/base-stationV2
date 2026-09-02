@@ -21,7 +21,16 @@ Deno.serve(async (req) => {
     const {
       style_prompt, lyrics,
       reference_audio_url, duration, seed, title,
+      cfg_strength, sample_steps,
     } = await req.json();
+
+    // Calibration overrides — admin only. Creators always get the calibrated
+    // defaults; the sweep dials exist so a vocal/instrumental tuning pass can be
+    // A/B'd on the same seed without touching the shared engine constants.
+    const isAdmin = user.role === 'admin';
+    const numCfg = Number(cfg_strength), numSteps = Number(sample_steps);
+    const cfgOverride = isAdmin && Number.isFinite(numCfg) ? numCfg : undefined;
+    const stepsOverride = isAdmin && Number.isFinite(numSteps) ? numSteps : undefined;
 
     const hasPrompt = !!(style_prompt && String(style_prompt).trim());
     const hasRef = !!(reference_audio_url && String(reference_audio_url).trim());
@@ -74,6 +83,8 @@ Deno.serve(async (req) => {
         stylePrompt: safeStyle,
         duration: safeDuration,
         seed: safeSeed,
+        cfgStrength: cfgOverride,
+        sampleSteps: stepsOverride,
       });
     } catch (err) {
       return Response.json({ error: err.message }, { status: 502 });
@@ -90,6 +101,9 @@ Deno.serve(async (req) => {
         duration: safeDuration, seed: safeSeed,
         title: title || '', credit_cost: cost,
         engine: 'hf_space', model: 'DiffRhythm 2 (Skye)',
+        // Recorded so a sweep take is reproducible; absent = calibrated defaults.
+        ...(cfgOverride !== undefined ? { cfg_strength: cfgOverride } : {}),
+        ...(stepsOverride !== undefined ? { sample_steps: stepsOverride } : {}),
       },
       provider_job_id: submitted.jobId,
       started_at: new Date().toISOString(),
