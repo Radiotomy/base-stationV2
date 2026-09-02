@@ -107,6 +107,14 @@ export const SKYE_INSTRUMENTAL_SKELETON =
 export const SKYE_BALANCE_HINT =
   'consistent tonal balance throughout, moderate smooth high end with no harsh or building brightness, tight clean punchy bass, responsive low end';
 
+// Vocal steer appended only when lyrics are present. The 2026-09-01 vocal test
+// (seed 9002) came back with a heavily flanged/chorused lead — DiffRhythm 2
+// readily doubles and detunes the vocal when the prompt leaves that open, and a
+// stacked lead reads as a flanger. Asking for a single dry close-mic lead keeps
+// the vocal centred and phase-coherent.
+export const SKYE_VOCAL_HINT =
+  'single clean dry lead vocal, close-mic and centred, natural unprocessed voice, no vocal doubling, no chorus or flanger effect';
+
 // True when the creator gave nothing the engine can use as a text track.
 export function isSkyeInstrumental(lyrics?: string) {
   const t = (lyrics || '').trim().toLowerCase();
@@ -119,12 +127,14 @@ export async function submitSkyeAudio({
   lyrics?: string; stylePrompt: string; duration: number; seed?: number;
   cfgStrength?: number; sampleSteps?: number;
 }) {
+  const instrumental = isSkyeInstrumental(lyrics);
+  const hints = instrumental ? SKYE_BALANCE_HINT : `${SKYE_VOCAL_HINT}, ${SKYE_BALANCE_HINT}`;
   const body: Record<string, unknown> = {
-    prompt: `${stylePrompt.trim().replace(/[.,;\s]+$/, '')}. ${SKYE_BALANCE_HINT}`,
+    prompt: `${stylePrompt.trim().replace(/[.,;\s]+$/, '')}. ${hints}`,
     // `style` has a server-side default of "rock" — always sent explicitly so
     // an omitted field can never inject a genre the creator didn't ask for.
     style: '',
-    lyrics: isSkyeInstrumental(lyrics) ? SKYE_INSTRUMENTAL_SKELETON : lyrics,
+    lyrics: instrumental ? SKYE_INSTRUMENTAL_SKELETON : lyrics,
     duration,
     seed,
   };
