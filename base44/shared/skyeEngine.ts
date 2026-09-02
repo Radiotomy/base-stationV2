@@ -91,8 +91,21 @@ export const SKYE_STEPS_RANGE = { min: 8, max: 64 };
 // ~0.03 frame-to-frame energy flux; the same seed with a structure skeleton
 // measured ~0.3). An instrumental therefore has to be described as a SONG with
 // no sung lines, not as an absence of lyrics.
+//
+// The skeleton is deliberately FLAT: no [chorus] tokens. Take H (2026-09-01)
+// showed the model treating each [chorus] as a lift — RMS climbed -17.6 → -14.7
+// dB across the track with the added energy almost all above 4 kHz, so the
+// render got progressively brighter and louder. Verse/inst/bridge sections keep
+// the arrangement at a steady density, which holds the high band at a moderate,
+// stable level while the low end stays consistent from first bar to last.
 export const SKYE_INSTRUMENTAL_SKELETON =
-  '[start]\n[intro]\n[inst]\n[verse]\n[chorus]\n[inst]\n[bridge]\n[chorus]\n[outro]\n[end]';
+  '[start]\n[intro]\n[verse]\n[inst]\n[verse]\n[bridge]\n[inst]\n[verse]\n[outro]\n[end]';
+
+// Production steer appended to every Skye style prompt. DiffRhythm 2 has no
+// negative channel, so tonal balance has to be asked for in the positive prose
+// the MuLan text encoder reads. Kept short so it colours the mix, not the genre.
+export const SKYE_BALANCE_HINT =
+  'consistent tonal balance throughout, moderate smooth high end with no harsh or building brightness, tight clean punchy bass, responsive low end';
 
 // True when the creator gave nothing the engine can use as a text track.
 export function isSkyeInstrumental(lyrics?: string) {
@@ -107,7 +120,7 @@ export async function submitSkyeAudio({
   cfgStrength?: number; sampleSteps?: number;
 }) {
   const body: Record<string, unknown> = {
-    prompt: stylePrompt,
+    prompt: `${stylePrompt.trim().replace(/[.,;\s]+$/, '')}. ${SKYE_BALANCE_HINT}`,
     // `style` has a server-side default of "rock" — always sent explicitly so
     // an omitted field can never inject a genre the creator didn't ask for.
     style: '',
