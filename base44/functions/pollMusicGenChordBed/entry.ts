@@ -136,7 +136,8 @@ Deno.serve(async (req) => {
       } catch { /* the bed is filed; a broken back-link must not fail the job */ }
     }
 
-    const cost = job.input_data?.credit_cost ?? 4;
+    // Cadence beds are free (non-commercial weights); older rows may still carry a cost.
+    const cost = job.input_data?.credit_cost ?? 0;
 
     await base44.asServiceRole.entities.GenerationJob.update(job.id, {
       status: 'completed',
@@ -151,7 +152,7 @@ Deno.serve(async (req) => {
     });
 
     // Guarded on the job's own credits_used so a repeated poll cannot double-bill.
-    if (!job.credits_used || job.credits_used === 0) {
+    if (cost > 0 && (!job.credits_used || job.credits_used === 0)) {
       try {
         const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: job.user_id });
         const record = recs[0];

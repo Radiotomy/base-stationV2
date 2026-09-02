@@ -16,10 +16,15 @@ import { normalizeChordChart, countBars } from '../../shared/chordNotation.ts';
  * The normalized Harte form is recorded alongside the writer's own notation so a
  * render stays reproducible even if the normalizer is later improved.
  *
- * Credits are deducted by pollMusicGenChordBed on completion.
+ * FREE BY DECISION, NOT BY ACCIDENT. Cadence runs Meta's musicgen-melody weights
+ * (CC-BY-NC 4.0), so its beds are non-commercial drafting material — charging credits
+ * for them would be monetary compensation in connection with the licensed material.
+ * Commercial beds route to Skye (Apache-2.0), which is prompt-conditioned and carries
+ * no chord-adherence claim. The cost is recorded as 0 on the job so the poller's
+ * deduction path stays inert.
  */
 
-const BED_COST = 4;
+const BED_COST = 0;
 
 Deno.serve(async (req) => {
   try {
@@ -46,17 +51,6 @@ Deno.serve(async (req) => {
       return Response.json({
         error: 'No chords could be read from this chart. Use symbols like "C | Am | F | G7".',
       }, { status: 400 });
-    }
-
-    const recs = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
-    const balance = recs[0]?.balance ?? 0;
-    if (balance < BED_COST) {
-      return Response.json({
-        error: 'Insufficient credits',
-        required: BED_COST,
-        balance,
-        message: `An instrumental bed costs ${BED_COST} credits. You have ${balance}.`,
-      }, { status: 402 });
     }
 
     const seconds = Math.min(Math.max(Math.round(Number(duration) || 30), 8), MAX_BED_SECONDS);

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
 
 /**
@@ -8,19 +9,27 @@ import { ShieldAlert } from 'lucide-react';
  * same fact is stored on the asset itself, so a bed that travels to a store or
  * distribution surface carries its own restriction rather than relying on a creator
  * remembering this card.
+ *
+ * This is a settled position, not a temporary one: Cadence stays on CC-BY-NC weights
+ * as the free drafting engine, and commercial beds go through Skye (Apache-2.0).
  */
 export default function BedLicenseNotice() {
   return (
     <div className="flex gap-2.5 p-3 rounded-xl border border-amber-500/30 bg-amber-500/10">
       <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
       <div className="space-y-1">
-        <p className="text-xs font-bold text-amber-200">Personal & testing use only</p>
+        <p className="text-xs font-bold text-amber-200">Free draft — personal & testing use only</p>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          The bed engine currently runs non-commercial model weights (Meta
-          musicgen-melody, CC-BY-NC 4.0). Write, demo and evaluate freely — but don't
-          sell this bed, bundle it into paid output or release it commercially until
-          we've moved the engine to a cleared checkpoint. Your vocal render and your
-          score are unaffected.
+          Cadence runs non-commercial model weights (Meta musicgen-melody, CC-BY-NC 4.0).
+          Write, demo and evaluate freely, but don't sell this bed, bundle it into paid
+          output or release it commercially. Your vocal render and your score are unaffected.
+        </p>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Need a bed you can release? Describe the feel and harmony in{' '}
+          <Link to="/music-studio" className="text-amber-200 underline underline-offset-2">
+            Music Studio with Skye
+          </Link>{' '}
+          — commercially clear, but prompt-guided rather than locked to your exact chords.
         </p>
       </div>
     </div>
