@@ -247,7 +247,7 @@ export default function VideoStudio() {
           ))}
         </div>
 
-        {/* Music Video Mode (NextCut multi-scene composer) */}
+        {/* Music Video Mode (Shotstack multi-scene composer) */}
         {mode === 'musicvideo' && <MusicVideoComposer />}
 
         {/* Drag-and-drop timeline editor (Shotstack Studio SDK) */}
@@ -284,6 +284,14 @@ export default function VideoStudio() {
 
         {/* LTX Mode UI (text / image / audio) */}
         {mode !== 'musicvideo' && mode !== 'timeline' && <>
+
+        {/* Text mode renders on our own engine first — the controls below only
+            apply when that engine is unavailable and the LTX cloud takes over. */}
+        {mode === 'text' && (
+          <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-xs text-muted-foreground">
+            <span className="font-bold text-emerald-300">BASE Station LTX Engine</span> — text prompts render on our own self-hosted model first: 768×512, ~4 s, silent, seed-reproducible. If our engine is asleep or busy, the request falls back to the LTX cloud, where the model, resolution, duration and soundtrack settings below apply.
+          </div>
+        )}
 
         {/* Prompt Templates */}
         <div>

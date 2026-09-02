@@ -161,16 +161,20 @@ const SECTIONS = [
     id: 'video',
     title: 'Video Studio — AI videos, music videos & timeline editor (beta-locked)',
     icon: Film,
-    keywords: 'video ltx text image audio cinematic visualizer beta locked access request music video timeline editor upload library assets captions scenes shotstack',
+    keywords: 'video ltx text image audio cinematic visualizer beta locked access request music video timeline editor upload library assets captions scenes shotstack own engine self-hosted hugging face 768 seed fallback',
     body: (
       <>
         <div className="p-3 rounded-xl bg-orange-500/5 border border-orange-500/20 mb-2">
           <p className="text-orange-300 font-bold text-sm mb-1">🔒 Beta-locked feature</p>
           <p>Video Studio is currently in limited beta. Open it from the Studios hub and hit <strong className="text-foreground">Request Access</strong> — an admin will approve your request.</p>
         </div>
+        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 mb-2">
+          <p className="text-emerald-300 font-bold text-sm mb-1">🎥 Our own video engine</p>
+          <p>Text to Video renders on the <strong className="text-foreground">BASE Station LTX Engine</strong> first — our self-hosted model. It produces a fixed <strong className="text-foreground">768×512, ~4-second, silent</strong> clip from your prompt (same prompt + seed = same video). If our engine is asleep or busy, your request automatically falls back to the LTX cloud, where the model, resolution, duration, frame-rate and soundtrack controls apply. Image and Audio to Video always use the LTX cloud for now.</p>
+        </div>
         <p><strong className="text-foreground">Five modes:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>Text to Video</strong> — describe the scene; LTX renders it.</li>
+          <li><strong>Text to Video</strong> — describe the scene; our engine renders it (LTX cloud as fallback).</li>
           <li><strong>Image to Video</strong> — animate a reference still.</li>
           <li><strong>Audio to Video</strong> — a visual synced to your track.</li>
           <li><strong>Music Video</strong> — a storyboard of scenes stitched to your song, with transitions, title text and auto-captions.</li>

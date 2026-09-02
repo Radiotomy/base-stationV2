@@ -69,9 +69,24 @@ Audio post: `generateStems`, `generateMashup`, `generateHarmonies`,
 `generateCoverSong`, `masterTrack`, `aiMastering`, `generate243Masters`,
 `applyAudioEffects`, `sonicAnalyze`, `exportMidi`
 Other media: `generateCoverArt`, `generateCoverArtTiered`, `generateSoundEffect`,
-`generateLoopSample`, `generateVisualizer`, `generateVideoLTX`,
-`generateVideoStoryboard`, `composeVideoNextCut`, `searchPexelsPreview`,
-`generateSocialCard`
+`generateLoopSample`, `polishLoopAudio`, `generateVisualizer`,
+`generateVideoStoryboard`, `composeVideoShotstack`, `renderShotstackEdit`,
+`searchPexelsPreview`, `generateSocialCard`
+Video (LTX): `generateVideoLTX` — text mode tries the **self-hosted BASE Station
+LTX Engine** first (`shared/privateLtx.ts`; synchronous, returns a persisted
+`video_url`, writes job/asset/credits inline) and falls back to the public LTX
+API (async `job_id`, finalized by `pollGenerationJob`). Image and audio modes
+are public-API only. See `src/docs/ltx-engine/README.md`.
+Self-hosted music engines: `generateMusicSirenSong`/`pollSirenSongJob`,
+`generateMusicSkye`/`pollSkyeJob`, `generateCodaEdit`/`pollCodaEditJob`
+(Coda edit tasks); `generateMusicHarmonix` submits to Coda.
+Lead sheet: `saveLeadSheet`, `generateVocalsDiffSinger`/`pollDiffSingerVocals`
+(Cantor), `listDiffSingerVoicebanks`, `generateBedMusicGenChord`/
+`pollMusicGenChordBed` (Cadence)
+Stems: `separateStemsSever`/`pollSeverStems` (Sever), `finalizeLocalStems`
+(on-device ONNX results), `generateStems`/`pollTempolorStems` (legacy Tempolor)
+Loops: `embedLoopSemantic`, `backfillLoopEmbeddings`, `searchLoopsSemantic`
+(CLAP), `registerLoopProvenance`
 Voice: `synthesizeVoice`, `createSonicVoice`, `createMusicFinetune`,
 `getMusicFinetunes`, `deleteMusicFinetune`
 
@@ -107,8 +122,8 @@ Voice: `synthesizeVoice`, `createSonicVoice`, `createMusicFinetune`,
 ### Community, ops & admin
 `forumApi` · `verifyTrackSource` · `autoActivateChallenges` ·
 `logTrackGeneratedActivity` · `trackAnalytics` · `getAnalyticsSummary` ·
-`logError` · `runSmokeTests` · `updateAIMusicNews` · `probeNextcutBroll` ·
-`testNextcutConnection`
+`logError` · `runSmokeTests` · `updateAIMusicNews`
+(NextCut probes are retired — video composition runs on Shotstack.)
 
 ### Webhooks
 `replicateV2Webhook` · `tempolorWebhook` · `aimusicapiWebhook` — all HMAC-verified

@@ -68,7 +68,7 @@ certificate, and an inaudible forensic watermark embedded in the audio itself.
 | **Provenance** | BASE Mark watermarking (3 layers), Creative Ownership Score, DDEX export, C2PA hash, on-chain registration, certificates |
 | **Community** | Radio rack, charts, playlists, challenges, leaderboard, badges, featured artists, guest-accessible forum |
 | **Live** *(beta)* | Streamr-transported realtime sessions, sub-second synchronized playback, portal stage visuals, chat + moderation, reactions, quests, recordable session bundles |
-| **Video** *(beta)* | Storyboarding, onset-timed cuts, scene templates & transitions, b-roll search, NextCut composition |
+| **Video** *(beta)* | Self-hosted BASE Station LTX Engine for text-to-video (public LTX API fallback), image/audio-to-video, storyboarding, onset-timed cuts, scene templates & transitions, b-roll search, Shotstack composition & timeline editor |
 | **Fan economy** | Fan clubs with tiers, collectibles, tipping, creator storefront, revenue dashboard |
 | **Integrations** | Audius (publish/import/identity), Freesound, ElevenLabs, Replicate, IPFS/Pinata, Base & Solana, Streamr |
 | **Workspace** | Library with lineage, projects, workspaces, generation history, credits, usage analytics |
@@ -146,10 +146,18 @@ performance layer built on the same infrastructure as the studios:
 
 ## Video Studio — music video composition *(beta)*
 
-Vibe-prompt storyboarding, cuts timed to the track's own transients via onset
-detection, scene templates and transitions, Pexels b-roll preview, and
-NextCut/Shotstack composition — with the source track's provenance carried
-through to the finished video.
+**Text-to-video renders on our own LTX engine first** — a self-hosted Hugging
+Face Space (`radiotomy/basestation-ltx-engine`) producing a fixed 768×512,
+~4-second, 24 fps silent clip from a seeded prompt, copied into our storage and
+pinned to IPFS before it is ever shown. If the engine is asleep, busy or fails,
+the request falls through invisibly to the public LTX API (LTX-2.5 / 2.3, Fast &
+Pro, up to 4K and 20 s, native audio). Image-to-video and audio-to-video use the
+public API only for now. Details: `src/docs/ltx-engine/README.md`.
+
+Around it: vibe-prompt storyboarding, cuts timed to the track's own transients
+via onset detection, scene templates and transitions, Pexels b-roll preview, and
+Shotstack composition plus a drag-and-drop timeline editor — with the source
+track's provenance carried through to the finished video.
 
 Both studios are gated behind beta access requests while we test them at scale.
 
@@ -201,8 +209,11 @@ results, and creator-facing appeal tooling backed by the transparency registry.
   client-side WAV encoding and FLAC decoding
 - **Backend:** Base44 — entities + RLS, Deno backend functions, workflows,
   in-app agents, realtime subscriptions, file storage
-- **External:** Replicate, ElevenLabs, Audius, Freesound, Pinata/IPFS, Streamr,
-  Pexels, Base/Solana RPC
+- **Self-hosted engines (Hugging Face Spaces):** BASE Station LTX Engine
+  (video), Coda, Siren Song, Skye (music), Cadence, Cantor (lead-sheet renders),
+  Sever (stems)
+- **External:** LTX API (video fallback), Replicate, ElevenLabs, Audius,
+  Freesound, Pinata/IPFS, Streamr, Shotstack, Pexels, Base/Solana RPC
 
 ## Repository layout
 
@@ -272,7 +283,8 @@ repository, and are readable only from backend functions via `Deno.env.get`.
 | Watermarking | `BASE_MARK_SEED`, `BASE_MARK_V2_MODEL`, `BASE_MARK_V2_VERSION`, `BASE_MARK_V2_DEPLOYMENT`, `BASE_MARK_V3_MODEL`, `BASE_MARK_V3_VERSION` |
 | Inference | `REPLICATE_API_TOKEN`, `REPLICATE_WEBHOOK_URL`, `REPLICATE_WEBHOOK_SECRET` |
 | Chain / storage | `BASE_RPC_URL`, `PLATFORM_WALLET_PRIVATE_KEY`, `BASE_PLATFORM_WALLET_ADDRESS`, `SOLANA_PLATFORM_WALLET_ADDRESS`, `PINATA_JWT` |
-| Providers | `ELEVENLABS_API`, `SONIC_API_KEY`, `TEMPCOLOR_API_KEY`, `LTX_API_KEY`, `NEXTCUT_API`, `SHOTSTACK_API`, `AUDIUS_API_KEY`, `FREESOUND_API_KEY`, `PEXELS_API_KEY` |
+| Providers | `ELEVENLABS_API`, `SONIC_API_KEY`, `TEMPCOLOR_API_KEY`, `LTX_API_KEY` (public LTX fallback — required even though text-to-video renders on our own engine first), `SHOTSTACK_API`, `AUDIUS_API_KEY`, `FREESOUND_API_KEY`, `PEXELS_API_KEY` |
+| Self-hosted engines | `HF_TOKEN` (scoped to the Skye / Coda / Siren Song Spaces). The LTX, Cadence, Cantor and Sever Spaces are public-read and need no secret |
 
 `BASE_MARK_SEED` and `PLATFORM_WALLET_PRIVATE_KEY` are the two that must never
 be rotated casually or logged: the first invalidates every existing V1 watermark,

@@ -21,15 +21,18 @@ Base44 backend
   ├─ Workflows (scheduled / triggered)  (base44/workflows/*.jsonc)
   └─ In-app agents                      (base44/agents/*.jsonc)
         │
-External: Replicate · Tempolor · Sonic · ElevenLabs · Audius · Pinata/IPFS ·
-          Base RPC · Freesound · Streamr · Shotstack · LTX · Pexels
+External: Hugging Face Spaces (our own engines) · Replicate · Tempolor · Sonic ·
+          ElevenLabs · Audius · Pinata/IPFS · Base RPC · Freesound · Streamr ·
+          Shotstack · LTX API (fallback) · Pexels
 ```
 
-**Provider posture (Aug 2026).** Tempolor is the default music-generation and
-stem-separation provider; Sonic remains in place for core generation and
-extension, with its migration paused pending a possible deprecation notice.
-ElevenLabs is retained **only** for voice cloning, TTS and podcast voiceover — it
-is not a default music generator.
+**Provider posture (Sep 2026).** Self-hosted engines on Hugging Face Spaces are
+first choice wherever one exists: Coda / Siren Song / Skye for music, Cadence
+and Cantor for lead-sheet renders, Sever for stems, and the **BASE Station LTX
+Engine for text-to-video**. Third-party APIs (Tempolor, Sonic, the public LTX
+API) are retained as fallbacks and for the modes an in-house engine does not
+cover yet. ElevenLabs is retained **only** for voice cloning, TTS and podcast
+voiceover — it is not a default music generator.
 
 ## 2. The direct-CRUD vs backend-function split
 
@@ -74,7 +77,13 @@ problem.
 | `safeUrl.ts` | URL allow-listing / SSRF guard |
 | `persistMedia.ts` | Copy provider-hosted output onto our own storage |
 | `flacDecoder.ts` | Server-side FLAC decode for analysis paths |
-| `tempolorStems.ts` | Tempolor stem separation client, stem-label normalisation, and archive expansion |
+| `tempolorStems.ts` | Tempolor stem separation client, stem-label normalisation, and archive expansion (legacy — Sever is the live separation engine) |
+| `privateLtx.ts` | Self-hosted LTX video engine client — submit/poll/persist, never throws, `null` = fall back to the public LTX API |
+| `ltxSpec.ts` | Public LTX API capability table: live models, tiers, fps, durations, credit rates; coerces every request onto an accepted combination |
+| `codaEngine.ts`, `sirenSongHf.ts`, `skyeEngine.ts` | Self-hosted music engine clients (submit-and-poll, WAV persist, credit deduction) |
+| `cadenceEngine.ts`, `diffSinger.ts`, `chordNotation.ts` | Lead-sheet render engines (chord-conditioned bed, score-adherent vocal) and Harte chord normalisation |
+| `severStems.ts`, `stemFinalize.ts` | Sever (HTDemucs-6s) separation client and shared stem finalize |
+| `clapEmbed.ts` | CLAP embeddings for semantic loop search (similarity only — never provenance) |
 
 **Rule:** logic needed by more than one function goes here. Never copy a block
 between two `entry.ts` files.
@@ -112,6 +121,13 @@ modules, slot entity and Replicate deployments were removed in August 2026 (see
 or `BaseMarkV3Slot`; if it does, it is dead code.
 
 **Treat the execution budget as an architectural input, not an annoyance.**
+
+**Video is the one deliberate exception.** `generateVideoLTX` runs the private
+LTX engine *inside* the request (submit → poll → persist, 300 s ceiling) because
+the render is short (≈4 s of video, well under a minute warm) and success must
+return a finished `video_url` synchronously so the same call can fall through to
+the public LTX async path on any failure. The private client never throws;
+`null` is the routing signal. Full contract: `src/docs/ltx-engine/README.md`.
 
 **Stem separation** follows the same shape with one extra step: Tempolor returns
 a multi-stem archive, so `pollTempolorStems` expands it server-side (`fflate`),
