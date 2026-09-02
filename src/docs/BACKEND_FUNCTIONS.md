@@ -83,6 +83,12 @@ Self-hosted music engines: `generateMusicSirenSong`/`pollSirenSongJob`,
 Lead sheet: `saveLeadSheet`, `generateVocalsDiffSinger`/`pollDiffSingerVocals`
 (Cantor), `listDiffSingerVoicebanks`, `generateBedMusicGenChord`/
 `pollMusicGenChordBed` (Cadence)
+Voicebanks: `ingestDiffSingerVoicebank`/`pollVoicebankInstall` — hand a zipped
+OpenUtau DiffSinger bank (or, admin-only, a shared vocoder) to the Cantor Space's
+`/install`, which validates the ONNX inputs and test-sings it before keeping it.
+Ownership lives in the `Voicebank` entity; `shared/voicebankAccess.ts` is the
+single rule for who may see and render with a bank (platform default vs a
+creator's private upload), applied by both the list and the render function.
 Stems: `separateStemsSever`/`pollSeverStems` (Sever), `finalizeLocalStems`
 (on-device ONNX results). The Tempolor separation path (`generateStems`,
 `pollTempolorStems`, `shared/tempolorStems.ts`) was removed Sep 2026; historical

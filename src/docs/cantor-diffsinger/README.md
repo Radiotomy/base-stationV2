@@ -31,23 +31,64 @@ polls — and the Space runs **one job at a time** on purpose (concurrent render
 hold a full model in RAM, which is precisely how the Coda and Siren Song Spaces earn
 their meta-tensor/OOM crashes).
 
+| `POST` | `/install` | **Owner only.** `{ bank_id, zip_url, kind: 'voicebank'\|'vocoder', replace }` → `{ job_id }` |
+| `DELETE` | `/voicebanks/{bank_id}` | **Owner only.** Remove a bank (used for swaps) |
+
+`/install` and `DELETE` take `Authorization: Bearer <Hugging Face token>` and ask
+HF `whoami` who it belongs to — only the Space owner's token passes. No shared
+secret to provision. The BASE Station backend calls these from
+`ingestDiffSingerVoicebank`, which decides who may install what.
+
 ## Installing voicebanks
 
-Cantor ships with **no voicebanks**. It is an engine; a bank is the voice. Drop each
-bank into persistent storage:
+Cantor ships with **no voicebanks**. It is an engine; a bank is the voice. Banks
+are installed through `/install`, which downloads the archive, finds the folder
+holding `dsconfig.yaml` (unwrapping nested "pack" zips), copies it into persistent
+storage, then **validates it**: binds every acoustic/vocoder ONNX input by name and
+sings a three-note test phrase. A bank that fails either step is deleted again —
+a half-installed bank is an error, never a voice.
+
+Supported layout is the **OpenUtau DiffSinger bank format**:
 
 ```
 /data/voicebanks/<bank_id>/
-    dsconfig.yaml        # DiffSinger bank config (phonemes, models, sample rate)
-    acoustic.onnx        # mel generation
-    vocoder.onnx         # mel -> waveform   (may be shared/global instead)
-    dictionary.txt       # grapheme -> phoneme, tab separated
+    dsconfig.yaml        # acoustic, vocoder, phonemes, speakers, dictionaries, sample_rate, hop_size
+    character.yaml       # display name
+    acoustic.onnx
+    phonemes.txt
+    dsdict-en.yaml       # or dsdict.yaml / dictionary.txt — English preferred on multi-dict banks
+    *.emb                # speaker embeddings for vocal modes (dsconfig `speakers`)
+    dsvocoder/vocoder.onnx   # optional — most banks name a SHARED vocoder instead
     LICENSE              # <- read this before shipping the bank to users
+
+/data/vocoders/<name>/vocoder.onnx   # shared vocoders, installed with kind: 'vocoder'
 ```
+
+Resolution order for the vocoder: bank-local file → `/data/vocoders/<dsconfig name>`
+→ any installed shared vocoder. Install the OpenVPI `pc_nsf_hifigan_….oudep` (it is a
+zip of `vocoder.onnx` + `vocoder.yaml`) once and every bank without its own works.
+
+Acoustic inputs Cantor supplies: `tokens`, `durations`, `f0`, `languages`,
+`spk_embed`, `gender` (0), `velocity` (1), `speedup` (10), `steps` (20), `depth`.
+A bank that REQUIRES `energy` / `breathiness` / `voicing` / `tension` curves is
+refused at install — Cantor has no variance model to predict them, and feeding
+constants would make it sing wrong on purpose.
 
 `/voicebanks` reports `renderable: false` for any bank missing a required model
 rather than hiding it, so a half-installed bank shows up as a diagnosable problem
 instead of vanishing.
+
+### Licence reality check (Sep 2026)
+
+Genuinely permissive **English** DiffSinger banks are rare. The DiffSinger wiki lists
+five English-capable banks: Hanami Hoshino (Team L❤VE licence — commercial use and
+derivatives allowed, attribution required), Laru Mine (commercial with permission,
+no redistribution), TIGER and Canary (CC BY-NC-ND + Commons Clause), Peiton
+(commercial with paid licence). Separately, the **community vocoder every bank
+depends on (OpenVPI NSF-HiFiGAN / PC-NSF-HiFiGAN) is CC BY-NC-SA 4.0** — so a
+commercial release path requires either a bank that bundles its own permissively
+licensed vocoder or a vocoder we train ourselves. Pretrial test mode is
+non-commercial and unaffected.
 
 ### Licensing — read before adding a bank
 

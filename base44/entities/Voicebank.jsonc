@@ -1,0 +1,123 @@
+{
+  "name": "Voicebank",
+  "type": "object",
+  "description": "Registry row for a DiffSinger voicebank installed on the Cantor engine. The engine only knows a bank by its folder; this row is what says WHO may render with it and what licence it carries. A bank on the engine with no row is treated as a hand-installed platform default. A creator-uploaded bank is private to its uploader unless is_platform is set by an admin.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Creator who uploaded the bank (or the admin who installed a platform default)"
+    },
+    "user_email": {
+      "type": "string"
+    },
+    "bank_id": {
+      "type": "string",
+      "description": "Folder id on the engine \u2014 the value passed as `voicebank` to a render. Unique across the engine."
+    },
+    "name": {
+      "type": "string",
+      "description": "Display name shown in the voice picker"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "voicebank",
+        "vocoder"
+      ],
+      "default": "voicebank",
+      "description": "A 'vocoder' row is a shared mel-to-waveform model installed for banks that ship without their own. Never shown in the voice picker."
+    },
+    "language": {
+      "type": "string"
+    },
+    "license_text": {
+      "type": "string",
+      "maxLength": 4000,
+      "description": "Licence excerpt the engine read from the bank's LICENSE / README at install. Surfaced to every creator before they render, because community banks range from fully permissive to non-commercial or permission-required."
+    },
+    "zip_url": {
+      "type": "string",
+      "description": "Where the bank archive was ingested from \u2014 a Base44 storage upload or a direct download URL. Kept so the bank can be reinstalled if the engine's persistent storage is lost."
+    },
+    "is_platform": {
+      "type": "boolean",
+      "default": false,
+      "description": "Visible to every creator. Only an admin can set this; a creator's own upload stays private to them."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "processing",
+        "installed",
+        "failed",
+        "removed"
+      ],
+      "default": "processing",
+      "description": "'installed' is only written after the engine validated the ONNX inputs AND completed a short test render \u2014 a bank that opens but sings silence is 'failed', not 'installed'."
+    },
+    "error_message": {
+      "type": "string"
+    },
+    "engine_job_id": {
+      "type": "string",
+      "description": "Cantor install job id, polled until the validation report arrives"
+    },
+    "report": {
+      "type": "object",
+      "description": "Validation report from the engine: acoustic/vocoder input names, speakers, vocoder source (bundled/global), sample rate, test-render seconds."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional description for SEO and discoverability"
+    }
+  },
+  "required": [
+    "user_id",
+    "bank_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_platform": true
+        },
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -127,6 +127,59 @@ export function absoluteCantorUrl(path: string): string {
   return path.startsWith('http') ? path : `${CANTOR_HOST}${path}`;
 }
 
+/**
+ * Ask the engine to download, validate and install a bank (or a shared vocoder).
+ *
+ * The engine authenticates the caller by asking Hugging Face who the token
+ * belongs to — only the Space owner's token passes, so this is only ever called
+ * from a backend function that already gated the request itself.
+ */
+export async function submitCantorInstall(params: {
+  bankId: string;
+  zipUrl: string;
+  kind: 'voicebank' | 'vocoder';
+  replace?: boolean;
+  hfToken: string;
+}): Promise<string> {
+  const res = await fetch(`${CANTOR_HOST}/install`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${params.hfToken}` },
+    body: JSON.stringify({
+      bank_id: params.bankId,
+      zip_url: params.zipUrl,
+      kind: params.kind,
+      replace: Boolean(params.replace),
+    }),
+    signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data?.error) throw new Error(data?.error || `Cantor engine refused the install (${res.status})`);
+  if (!data?.job_id) throw new Error('Cantor engine returned no install job id');
+  return data.job_id;
+}
+
+/** Install job status. Same shape as a render status plus `stage` and `report`. */
+export async function getCantorInstallStatus(jobId: string): Promise<any | null> {
+  try {
+    const res = await fetch(`${CANTOR_HOST}/status/${jobId}`, { signal: AbortSignal.timeout(STATUS_TIMEOUT_MS) });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data?.error && !data?.status) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+export async function removeCantorVoicebank(bankId: string, hfToken: string): Promise<void> {
+  const res = await fetch(`${CANTOR_HOST}/voicebanks/${encodeURIComponent(bankId)}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${hfToken}` },
+    signal: AbortSignal.timeout(STATUS_TIMEOUT_MS),
+  });
+  if (!res.ok && res.status !== 404) throw new Error(`Cantor engine refused the removal (${res.status})`);
+}
+
 export async function cantorHealth(): Promise<any> {
   const res = await fetch(`${CANTOR_HOST}/health`, {
     signal: AbortSignal.timeout(STATUS_TIMEOUT_MS),

@@ -11,6 +11,8 @@ import ChordChartInput from '@/components/leadsheet/ChordChartInput';
 import LyricSheetInput from '@/components/leadsheet/LyricSheetInput';
 import MelodySheetInput from '@/components/leadsheet/MelodySheetInput';
 import VoicebankPicker from '@/components/leadsheet/VoicebankPicker';
+import VoicebankUploadPanel from '@/components/leadsheet/VoicebankUploadPanel';
+import { useAuth } from '@/lib/AuthContext';
 import ScoreProvenanceCard from '@/components/leadsheet/ScoreProvenanceCard';
 import VocalResultPanel from '@/components/leadsheet/VocalResultPanel';
 import BedRenderPanel from '@/components/leadsheet/BedRenderPanel';
@@ -25,6 +27,7 @@ import { pollJob } from '@/lib/polling/pollJob';
  * hashed) before audio derived from it does.
  */
 export default function LeadSheetStudio() {
+  const { user } = useAuth();
   const [meta, setMeta] = useState({ key: 'C major', bpm: 120, time_signature: '4/4' });
   const [title, setTitle] = useState('');
   const [chords, setChords] = useState('');
@@ -180,6 +183,7 @@ export default function LeadSheetStudio() {
             </div>
             <VoicebankPicker banks={banks} selected={voicebank} onSelect={setVoicebank}
               loading={loadingBanks} onRefresh={loadBanks} />
+            <VoicebankUploadPanel isAdmin={user?.role === 'admin'} onInstalled={loadBanks} />
           </div>
 
           <Button onClick={render} disabled={rendering || notes.length === 0}

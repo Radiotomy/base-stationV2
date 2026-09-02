@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { submitCantorJob, CANTOR_ENGINE } from '../../shared/diffSinger.ts';
+import { loadVoicebankRows, canUseBank } from '../../shared/voicebankAccess.ts';
 
 /**
  * Render a lead sheet's melody as sung vocals on Cantor (our DiffSinger engine).
@@ -27,6 +28,12 @@ Deno.serve(async (req) => {
     const { leadSheetId, voicebank } = await req.json();
     if (!leadSheetId) return Response.json({ error: 'leadSheetId required' }, { status: 400 });
     if (!voicebank) return Response.json({ error: 'voicebank required' }, { status: 400 });
+
+    // Same rule the picker applies: another creator's private bank is not
+    // renderable by guessing its id.
+    if (!canUseBank(voicebank, await loadVoicebankRows(base44), user)) {
+      return Response.json({ error: 'That voice is not available to you' }, { status: 403 });
+    }
 
     const sheets = await base44.entities.LeadSheet.filter({ id: leadSheetId });
     const sheet = sheets[0];

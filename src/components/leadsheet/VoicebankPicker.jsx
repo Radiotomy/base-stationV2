@@ -46,6 +46,9 @@ export default function VoicebankPicker({ banks, selected, onSelect, loading, on
               {bank.language && (
                 <span className="text-[10px] text-muted-foreground uppercase">{bank.language}</span>
               )}
+              {bank.ownership === 'mine' && (
+                <span className="ml-auto text-[10px] font-bold text-emerald-400">Your voice</span>
+              )}
             </div>
             {bank.license && (
               <p className="text-[10px] text-muted-foreground mt-1 flex items-start gap-1">
