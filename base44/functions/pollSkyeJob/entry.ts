@@ -45,7 +45,17 @@ Deno.serve(async (req) => {
     let st;
     try {
       st = await getSkyeStatus(job.provider_job_id);
-    } catch {
+    } catch (err) {
+      // A 404 is NOT transient: the Space keeps its job table in memory, so a
+      // restart forgets every in-flight render. Left as 'processing' the job
+      // would spin forever — fail it so the creator can resubmit.
+      if (/HTTP 404/.test(err.message)) {
+        const detail = 'Skye engine restarted mid-render and lost this job — please resubmit (no credits were charged).';
+        await base44.entities.GenerationJob.update(job.id, {
+          status: 'failed', error_message: detail, completed_at: new Date().toISOString(),
+        });
+        return Response.json({ status: 'failed', job_id: job.id, error: detail });
+      }
       // Transient status hiccup — keep the job processing so the studio retries.
       return Response.json({ status: 'processing', job_id: job.id, progress: 'Rendering…' });
     }
@@ -133,8 +143,9 @@ Deno.serve(async (req) => {
         provider: 'skye', engine: 'hf_space', model: 'DiffRhythm 2 (Skye)',
         style_prompt: job.input_data?.style_prompt || '',
         lyrics: job.input_data?.lyrics || '',
-        cfg_strength: SKYE_CFG_STRENGTH,
-        sample_steps: SKYE_SAMPLE_STEPS,
+        // Sweep overrides recorded at submit win; otherwise the calibrated defaults.
+        cfg_strength: job.input_data?.cfg_strength ?? SKYE_CFG_STRENGTH,
+        sample_steps: job.input_data?.sample_steps ?? SKYE_SAMPLE_STEPS,
         reference_style_cloned: usedReference,
         reference_audio_url: job.input_data?.reference_audio_url || '',
         duration: job.input_data?.duration,
