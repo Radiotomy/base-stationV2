@@ -61,7 +61,11 @@ export const SKYE_COST = 14;
 // no stray vocals, so that is what every creator render now sends. Measured
 // on H: peak -2.9 dBFS, RMS -17.6 → -14.7 dB first→last third (arrangement
 // builds toward the chorus/outro), low-band share flat across the track.
-export const SKYE_CFG_STRENGTH = 4.0;
+//
+// 2026-09-01 vocal sweep (seed 9002): cfg 3.0 / 32 steps was judged the best
+// vocal take by ear — less flanged than cfg 4.0, and 64 steps did NOT improve
+// on it — so cfg moves to 3.0. Steps stay at 32.
+export const SKYE_CFG_STRENGTH = 3.0;
 export const SKYE_SAMPLE_STEPS = 32;
 
 // Sweep bounds, mirroring the clamps the Space enforces. Kept here so a caller
@@ -105,7 +109,7 @@ export const SKYE_INSTRUMENTAL_SKELETON =
 // negative channel, so tonal balance has to be asked for in the positive prose
 // the MuLan text encoder reads. Kept short so it colours the mix, not the genre.
 export const SKYE_BALANCE_HINT =
-  'consistent tonal balance throughout, moderate smooth high end with no harsh or building brightness, tight clean punchy bass, responsive low end';
+  'consistent tonal balance throughout, moderate smooth high end with no harsh or building brightness, deep full warm low end, weighty sub bass, thick punchy kick drum, bass-forward mix';
 
 // Vocal steer appended only when lyrics are present. The 2026-09-01 vocal test
 // (seed 9002) came back with a heavily flanged/chorused lead — DiffRhythm 2
@@ -113,7 +117,7 @@ export const SKYE_BALANCE_HINT =
 // stacked lead reads as a flanger. Asking for a single dry close-mic lead keeps
 // the vocal centred and phase-coherent.
 export const SKYE_VOCAL_HINT =
-  'single clean dry lead vocal, close-mic and centred, natural unprocessed voice, no vocal doubling, no chorus or flanger effect';
+  'one solo lead singer, single clean dry mono vocal, close-mic and dead centre, crisp intelligible diction, no vocal doubling, no harmonies, no layered vocals, no reverb wash, no chorus phaser or flanger effect';
 
 // True when the creator gave nothing the engine can use as a text track.
 export function isSkyeInstrumental(lyrics?: string) {
