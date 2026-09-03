@@ -1,0 +1,12 @@
+# MiniMax-Music3 support landed in diffusers via PR #14456 — pinned to the PR
+# commit the model card specifies until it is merged into a release. Moving to a
+# released diffusers is safe only once that PR is in it.
+git+https://github.com/huggingface/diffusers@dafe3733fcfdbf3c48915fe77be3aef65b5d6a2d
+transformers
+accelerate
+soundfile
+torch
+fastapi
+uvicorn
+pydantic
+huggingface_hub

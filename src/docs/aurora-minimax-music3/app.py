@@ -1,0 +1,213 @@
+# Aurora — BASE Station's MiniMax-Music3 engine (Hugging Face Space).
+#
+# Runs MiniMaxAI/MiniMax-Music3 through the diffusers ModularPipeline. Contract is
+# deliberately identical in shape to our Coda / Siren Song / Skye engines so the
+# backend polling, restart handling and health checks are shared:
+#
+#   POST /generate       { prompt, lyrics, duration, max_new_tokens, seed } -> { task_id, status }
+#   GET  /status/{id}    -> { status, progress, result_url?, filename? }
+#   GET  /outputs/{file} -> rendered WAV
+#   GET  /engine/health  -> persistence report
+#
+# PERSISTENCE-FIRST: job records are written to disk BEFORE the render starts and
+# updated in place, and outputs are written to the same persistent mount. An
+# in-memory job table loses every in-flight render on a container restart, which
+# is exactly the failure that left jobs spinning forever.
+#
+# SERIAL QUEUE: one render at a time. Concurrent requests on a single GPU produce
+# "Cannot copy out of meta tensor" failures, so the lock is load-bearing.
+
+import os
+import json
+import uuid
+import time
+import datetime
+import threading
+import traceback
+
+import torch
+import soundfile as sf
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from diffusers import ModularPipeline
+
+MODEL_ID = os.environ.get("AURORA_MODEL_ID", "MiniMaxAI/MiniMax-Music3")
+
+MIN_SECS, MAX_SECS = 30.0, 300.0
+FRAMES_PER_SECOND = 25  # MiniMax emits audio frames at 25 fps
+
+
+def _writable_dir(preferred, fallback):
+    """Use the persistent mount when it is actually writable, else fall back.
+
+    A Space with no bucket attached must still run — it just loses jobs across a
+    restart, and /engine/health is what makes that visible instead of silent.
+    """
+    try:
+        os.makedirs(preferred, exist_ok=True)
+        probe = os.path.join(preferred, ".write_probe")
+        with open(probe, "w") as f:
+            f.write("ok")
+        os.remove(probe)
+        return preferred, True
+    except OSError:
+        os.makedirs(fallback, exist_ok=True)
+        return fallback, False
+
+
+STATE_DIR, STATE_PERSISTENT = _writable_dir("/data/jobs", "/tmp/jobs")
+OUTPUT_DIR, OUTPUT_PERSISTENT = _writable_dir("/data/outputs", "/tmp/outputs")
+
+app = FastAPI(title="Aurora — MiniMax-Music3")
+app.mount("/outputs", StaticFiles(directory=OUTPUT_DIR), name="outputs")
+
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+_LOCK = threading.Lock()
+PIPE = None
+SAMPLE_RATE = 32000
+
+
+# ── Durable job records ──────────────────────────────────────────────────────
+def _job_path(job_id):
+    return os.path.join(STATE_DIR, f"{job_id}.json")
+
+
+def write_job(job_id, **fields):
+    """Read-modify-write a job record. Atomic via rename so a crash mid-write
+    can never leave a half-parsed record that reads as a corrupt job."""
+    record = read_job(job_id) or {"job_id": job_id, "created_at": time.time()}
+    record.update(fields)
+    tmp = _job_path(job_id) + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(record, f)
+    os.replace(tmp, _job_path(job_id))
+    return record
+
+
+def read_job(job_id):
+    try:
+        with open(_job_path(job_id)) as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+# ── Model ────────────────────────────────────────────────────────────────────
+def load_model():
+    """Loaded once at import — a per-request load would re-stream ~11B params."""
+    global PIPE, SAMPLE_RATE
+    if PIPE is not None:
+        return PIPE
+    pipe = ModularPipeline.from_pretrained(MODEL_ID)
+    pipe.load_components(dtype=torch.bfloat16)
+    # Explicit .to(DEVICE): the meta-tensor errors our other engines hit came
+    # from relying on implicit placement.
+    pipe.to(DEVICE)
+    SAMPLE_RATE = getattr(pipe, "sampling_rate", 32000)
+    PIPE = pipe
+    return PIPE
+
+
+load_model()
+
+
+class GenReq(BaseModel):
+    prompt: str
+    lyrics: str = ""
+    duration: float = 120.0
+    max_new_tokens: int | None = None
+    seed: int | None = None
+    response_format: str = "wav"
+
+
+def render(job_id, req):
+    try:
+        write_job(job_id, status="processing", progress="Waiting for the GPU…")
+        duration = max(MIN_SECS, min(float(req.duration), MAX_SECS))
+
+        # An empty lyric field is an INSTRUMENTAL request. MiniMax reads the
+        # section tags as written, so a bare structure skeleton is how you ask for
+        # a song with no sung lines — an empty string would leave the model with
+        # no structural guidance at all.
+        lyrics = (req.lyrics or "").strip()
+        if not lyrics:
+            lyrics = "[Intro]\n[Instrumental]\n[Solo]\n[Instrumental]\n[Outro]"
+
+        with _LOCK:
+            write_job(job_id, progress="Composing…")
+            generator = None
+            if req.seed is not None:
+                generator = torch.Generator(DEVICE).manual_seed(int(req.seed))
+
+            kwargs = {
+                "prompt": req.prompt,
+                "lyrics": lyrics,
+                "audio_duration": float(duration),
+                "output": "audios",
+            }
+            if generator is not None:
+                kwargs["generator"] = generator
+            if req.max_new_tokens:
+                kwargs["max_new_tokens"] = int(req.max_new_tokens)
+            else:
+                kwargs["max_new_tokens"] = int(duration * FRAMES_PER_SECOND)
+
+            with torch.inference_mode():
+                audio = PIPE(**kwargs)[0]
+
+        write_job(job_id, progress="Writing WAV…")
+        stamp = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        filename = f"aurora_{stamp}_{job_id[:8]}.wav"
+        path = os.path.join(OUTPUT_DIR, filename)
+        # 16-bit PCM, never MP3: BASE Mark's forensic layer embeds into PCM, and
+        # marking a lossy file destroys the mark.
+        sf.write(path, audio.T.float().cpu().numpy(), SAMPLE_RATE, subtype="PCM_16")
+
+        write_job(
+            job_id, status="completed", progress="Generation complete",
+            filename=filename, result_url=f"/outputs/{filename}",
+            sample_rate=SAMPLE_RATE, duration=duration,
+        )
+    except Exception as e:
+        traceback.print_exc()
+        write_job(job_id, status="failed", progress="Failed", error=str(e))
+
+
+@app.post("/generate")
+def generate(req: GenReq):
+    if not (req.prompt or "").strip():
+        raise HTTPException(400, "prompt is required")
+    job_id = uuid.uuid4().hex
+    # Written to durable storage BEFORE the thread starts, so a crash during
+    # startup still leaves a record the poller can resolve.
+    write_job(job_id, status="queued", progress="Queued")
+    threading.Thread(target=render, args=(job_id, req), daemon=True).start()
+    return {"task_id": job_id, "job_id": job_id, "status": "queued"}
+
+
+@app.get("/status/{job_id}")
+def status(job_id: str):
+    job = read_job(job_id)
+    if not job:
+        raise HTTPException(404, "unknown job")
+    return job
+
+
+@app.get("/engine/health")
+def engine_health():
+    try:
+        pending = len([f for f in os.listdir(STATE_DIR) if f.endswith(".json")])
+    except OSError:
+        pending = -1
+    return {
+        "state_dir": STATE_DIR,
+        "state_persistent": STATE_PERSISTENT,
+        "output_dir": OUTPUT_DIR,
+        "output_persistent": OUTPUT_PERSISTENT,
+        "job_records": pending,
+        "model_id": MODEL_ID,
+        "model_loaded": PIPE is not None,
+        "device": DEVICE,
+        "sample_rate": SAMPLE_RATE,
+    }

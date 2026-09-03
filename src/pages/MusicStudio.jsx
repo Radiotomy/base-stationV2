@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles, Waves, Feather } from 'lucide-react';
+import { Zap, SlidersHorizontal, RotateCcw, AudioLines, Sparkles, Waves, Feather, Sunrise } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import MySoundTab from '@/components/music/mysound/MySoundTab';
 import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
 import SirenSongGenerateTab from '@/components/music/SirenSongGenerateTab';
 import SkyeGenerateTab from '@/components/music/SkyeGenerateTab';
+import AuroraGenerateTab from '@/components/music/AuroraGenerateTab';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
@@ -15,6 +16,7 @@ const TABS = [
   { id: 'harmonix', label: '🧬 BASE CODA',         icon: Sparkles,          desc: 'BASE Engine · in-house, self-hosted — tag-driven generation across Micro, Pro & Vault tiers' },
   { id: 'sirensong', label: '🌊 BASE Siren Song',  icon: Waves,             desc: 'BASE Engine · in-house, self-hosted — tag & lyric conditioned generation up to 6 minutes' },
   { id: 'skye',     label: '🪶 BASE Skye',         icon: Feather,           desc: 'BASE Engine · in-house, self-hosted — prose style steering, seed-reproducible, long-form 95s–210s' },
+  { id: 'aurora',   label: '🌅 BASE Aurora',       icon: Sunrise,           desc: 'Powered by MiniMax-Music3 · self-hosted — structured-caption steering, complete songs up to 5 minutes, native 32kHz stereo WAV' },
 ];
 
 export default function MusicStudio() {
@@ -80,6 +82,7 @@ export default function MusicStudio() {
         {activeTab === 'harmonix' && <HarmonixGenerateTab />}
         {activeTab === 'sirensong' && <SirenSongGenerateTab />}
         {activeTab === 'skye' && <SkyeGenerateTab />}
+        {activeTab === 'aurora' && <AuroraGenerateTab />}
       </div>
     </div>
   );
