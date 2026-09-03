@@ -31,6 +31,7 @@ const CATEGORIES = [
     studios: [
       { to: "/mastering-studio",  emoji: "🎚️", label: "Mastering Studio",  desc: "AI mastering & polish" },
       { to: "/audio-remix-studio", emoji: "🎛️", label: "Audio Remix",       desc: "Edit, effects & remix" },
+      { to: "/sonic-tools",        emoji: "🛠️", label: "Sonic Tools",        desc: "Remaster, replace a section, add vocals or an instrumental" },
       { to: "/stem-creator",       emoji: "🧬", label: "Stem Creator",       desc: "Six-stem split — Sever engine or free on-device" },
       { to: "/mashup-studio",      emoji: "🔀", label: "Mashup Studio",      desc: "Blend multiple tracks" },
       { to: "/vocal-harmonizer",   emoji: "🎼", label: "Vocal Harmonizer",   desc: "Add AI harmony layers" },

@@ -69,6 +69,7 @@ const PromoStudio = lazy(() => import('./pages/PromoStudio'));
 const SoundFXStudio = lazy(() => import('./pages/SoundFXStudio'));
 const StudioHistory = lazy(() => import('./pages/StudioHistory'));
 const AudioRemixStudio = lazy(() => import('./pages/AudioRemixStudio'));
+const SonicToolsStudio = lazy(() => import('./pages/SonicToolsStudio'));
 const LoopStudio = lazy(() => import('./pages/LoopStudio'));
 const VoiceCreator = lazy(() => import('./pages/VoiceCreator'));
 const MyProfile = lazy(() => import('./pages/MyProfile'));
@@ -229,6 +230,7 @@ const AuthenticatedApp = () => {
               <Route path="/live-watch" element={<LiveWatch />} />
               <Route path="/live-summary" element={<LiveSummary />} />
               <Route path="/audio-remix-studio" element={<AudioRemixStudio />} />
+              <Route path="/sonic-tools" element={<SonicToolsStudio />} />
               <Route path="/loop-studio" element={<LoopStudio />} />
               <Route path="/stem-creator" element={<StemCreatorStudio />} />
               <Route path="/lead-sheet-studio" element={<LeadSheetStudio />} />
