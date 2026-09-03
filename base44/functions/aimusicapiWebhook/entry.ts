@@ -1,4 +1,5 @@
-// aimusicapi.ai webhook receiver — Sonic, Nuro, Producer
+// aimusicapi.ai webhook receiver — Sonic (Nuro/Producer branches kept only for
+// historical rows: Nuro returns HTTP 410 Gone and Producer is retired here).
 // Receives POST {code, data, message, task_id, platform, event} when a task settles.
 // Verifies HMAC-SHA256 signature, finds the matching GenerationJob, applies the same
 // completion logic as pollGenerationJob (credit deduction, content hash, log finalization).
@@ -45,7 +46,10 @@ function normalizePayload(body) {
   const failed = event.endsWith('.failed') || body.code !== 200;
 
   if (platform === 'sonic') {
-    const clips = Array.isArray(body.data) ? body.data : [];
+    // auto_concat payloads are paired {extended|replaced, full}; the full song is the
+    // deliverable, and a pair whose `full` is still null has not settled yet.
+    const raw = Array.isArray(body.data) ? body.data : [];
+    const clips = raw.map(c => (c && (c.full !== undefined || c.extended || c.replaced)) ? (c.full || null) : c).filter(Boolean);
     const succeeded = clips.filter(c => c.state === 'succeeded' && c.audio_url);
     if (failed && succeeded.length === 0) {
       return { task_id: body.task_id, provider: 'sonic', status: 'failed', error: body.message || 'Sonic generation failed' };

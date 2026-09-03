@@ -18,21 +18,36 @@ const MARKUP = 4.0; // 4x default markup (adjustable below)
 // ─── OPERATIONS MATRIX ───────────────────────────────────────────────────────
 // Fields: provider, model, operation, api_credits, api_usd_cost, output, notes
 const OPERATIONS = [
-  // ── SONIC (via AIMusicAPI) ──────────────────────────────────────────────────
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Create Music", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Extend Music", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Remaster", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Add Vocals", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Add Instrumental", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Replace Section", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Stems Basic (4-stem)", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "4 stems", category: "stems" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Stems Full (24-stem)", api_credits: 50, api_usd: 50 * AIMUSIC_CREDIT_USD, output: "24 stems", category: "stems" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Get MIDI", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "MIDI file", category: "utility" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Get BPM", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "BPM data", category: "utility" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Get VOX", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "Vocal audio", category: "utility" },
-  { provider: "sonic", model: "sonic-v4-5-plus / v5-5", operation: "Concat Music", api_credits: 2, api_usd: 2 * AIMUSIC_CREDIT_USD, output: "1 track", category: "utility" },
-  // ── LYRICS (via AIMusicAPI) ─────────────────────────────────────────────────
-  { provider: "sonic", model: "Lyrics API", operation: "Generate Lyrics", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "Full lyrics", category: "lyrics" },
+  // ── SONIC (via AIMusicAPI) — re-audited from docs.aimusicapi.ai Credits Usage Guide (2026-09-03) ──
+  // Advanced models (v4.5 / v4.5+ / v5 / v5.5) and description mode (custom_mode=false, any
+  // model) now cost 14 credits for Create / Cover / Mashup / Sample. v3.5 / v4 custom mode stay at 10.
+  // Basic stems rose to 20. Every generation call still returns 2 songs.
+  { provider: "sonic", model: "v4-5 / v4-5-plus / v5 / v5-5", operation: "Create Music (advanced model or description mode)", api_credits: 14, api_usd: 14 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
+  { provider: "sonic", model: "v3-5 / v4 (custom lyrics)", operation: "Create Music (standard model)", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
+  { provider: "sonic", model: "all", operation: "Extend Music / Upload + Extend", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
+  { provider: "sonic", model: "v4-5 / v5 / v5-5", operation: "Cover Music / Upload + Cover (advanced)", api_credits: 14, api_usd: 14 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
+  { provider: "sonic", model: "v4-5 / v5 / v5-5", operation: "Mashup (2 sources)", api_credits: 14, api_usd: 14 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
+  { provider: "sonic", model: "v4-5 / v5 / v5-5", operation: "Sample (hum / clip → full song)", api_credits: 14, api_usd: 14 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
+  { provider: "sonic", model: "all", operation: "Persona Music (cloned voice)", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "music" },
+  { provider: "sonic", model: "v4 / v4-5-plus / v5 / v5-5", operation: "Remaster", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
+  { provider: "sonic", model: "v4-5-plus / v5 / v5-5", operation: "Add Vocals (uploaded clip)", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
+  { provider: "sonic", model: "v4-5-plus / v5 / v5-5", operation: "Add Instrumental (uploaded clip)", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
+  { provider: "sonic", model: "v4 → v5-5", operation: "Replace Section", api_credits: 10, api_usd: 10 * AIMUSIC_CREDIT_USD, output: "2 tracks", category: "edit" },
+  { provider: "sonic", model: "—", operation: "Stems Basic (vocal + instrumental)", api_credits: 20, api_usd: 20 * AIMUSIC_CREDIT_USD, output: "2–4 stems", category: "stems" },
+  { provider: "sonic", model: "—", operation: "Stems Full (12-track)", api_credits: 50, api_usd: 50 * AIMUSIC_CREDIT_USD, output: "12 stems", category: "stems" },
+  { provider: "sonic", model: "—", operation: "Upload Music (get clip_id)", api_credits: 2, api_usd: 2 * AIMUSIC_CREDIT_USD, output: "1 clip_id", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Concat Music", api_credits: 2, api_usd: 2 * AIMUSIC_CREDIT_USD, output: "1 track", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Download (mp3 / m4a / wav, any count)", api_credits: 2, api_usd: 2 * AIMUSIC_CREDIT_USD, output: "up to 3 files", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Get WAV (legacy endpoint)", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "WAV file", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Get MIDI (transcription)", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "MIDI + notes", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Get BPM", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "BPM data", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Get VOX (vocal extract ≤30s)", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "Vocal audio", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Aligned Lyrics (first call; repeats free)", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "Word timeline", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Upsample Tags", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "Enhanced tags", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Create Persona (from clip_id)", api_credits: 1, api_usd: 1 * AIMUSIC_CREDIT_USD, output: "1 persona", category: "utility" },
+  { provider: "sonic", model: "—", operation: "Create Voice (from audio URL)", api_credits: 4, api_usd: 4 * AIMUSIC_CREDIT_USD, output: "1 persona", category: "utility" },
+  // Nuro (410 Gone) and Producer (retired here) are no longer purchased — lyrics come
+  // from our own Lyrics Studio / Maestro engines, not an aimusicapi endpoint.
   // ── TEMPOLOR — re-audited from platform.tempolor.com/docs/6665893m0 (2026-08-23) ──
   // TemPolor's house song model dropped its version numbers: v4.6 / v3.5 are gone and
   // there is one rolling "tempolor-latest" identifier for song + reference generation.
@@ -255,10 +270,10 @@ export default function CostMatrixTab() {
           <div className="space-y-2 text-xs text-muted-foreground">
             {[
               { op: "Quick Music Gen (Tempolor i3)",  bs: bsCredits(0.03, markup), note: "most used" },
-              { op: "Full Song (Sonic v4-5-plus)",    bs: bsCredits(0.10, markup), note: "premium" },
+              { op: "Full Song (Sonic v5, 14 API cr)", bs: bsCredits(0.14, markup), note: "premium" },
               { op: "Song w/ Vocals (tempolor-latest)", bs: bsCredits(0.04, markup), note: "flagship" },
-              { op: "Stems Basic (Sonic)",            bs: bsCredits(0.10, markup), note: "power user" },
-              { op: "Stems Full 24-stem (Sonic)",     bs: bsCredits(0.50, markup), note: "pro tier only" },
+              { op: "Stems Basic (Sonic, 20 API cr)",  bs: bsCredits(0.20, markup), note: "power user" },
+              { op: "Stems Full 12-track (Sonic)",     bs: bsCredits(0.50, markup), note: "pro tier only" },
               { op: "Generate Lyrics (Tempolor)",     bs: bsCredits(0.01, markup), note: "cheap" },
             ].map(({ op, bs, note }) => (
               <div key={op} className="flex justify-between items-center border-b border-border pb-1">

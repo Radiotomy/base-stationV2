@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
       weirdness_constraint,
       audio_weight,
       vocal_gender,
+      duration,                  // optional — target length 10–360s (audit 2026-09-03)
     } = body;
 
     // ── Validation ───────────────────────────────────────────────────────────
@@ -197,7 +198,10 @@ Deno.serve(async (req) => {
       continue_at: Number(continue_at) || 0.1,
       custom_mode: !!custom_mode,
       mv,
+      // Required on /sonic/create per the current API contract.
+      use_suno_cdn: false,
     };
+    if (duration) apiBody.duration = Math.min(Math.max(Math.round(Number(duration)), 10), 360);
     if (custom_mode) apiBody.prompt = String(prompt).slice(0, limits.prompt);
     else             apiBody.gpt_description_prompt = String(gpt_description_prompt).slice(0, 400);
     if (title)        apiBody.title = String(title).slice(0, 80);

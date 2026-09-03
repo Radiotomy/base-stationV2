@@ -982,7 +982,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
                   <Download className="w-4 h-4" /> Download
                 </Button>
               </a>
-              <MidiExportButton audioUrl={audioUrl} bpm={result?.bpm} musicalKey={result?.key} title={aiParams?.title || 'Track'} />
+              <MidiExportButton clipId={result?.clip_id} bpm={result?.bpm} musicalKey={result?.key} title={aiParams?.title || 'Track'} />
               <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
                 {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
                 {extending ? 'Extending…' : 'Extend'}

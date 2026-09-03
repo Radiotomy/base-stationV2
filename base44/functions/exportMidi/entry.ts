@@ -1,8 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
-// Export a generated track's BPM/key metadata as a downloadable MIDI file.
-// Uses the Sonic API's MIDI export endpoint if available, otherwise generates
-// a minimal MIDI from the track metadata (tempo, key).
+// Export a generated track as a downloadable MIDI file.
+//
+// Sonic path (audit 2026-09-03 — docs.aimusicapi.ai/api-32136908):
+//   POST /api/v1/sonic/midi { clip_id } → { data: { midi_url, instruments[] } }
+//   Real transcribed notes (pitch/start/end/velocity per detected instrument),
+//   1 provider credit. Works on a full song or a single stem clip_id.
+//   The old /sonic/export-midi call this function used to make does not exist.
+//
+// Fallback: a minimal scale MIDI built from tempo + key metadata, for tracks
+// from providers that expose no clip_id.
 
 Deno.serve(async (req) => {
   try {
@@ -10,31 +17,33 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { job_id, audio_url, bpm = 120, key = 'C', title = 'Track' } = await req.json();
+    const { clip_id, bpm = 120, key = 'C', title = 'Track' } = await req.json();
 
     const sonicKey = Deno.env.get('SONIC_API_KEY');
 
-    // Try Sonic MIDI export first
-    if (sonicKey && audio_url) {
-      const sonicRes = await fetch('https://api.aimusicapi.ai/api/v1/sonic/export-midi', {
+    if (sonicKey && clip_id) {
+      const sonicRes = await fetch('https://api.aimusicapi.ai/api/v1/sonic/midi', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${sonicKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ audio_url, format: 'midi' }),
+        body: JSON.stringify({ clip_id }),
       });
-
-      if (sonicRes.ok) {
-        const sonicData = await sonicRes.json();
-        const midiUrl = sonicData.midi_url || sonicData.output_url;
-        if (midiUrl) {
-          await base44.asServiceRole.entities.APIUsageLog.create({
-            user_id: user.id, user_email: user.email,
-            provider: 'sonic', task: 'export_midi',
-            credits_used: 5, status: 'success',
-            timestamp: new Date().toISOString(),
-          }).catch(() => {});
-          return Response.json({ midi_url: midiUrl, source: 'sonic' });
-        }
+      const sonicData = await sonicRes.json().catch(() => ({}));
+      const midiUrl = sonicData?.data?.midi_url;
+      if (sonicRes.ok && midiUrl) {
+        await base44.asServiceRole.entities.APIUsageLog.create({
+          user_id: user.id, user_email: user.email,
+          provider: 'sonic', task: 'get_midi',
+          credits_used: 1, status: 'success',
+          timestamp: new Date().toISOString(),
+          metadata: { clip_id, instrument_count: (sonicData.data.instruments || []).length },
+        }).catch(() => {});
+        return Response.json({
+          midi_url: midiUrl,
+          source: 'sonic',
+          instruments: (sonicData.data.instruments || []).map((i) => ({ name: i.name, note_count: (i.notes || []).length })),
+        });
       }
+      console.warn('Sonic /midi unavailable, falling back to generated MIDI:', sonicData?.error || sonicData?.message || sonicRes.status);
     }
 
     // Fallback: generate a minimal MIDI file from tempo + key metadata

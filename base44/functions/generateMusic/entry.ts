@@ -1,8 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // Sonic (aimusicapi.ai) — bearer token for the Sonic endpoints.
-// Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone, and
-// Producer is no longer used by BASE Station (Sonic + Tempolor + ElevenLabs cover all cases).
+// Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone (docs
+// confirmed 2026-09-03), and Producer is no longer used by BASE Station
+// (Sonic + Tempolor + ElevenLabs cover all cases). Riffusion is also deprecated.
 const SONIC_API_KEY    = Deno.env.get('SONIC_API_KEY');
 const TEMPCOLOR_API_KEY = Deno.env.get('TEMPCOLOR_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
@@ -39,8 +40,18 @@ function getWebhookConfig() {
 //   gpt_description_prompt: 400 (all models)
 //   title:                 80 (all models)
 //
-// Model suitability: sonic-v3-5 and sonic-v4 have no vocal support. Force v4-5 minimum
-// for vocal/auto-lyrics generation.
+// Model suitability: sonic-v3-5 and sonic-v4 have no vocal-gender support. Force v4-5
+// minimum for vocal/auto-lyrics generation.
+//
+// Audit 2026-09-03 (docs.aimusicapi.ai/llms.txt):
+//   - `use_suno_cdn` is now a REQUIRED boolean on /sonic/create (400 if absent).
+//     false → files served from aimusicapi's own CDN, which is what we persist from.
+//   - `duration` (integer 10–360s) is supported on create/persona/extend/cover.
+//   - `vocal_gender` ('f'|'m') on v4-5, v4-5-plus, v5, v5-5.
+//   - `sonic-v4-5-all` is NOT in the create endpoint enum (sample/mashup only) —
+//     mapped to sonic-v4-5 here so a stale picker value can't 400.
+//   - Upstream cost: advanced models (v4.5+/v5/v5.5) and description mode = 14
+//     provider credits; v3.5/v4 custom mode = 10. Our user charge stays flat.
 const SONIC_LIMITS = {
   'sonic-v3-5':     { prompt: 3000, tags: 200 },
   'sonic-v4':       { prompt: 3000, tags: 200 },
@@ -49,12 +60,23 @@ const SONIC_LIMITS = {
   'sonic-v5':       { prompt: 5000, tags: 1000 },
   'sonic-v5-5':     { prompt: 5000, tags: 1000 },
 };
+const VOCAL_GENDER_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5']);
+const SONIC_DURATION_MIN = 10;
+const SONIC_DURATION_MAX = 360;
 
-async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id, title: userTitle }) {
-  // Ensure a vocal-capable model is used
+function resolveSonicModel(model) {
   const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
-  const safeModel = (!model || LEGACY_MODELS.includes(model)) ? 'sonic-v4-5' : model;
-  const limits = SONIC_LIMITS[safeModel] || SONIC_LIMITS['sonic-v4-5'];
+  if (!model || LEGACY_MODELS.includes(model)) return 'sonic-v5';
+  if (model === 'sonic-v4-5-all') return 'sonic-v4-5';
+  return SONIC_LIMITS[model] ? model : 'sonic-v5';
+}
+
+async function generateWithSonic({
+  genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id, title: userTitle,
+  instrumental, vocal_gender, negative_tags, style_weight, weirdness_constraint,
+}) {
+  const safeModel = resolveSonicModel(model);
+  const limits = SONIC_LIMITS[safeModel];
 
   // Per-spec field truncation
   const tags = [genre, mood].filter(Boolean).join(', ').slice(0, limits.tags);
@@ -99,6 +121,21 @@ async function generateWithSonic({ genre, mood, duration, sound_prompt, tempo, m
     body.task_type = 'persona_music';
     body.persona_id = sonic_persona_id;
   }
+
+  // Required by the current API contract — see audit note above.
+  body.use_suno_cdn = false;
+
+  // Target length. The engine lands close to, not exactly on, the request.
+  if (duration) {
+    body.duration = Math.min(Math.max(Math.round(Number(duration)), SONIC_DURATION_MIN), SONIC_DURATION_MAX);
+  }
+  if (instrumental) body.make_instrumental = true;
+  if (vocal_gender && VOCAL_GENDER_MODELS.has(safeModel) && (vocal_gender === 'f' || vocal_gender === 'm')) {
+    body.vocal_gender = vocal_gender;
+  }
+  if (negative_tags) body.negative_tags = String(negative_tags).slice(0, limits.tags);
+  if (typeof style_weight === 'number')         body.style_weight = Math.max(0, Math.min(1, style_weight));
+  if (typeof weirdness_constraint === 'number') body.weirdness_constraint = Math.max(0, Math.min(1, weirdness_constraint));
 
   // Attach webhook callback (if configured) — provider will POST results to our handler
   // when the task settles, eliminating the need for polling.
@@ -385,7 +422,12 @@ Deno.serve(async (req) => {
     // the material" (see elevenLengthMs).
     let { provider = 'sonic', duration, mood = 'Energetic', genre = 'Hip-Hop',
           tempo, sound_prompt, lyrics, model, tempolor_mode, routing_reason,
-          voice_id, cover_audio_url, voice_persona_id, title } = await req.json();
+          voice_id, cover_audio_url, voice_persona_id, title,
+          // Sonic style controls (all optional)
+          vocal_gender, negative_tags, style_weight, weirdness_constraint, instrumental } = await req.json();
+    // `tempolor_mode: 'instrumental'` is the long-standing UI signal for "no vocals";
+    // honour it for Sonic too so the same toggle drives make_instrumental.
+    const wantsInstrumental = !!instrumental || tempolor_mode === 'instrumental';
 
     // Resolve a cloned Sonic voice persona (VoicePersona with provider='sonic')
     let sonicPersonaId = null;
@@ -426,7 +468,11 @@ Deno.serve(async (req) => {
       else if (provider === 'tempcolor')
         providerResult = await generateWithTempolor({ genre, mood, sound_prompt, lyrics, model, tempolor_mode, voice_id, cover_audio_url });
       else // default: sonic
-        providerResult = await generateWithSonic({ genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics, sonic_persona_id: sonicPersonaId, title });
+        providerResult = await generateWithSonic({
+          genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics,
+          sonic_persona_id: sonicPersonaId, title,
+          instrumental: wantsInstrumental, vocal_gender, negative_tags, style_weight, weirdness_constraint,
+        });
     } catch (providerErr) {
       // Map aimusicapi HTTP codes to actionable client responses per spec:
       // 400 validation_error · 401 unauthorized · 402/403 insufficient_credits/forbidden ·
@@ -452,7 +498,7 @@ Deno.serve(async (req) => {
     const generatedAt = new Date().toISOString();
     // Determine exact model version used per provider
     const modelVersionMap = {
-      sonic: (() => { const LEGACY = ['sonic-v3-5', 'sonic-v4']; return (!model || LEGACY.includes(model)) ? 'sonic-v4-5' : model; })(),
+      sonic: resolveSonicModel(model),
       tempcolor: providerResult.model || model || (tempolor_mode === 'instrumental' ? TEMPOLOR_DEFAULT_INSTRUMENTAL : TEMPOLOR_DEFAULT_SONG),
       elevenlabs: providerResult.model || model || 'music_v1',
     };
@@ -538,6 +584,13 @@ Deno.serve(async (req) => {
         model: modelVersion,
         credit_cost: cost,
         tempolor_mode: tempolor_mode || null,
+        ...(provider === 'sonic' && {
+          make_instrumental: wantsInstrumental,
+          vocal_gender: vocal_gender || null,
+          negative_tags: negative_tags || null,
+          style_weight: typeof style_weight === 'number' ? style_weight : null,
+          weirdness_constraint: typeof weirdness_constraint === 'number' ? weirdness_constraint : null,
+        }),
       },
       provider_job_id: providerResult.task_id,
       started_at: generatedAt,

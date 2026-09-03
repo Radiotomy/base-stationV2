@@ -2,6 +2,60 @@
 
 Source: https://docs.aimusicapi.ai (official error handling page)
 
+---
+
+## 📋 Full documentation audit — 2026-09-03 (docs.aimusicapi.ai/llms.txt)
+
+### Platform status
+| Product | Status | BASE Station |
+|---|---|---|
+| **Sonic** (v3.5 → v5.5) | Active | Primary provider — `generateMusic`, `generateCoverSong`, `extendUploadedMusic`, `generateMashup`, `createSonicVoice`, `sonicAnalyze`, `exportMidi`, `getWavUrl` |
+| **Nuro** | **Deprecated — HTTP 410 Gone** on create and task polling | Auto-redirected to Sonic/Tempolor in `generateMusic`; poll branch returns a failure message |
+| **Riffusion** | Deprecated | Never integrated |
+| **Producer** | Active upstream (10 cr, music + lyrics + video clip) | Retired here by decision — Sonic + Tempolor + ElevenLabs cover all cases |
+
+### Contract changes applied in this audit
+| Change | Where |
+|---|---|
+| `use_suno_cdn` is now **required** on `POST /sonic/create` (400 without it). We send `false` so files come from aimusicapi's CDN. | `generateMusic`, `extendUploadedMusic` |
+| `duration` (integer **10–360 s**) supported on create / persona / extend / cover / upload-extend / upload-cover. Target, not hard cut. Sending it on any other task type → validation error. | `generateMusic`, `generateCoverSong`, `extendUploadedMusic` |
+| `vocal_gender` `'f'|'m'` — v4-5, v4-5-plus, v5, v5-5 only | `generateMusic` (+ new Advanced tab controls) |
+| `negative_tags`, `style_weight`, `weirdness_constraint`, `make_instrumental` on create | `generateMusic` |
+| `sonic-v4-5-all` is **not** in the create enum (sample/mashup only) → mapped to `sonic-v4-5`; removed from the picker | `generateMusic`, `musicModelCatalog` |
+| Default model is `sonic-v5` (was falling back to v4-5 in two places) | `generateMusic`, `jobFinalize` |
+| auto_concat tasks return **paired** `{extended|replaced, full}` objects; `full` is the deliverable, `null` while concat runs | `jobFinalize.pollProvider`, `aimusicapiWebhook` |
+| `POST /sonic/midi { clip_id }` → `{ midi_url, instruments[{name, notes[]}] }` (1 cr). The `/sonic/export-midi` call we made **did not exist**. | `exportMidi`, `MidiExportButton` now passes `clip_id` |
+| `POST /sonic/download { clip_id, formats[] }` (2 cr, mp3/m4a/wav, `202` = preparing, free retry, `404` = source purged) replaces `/wav` as the recommended path. `/wav` (1 cr) kept as finalize-time fetch + fallback. | `getWavUrl`, `jobFinalize` |
+| `POST /sonic/vox { clip_id, vocal_start_s?, vocal_end_s? }` (≤30 s range, 1 cr) | `sonicAnalyze` action `vox` |
+| Routing: Sonic handles up to 6 min via `duration`; Tempolor only for >360 s | `providerRouter` |
+
+### Upstream credit changes (Credits Usage Guide)
+| Operation | Old | **Now** |
+|---|---|---|
+| Create / Cover / Mashup / Sample on **advanced models** (v4.5, v4.5+, v5, v5.5) or **description mode** (any model) | 10 | **14** |
+| Create on v3.5 / v4, custom lyrics | 10 | 10 |
+| Extend, Persona, Remaster, Replace, Add vocals/instrumental | 10 | 10 |
+| Stems basic | 10 | **20** |
+| Stems full | 50 | 50 (12 tracks per API page; credits page says 24) |
+| Upload / Concat / Download | — | 2 each |
+| Get WAV / MIDI / BPM / VOX / Upsample / Aligned lyrics (first call) / Create persona | 1 | 1 |
+| Create voice | 4 | 4 |
+
+> Our user-facing charge is still a flat 10 BS credits per Sonic generation. With the default `sonic-v5`, every call now costs 14 upstream — see the Admin → Cost Matrix for the margin impact before deciding whether to re-price.
+
+### Sonic capabilities NOT yet built in BASE Station
+| Endpoint | Credits | Notes |
+|---|---|---|
+| **Remaster** — `task_type: remaster`, `variation_category: subtle|normal|high` (v5 only for category) | 10 | Clip must be ≤24 h old |
+| **Replace Section** — `POST /sonic/replace-section` with `infill_lyrics`, `infill_start_s/end_s`, optional `auto_concat` | 10 | Regenerate one verse/chorus |
+| **Add Vocals / Add Instrumental** — `task_type: add_vocals|add_instrumental`, `overpainting_start_s/end_s` | 10 | Uploaded clips only, ≤24 h, v4.5+/v5/v5.5 |
+| **Stems basic / full** — `POST /sonic/stems/basic|full { clip_id }` | 20 / 50 | Sever + on-device already cover separation for free; only useful for Sonic-native stems |
+| **Sample** — `POST /sonic/sample` (hum / clip segment → full song, `chop_sample_start_s/end_s`) | 14 | Accepts `url` for auto-upload |
+| **Concat** — `task_type: concat_music, continue_clip_id` | 2 | Needed to stitch our `extend_upload_music` output into a full track |
+| **Create Persona from clip** — `POST /sonic/persona { name, clip_id, describe, styles }` | 1 | Cheaper than `create-voice` (4) when the source is already a Sonic clip |
+| **auto_concat** on `/sonic/upload-extend` | — | Would replace our two-step extend + manual concat |
+| **Producer** (music video clips, `make_lyrics`) | 10 | Retired here by decision |
+
 Used by these backend functions:
 - `generateMusic` (Sonic provider branch)
 - `generateCoverSong`
@@ -36,7 +90,7 @@ Used by these backend functions:
 Sonic Instructions (https://docs.aimusicapi.ai/doc-2058749) defines the cap as **400 chars**. The error-handling page (doc-2058747) lists a 200-char error message but this appears to be stale/outdated docs. All three functions correctly cap at 400.
 
 ### ⚠️ Model name mapping
-Docs list canonical models as `chirp-v3-5`, `chirp-v4`, `chirp-v4-5`. We send `sonic-v3-5` / `sonic-v4` / `sonic-v4-5` / `sonic-v4-5-plus` / `sonic-v5` / `sonic-v5-5`. If a future API tightening rejects `sonic-*` aliases, map them server-side in each function's request builder.
+Docs list canonical models as `chirp-v3-5`, `chirp-v4`, `chirp-v4-5`. We send `sonic-v3-5` / `sonic-v4` / `sonic-v4-5` / `sonic-v4-5-plus` / `sonic-v5` / `sonic-v5-5`. Both spellings are accepted (confirmed in the mashup/sample specs, 2026-09-03). Note that poll/webhook responses report `mv` in the **chirp-** spelling (e.g. `chirp-v5`) even when we sent `sonic-v5`.
 
 ---
 

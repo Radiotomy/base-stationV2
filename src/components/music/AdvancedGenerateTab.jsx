@@ -15,6 +15,7 @@ import MidiExportButton from '@/components/music/MidiExportButton';
 import MasterDownloadButtons from '@/components/music/MasterDownloadButtons';
 import ChipSelector from '@/components/music/ChipSelector';
 import ModelFamilySelect from '@/components/music/ModelFamilySelect';
+import SonicStyleControls from '@/components/music/SonicStyleControls';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import SaveMastersReportButton from '@/components/songwriting/SaveMastersReportButton';
 import { Crown } from 'lucide-react';
@@ -73,6 +74,8 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [provider, setProvider] = useState('sonic');
   const [importedFromStudio, setImportedFromStudio] = useState(false);
   const [sonicModel, setSonicModel] = useState(DEFAULT_SONIC_MODEL);
+  // Sonic steering — vocal_gender / instrumental / negative_tags / style_weight / weirdness_constraint
+  const [sonicStyle, setSonicStyle] = useState({});
   const [temporlorMode, setTemporlorMode] = useState('song');
   const [temporlorModel, setTemporlorModel] = useState('tempolor-latest');
   const [duration, setDuration] = useState(null); // null = "Any" (let provider decide)
@@ -445,7 +448,14 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         sound_prompt: currentPrompt || `${mood} ${genre} track`,
         ...(currentLyrics && lyricsMode !== 'none' && { lyrics: currentLyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
-        ...(provider === 'sonic' && { model: sonicModel }),
+        ...(provider === 'sonic' && {
+          model: sonicModel,
+          ...(sonicStyle.instrumental && { instrumental: true }),
+          ...(sonicStyle.vocal_gender && { vocal_gender: sonicStyle.vocal_gender }),
+          ...(sonicStyle.negative_tags?.trim() && { negative_tags: sonicStyle.negative_tags.trim() }),
+          ...(typeof sonicStyle.style_weight === 'number' && { style_weight: sonicStyle.style_weight }),
+          ...(typeof sonicStyle.weirdness_constraint === 'number' && { weirdness_constraint: sonicStyle.weirdness_constraint }),
+        }),
         ...(provider === 'tempcolor' && { model: temporlorModel, tempolor_mode: temporlorMode }),
       });
 
@@ -634,6 +644,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
               <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">AI Model</p>
               <ModelFamilySelect families={SONIC_FAMILIES} value={sonicModel} onSelect={setSonicModel}
                 accentClass="border-cyan-500 bg-cyan-500/10" />
+              <div className="mt-4">
+                <SonicStyleControls model={sonicModel} value={sonicStyle} onChange={setSonicStyle} />
+              </div>
             </div>
           )}
 
@@ -725,7 +738,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             )}
 
             {/* Vocal-provider detection — key signal for AI model selection */}
-            {(provider === 'sonic' || (provider === 'tempcolor' && temporlorMode === 'song')) &&
+            {((provider === 'sonic' && !sonicStyle.instrumental) || (provider === 'tempcolor' && temporlorMode === 'song')) &&
               !(lyricsMode !== 'none' && lyrics.trim().length > 0) && (
               <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
                 <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
@@ -967,7 +980,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                     assetId={savedAssetId}
                     title={customTitle.trim() || `${mood} ${genre}`}
                   />
-                  <MidiExportButton audioUrl={audioUrl} bpm={result?.bpm} musicalKey={result?.key} title={`${mood} ${genre}`} />
+                  <MidiExportButton clipId={result?.clip_id} bpm={result?.bpm} musicalKey={result?.key} title={`${mood} ${genre}`} />
                   <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
                     {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
                     {extending ? 'Extending…' : 'Extend'}

@@ -1,11 +1,15 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
- * Fetches a high-quality WAV (or MP3) download URL for an aimusicapi clip on-demand.
+ * Fetches a high-quality WAV (or MP3 / M4A) download URL for an aimusicapi clip on-demand.
  *
- * Sonic flow (sync):
- *   POST /api/v1/sonic/wav  { clip_id }  →  { data: { wav_url } }
- *   Free — returns immediately.
+ * Sonic flow (audit 2026-09-03 — docs.aimusicapi.ai/api-42922935):
+ *   POST /api/v1/sonic/download { clip_id, formats: ['wav', ...] }
+ *     200 → { data: { clip_id, files: [{ format, file_url }] } }   (2 credits, any format count)
+ *     202 → files still preparing — free to retry; we retry inline a few times.
+ *     404 → source audio no longer retained upstream; the caller must regenerate.
+ *   The legacy POST /sonic/wav (1 credit) is used as a fallback when /download is
+ *   unavailable, so older clips still resolve.
  *
  * Producer flow (async, 2 credits, auto-refunded on failure):
  *   POST /api/v1/producer/download  { clip_id, format: 'mp3'|'wav' } → { task_id }
@@ -41,22 +45,55 @@ Deno.serve(async (req) => {
     };
 
     if (provider === 'sonic') {
-      const res = await fetch(`${AI_BASE}/sonic/wav`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clip_id }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        return Response.json({
-          error: data?.error || data?.message || `Provider HTTP ${res.status}`,
-          provider_status: res.status,
-          provider_type: data?.type || null,
-        }, { status: res.status >= 400 && res.status < 600 ? res.status : 502 });
+      const headers = { 'Authorization': `Bearer ${SONIC_API_KEY}`, 'Content-Type': 'application/json' };
+      const wanted = Array.isArray(format) ? format : [format === 'mp3' ? 'mp3' : format === 'm4a' ? 'm4a' : 'wav'];
+
+      // /download: 202 means "preparing, retry free" — give it ~15s before giving up.
+      let last = null;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await fetch(`${AI_BASE}/sonic/download`, {
+          method: 'POST', headers, body: JSON.stringify({ clip_id, formats: wanted }),
+        });
+        const data = await res.json().catch(() => ({}));
+        last = { res, data };
+        if (res.status === 202) { await sleep(3000); continue; }
+        if (res.ok && Array.isArray(data?.data?.files)) {
+          const files = data.data.files;
+          const byFmt = Object.fromEntries(files.map(f => [f.format, f.file_url]));
+          const tagged_url = byFmt.mp3 ? await embedProvenance(byFmt.mp3) : null;
+          return Response.json({
+            wav_url: byFmt.wav || null,
+            audio_url: byFmt.mp3 || null,
+            m4a_url: byFmt.m4a || null,
+            files, tagged_url, provenance_embedded: !!tagged_url,
+          });
+        }
+        break;
       }
-      const wavUrl = data?.data?.wav_url;
-      if (!wavUrl) return Response.json({ error: 'No wav_url returned from provider', raw: data }, { status: 502 });
-      return Response.json({ wav_url: wavUrl });
+
+      if (last?.res?.status === 202) {
+        return Response.json({ pending: true, message: 'Sonic is still preparing the file — retry shortly.' }, { status: 202 });
+      }
+      if (last?.res?.status === 404) {
+        return Response.json({
+          error: 'Sonic no longer retains the source audio for this clip. Regenerate the track to get a fresh lossless master.',
+          provider_status: 404,
+        }, { status: 404 });
+      }
+
+      // Fallback: legacy /wav (still live, WAV only)
+      if (wanted.includes('wav')) {
+        const res = await fetch(`${AI_BASE}/sonic/wav`, { method: 'POST', headers, body: JSON.stringify({ clip_id }) });
+        const data = await res.json().catch(() => ({}));
+        const wavUrl = data?.data?.wav_url;
+        if (res.ok && wavUrl) return Response.json({ wav_url: wavUrl });
+      }
+
+      return Response.json({
+        error: last?.data?.error || last?.data?.message || `Provider HTTP ${last?.res?.status}`,
+        provider_status: last?.res?.status,
+        provider_type: last?.data?.type || null,
+      }, { status: last?.res?.status >= 400 && last?.res?.status < 600 ? last.res.status : 502 });
     }
 
     if (provider === 'producer') {

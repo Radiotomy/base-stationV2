@@ -116,6 +116,7 @@ Deno.serve(async (req) => {
       vocal_gender,
       genre,
       mood,
+      duration,                  // optional — target length 10–360s (audit 2026-09-03)
     } = body;
 
     // ── Validation ───────────────────────────────────────────────────────────
@@ -154,6 +155,7 @@ Deno.serve(async (req) => {
     if (mergedTags)   apiBody.tags = mergedTags;
     if (negative_tags) apiBody.negative_tags = String(negative_tags).slice(0, limits.tags);
     if (make_instrumental) apiBody.make_instrumental = true;
+    if (duration) apiBody.duration = Math.min(Math.max(Math.round(Number(duration)), 10), 360);
     if (typeof style_weight === 'number')         apiBody.style_weight = Math.max(0, Math.min(1, style_weight));
     if (typeof weirdness_constraint === 'number') apiBody.weirdness_constraint = Math.max(0, Math.min(1, weirdness_constraint));
     if (typeof audio_weight === 'number')         apiBody.audio_weight = Math.max(0, Math.min(1, audio_weight));

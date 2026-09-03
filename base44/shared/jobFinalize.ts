@@ -41,11 +41,15 @@ async function persistUrl(base44, url, filename) {
   }
 }
 
-// Sonic exposes a FREE synchronous WAV conversion (POST /sonic/wav) that until
-// now was only called when a user manually clicked "Download WAV". Fetching it
-// at finalize time instead means every Sonic track lands with a lossless master
-// in wav_url — which is what the BASE Mark cascade embeds into. Without it,
-// Sonic tracks are MP3-only and silently skip the V1 spectral layer.
+// Sonic's synchronous WAV conversion (POST /sonic/wav, 1 provider credit) is
+// fetched at finalize time so every Sonic track lands with a lossless master in
+// wav_url — which is what the BASE Mark cascade embeds into. Without it, Sonic
+// tracks are MP3-only and silently skip the V1 spectral layer.
+//
+// Audit 2026-09-03: aimusicapi now recommends POST /sonic/download (2 credits,
+// mp3/m4a/wav in one call, 202 while preparing). /wav remains available and is
+// cheaper for our one-format need, so finalize stays on it; on-demand multi-format
+// downloads go through getWavUrl, which uses /download.
 async function fetchSonicWavUrl(clipId) {
   if (!clipId) return null;
   try {
@@ -75,7 +79,16 @@ export async function pollProvider(provider, providerTaskId, job) {
     data = await res.json();
     console.log('Sonic poll response:', JSON.stringify(data));
 
-    const clipsArr = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    // auto_concat tasks (upload-extend / replace-section) return PAIRED objects
+    // {extended|replaced, full}. The `full` song is the deliverable; while concat
+    // is still running `full` is null and the task is not yet settled.
+    const rawArr = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+    const clipsArr = rawArr.map(item => {
+      if (item && (item.full !== undefined || item.extended || item.replaced)) {
+        return item.full || { ...(item.extended || item.replaced || {}), state: 'running' };
+      }
+      return item;
+    });
     const clip = clipsArr[0];
 
     if (!clip || res.status === 404 || data?.code === 404) {
@@ -170,7 +183,7 @@ export async function pollProvider(provider, providerTaskId, job) {
   }
 
   if (provider === 'loudly') {
-    return { status: 'failed', error: 'Loudly has been discontinued. Please regenerate using Sonic, Nuro, Tempolor, or Producer.' };
+    return { status: 'failed', error: 'Loudly has been discontinued. Please regenerate using Sonic or Tempolor.' };
   }
 
   if (provider === 'ltx') {
@@ -497,7 +510,7 @@ export async function finalizeJob(base44, job) {
     const contentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
 
     const modelVersionMap = {
-      sonic: 'sonic-v4-5', producer: 'FUZZ-2.0',
+      sonic: 'sonic-v5', producer: 'FUZZ-2.0',
       tempcolor: 'TemPolor v4.6', loudly: 'VEGA_2', ltx: 'ltx-2.5',
       shotstack: 'shotstack-edit-v1',
     };

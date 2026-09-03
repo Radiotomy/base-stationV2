@@ -14,17 +14,26 @@ export const DEFAULT_TEMPOLOR_INSTRUMENTAL_MODEL = 'TemPolor i4';
 // Sonic returns TWO tracks per generation; every other provider returns one.
 export const TRACKS_PER_GENERATION = { sonic: 2, tempcolor: 1, elevenlabs: 1 };
 
+// Sonic catalog — re-audited from docs.aimusicapi.ai (2026-09-03). The /sonic/create
+// enum is v3-5, v4, v4-5, v4-5-plus, v5, v5-5. "v4.5 All" is NOT accepted by
+// create (sample/mashup only) and was removed so a picker value can never 400.
+// Vocal-gender control, 5000-char lyrics and 1000-char tags need v4.5 or newer;
+// tracks can be steered to a 10–360s target length on every model.
 export const SONIC_FAMILIES = [
   { name: 'Sonic', maker: 'Sonic AI', versions: [
-    { value: 'sonic-v5', label: 'v5', desc: '⭐ Default — latest, 2 tracks per run' },
-    { value: 'sonic-v5-5', label: 'v5.5', desc: 'Best quality' },
-    { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality' },
-    { value: 'sonic-v4-5-all', label: 'v4.5 All', desc: 'Fast variant' },
-    { value: 'sonic-v4-5', label: 'v4.5', desc: 'Enhanced vocals' },
-    { value: 'sonic-v4', label: 'v4', desc: 'Improved quality' },
-    { value: 'sonic-v3-5', label: 'v3.5', desc: 'Legacy' },
+    { value: 'sonic-v5', label: 'v5', desc: '⭐ Default — 2 tracks per run, vocal gender control, up to 6 min' },
+    { value: 'sonic-v5-5', label: 'v5.5', desc: 'Newest — best quality, vocal gender control' },
+    { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium quality, vocal gender control' },
+    { value: 'sonic-v4-5', label: 'v4.5', desc: 'Enhanced vocals & instruments' },
+    { value: 'sonic-v4', label: 'v4', desc: 'Older — 3000-char lyrics, no vocal gender' },
+    { value: 'sonic-v3-5', label: 'v3.5', desc: 'Legacy — 3000-char lyrics, no vocal gender' },
   ]},
 ];
+
+// Models that accept `vocal_gender` ('f' | 'm'). Shared by the UI and the picker.
+export const SONIC_VOCAL_GENDER_MODELS = ['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5'];
+// Target-length range Sonic honours (integer seconds).
+export const SONIC_DURATION_RANGE = { min: 10, max: 360 };
 
 // Tempolor catalog — re-audited from platform.tempolor.com/docs/6665893m0 (2026-08-23).
 // TemPolor dropped version numbers on its house song model: one rolling

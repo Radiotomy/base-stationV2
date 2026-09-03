@@ -4,11 +4,15 @@
  * and returns a ranked fallback chain with a human-readable reason.
  *
  * Priority axes (in order):
- *   1. Duration > 120s          → Tempolor (only provider supporting up to 5 min)
- *   2. Vocal / needs_lyrics      → Sonic (best vocal fidelity after Nuro deprecation)
- *   3. Multiple variations       → Sonic v5-5 (returns 2 clips per call)
- *   4. Speed priority            → Sonic v4-5-plus (fastest reliable provider)
- *   5. Default / general purpose → Sonic v4-5-plus (balanced quality)
+ *   1. Duration > 360s          → Tempolor (Sonic caps its `duration` target at 6 min;
+ *                                  Tempolor/MiniMax reach 5–6 min natively)
+ *   2. Vocal / needs_lyrics      → Sonic v5 (best vocal fidelity after Nuro deprecation)
+ *   3. Multiple variations       → Sonic v5 (returns 2 clips per call)
+ *   4. Speed priority            → TemPolor i3 instrumental / Sonic v5 vocal
+ *   5. Default / general purpose → Sonic v5
+ *
+ * Audit 2026-09-03: the old ">120s → Tempolor" rule predates Sonic's `duration`
+ * field (10–360s). Sonic now handles full-length songs directly.
  */
 
 export const PROVIDER_DETAILS = {
@@ -42,13 +46,13 @@ export function routeProvider({
   genre = '',
   mood = '',
 } = {}) {
-  // Rule 1: Long duration (> 120s) — only Tempolor supports up to 5 min
-  if (duration > 120) {
+  // Rule 1: Very long duration (> 360s) — beyond Sonic's target-length ceiling
+  if (duration > 360) {
     return {
       provider: 'tempcolor',
       model: needs_lyrics ? 'tempolor-latest' : 'TemPolor i4',
       tempolor_mode: needs_lyrics ? 'song' : 'instrumental',
-      reason: `Tempolor selected — only provider supporting tracks over 2 minutes (up to 5 min).`,
+      reason: `Tempolor selected — requested length exceeds Sonic's 6-minute ceiling.`,
       routing_key: 'long_duration',
       fallbackChain: ['sonic'],
     };

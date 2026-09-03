@@ -4,14 +4,16 @@ import { Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
-export default function MidiExportButton({ audioUrl, bpm, musicalKey, title, className = '' }) {
+// clipId unlocks Sonic's real note transcription (POST /sonic/midi); without it the
+// export is a tempo/key placeholder built server-side.
+export default function MidiExportButton({ clipId, bpm, musicalKey, title, className = '' }) {
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
     setExporting(true);
     try {
       const res = await base44.functions.invoke('exportMidi', {
-        audio_url: audioUrl,
+        clip_id: clipId || undefined,
         bpm: bpm || 120,
         key: musicalKey || 'C',
         title: title || 'Track',
@@ -24,7 +26,7 @@ export default function MidiExportButton({ audioUrl, bpm, musicalKey, title, cla
       a.href = midiUrl;
       a.download = `${(title || 'track').replace(/\s+/g, '_')}.mid`;
       a.click();
-      toast.success('MIDI file downloaded!');
+      toast.success(res.data?.source === 'sonic' ? 'MIDI transcription downloaded!' : 'MIDI file downloaded (tempo/key sketch)');
     } catch (err) {
       toast.error('MIDI export failed: ' + err.message);
     }
