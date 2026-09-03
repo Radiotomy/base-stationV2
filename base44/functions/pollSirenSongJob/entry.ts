@@ -47,8 +47,10 @@ Deno.serve(async (req) => {
       return Response.json({ status: 'processing', job_id: job.id, progress: 'Rendering…' });
     }
 
-    if (st.status === 'failed' || st.status === 'error') {
-      const detail = st.error || st.progress || 'Siren Song generation failed';
+    if (st.status === 'lost' || st.status === 'failed' || st.status === 'error') {
+      const detail = st.status === 'lost'
+        ? 'The Siren Song engine restarted before this render could be stored, so the audio was lost. No credits were charged — please regenerate.'
+        : (st.error || st.progress || 'Siren Song generation failed');
       await base44.entities.GenerationJob.update(job.id, {
         status: 'failed',
         error_message: detail,

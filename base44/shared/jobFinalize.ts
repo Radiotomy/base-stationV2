@@ -331,6 +331,9 @@ export async function pollProvider(provider, providerTaskId, job) {
         if (!st.downloadUrl) return { status: 'failed', error: 'Coda completed without a download URL' };
         return { status: 'completed', audio_url: codaAbsoluteUrl(st.downloadUrl), model_version: CODA_MODEL_VERSION };
       }
+      if (st.status === 'lost') {
+        return { status: 'failed', error: 'The CODA engine restarted before this render could be stored, so the audio was lost. No credits were charged — please regenerate.' };
+      }
       if (st.status === 'failed' || st.status === 'error') {
         return { status: 'failed', error: st.error || st.progress || 'BASE-Harmonix (Coda) generation failed' };
       }

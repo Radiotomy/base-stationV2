@@ -61,6 +61,10 @@ export async function getSirenSongStatus(jobId) {
   const res = await fetch(`${ENGINE_BASE}/status/${jobId}`, {
     signal: AbortSignal.timeout(STATUS_TIMEOUT_MS),
   });
+  // In-memory job state on the Space: a restart erases the job and its rendered
+  // file, so a 404 is TERMINAL. Treating it as transient is what left the studio
+  // polling a dead id indefinitely.
+  if (res.status === 404) return { status: 'lost', progress: '', error: '', downloadUrl: '' };
   if (!res.ok) throw new Error(`Siren Song status HTTP ${res.status}`);
   const data = await res.json().catch(() => null);
   if (!data) throw new Error('Siren Song status returned no body');

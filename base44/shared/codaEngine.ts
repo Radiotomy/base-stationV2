@@ -71,6 +71,10 @@ export async function getCodaStatus(jobId) {
   const res = await fetch(`${CODA_BASE_URL}/status/${jobId}`, {
     signal: AbortSignal.timeout(STATUS_TIMEOUT_MS),
   });
+  // The Space keeps job state in memory, so a restart erases it (and the rendered
+  // file with it). A 404 is therefore TERMINAL, not transient — reporting it as a
+  // hiccup is what left jobs polling a dead id forever.
+  if (res.status === 404) return { status: 'lost', progress: '', error: '', downloadUrl: '' };
   if (!res.ok) throw new Error(`Coda status HTTP ${res.status}`);
   const data = await res.json().catch(() => null);
   if (!data) throw new Error('Coda status returned no body');
