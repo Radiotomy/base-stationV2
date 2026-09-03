@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
 
 // Sonic (aimusicapi.ai) — bearer token for the Sonic endpoints.
 // Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone (docs
@@ -371,8 +372,8 @@ async function generateWithElevenLabs({ genre, mood, duration, sound_prompt, lyr
 }
 
 // ── Credit cost table (per provider) ─────────────────────────────────────────
+// Sonic is priced per call in sonicGenerationCost (14 advanced/description, 10 standard).
 const CREDIT_COSTS = {
-  sonic: 10,
   tempcolor: 10,
   elevenlabs: 10,
 };
@@ -450,7 +451,10 @@ Deno.serve(async (req) => {
     }
 
     // ── Pre-check credit balance (server-side gate) ──────────────────────────
-    const cost = CREDIT_COSTS[provider] || 10;
+    // Sonic: description mode (no lyrics, no sound_prompt) is custom_mode=false upstream.
+    const cost = provider === 'sonic'
+      ? sonicGenerationCost(resolveSonicModel(model), !!((lyrics && lyrics.trim()) || sound_prompt))
+      : (CREDIT_COSTS[provider] || 10);
     const { ok: hasCredits, balance } = await checkCreditBalance(base44, user, cost);
     if (!hasCredits) {
       return Response.json({

@@ -16,6 +16,7 @@ import MasterDownloadButtons from '@/components/music/MasterDownloadButtons';
 import ChipSelector from '@/components/music/ChipSelector';
 import ModelFamilySelect from '@/components/music/ModelFamilySelect';
 import SonicStyleControls from '@/components/music/SonicStyleControls';
+import { sonicGenerationCost } from '@/config/musicModelCatalog';
 import MastersBriefDisplay from '@/components/songwriting/MastersBriefDisplay';
 import SaveMastersReportButton from '@/components/songwriting/SaveMastersReportButton';
 import { Crown } from 'lucide-react';
@@ -33,9 +34,8 @@ import {
 } from '@/config/musicModelCatalog';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
-// aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
-// Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
+// Sonic is priced per model via sonicGenerationCost (14 advanced / 10 standard).
+const PROVIDER_COSTS = { tempcolor: 10, elevenlabs: 10 };
 
 const PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      desc: 'Generates 2 tracks + cover art', color: 'border-cyan-500 bg-cyan-500/10' },
@@ -880,7 +880,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             className="w-full bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-base py-5 gap-2">
             <Zap className="w-5 h-5" />
             {isProcessing ? (jobId ? `Processing… ${progress}%` : 'Starting…') : '🎛️ Generate Track'}
-            {!isProcessing && <CostBadge cost={PROVIDER_COSTS[provider] || 5} />}
+            {!isProcessing && <CostBadge cost={provider === 'sonic' ? sonicGenerationCost(sonicModel, true) : (PROVIDER_COSTS[provider] || 5)} />}
           </Button>
 
           {/* Progress */}

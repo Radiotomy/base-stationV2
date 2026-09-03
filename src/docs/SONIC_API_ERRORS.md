@@ -41,17 +41,21 @@ Source: https://docs.aimusicapi.ai (official error handling page)
 | Get WAV / MIDI / BPM / VOX / Upsample / Aligned lyrics (first call) / Create persona | 1 | 1 |
 | Create voice | 4 | 4 |
 
-> Our user-facing charge is still a flat 10 BS credits per Sonic generation. With the default `sonic-v5`, every call now costs 14 upstream — see the Admin → Cost Matrix for the margin impact before deciding whether to re-price.
+> **BASE Station pricing now matches Sonic 1:1** (owner decision 2026-09-03; `base44/shared/sonicPricing.ts` + `src/config/musicModelCatalog.js`): generation 14 on v4.5+/v5/v5.5 or description mode, 10 on v3.5/v4 custom lyrics; edits 10; concat 2; stems basic 20 / full 50; +2 when a non-Sonic source must first be uploaded.
 
-### Sonic capabilities NOT yet built in BASE Station
+### Sonic tools built 2026-09-03
+| Feature | Function | UI |
+|---|---|---|
+| Remaster / Replace Section / Add Vocals / Add Instrumental / Concat | `sonicEditTrack` (polled by `pollGenerationJob`, auto-saved to library) | Music Studio → **Sonic Tools** tab |
+| Stems basic (2) / full (12) | `separateStemsSonic` + `pollSonicStems` (files through shared `stemFinalize`) | Stem Creator → **Engine** selector (Sever stays default at 2 cr) |
+| Sonic clip id now stored on every auto-saved Sonic take (`metadata.clip_id`); uploaded sources cache `metadata.sonic_upload_clip_id` | `autoSaveAsset`, `sonicClient.resolveClipId` | — |
+
+**Sonic stems vs Sever:** Sever (HTDemucs-6s) gives 6 stems — vocals, drums, bass, guitar, piano, other. Sonic Studio gives 12 — additionally splits backing vocals, keys, synth, strings, brass, woodwinds, percussion and FX. Sonic Basic is a plain vocal/instrumental pair. Sonic stems work best on Sonic-generated clips; other sources are uploaded first.
+
+### Sonic capabilities still NOT built
 | Endpoint | Credits | Notes |
 |---|---|---|
-| **Remaster** — `task_type: remaster`, `variation_category: subtle|normal|high` (v5 only for category) | 10 | Clip must be ≤24 h old |
-| **Replace Section** — `POST /sonic/replace-section` with `infill_lyrics`, `infill_start_s/end_s`, optional `auto_concat` | 10 | Regenerate one verse/chorus |
-| **Add Vocals / Add Instrumental** — `task_type: add_vocals|add_instrumental`, `overpainting_start_s/end_s` | 10 | Uploaded clips only, ≤24 h, v4.5+/v5/v5.5 |
-| **Stems basic / full** — `POST /sonic/stems/basic|full { clip_id }` | 20 / 50 | Sever + on-device already cover separation for free; only useful for Sonic-native stems |
 | **Sample** — `POST /sonic/sample` (hum / clip segment → full song, `chop_sample_start_s/end_s`) | 14 | Accepts `url` for auto-upload |
-| **Concat** — `task_type: concat_music, continue_clip_id` | 2 | Needed to stitch our `extend_upload_music` output into a full track |
 | **Create Persona from clip** — `POST /sonic/persona { name, clip_id, describe, styles }` | 1 | Cheaper than `create-voice` (4) when the source is already a Sonic clip |
 | **auto_concat** on `/sonic/upload-extend` | — | Would replace our two-step extend + manual concat |
 | **Producer** (music video clips, `make_lyrics`) | 10 | Retired here by decision |

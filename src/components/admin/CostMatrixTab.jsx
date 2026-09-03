@@ -270,10 +270,11 @@ export default function CostMatrixTab() {
           <div className="space-y-2 text-xs text-muted-foreground">
             {[
               { op: "Quick Music Gen (Tempolor i3)",  bs: bsCredits(0.03, markup), note: "most used" },
-              { op: "Full Song (Sonic v5, 14 API cr)", bs: bsCredits(0.14, markup), note: "premium" },
+              { op: "Full Song (Sonic v5) — LIVE: 14 BS cr", bs: 14, note: "matched to Sonic 2026-09-03" },
               { op: "Song w/ Vocals (tempolor-latest)", bs: bsCredits(0.04, markup), note: "flagship" },
-              { op: "Stems Basic (Sonic, 20 API cr)",  bs: bsCredits(0.20, markup), note: "power user" },
-              { op: "Stems Full 12-track (Sonic)",     bs: bsCredits(0.50, markup), note: "pro tier only" },
+              { op: "Sonic edit tools (remaster / replace / add) — LIVE: 10", bs: 10, note: "matched to Sonic" },
+              { op: "Stems Basic (Sonic) — LIVE: 20 BS cr",  bs: 20, note: "matched to Sonic" },
+              { op: "Stems Full 12-track (Sonic) — LIVE: 50", bs: 50, note: "matched to Sonic" },
               { op: "Generate Lyrics (Tempolor)",     bs: bsCredits(0.01, markup), note: "cheap" },
             ].map(({ op, bs, note }) => (
               <div key={op} className="flex justify-between items-center border-b border-border pb-1">

@@ -10,6 +10,7 @@ import StemDeck from '@/components/stems/StemDeck';
 import ProvenancePanel from '@/components/studio/ProvenancePanel';
 import AddToProjectButton from '@/components/studio/AddToProjectButton';
 import OnDeviceStemPanel from '@/components/stems/OnDeviceStemPanel';
+import StemEngineSelector, { STEM_ENGINES } from '@/components/stems/StemEngineSelector';
 import { pollJob } from '@/lib/polling/pollJob';
 
 // Sever runs HTDemucs-6s, which produces six sources — guitar and piano are
@@ -28,6 +29,8 @@ export default function StemCreatorStudio() {
   const preselected = params.get('assetId');
 
   const [selected, setSelected] = useState(preselected ? [preselected] : []);
+  // 'sever' (ours, 6 stems) | 'sonic_basic' (2) | 'sonic_full' (12) — Sonic is the paid upgrade
+  const [engine, setEngine] = useState('sever');
   const [running, setRunning] = useState(false);
   const [stems, setStems] = useState(null);
   // The on-device path needs the actual file to decode, not just an id.
@@ -45,9 +48,9 @@ export default function StemCreatorStudio() {
   // Sever separates on CPU one job at a time, so a queued job can wait behind
   // another creator's track. Cadence and deadline come from the shared 'engine'
   // polling policy — hammering a busy single-worker engine cannot speed it up.
-  const poll = (jobId) => {
+  const poll = (jobId, pollFn) => {
     watchRef.current = pollJob(
-      async () => (await base44.functions.invoke('pollSeverStems', { job_id: jobId })).data || {},
+      async () => (await base44.functions.invoke(pollFn, { job_id: jobId })).data || {},
       'engine',
     );
     watchRef.current.promise.then(({ outcome, data, error }) => {
@@ -68,15 +71,18 @@ export default function StemCreatorStudio() {
     setRunning(true);
     setStems(null);
     try {
-      const r = await base44.functions.invoke('separateStemsSever', { assetId: selected[0] });
-      const jobId = r.data?.job_id;
+      const isSonic = engine !== 'sever';
+      const r = isSonic
+        ? await base44.functions.invoke('separateStemsSonic', { assetId: selected[0], tier: engine === 'sonic_full' ? 'full' : 'basic' })
+        : await base44.functions.invoke('separateStemsSever', { assetId: selected[0] });
+      const jobId = r.data?.data?.job_id || r.data?.job_id;
       if (!jobId) {
         setRunning(false);
         toast.error('The engine did not start a separation — nothing was charged.');
         return;
       }
       toast.success('Separation started — this takes a minute or two.');
-      poll(jobId);
+      poll(jobId, isSonic ? 'pollSonicStems' : 'pollSeverStems');
     } catch (e) {
       setRunning(false);
       toast.error(e?.response?.data?.error || 'Stem separation failed');
@@ -87,8 +93,8 @@ export default function StemCreatorStudio() {
     <div className="min-h-screen bg-background">
       <StudioPageHeader icon={Layers} accent="emerald"
         title="Stem Creator Studio"
-        subtitle="Split any track into six stems — vocals, drums, bass, guitar, piano and other."
-        badge="Sever engine" />
+        subtitle="Split any track into stems — six on our Sever engine, or up to twelve on Sonic Studio."
+        badge={engine === 'sever' ? 'Sever engine' : 'Sonic engine'} />
 
       <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Controls */}
@@ -99,21 +105,29 @@ export default function StemCreatorStudio() {
           </div>
 
           <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
-            <h3 className="text-sm font-black">2. What You Get</h3>
-            <p className="text-xs text-muted-foreground">
-              Sever splits the whole mix in one pass and returns all six together, so there's
-              no subset to pick. It runs on our own engine — one track at a time, so a busy
-              queue means a longer wait rather than a failure.
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {OUTPUT_STEMS.map(s => (
-                <div key={s.id} className="p-3 rounded-xl border border-border bg-muted/30">
-                  <div className="text-xl mb-1">{s.emoji}</div>
-                  <p className="text-xs font-bold">{s.label}</p>
-                </div>
-              ))}
-            </div>
+            <h3 className="text-sm font-black">2. Engine</h3>
+            <StemEngineSelector value={engine} onChange={setEngine}
+              needsUpload={!!sourceAsset && !sourceAsset.metadata?.clip_id && !sourceAsset.metadata?.sonic_upload_clip_id} />
           </div>
+
+          {engine === 'sever' && (
+            <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+              <h3 className="text-sm font-black">3. What You Get</h3>
+              <p className="text-xs text-muted-foreground">
+                Sever splits the whole mix in one pass and returns all six together. It runs on
+                our own engine — one track at a time, so a busy queue means a longer wait rather
+                than a failure.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {OUTPUT_STEMS.map(s => (
+                  <div key={s.id} className="p-3 rounded-xl border border-border bg-muted/30">
+                    <div className="text-xl mb-1">{s.emoji}</div>
+                    <p className="text-xs font-bold">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Button onClick={generate} disabled={running || selected.length === 0}
             className="w-full rounded-xl bg-emerald-600 hover:bg-emerald-500 gap-2 font-bold">
@@ -121,7 +135,7 @@ export default function StemCreatorStudio() {
             {running ? 'Separating…' : 'Separate Stems'}
           </Button>
           <p className="text-[11px] text-muted-foreground text-center">
-            Costs 2 credits — charged only if separation succeeds.
+            Costs {STEM_ENGINES.find(e => e.id === engine)?.cost} credits — charged only if separation succeeds.
           </p>
 
           <OnDeviceStemPanel asset={sourceAsset} onComplete={setStems} />

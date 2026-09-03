@@ -26,12 +26,12 @@ import {
   DEFAULT_TEMPOLOR_SONG_MODEL,
   DEFAULT_TEMPOLOR_INSTRUMENTAL_MODEL,
   modelLabel,
+  sonicGenerationCost,
 } from '@/config/musicModelCatalog';
 
 // Per-provider costs — must match backend CREDIT_COSTS in generateMusic.
-// aimusicapi.ai spec: Sonic = 10 credits (returns 2 songs), Producer = 10 credits (1 song).
-// Tempolor: 10 credits per song.
-const PROVIDER_COSTS = { sonic: 10, tempcolor: 10, elevenlabs: 10 };
+// Sonic is priced per model via sonicGenerationCost (14 advanced / 10 standard).
+const PROVIDER_COSTS = { tempcolor: 10, elevenlabs: 10 };
 
 const ALL_PROVIDERS = [
   { value: 'sonic',      label: 'Sonic',      emoji: '🎵' },
@@ -877,7 +877,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-xl font-bold text-base py-5 gap-2">
           <Zap className="w-5 h-5" />
           {isProcessing ? (jobId ? `AI Composing… ${progress}%` : 'AI Analyzing Prompt…') : '⚡ Quick Generate'}
-          {!isProcessing && <CostBadge cost={(PROVIDER_COSTS[provider] || 5) + 2} />}
+          {!isProcessing && <CostBadge cost={(provider === 'sonic' ? sonicGenerationCost(modelOverride || routingDecision?.model || DEFAULT_SONIC_MODEL, true) : (PROVIDER_COSTS[provider] || 5)) + 2} />}
         </Button>
       </div>
       {!prompt.trim() && !isProcessing && (

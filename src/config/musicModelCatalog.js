@@ -35,6 +35,16 @@ export const SONIC_VOCAL_GENDER_MODELS = ['sonic-v4-5', 'sonic-v4-5-plus', 'soni
 // Target-length range Sonic honours (integer seconds).
 export const SONIC_DURATION_RANGE = { min: 10, max: 360 };
 
+// BASE Station charges match Sonic's own credit table (2026-09-03): advanced
+// models or description mode = 14, v3.5 / v4 with custom lyrics = 10.
+export function sonicGenerationCost(model, customMode = true) {
+  return (SONIC_VOCAL_GENDER_MODELS.includes(model) || !customMode) ? 14 : 10;
+}
+export const SONIC_TOOL_COSTS = {
+  remaster: 10, replace_section: 10, add_vocals: 10, add_instrumental: 10, concat: 2,
+  upload: 2, stems_basic: 20, stems_full: 50,
+};
+
 // Tempolor catalog — re-audited from platform.tempolor.com/docs/6665893m0 (2026-08-23).
 // TemPolor dropped version numbers on its house song model: one rolling
 // "tempolor-latest" identifier instead of v4.6 / v3.5. The instrumental line is

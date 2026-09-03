@@ -104,6 +104,8 @@ async function saveOneTake(base44, job, p, outputUrl, index, total) {
       // alternate take must not claim to have one.
       wav_url: isPrimary ? (p.wav_url || null) : null,
       model_version: p.model_version || job.input_data?.model || null,
+      // Sonic clip id — what the stems / remaster / replace-section tools key on.
+      clip_id: (Array.isArray(p.clip_ids) && p.clip_ids[index]) || (isPrimary ? p.clip_id : null) || null,
       auto_saved: true,
       ...(p.needs_basemark && { needs_basemark: true }),
     },

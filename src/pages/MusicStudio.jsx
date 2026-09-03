@@ -7,6 +7,8 @@ import MySoundTab from '@/components/music/mysound/MySoundTab';
 import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
 import SirenSongGenerateTab from '@/components/music/SirenSongGenerateTab';
 import SkyeGenerateTab from '@/components/music/SkyeGenerateTab';
+import SonicToolsTab from '@/components/music/SonicToolsTab';
+import { Wrench } from 'lucide-react';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
@@ -15,6 +17,7 @@ const TABS = [
   { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
   { id: 'sirensong', label: '🌊 Siren Song',       icon: Waves,             desc: 'Self-hosted HeartMuLa 3B — tag & lyric conditioned generation on our Hugging Face engine' },
   { id: 'skye',     label: '🪶 Skye',             icon: Feather,           desc: 'Our DiffRhythm 2 fork — prose style steering, seed-reproducible, long-form output from 95s to 210s' },
+  { id: 'tools',    label: '🛠️ Sonic Tools',      icon: Wrench,            desc: 'Remaster, replace a section, add vocals or an instrumental, or stitch an extension — on any library track' },
 ];
 
 export default function MusicStudio() {
@@ -80,6 +83,7 @@ export default function MusicStudio() {
         {activeTab === 'harmonix' && <HarmonixGenerateTab />}
         {activeTab === 'sirensong' && <SirenSongGenerateTab />}
         {activeTab === 'skye' && <SkyeGenerateTab />}
+        {activeTab === 'tools' && <SonicToolsTab />}
       </div>
     </div>
   );

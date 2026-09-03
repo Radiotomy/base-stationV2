@@ -11,11 +11,11 @@
 // Credits: 10 (Sonic generation)
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
+import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
-const COVER_COST = 10;
 
 const SONIC_LIMITS = {
   'sonic-v3-5':      { prompt: 3000, tags: 200 },
@@ -130,6 +130,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Credit gate ──────────────────────────────────────────────────────────
+    const COVER_COST = sonicGenerationCost(mv, !!custom_mode);
     const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
     const balance = credits[0]?.balance ?? 0;
     if (balance < COVER_COST) {
