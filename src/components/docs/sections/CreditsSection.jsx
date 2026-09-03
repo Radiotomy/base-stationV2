@@ -101,7 +101,7 @@ export default function CreditsSection() {
         <Group
           title="Music & audio generation"
           items={[
-            { name: 'Harmonix', role: 'our BASE Station generation configuration, built on the open ACE-Step research model' },
+            { name: 'BASE CODA', role: 'our in-house BASE Station engine, originally forked from the open ACE-Step research model' },
             { name: 'BASE Forge', role: 'our open-model instrumental & loop configuration for DAW-ready, PCM-clean output' },
             { name: 'TemPolor', role: 'multi-language vocal and instrumental models' },
             { name: 'ElevenLabs', role: 'sound effects, voice synthesis and personal voice models' },
@@ -145,7 +145,7 @@ export default function CreditsSection() {
         </div>
         <ul className="space-y-2.5 text-sm text-muted-foreground">
           <li>
-            <span className="text-foreground font-semibold">Open-source models</span> — Harmonix and BASE Forge
+            <span className="text-foreground font-semibold">Open-source models</span> — the BASE Engines and BASE Forge
             are BASE Station configurations of permissively licensed open research models (Apache-2.0 family). We
             comply with their licence and attribution terms and do not train them on other commercial providers'
             outputs.
@@ -172,7 +172,7 @@ export default function CreditsSection() {
           </li>
           <li>
             <span className="text-foreground font-semibold">Trademarks</span> — BASE Mark, Creative Ownership
-            Score, Harmonix, BASE Forge, ORVO Studio and BASE Station are ours. All other names above belong to
+            Score, the BASE Engines (CODA, Siren Song, Skye), BASE Forge, ORVO Studio and BASE Station are ours. All other names above belong to
             their respective owners and appear here for identification and disclosure only.
           </li>
         </ul>

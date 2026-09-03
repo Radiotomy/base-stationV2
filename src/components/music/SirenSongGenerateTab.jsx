@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { Waves, Sparkles, CheckCircle, Download, AlertCircle, Info, Tag } from 'lucide-react';
+import { Waves, Sparkles, CheckCircle, Download, AlertCircle, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
@@ -10,6 +10,7 @@ import InfoTip from '@/components/common/InfoTip';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
+import BaseEngineNotice from '@/components/music/BaseEngineNotice';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
@@ -111,12 +112,11 @@ export default function SirenSongGenerateTab() {
 
   return (
     <div className="space-y-6">
-      <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-start gap-2.5">
-        <Info className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-cyan-200/90">
-          <span className="font-bold text-cyan-300">Siren Song:</span> our self-hosted HeartMuLa 3B engine, running on a Hugging Face L4 GPU. This model is <span className="font-semibold">tag &amp; lyric conditioned</span> — describe the sound with comma-separated style tags, not a sentence.
-        </p>
-      </div>
+      <BaseEngineNotice accent="cyan" name="Siren Song">
+        Originally forked from HeartMuLa and re-tuned for BASE Station. It is{' '}
+        <span className="font-semibold">tag &amp; lyric conditioned</span> — describe the sound with
+        comma-separated style tags, not a sentence.
+      </BaseEngineNotice>
 
       {/* Free assistant first — a complete draft in HeartMuLa's tag dialect at
           no cost, before the creator decides to spend on the craft engine. */}

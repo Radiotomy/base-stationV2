@@ -87,7 +87,7 @@ const SECTIONS = [
           <li><strong>⚡ Quick Generate</strong> — type a sound prompt, pick mood/genre, and we route to the best cloud model (Sonic, TemPolor, Mureka, MiniMax or Lyria). Turn on <strong>Maestro</strong> to have a songwriting agent craft the brief, enhance lyrics and recommend a model.</li>
           <li><strong>🎛️ Advanced</strong> — pick the model family and version yourself, set BPM, attach a voice persona and your own lyrics.</li>
           <li><strong>🎧 Eleven Music</strong> — Eleven Music plus <em>My Sound</em>: train a fine-tune on your own tracks (with your consent) and generate in your signature style.</li>
-          <li><strong>🧬 BASE-Harmonix · 🌊 Siren Song · 🪶 Skye</strong> — our own self-hosted engines; see "Our own music engines" below.</li>
+          <li><strong>🧬 BASE CODA · 🌊 BASE Siren Song · 🪶 BASE Skye</strong> — the BASE Engines, our own in-house self-hosted models; see "BASE Engines" below.</li>
         </ul>
         <p className="text-xs text-muted-foreground">ElevenLabs is not a default music generator — it stays in service for voice cloning, text-to-speech, and podcast voiceover. Stem separation no longer runs on Tempolor; see the Stems section.</p>
         <p><strong className="text-foreground">Sound prompt tips:</strong> describe instruments + atmosphere ("808 sub, brushed snare, distant choir, late-night intimate") — not just genre. 200–400 chars is the sweet spot.</p>
@@ -117,7 +117,7 @@ const SECTIONS = [
           <ul className="list-disc pl-5 space-y-0.5 mt-1.5">
             <li><strong>Sonic v5 / v4.5+</strong> — ~3,000 chars</li>
             <li><strong>TemPolor / Mureka / MiniMax / Lyria</strong> — ~2,500 chars</li>
-            <li><strong>Skye</strong> — ~6,000 chars · <strong>BASE-Harmonix (Coda)</strong> — ~4,000 chars</li>
+            <li><strong>BASE Skye</strong> — ~6,000 chars · <strong>BASE CODA</strong> — ~4,000 chars</li>
             <li><strong>TemPolor i3 / i4</strong> — instrumental only (no lyrics)</li>
           </ul>
           <p className="mt-1.5">Pro Songwriter auto-clamps to the safest limit (defaults: Short 1.5k · Medium 2.5k · Long 4k · Full 5k). Keep verses concise; trim ad-libs if you hit the cap.</p>
@@ -259,7 +259,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li>Lyrics: 2 credits</li>
           <li>Music (cloud models): 10 credits per track</li>
-          <li>Siren Song: 12 · Skye: 14 · BASE-Harmonix: priced by tier (shown on the button) · Coda edit tasks (cover / repaint / extract): 10</li>
+          <li>BASE Siren Song: 12 · BASE Skye: 14 · BASE CODA: priced by tier (shown on the button) · CODA edit tasks (cover / repaint / extract): 10</li>
           <li>Cover art: 1 (Cheap) / 3 (Modest)</li>
           <li>Video — Text to Video on our own engine: 6 credits flat · LTX cloud: 1–7 credits per second depending on model and resolution</li>
           <li>Music Video / Timeline render: 5 base + 1 per scene or clip (+3 audio, +4 captions)</li>

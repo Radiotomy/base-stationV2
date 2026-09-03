@@ -50,7 +50,7 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
         key_scale: data.key || '',
         time_signature: fallback.time_signature,
       });
-      toast.success('Masters brief applied — formatted for Harmonix');
+      toast.success('Masters brief applied — formatted for CODA');
     } catch (err) {
       if (!handleCreditError(err)) {
         toast.error(err?.response?.data?.error || err.message || 'Masters engine failed');
@@ -64,12 +64,12 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
     <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Crown className="w-4 h-4 text-amber-300" />
-        <p className="text-sm font-black text-amber-200">243 Masters — Harmonix Edition</p>
+        <p className="text-sm font-black text-amber-200">243 Masters — CODA Edition</p>
         <Badge variant="outline" className="text-[10px]">ACE-Step formatted</Badge>
       </div>
       <p className="text-[11px] text-muted-foreground leading-snug">
         Nashville/LA rhyme craft, chords and arrangement from the 243 Masters engine — then converted
-        into the lowercase structure tags Harmonix was trained on, and a dense style prompt.
+        into the lowercase structure tags CODA was trained on, and a dense style prompt.
       </p>
 
       <textarea

@@ -38,7 +38,7 @@ export default function HarmonixGrooveControls({ value, onChange, disabled }) {
       {open && (
         <div className="px-4 pb-4 space-y-3 border-t border-border pt-3">
           <p className="text-[11px] text-muted-foreground leading-snug">
-            Pinning tempo and key stops Harmonix guessing the pocket — the main reason a
+            Pinning tempo and key stops CODA guessing the pocket — the main reason a
             band drifts or hesitates under the vocal, especially on R&amp;B and soul.
           </p>
 

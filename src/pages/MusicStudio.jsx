@@ -14,9 +14,9 @@ const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
   { id: 'mysound',  label: '🎧 Eleven Music',     icon: AudioLines,        desc: 'Eleven Music base model + My Sound — train on your own tracks & generate in your signature style' },
-  { id: 'harmonix', label: '🧬 BASE-Harmonix',    icon: Sparkles,          desc: 'Our open-source model studio — Micro, Pro & Vault tiers' },
-  { id: 'sirensong', label: '🌊 Siren Song',       icon: Waves,             desc: 'Self-hosted HeartMuLa 3B — tag & lyric conditioned generation on our Hugging Face engine' },
-  { id: 'skye',     label: '🪶 Skye',             icon: Feather,           desc: 'Our DiffRhythm 2 fork — prose style steering, seed-reproducible, long-form output from 95s to 210s' },
+  { id: 'harmonix', label: '🧬 BASE CODA',         icon: Sparkles,          desc: 'BASE Engine · in-house, self-hosted — tag-driven generation across Micro, Pro & Vault tiers' },
+  { id: 'sirensong', label: '🌊 BASE Siren Song',  icon: Waves,             desc: 'BASE Engine · in-house, self-hosted — tag & lyric conditioned generation up to 6 minutes' },
+  { id: 'skye',     label: '🪶 BASE Skye',         icon: Feather,           desc: 'BASE Engine · in-house, self-hosted — prose style steering, seed-reproducible, long-form 95s–210s' },
   { id: 'tools',    label: '🛠️ Sonic Tools',      icon: Wrench,            desc: 'Remaster, replace a section, add vocals or an instrumental, or stitch an extension — on any library track' },
 ];
 

@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
  * rating controls, and nothing is recorded until they accept. The backend
  * re-checks the flag, so declining here genuinely means no data is collected.
  */
-export default function TrainingFeedback({ sampleId, onOptIn, modelName = 'BASE-Harmonix' }) {
+export default function TrainingFeedback({ sampleId, onOptIn, modelName = 'our BASE Engines' }) {
   const [optedIn, setOptedIn] = useState(null);
   const [rated, setRated] = useState(null);
 

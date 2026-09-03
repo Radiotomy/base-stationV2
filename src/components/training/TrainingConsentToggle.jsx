@@ -24,7 +24,7 @@ export default function TrainingConsentToggle() {
       training_opt_in: next,
       ...(next && { training_opt_in_date: new Date().toISOString() }),
     });
-    toast.success(next ? 'Thanks for helping improve BASE-Harmonix' : 'Turned off — no further data will be collected');
+    toast.success(next ? 'Thanks for helping improve our BASE Engines' : 'Turned off — no further data will be collected');
   };
 
   if (!loaded) return null;
@@ -33,7 +33,7 @@ export default function TrainingConsentToggle() {
     <div className="flex items-start gap-3 p-4 rounded-xl border border-border bg-card">
       <Sparkles className="w-4 h-4 text-amber-300 flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-bold text-foreground">Help improve BASE-Harmonix</p>
+        <p className="text-sm font-bold text-foreground">Help improve our BASE Engines</p>
         <p className="text-xs text-muted-foreground leading-snug mt-0.5">
           Shares the prompts, settings and ratings from your generations so our in-house model gets better.
           Your audio, your lyrics and your personal details are never included.

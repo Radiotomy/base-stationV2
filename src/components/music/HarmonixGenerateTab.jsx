@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { Sparkles, ShieldCheck, Zap, CheckCircle, Download, Save, AlertCircle, Info } from 'lucide-react';
+import { Sparkles, ShieldCheck, Zap, CheckCircle, Download, Save, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useJobPolling } from '@/hooks/useJobPolling';
@@ -14,12 +14,13 @@ import { toAceStepLyrics } from '@/utils/aceStepLyrics';
 import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel';
 import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import HarmonixGrooveControls from '@/components/music/HarmonixGrooveControls';
+import BaseEngineNotice from '@/components/music/BaseEngineNotice';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
 const TIERS = [
   { key: 'micro', name: 'Micro', tagline: 'Lite / Fast', icon: Zap, cost: 3, maxDuration: 60, color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300', desc: 'Quick draft generation & real-time previewing' },
-  { key: 'pro', name: 'Pro', tagline: 'Coda · XL Turbo', icon: Sparkles, cost: 10, maxDuration: 600, color: 'border-blue-500 bg-blue-500/10 text-blue-300', desc: 'Full-track generation up to 10 minutes' },
+  { key: 'pro', name: 'Pro', tagline: 'Full quality', icon: Sparkles, cost: 10, maxDuration: 600, color: 'border-blue-500 bg-blue-500/10 text-blue-300', desc: 'Full-track generation up to 10 minutes' },
   { key: 'vault', name: 'Vault', tagline: 'Watermarked / Verified · COS', icon: ShieldCheck, cost: 15, maxDuration: 600, color: 'border-amber-500 bg-amber-500/10 text-amber-300', desc: 'Pro quality + acoustic watermarking & DDEX metadata' },
 ];
 
@@ -70,7 +71,7 @@ export default function HarmonixGenerateTab() {
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
-        title: title.trim() || prompt.slice(0, 40) || 'Harmonix Track',
+        title: title.trim() || prompt.slice(0, 40) || 'CODA Track',
         file_url: audioUrl,
         thumbnail_url: coverImageUrl || '',
         is_public: false,
@@ -156,7 +157,7 @@ export default function HarmonixGenerateTab() {
   const isProcessing = generating || (jobId && (status === 'processing' || status === 'pending'));
 
   const generate = async () => {
-    if (!prompt.trim()) { toast.error('Describe the track you want BASE-Harmonix to make'); return; }
+    if (!prompt.trim()) { toast.error('Describe the track you want CODA to make'); return; }
     if (isProcessing) return;
     setGenerating(true);
     setResult(null);
@@ -193,10 +194,10 @@ export default function HarmonixGenerateTab() {
         logSample();
       } else if (res.data?.job_id) {
         setJobId(res.data.job_id);
-        toast.success('BASE-Harmonix is composing…');
+        toast.success('CODA is composing…');
       } else {
         setGenerating(false);
-        toast.error('Unexpected response from BASE-Harmonix');
+        toast.error('Unexpected response from CODA');
       }
     } catch (err) {
       setGenerating(false);
@@ -213,12 +214,10 @@ export default function HarmonixGenerateTab() {
 
   return (
     <div className="space-y-6">
-      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5">
-        <Info className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-emerald-200/90">
-          <span className="font-bold text-emerald-300">BASE-Harmonix:</span> our in-house studio, now powered by <span className="font-semibold">Coda</span> — ACE-Step 1.5 XL Turbo (4B DiT) self-hosted on our Hugging Face engine. Full instrumental or vocal tracks from a single prompt, rendered in 8 distilled steps. Pick a tier below.
-        </p>
-      </div>
+      <BaseEngineNotice accent="emerald" name="CODA">
+        Originally forked from ACE-Step and re-tuned for BASE Station. Full instrumental or vocal
+        tracks from a single prompt, with fast draft renders and long-form output. Pick a tier below.
+      </BaseEngineNotice>
 
       {/* Tier picker */}
       <div>
@@ -228,7 +227,7 @@ export default function HarmonixGenerateTab() {
             <button key={t.key} onClick={() => { setTier(t.key); setDuration(d => Math.min(d, t.maxDuration)); }}
               className={`text-left p-3 rounded-xl border transition-all ${tier === t.key ? t.color : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
               <div className="flex items-center gap-1.5 font-bold text-sm mb-0.5">
-                <t.icon className="w-4 h-4" /> BASE-Harmonix {t.name}
+                <t.icon className="w-4 h-4" /> CODA {t.name}
               </div>
               <div className="text-[11px] opacity-80 mb-1">{t.tagline}</div>
               <div className="text-xs opacity-70">{t.desc}</div>
@@ -334,7 +333,7 @@ export default function HarmonixGenerateTab() {
             className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/30 space-y-2">
             <div className="flex items-center gap-3">
               <div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin flex-shrink-0" />
-              <p className="text-xs text-blue-300">BASE-Harmonix {tierConfig.name} is composing your track…</p>
+              <p className="text-xs text-blue-300">CODA {tierConfig.name} is composing your track…</p>
             </div>
             <div className="h-1.5 rounded-full bg-blue-500/20 overflow-hidden">
               <motion.div className="h-full bg-blue-500 rounded-full" style={{ width: `${progress || 10}%` }} animate={{ width: `${progress || 10}%` }} />

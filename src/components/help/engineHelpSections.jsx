@@ -6,16 +6,16 @@ import { Cpu, Music4, Layers3 } from 'lucide-react';
 const ENGINE_HELP_SECTIONS = [
   {
     id: 'engines',
-    title: 'Our own music engines — BASE-Harmonix (Coda), Siren Song & Skye',
+    title: 'BASE Engines — CODA, Siren Song & Skye',
     icon: Cpu,
-    keywords: 'coda ace-step harmonix siren song heartmula skye diffrhythm self-hosted hugging face engine open source seed instrumental lyrics long-form',
+    keywords: 'base engines coda harmonix siren song skye in-house self-hosted fork seed instrumental lyrics long-form',
     body: (
       <>
-        <p>Three tabs in <Link to="/music-studio" className="text-purple-400 hover:underline">Music Studio</Link> run on models we host ourselves. Your prompts and audio never train a third-party provider, and every render is saved to your library as a WAV, BASE Marked automatically and given cover art.</p>
+        <p>Three tabs in <Link to="/music-studio" className="text-purple-400 hover:underline">Music Studio</Link> run on the <strong className="text-foreground">BASE Engines</strong> — our own in-house models, each originally forked from an open-source base and then developed, tuned and maintained by our team on our own self-hosted infrastructure. Your prompts and audio never train a third-party provider, and every render is saved to your library as a WAV, BASE Marked automatically and given cover art.</p>
         <ul className="list-disc pl-5 space-y-1">
-          <li><strong>🧬 BASE-Harmonix (Coda engine)</strong> — ACE-Step 1.5. Fast, tag-driven: describe genre, instruments and mood as comma tags; add BPM, key and time signature for a tighter groove. Lyrics use lowercase <code>[verse]</code> / <code>[chorus]</code> section tags (the studio converts them for you). Coda also powers the <strong>Cover / Repaint / Extract</strong> edit tasks in Audio Remix Studio.</li>
-          <li><strong>🌊 Siren Song</strong> — HeartMuLa 3B. Tag + lyric conditioned, up to 6 minutes, 12 credits. Leave lyrics empty for a pure instrumental.</li>
-          <li><strong>🪶 Skye</strong> — our DiffRhythm 2 fork. Steer it with a <em>prose</em> description of the production (full sentences, not tags). Long-form output from 95 s to 210 s, 14 credits. Best for full song structures; write lyrics with <code>[verse]</code> / <code>[chorus]</code> / <code>[bridge]</code> markers or leave them empty for an instrumental.</li>
+          <li><strong>🧬 BASE CODA</strong> — fast and tag-driven: describe genre, instruments and mood as comma tags; add BPM, key and time signature for a tighter groove. Lyrics use lowercase <code>[verse]</code> / <code>[chorus]</code> section tags (the studio converts them for you). CODA also powers the <strong>Cover / Repaint / Extract</strong> edit tasks in Audio Remix Studio.</li>
+          <li><strong>🌊 BASE Siren Song</strong> — tag + lyric conditioned, up to 6 minutes, 12 credits. Leave lyrics empty for a pure instrumental.</li>
+          <li><strong>🪶 BASE Skye</strong> — steered with a <em>prose</em> description of the production (full sentences, not tags). Long-form output from 95 s to 210 s, 14 credits. Best for full song structures; write lyrics with <code>[verse]</code> / <code>[chorus]</code> / <code>[bridge]</code> markers or leave them empty for an instrumental.</li>
         </ul>
         <p><strong className="text-foreground">Seeds:</strong> every engine accepts a seed — same prompt + same seed reproduces the same track, so you can iterate on wording without losing a take you liked.</p>
         <p className="text-xs text-muted-foreground">These engines run one job at a time each. A busy engine means a longer wait, never a failure; if one is waking from sleep the first request can take a couple of minutes to be accepted. Credits are only charged when a render completes.</p>

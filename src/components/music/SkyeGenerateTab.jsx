@@ -2,12 +2,13 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
-import { Feather, Sparkles, CheckCircle, Download, AlertCircle, Info } from 'lucide-react';
+import { Feather, Sparkles, CheckCircle, Download, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import SkyeStyleControls from '@/components/music/SkyeStyleControls';
+import BaseEngineNotice from '@/components/music/BaseEngineNotice';
 import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
@@ -118,12 +119,11 @@ export default function SkyeGenerateTab() {
 
   return (
     <div className="space-y-6">
-      <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/30 flex items-start gap-2.5">
-        <Info className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
-        <p className="text-xs text-violet-200/90">
-          <span className="font-bold text-violet-300">Skye:</span> our open-source fork of <span className="font-semibold">DiffRhythm 2</span>, self-hosted on our own Hugging Face engine. Semi-autoregressive block flow matching with phonetic lyric alignment — <span className="font-semibold">prose style steering</span> and long-form output from {MIN_DURATION}s up to {MAX_DURATION}s.
-        </p>
-      </div>
+      <BaseEngineNotice accent="violet" name="Skye">
+        Originally forked from DiffRhythm 2 and re-tuned for BASE Station. Steered with{' '}
+        <span className="font-semibold">prose style descriptions</span> and built for long-form
+        output from {MIN_DURATION}s up to {MAX_DURATION}s.
+      </BaseEngineNotice>
 
       {/* Free assistant sits above the paid Masters engine deliberately — a
           creator should be able to get a complete usable draft without spending
