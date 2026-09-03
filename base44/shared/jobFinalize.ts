@@ -26,14 +26,32 @@ function audioExt(url, fallback = 'mp3') {
 
 // Copy an external provider URL into Base44 storage so files persist
 // (provider CDN links expire and block CORS). Falls back to original URL.
+// A long WAV master (a 5-minute 48kHz stereo render is ~55MB) has to be held
+// whole in this isolate to be re-uploaded, and the copy needed to build the File
+// doubles that — which is what was killing finalize with exceededMemory on long
+// Coda vault renders, retrying and never completing. Above the ceiling we keep
+// the provider URL: a track that plays from the engine is strictly better than a
+// finished render reported as failed.
+const MAX_PERSIST_BYTES = 45 * 1024 * 1024;
+
 async function persistUrl(base44, url, filename) {
   try {
     if (!url || /base44/i.test(url)) return url;
     const r = await fetch(url);
     if (!r.ok) return url;
-    const blob = await r.blob();
+    const declared = Number(r.headers.get('content-length') || 0);
+    if (declared > MAX_PERSIST_BYTES) {
+      console.warn(`Skipping persist of ${filename}: ${declared} bytes exceeds the in-memory ceiling`);
+      await r.body?.cancel();
+      return url;
+    }
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > MAX_PERSIST_BYTES) {
+      console.warn(`Skipping persist of ${filename}: ${buf.byteLength} bytes exceeds the in-memory ceiling`);
+      return url;
+    }
     const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
-    const file = new File([blob], safeName, { type: blob.type || 'application/octet-stream' });
+    const file = new File([buf], safeName, { type: r.headers.get('content-type') || 'application/octet-stream' });
     const up = await base44.integrations.Core.UploadFile({ file });
     return up?.file_url || url;
   } catch {
