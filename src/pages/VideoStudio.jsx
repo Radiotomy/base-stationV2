@@ -17,6 +17,7 @@ import InfoTip from '@/components/common/InfoTip';
 import MusicVideoComposer from '@/components/video/MusicVideoComposer';
 import TimelineEditorTab from '@/components/video/TimelineEditorTab';
 import LtxControls from '@/components/video/LtxControls';
+import NovaH3Panel from '@/components/video/nova/NovaH3Panel';
 import ReferenceMediaInput from '@/components/video/ReferenceMediaInput';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { getModelSpec, durationsFor, maxAudioSeconds, creditCost } from '@/config/ltxModelSpec';
@@ -37,6 +38,7 @@ const MODES = [
   { id: 'text', label: '✍️ Text to Video', desc: 'Generate from a text prompt' },
   { id: 'image', label: '🖼️ Image to Video', desc: 'Animate an image — upload, library or URL' },
   { id: 'audio', label: '🎵 Audio to Video', desc: 'Visual synced to any track you own' },
+  { id: 'nova', label: '✨ Nova — video + sound', desc: 'MiniMax-H3: picture and soundtrack in one pass' },
   { id: 'musicvideo', label: '🎬 Music Video', desc: 'Stock or your own clips + audio' },
   { id: 'timeline', label: '🎚️ Timeline Editor', desc: 'Drag & drop — library, uploads, URLs' },
 ];
@@ -247,6 +249,9 @@ export default function VideoStudio() {
           ))}
         </div>
 
+        {/* Nova (MiniMax-H3) — our own engine, fully independent of the LTX path */}
+        {mode === 'nova' && <NovaH3Panel />}
+
         {/* Music Video Mode (Shotstack multi-scene composer) */}
         {mode === 'musicvideo' && <MusicVideoComposer />}
 
@@ -283,7 +288,7 @@ export default function VideoStudio() {
         )}
 
         {/* LTX Mode UI (text / image / audio) */}
-        {mode !== 'musicvideo' && mode !== 'timeline' && <>
+        {mode !== 'musicvideo' && mode !== 'timeline' && mode !== 'nova' && <>
 
         {/* Text mode renders on our own engine first — the controls below only
             apply when that engine is unavailable and the LTX cloud takes over. */}
