@@ -51,11 +51,8 @@ Deno.serve(async (req) => {
     const midiBytes = buildMinimalMidi({ bpm, key, title });
 
     // Upload to storage and return URL
-    const blob = new Blob([midiBytes], { type: 'audio/midi' });
-    const formData = new FormData();
-    formData.append('file', blob, `${title.replace(/\s+/g, '_')}.mid`);
-
-    const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file: blob });
+    const file = new File([midiBytes], `${title.replace(/\s+/g, '_')}.mid`, { type: 'audio/midi' });
+    const uploadRes = await base44.asServiceRole.integrations.Core.UploadFile({ file });
     const midiUrl = uploadRes.file_url;
 
     return Response.json({ midi_url: midiUrl, source: 'generated', bpm, key });
