@@ -42,6 +42,7 @@ const Badges = lazy(() => import('./pages/Badges'));
 const StudioHub = lazy(() => import('./pages/StudioHub'));
 const LyricsStudio = lazy(() => import('./pages/LyricsStudio'));
 const MusicStudio = lazy(() => import('./pages/MusicStudio'));
+const ElevenMusicStudio = lazy(() => import('./pages/ElevenMusicStudio'));
 const VideoStudio = lazy(() => import('./pages/VideoStudio'));
 const AssetGallery = lazy(() => import('./pages/AssetGallery'));
 const LiveStudio = lazy(() => import('./pages/LiveStudio'));
@@ -220,6 +221,7 @@ const AuthenticatedApp = () => {
               <Route path="/ai-studio" element={<Navigate to="/lyrics-studio" replace />} />
               <Route path="/lyrics-studio" element={<LyricsStudio />} />
               <Route path="/music-studio" element={<MusicStudio />} />
+              <Route path="/eleven-music" element={<ElevenMusicStudio />} />
               <Route path="/cover-art-studio" element={<CoverArtStudio />} />
               <Route path="/video-studio" element={<BetaGate feature="Video Studio"><VideoStudio /></BetaGate>} />
               <Route path="/asset-gallery" element={<AssetGallery />} />
