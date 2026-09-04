@@ -22,8 +22,10 @@ const MOODS = ['Energetic', 'Melancholy', 'Dreamy', 'Dark', 'Uplifting', 'Romant
  * grammar predates this and is already tuned.
  *
  * Props:
- *   dialect       — key into MODEL_DIALECTS ('sirensong' | 'skye')
- *   onApply       — ({ style, lyrics, title, bpm, key }) => void
+ *   dialect       — key into MODEL_DIALECTS ('sirensong' | 'skye' | 'aurora')
+ *   onApply       — ({ style, lyrics, title, bpm, key, brief, genre, mood }) => void
+ *                   `brief` is the raw Masters response, for a dialect whose
+ *                   style channel is structured rather than a single string.
  *   fallbackTopic — the creator's existing description, used when the topic box
  *                   is empty so nobody has to type their idea twice
  */

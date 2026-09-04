@@ -139,7 +139,7 @@ export default function AuroraGenerateTab() {
       <ModelMastersPanel
         dialect="aurora"
         onApply={applyMastersBrief}
-        fallbackTopic={prose}
+        fallbackTopic={prose || caption.scenario || ''}
       />
 
       <AuroraCaptionBuilder

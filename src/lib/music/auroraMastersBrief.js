@@ -9,7 +9,7 @@
  * the visible form in agreement and leaves every field the creator's to revise.
  */
 
-import { EMPTY_CAPTION, compileStructuredCaption } from '@/lib/music/auroraCaption';
+import { compileStructuredCaption } from '@/lib/music/auroraCaption';
 
 // Instrumentation beds written as caption values, i.e. plain noun phrases. The
 // caption's own headings supply the grammar, so a full sentence here would read
@@ -28,15 +28,16 @@ const AURORA_BEDS = {
 };
 
 /**
- * Build Aurora caption fields from a Masters brief. Only fields the brief
- * actually supports are filled — an empty caption field is omitted at compile
- * time, whereas an invented one becomes an instruction the model will follow.
+ * Build Aurora caption fields from a Masters brief. Returns ONLY the fields the
+ * brief actually speaks to — an empty value is dropped rather than returned, so
+ * merging a brief into a part-filled caption cannot erase vocal or texture
+ * details the creator already wrote. (An invented field would be worse still: a
+ * caption line is an instruction the model follows.)
  */
 export function toAuroraCaptionFields(brief = {}, { genre, mood } = {}) {
   const key = String(genre || '').toLowerCase();
   const bed = AURORA_BEDS[key] || {};
-  return {
-    ...EMPTY_CAPTION,
+  const fields = {
     genre: genre || '',
     bpm: brief.bpm ? String(brief.bpm) : '',
     key: brief.key || '',
@@ -48,6 +49,7 @@ export function toAuroraCaptionFields(brief = {}, { genre, mood } = {}) {
     secondary_instruments: bed.secondary || '',
     groove: brief.bpm ? `Steady ${genre ? String(genre).toLowerCase() + ' ' : ''}groove at ${brief.bpm} BPM.` : '',
   };
+  return Object.fromEntries(Object.entries(fields).filter(([, v]) => v && String(v).trim()));
 }
 
 /** Compiled caption text — used only to preview what the engine will receive. */
