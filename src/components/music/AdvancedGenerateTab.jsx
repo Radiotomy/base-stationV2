@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap, Save, Download, RotateCcw, CheckCircle, Sparkles, Mic2, Image, Palette, Music2, ChevronsRight, AlertCircle
+  Zap, Save, Download, RotateCcw, CheckCircle, Sparkles, Mic2, Image, Palette, Music2, ChevronsRight, AlertCircle, Type
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -574,16 +574,27 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         <p className="text-[10px] text-muted-foreground mt-2">✨ More AI music models coming soon.</p>
       </div>
 
-      {/* Track Title (Optional) — overrides the default mood/genre/provider title */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Track Title (Optional)</p>
+      {/* Track Title — raised into its own accented card. As a plain input it read
+          as page furniture and was routinely missed, so creators shipped tracks
+          under the auto mood/genre name without realising they could name them. */}
+      <div className={`p-4 rounded-2xl border-2 transition-colors ${customTitle.trim() ? 'border-emerald-500/40 bg-emerald-500/5' : 'border-cyan-500/50 bg-cyan-500/[0.06]'}`}>
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <Type className="w-4 h-4 text-cyan-300" />
+          <p className="text-xs font-black text-foreground uppercase">Track Title</p>
+          <span className="text-[10px] font-semibold text-muted-foreground normal-case">optional — name it yourself</span>
+          {customTitle.trim() && (
+            <span className="text-[10px] font-bold text-emerald-300 flex items-center gap-1 ml-auto">
+              <CheckCircle className="w-3 h-3" /> Custom title set
+            </span>
+          )}
+        </div>
         <Input
           type="text"
           value={customTitle}
           onChange={e => setCustomTitle(e.target.value)}
           placeholder={`Auto: ${mood} ${genre} — ${providerLabel(provider)}`}
           maxLength={80}
-          className="rounded-xl"
+          className="rounded-xl bg-background text-base font-semibold border-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-400/70"
         />
         <p className="text-[10px] text-muted-foreground mt-1.5">Leave blank to use "{mood} {genre} — {providerLabel(provider)}". Your title is applied everywhere: library, ID3 tags, and Community Buzz.</p>
       </div>
