@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Film, Zap, Download, ArrowLeft, Save, RotateCcw,
+  Zap, Download, ArrowLeft, Save, RotateCcw,
   CheckCircle, Sparkles, Clock, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -58,6 +58,7 @@ export default function VideoStudio() {
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [savedVideoUrl, setSavedVideoUrl] = useState(''); // guards against filing the same render twice
   const [versions, setVersions] = useState([]);
   const [referenceImageUrl, setReferenceImageUrl] = useState('');
   const [referenceAudioUrl, setReferenceAudioUrl] = useState('');
@@ -159,11 +160,13 @@ export default function VideoStudio() {
   };
 
   const saveToLibrary = async () => {
-    if (!result?.video_url) return;
+    if (!result?.video_url || savedVideoUrl === result.video_url) return;
     setSaving(true);
     try {
       const user = await base44.auth.me();
-      const participation = calculateHumanParticipationScore({
+      // COS is scored server-side — this MUST be awaited, or every field below
+      // lands as undefined and the video ships with no ownership record.
+      const participation = await calculateHumanParticipationScore({
         userProvidedContent: false,
         prompt,
         styleOrTags: style ? [style] : [],
@@ -184,6 +187,7 @@ export default function VideoStudio() {
         participation_signals: participation.signals,
         metadata: { prompt, duration, aspectRatio, style, provider: 'ltx', model, resolution_tier: resolutionTier, fps, camera_motion: cameraMotion, generate_audio: generateAudio },
       });
+      setSavedVideoUrl(result.video_url);
       toast.success('Saved to library!');
     } catch (err) {
       toast.error(err.message);
@@ -426,9 +430,10 @@ export default function VideoStudio() {
                   </div>
                   <video controls className="w-full rounded-xl" src={result.video_url} />
                   <div className="flex gap-2 flex-wrap">
-                    <Button onClick={saveToLibrary} disabled={saving}
-                      className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
-                      <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save to Library'}
+                    <Button onClick={saveToLibrary} disabled={saving || savedVideoUrl === result.video_url}
+                      className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold disabled:opacity-100">
+                      {savedVideoUrl === result.video_url ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                      {savedVideoUrl === result.video_url ? 'In Your Library' : saving ? 'Saving…' : 'Save to Library'}
                     </Button>
                     <a href={result.video_url} download className="flex-1">
                       <Button variant="outline" className="w-full gap-2 rounded-xl">
