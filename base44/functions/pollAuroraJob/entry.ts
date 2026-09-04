@@ -13,6 +13,7 @@ import {
   AURORA_MODEL_ID, AURORA_MODEL_LABEL,
 } from '../../shared/auroraEngine.ts';
 import { generateTrackCover } from '../../shared/trackCoverArt.ts';
+import { cosForJob } from '../../shared/cosStamp.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -96,6 +97,20 @@ Deno.serve(async (req) => {
       prompt: job.input_data?.prompt || '',
     });
 
+    // Creative Ownership Score — scored by the shared engine off this job's own
+    // telemetry, so an Aurora track carries a real recorded score rather than a
+    // bare label. The structured caption's own fields are surfaced as style
+    // signals: on Aurora they ARE the creator's musical direction.
+    const captionFields = job.input_data?.caption_fields || {};
+    const { fields: cos } = cosForJob({
+      input_data: {
+        ...job.input_data,
+        genre: captionFields.genre || '',
+        mood: captionFields.emotional_progression || '',
+        style: captionFields.production || '',
+      },
+    });
+
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id, user_email: user.email,
       asset_type: 'track',
@@ -104,9 +119,10 @@ Deno.serve(async (req) => {
       thumbnail_url: coverUrl || '',
       is_public: false,
       ai_label: 'ai_generated',
-      ai_disclosure_label: 'ai_generated',
+      ...cos,
       ai_disclosure_basis: `Generated end-to-end by Aurora, BASE Station's self-hosted deployment of ${AURORA_MODEL_ID}, from a creator-authored music description`
-        + (job.input_data?.lyrics ? ' and creator-supplied lyrics.' : '.'),
+        + (job.input_data?.lyrics ? ' and creator-supplied lyrics. ' : '. ')
+        + cos.ai_disclosure_basis,
       metadata: {
         provider: 'aurora', engine: 'hf_space',
         model: AURORA_MODEL_LABEL,

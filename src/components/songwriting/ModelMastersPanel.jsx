@@ -53,6 +53,10 @@ export default function ModelMastersPanel({ dialect, onApply, fallbackTopic = ''
         style, lyrics, title: data.title,
         bpm: data.bpm || fallback.bpm,
         key: data.key || '',
+        // Raw brief plus the chosen genre/mood, so a dialect whose style channel
+        // is structured (Aurora's caption fields) can rebuild it rather than
+        // parse the flattened text back apart.
+        brief: data, genre, mood,
       });
       toast.success(`Masters brief applied — formatted for ${spec.name}`);
     } catch (err) {

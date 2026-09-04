@@ -26,6 +26,9 @@
 // dialect registry below rather than reimplemented, so the Harmonix tab and the
 // shared assistant cannot drift apart on what ACE-Step actually accepts.
 import { toHarmonixPrompt, toAceStepLyrics } from '@/utils/aceStepLyrics';
+// Aurora's style channel is a structured caption, not a string, so its converter
+// lives beside the caption compiler it has to stay compatible with.
+import { toAuroraCaptionFields, toAuroraCaptionText } from '@/lib/music/auroraMastersBrief';
 
 // ── shared section cleaning ─────────────────────────────────────────────────
 
@@ -181,6 +184,17 @@ export function toSkyeLyrics(lyrics = '') {
   return rewriteSections(lyrics, (s) => `[${titleCase(s)}]`);
 }
 
+// ── Aurora (MiniMax-Music3) ─────────────────────────────────────────────────
+
+/**
+ * Aurora lyrics. Title-Case bracketed sections, matching the tag vocabulary the
+ * studio's own lyric editor offers, with human annotations stripped so the model
+ * never sings a stage direction.
+ */
+export function toAuroraLyrics(lyrics = '') {
+  return rewriteSections(lyrics, (s) => `[${titleCase(s)}]`);
+}
+
 // ── dialect registry ────────────────────────────────────────────────────────
 
 
@@ -211,5 +225,17 @@ export const MODEL_DIALECTS = {
     styleHint: 'a natural-language sentence, because this model reads prose rather than tags.',
     toStyle: toSkyeStylePrompt,
     toLyrics: toSkyeLyrics,
+  },
+  aurora: {
+    name: 'Aurora',
+    engine: 'MiniMax-Music3',
+    styleLabel: 'Structured Caption',
+    styleHint: 'a headed Structured Caption — Global Metadata, Vocal Details, Arrangement — because this model was trained to follow that layout rather than a single description.',
+    toStyle: toAuroraCaptionText,
+    // Aurora's caption is edited as FIELDS, so the panel also hands the tab the
+    // field set: writing only the compiled text would leave the builder blank
+    // while the engine received a caption, and the two must never disagree.
+    toCaptionFields: toAuroraCaptionFields,
+    toLyrics: toAuroraLyrics,
   },
 };

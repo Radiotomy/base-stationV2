@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import MiniMaxAttribution from '@/components/music/aurora/MiniMaxAttribution';
+import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
+import { MODEL_DIALECTS } from '@/utils/modelLyricDialects';
 import AuroraCaptionBuilder from '@/components/music/aurora/AuroraCaptionBuilder';
 import AuroraLyricEditor from '@/components/music/aurora/AuroraLyricEditor';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
@@ -38,6 +40,16 @@ export default function AuroraGenerateTab() {
   useEffect(() => () => { cancelledRef.current = true; }, []);
 
   const compiledPrompt = resolveAuroraPrompt({ mode, prose, caption });
+
+  // A Masters brief lands in the caption BUILDER, not in a hidden prompt string:
+  // the creator keeps every field editable, and structured mode is forced on so
+  // what they see is what the engine gets.
+  const applyMastersBrief = ({ brief, genre, mood, lyrics: written, title: writtenTitle }) => {
+    setCaption((prev) => ({ ...prev, ...MODEL_DIALECTS.aurora.toCaptionFields(brief, { genre, mood }) }));
+    setMode('structured');
+    if (written) setLyrics(MODEL_DIALECTS.aurora.toLyrics(written));
+    if (writtenTitle && !title) setTitle(writtenTitle);
+  };
 
   // Strictly sequential poll: the next read is scheduled only after the previous
   // resolves, so two finalizations can never overlap for one job.
@@ -123,6 +135,12 @@ export default function AuroraGenerateTab() {
   return (
     <div className="space-y-6">
       <MiniMaxAttribution />
+
+      <ModelMastersPanel
+        dialect="aurora"
+        onApply={applyMastersBrief}
+        fallbackTopic={prose}
+      />
 
       <AuroraCaptionBuilder
         mode={mode} onModeChange={setMode}
