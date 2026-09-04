@@ -12,6 +12,7 @@ const STUDIOS = [
   { to: '/cover-song-studio', label: '🎙️ Cover & Extend Studio', keywords: 'cover extend upload' },
   { to: '/voice-creator', label: '🗣️ Voice Creator', keywords: 'voice persona clone' },
   { to: '/sfx-studio', label: '💥 Sound FX Studio', keywords: 'sfx sound effects' },
+  { to: '/eleven-music', label: '🎧 Eleven Music & My Sound', keywords: 'eleven music my sound finetune train own tracks signature style elevenlabs' },
   { to: '/mastering-studio', label: '🎚️ Mastering Studio', keywords: 'master lufs eq polish' },
   { to: '/audio-remix-studio', label: '🎛️ Audio Remix', keywords: 'edit effects remix' },
   { to: '/stem-creator', label: '🧬 Stem Creator', keywords: 'split stems vocals drums' },

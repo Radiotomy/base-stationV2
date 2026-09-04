@@ -6,16 +6,17 @@ import { Cpu, Music4, Layers3 } from 'lucide-react';
 const ENGINE_HELP_SECTIONS = [
   {
     id: 'engines',
-    title: 'BASE Engines — CODA, Siren Song & Skye',
+    title: 'BASE Engines — CODA, Siren Song, Skye & Aurora',
     icon: Cpu,
-    keywords: 'base engines coda harmonix siren song skye in-house self-hosted fork seed instrumental lyrics long-form',
+    keywords: 'base engines tab coda harmonix siren song skye aurora minimax music3 in-house self-hosted fork seed instrumental lyrics long-form engine cards',
     body: (
       <>
-        <p>Three tabs in <Link to="/music-studio" className="text-purple-400 hover:underline">Music Studio</Link> run on the <strong className="text-foreground">BASE Engines</strong> — our own in-house models, each originally forked from an open-source base and then developed, tuned and maintained by our team on our own self-hosted infrastructure. Your prompts and audio never train a third-party provider, and every render is saved to your library as a WAV, BASE Marked automatically and given cover art.</p>
+        <p>The <strong className="text-foreground">🏗️ BASE Engines</strong> tab in <Link to="/music-studio" className="text-purple-400 hover:underline">Music Studio</Link> holds all four of our own engines in one place — pick an engine card at the top and its full control panel opens below. Each engine was originally forked from an open-source base and is then developed, tuned and maintained by our team on our own self-hosted infrastructure. Your prompts and audio never train a third-party provider, and every render is saved to your library as a WAV, BASE Marked automatically and given cover art.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>🧬 BASE CODA</strong> — fast and tag-driven: describe genre, instruments and mood as comma tags; add BPM, key and time signature for a tighter groove. Lyrics use lowercase <code>[verse]</code> / <code>[chorus]</code> section tags (the studio converts them for you). CODA also powers the <strong>Cover / Repaint / Extract</strong> edit tasks in Audio Remix Studio.</li>
           <li><strong>🌊 BASE Siren Song</strong> — tag + lyric conditioned, up to 6 minutes, 12 credits. Leave lyrics empty for a pure instrumental.</li>
           <li><strong>🪶 BASE Skye</strong> — steered with a <em>prose</em> description of the production (full sentences, not tags). Long-form output from 95 s to 210 s, 14 credits. Best for full song structures; write lyrics with <code>[verse]</code> / <code>[chorus]</code> / <code>[bridge]</code> markers or leave them empty for an instrumental.</li>
+          <li><strong>🌅 BASE Aurora</strong> — our self-hosted deployment of the open-weight <strong className="text-foreground">MiniMax-Music3</strong> model (attribution required by its community licence, and shown in the studio). Steered with a structured caption or a prose paragraph, renders complete songs up to 5 minutes, and outputs native 32 kHz 16-bit stereo — the only prompt-generated path that is lossless at source.</li>
         </ul>
         <p><strong className="text-foreground">Seeds:</strong> every engine accepts a seed — same prompt + same seed reproduces the same track, so you can iterate on wording without losing a take you liked.</p>
         <p className="text-xs text-muted-foreground">These engines run one job at a time each. A busy engine means a longer wait, never a failure; if one is waking from sleep the first request can take a couple of minutes to be accepted. Credits are only charged when a render completes.</p>

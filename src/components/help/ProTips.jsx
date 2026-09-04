@@ -59,6 +59,7 @@ const TIPS = [
       '⌘+Enter generates from any studio. ⌘+S saves to library. ⌘+K shows shortcuts.',
       'Use Templates (Standard Pop, Hip-Hop, etc.) in Lyrics Studio to skip blank-page paralysis.',
       'Build a Voice Persona once, reuse it across every track for a consistent artist voice.',
+      'In Advanced, fill in **Track Title** before generating — it carries into your library, ID3 tags and Community Buzz. Leave it blank and the track is named after its mood and genre.',
     ],
   },
 ];

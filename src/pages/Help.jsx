@@ -79,16 +79,16 @@ const SECTIONS = [
     id: 'music',
     title: 'Music Studio — generating tracks',
     icon: Music,
-    keywords: 'music generate sonic tempolor mureka minimax lyria eleven music coda harmonix siren song skye ai song track maestro',
+    keywords: 'music generate sonic tempolor mureka minimax lyria eleven music my sound coda harmonix siren song skye aurora base engines tab ai song track maestro track title',
     body: (
       <>
-        <p>Music Studio has six tabs:</p>
+        <p>Music Studio has three primary tabs:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>⚡ Quick Generate</strong> — type a sound prompt, pick mood/genre, and we route to the best cloud model (Sonic, TemPolor, Mureka, MiniMax or Lyria). Turn on <strong>Maestro</strong> to have a songwriting agent craft the brief, enhance lyrics and recommend a model.</li>
-          <li><strong>🎛️ Advanced</strong> — pick the model family and version yourself, set BPM, attach a voice persona and your own lyrics.</li>
-          <li><strong>🎧 Eleven Music</strong> — Eleven Music plus <em>My Sound</em>: train a fine-tune on your own tracks (with your consent) and generate in your signature style.</li>
-          <li><strong>🧬 BASE CODA · 🌊 BASE Siren Song · 🪶 BASE Skye</strong> — the BASE Engines, our own in-house self-hosted models; see "BASE Engines" below.</li>
+          <li><strong>🎛️ Advanced</strong> — pick the model family and version yourself, set BPM, name the track, attach a voice persona and your own lyrics.</li>
+          <li><strong>🏗️ BASE Engines</strong> — one tab holding all four of our in-house, self-hosted engines: <strong>🧬 CODA</strong>, <strong>🌊 Siren Song</strong>, <strong>🪶 Skye</strong> and <strong>🌅 Aurora</strong>. Pick an engine card and its full control panel opens below; see "BASE Engines" further down.</li>
         </ul>
+        <p><strong className="text-foreground">Eleven Music &amp; My Sound now has its own page.</strong> It moved out of Music Studio and lives under <em>Enhance &amp; Edit</em> in the Studio Hub — <Link to="/eleven-music" className="text-cyan-400 hover:underline">open Eleven Music &amp; My Sound →</Link>. Train a fine-tune on your own tracks (with your consent) and generate in your signature style.</p>
         <p className="text-xs text-muted-foreground">ElevenLabs is not a default music generator — it stays in service for voice cloning, text-to-speech, and podcast voiceover. Stem separation no longer runs on Tempolor; see the Stems section.</p>
         <p><strong className="text-foreground">Sound prompt tips:</strong> describe instruments + atmosphere ("808 sub, brushed snare, distant choir, late-night intimate") — not just genre. 200–400 chars is the sweet spot.</p>
       </>
@@ -259,7 +259,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li>Lyrics: 2 credits</li>
           <li>Music (cloud models): 10 credits per track</li>
-          <li>BASE Siren Song: 12 · BASE Skye: 14 · BASE CODA: priced by tier (shown on the button) · CODA edit tasks (cover / repaint / extract): 10</li>
+          <li>BASE Engines — Siren Song: 12 · Skye: 14 · Aurora: shown on the button · CODA: priced by tier (Micro / Pro / Vault) · CODA edit tasks (cover / repaint / extract): 10</li>
           <li>Cover art: 1 (Cheap) / 3 (Modest)</li>
           <li>Video — Text to Video on our own engine: 6 credits flat · LTX cloud: 1–7 credits per second depending on model and resolution</li>
           <li>Music Video / Timeline render: 5 base + 1 per scene or clip (+3 audio, +4 captions)</li>

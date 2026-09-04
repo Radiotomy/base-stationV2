@@ -24,7 +24,7 @@ const STEPS = [
   {
     n: 4,
     title: 'Generate music with the right provider',
-    body: 'Use Sonic v4-5 for vocal tracks, Tempolor for genre fidelity & long-form, Producer for instrumentals. Add a Sound Prompt that describes instruments + atmosphere (e.g. "acoustic guitar, brushed snare, warm Wurlitzer, late-night intimate").',
+    body: 'Sonic v5 is the default for vocal tracks; TemPolor / Mureka / MiniMax / Lyria cover genre fidelity and long-form, and TemPolor i3/i4 are instrumental-only. Prefer our own engines? Open the 🏗️ BASE Engines tab for CODA, Siren Song, Skye and Aurora. Add a Sound Prompt that describes instruments + atmosphere (e.g. "acoustic guitar, brushed snare, warm Wurlitzer, late-night intimate").',
   },
   {
     n: 5,

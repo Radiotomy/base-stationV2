@@ -17,7 +17,7 @@ export default function Terms() {
             <FileText className="w-3.5 h-3.5" /> Legal
           </div>
           <h1 className="font-display text-4xl text-white">Terms of Use</h1>
-          <p className="text-xs text-muted-foreground">Last updated: July 22, 2026</p>
+          <p className="text-xs text-muted-foreground">Last updated: September 4, 2026</p>
         </header>
 
         <div className="merc-card rounded-2xl p-6 md:p-8 space-y-8">
@@ -211,6 +211,18 @@ export default function Terms() {
               provided without any warranty of originality, non-infringement, or fitness for a
               particular purpose. You are solely responsible for reviewing and clearing any output
               before commercial use or distribution.
+            </p>
+            <p>
+              <span className="text-white font-semibold">9.1 Self-hosted BASE Engines.</span> Some
+              generative features (the BASE Engines — CODA, Siren Song, Skye, Aurora — and the Nova
+              video engine) run on open-weight models that BASE Station hosts on its own
+              infrastructure rather than calling out to a third-party service. Where the underlying
+              model's community licence requires attribution, the Platform displays that attribution
+              in the studio and records it on the resulting work; you must not remove or obscure it
+              when distributing the output. Certain engine outputs are made available for drafting,
+              testing, or non-commercial use only while the licensing of the underlying model is
+              being finalized — where that applies, the studio states it on the render, and you are
+              responsible for observing that limitation.
             </p>
           </Section>
 
