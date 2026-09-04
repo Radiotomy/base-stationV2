@@ -11,6 +11,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { getSirenSongStatus, persistSirenSongWav, sirenDeduct } from '../../shared/sirenSongHf.ts';
 import { generateTrackCover } from '../../shared/trackCoverArt.ts';
+import { cosForJob } from '../../shared/cosStamp.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -112,8 +113,9 @@ Deno.serve(async (req) => {
       thumbnail_url: coverUrl || '',
       is_public: false,
       ai_label: 'ai_generated',
-      ai_disclosure_label: 'ai_generated',
-      ai_disclosure_basis: 'Generated end-to-end by the Siren Song (HeartMuLa) model from style tags and lyrics.',
+      ...cos,
+      ai_disclosure_basis: 'Generated end-to-end by the Siren Song (HeartMuLa) model from style tags and lyrics. '
+        + cos.ai_disclosure_basis,
       metadata: {
         provider: 'sirensong', engine: 'hf_space', model: 'HeartMuLa 3B',
         tags: job.input_data?.tags || '',

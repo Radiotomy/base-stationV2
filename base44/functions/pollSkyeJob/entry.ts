@@ -13,6 +13,7 @@ import {
   SKYE_CFG_STRENGTH, SKYE_SAMPLE_STEPS,
 } from '../../shared/skyeEngine.ts';
 import { generateTrackCover } from '../../shared/trackCoverArt.ts';
+import { cosForJob } from '../../shared/cosStamp.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -128,6 +129,14 @@ Deno.serve(async (req) => {
 
     const usedReference = !!job.input_data?.reference_audio_url;
 
+    // Creative Ownership Score — this path finalizes itself instead of going
+    // through autoSaveJobAsset, which is why it previously stored a bare label
+    // and no score at all. Scored by the same shared engine so a Skye track is
+    // measured on the same rules as everything else in the library.
+    const { fields: cos } = cosForJob({
+      input_data: { ...job.input_data, prompt: job.input_data?.style_prompt || '' },
+    });
+
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id, user_email: user.email,
       asset_type: 'track',
@@ -136,9 +145,10 @@ Deno.serve(async (req) => {
       thumbnail_url: coverUrl || '',
       is_public: false,
       ai_label: 'ai_generated',
-      ai_disclosure_label: 'ai_generated',
+      ...cos,
       ai_disclosure_basis: 'Generated end-to-end by Skye (our DiffRhythm 2 fork) from a style prompt'
-        + (job.input_data?.lyrics ? ' and creator-supplied lyrics.' : '.'),
+        + (job.input_data?.lyrics ? ' and creator-supplied lyrics. ' : '. ')
+        + cos.ai_disclosure_basis,
       metadata: {
         provider: 'skye', engine: 'hf_space', model: 'DiffRhythm 2 (Skye)',
         style_prompt: job.input_data?.style_prompt || '',

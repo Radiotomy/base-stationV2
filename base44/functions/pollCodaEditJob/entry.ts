@@ -3,6 +3,7 @@
 // ephemeral), files a UserAsset, marks the job completed and deducts credits.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { getCodaStatus, codaAbsoluteUrl, CODA_EDIT_COST } from '../../shared/codaEngine.ts';
+import { cosForDerived } from '../../shared/cosStamp.ts';
 
 const TASK_LABEL = { cover: 'Cover', repaint: 'Repaint', extract: 'Stem extract' };
 
@@ -76,6 +77,17 @@ export default async function(req) {
 
     const label = TASK_LABEL[task] || 'Edit';
     const title = job.input_data.title || `${label} — Coda`;
+
+    // A Coda edit is a DERIVED work: the creator supplied the source recording,
+    // so it is scored on the derived-asset rules rather than as a fresh prompt
+    // generation. The RIAA track label below is kept as-is — a stem extract is
+    // 'ai_assisted' work on a human-chosen recording, and that is a separate
+    // judgement from the participation score.
+    const { fields: cos } = cosForDerived({
+      prompt: job.input_data.prompt || '',
+      sourceCount: 1,
+      isIteration: true,
+    });
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id,
       user_email: user.email,
@@ -85,8 +97,9 @@ export default async function(req) {
       is_public: false,
       origin: 'creator',
       ai_label: task === 'extract' ? 'ai_assisted' : 'ai_generated',
-      ai_disclosure_label: task === 'extract' ? 'ai_assisted' : 'ai_generated',
-      ai_disclosure_basis: `${label} performed by the Coda engine (ACE-Step 1.5) on creator-supplied source audio.`,
+      ...cos,
+      ai_disclosure_basis: `${label} performed by the Coda engine (ACE-Step 1.5) on creator-supplied source audio. `
+        + cos.ai_disclosure_basis,
       ...(task === 'extract' && job.input_data.track_name ? { stem_type: ['vocals','drums','bass'].includes(job.input_data.track_name) ? job.input_data.track_name : 'other' } : {}),
       tags: ['coda-edit', task],
       metadata: {
