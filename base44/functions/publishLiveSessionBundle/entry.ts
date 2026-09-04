@@ -62,10 +62,15 @@ Deno.serve(async (req) => {
 
     const audiusTrackId = publishRes?.data?.audius_track_id || publishRes?.audius_track_id;
     const status = publishRes?.data?.status || 'pending';
+    const note = publishRes?.data?.note || null;
 
+    // A simulated publish is NOT a success. Recording it as one is what made the
+    // Live Manager show an "On Audius" checkmark for a session that never left
+    // the platform, so it stays 'pending' and carries the reason.
     await base44.asServiceRole.entities.LiveSessionBundle.update(bundleId, {
       audius_track_id: audiusTrackId,
-      audius_publish_status: status === 'simulated' ? 'success' : (status === 'success' ? 'success' : 'pending'),
+      audius_publish_status: status === 'success' ? 'success' : 'pending',
+      audius_publish_error: status === 'simulated' ? (note || 'Audius publishing is not wired yet — this was a simulated publish.') : '',
     });
 
     return Response.json({

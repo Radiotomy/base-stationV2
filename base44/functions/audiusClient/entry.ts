@@ -18,18 +18,25 @@ const DEFAULT_DISCOVERY = 'https://discoveryprovider.audius.co';
 const APP_NAME = 'BaseStation';
 
 /**
- * Resolves the Audius base URL + auth header.
+ * Resolves the Audius base URL for READ operations.
+ *
+ * Audius carries the API key as an `api_key` QUERY PARAM on reads — it is not a
+ * Bearer credential. `Authorization: Bearer …` is reserved for the separate
+ * backend-only bearer token (app-level writes) and for per-user OAuth access
+ * tokens; sending the API key there authenticates nothing and would silently
+ * fail the moment a real write is attempted.
+ *
  * Priority:
- *   1. AUDIUS_API_KEY set → use managed gateway https://api.audius.co/v1 with Bearer auth (docs.audius.co/api/)
- *   2. AUDIUS_NODE_URL override → use it with app_name
- *   3. Fallback to dynamic discovery node lookup
+ *   1. AUDIUS_API_KEY set → managed gateway https://api.audius.co/v1 with ?api_key=
+ *   2. Fallback to dynamic discovery node lookup with ?app_name=
  */
 async function resolveAudiusBase() {
   const apiKey = Deno.env.get('AUDIUS_API_KEY');
   if (apiKey && apiKey.length > 8) {
     return {
       base: MANAGED_GATEWAY,
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' },
+      headers: { 'Accept': 'application/json' },
+      apiKey,
       useAppName: false,
     };
   }
@@ -37,15 +44,16 @@ async function resolveAudiusBase() {
     const r = await fetch('https://api.audius.co');
     const j = await r.json();
     const node = j?.data?.[0] || DEFAULT_DISCOVERY;
-    return { base: `${node}/v1`, headers: { 'Accept': 'application/json' }, useAppName: true };
+    return { base: `${node}/v1`, headers: { 'Accept': 'application/json' }, apiKey: null, useAppName: true };
   } catch {
-    return { base: `${DEFAULT_DISCOVERY}/v1`, headers: { 'Accept': 'application/json' }, useAppName: true };
+    return { base: `${DEFAULT_DISCOVERY}/v1`, headers: { 'Accept': 'application/json' }, apiKey: null, useAppName: true };
   }
 }
 
 async function audiusGet(path, params = {}) {
-  const { base, headers, useAppName } = await resolveAudiusBase();
+  const { base, headers, apiKey, useAppName } = await resolveAudiusBase();
   const url = new URL(`${base}${path}`);
+  if (apiKey) url.searchParams.set('api_key', apiKey);
   if (useAppName) url.searchParams.set('app_name', APP_NAME);
   Object.entries(params).forEach(([k, v]) => v != null && url.searchParams.set(k, v));
   const res = await fetch(url.toString(), { headers });
@@ -118,30 +126,26 @@ Deno.serve(async (req) => {
         });
       }
 
-      // === WRITE (requires key) ===
+      // === WRITE — NOT YET IMPLEMENTED ===
+      // Real Audius writes need a per-user OAuth access token (write scope) or
+      // the backend-only bearer token, plus a multipart upload to POST /tracks.
+      // Until that lands, every write reports itself as SIMULATED. It must never
+      // report 'pending' or return a plausible-looking id: callers persist what
+      // they are told, and a fabricated id renders as a real distribution.
       case 'publishTrack':
       case 'publishMetadata':
       case 'publishStems':
       case 'publishBundle': {
-        if (!apiKey) {
-          return Response.json({
-            simulated: true,
-            data: {
-              audius_track_id: `sim_${Date.now()}`,
-              status: 'simulated',
-              note: 'Set AUDIUS_API_KEY to enable real Audius publishing',
-            }
-          }, { status: 200 });
-        }
-        // Real publishing implementation goes here once keys are available.
-        // For now, return a structured success that callers can persist.
         return Response.json({
+          simulated: true,
           data: {
-            audius_track_id: `pending_${Date.now()}`,
-            status: 'pending',
-            note: 'Real Audius publish not yet wired — keys present',
+            audius_track_id: `sim_${Date.now()}`,
+            status: 'simulated',
+            note: apiKey
+              ? 'Audius publishing is not wired yet — an API key alone cannot authorize writes. A write-scope OAuth token (or app bearer token) plus a multipart upload is required.'
+              : 'Audius publishing is not wired yet, and no AUDIUS_API_KEY is configured.',
           }
-        });
+        }, { status: 200 });
       }
 
       default:

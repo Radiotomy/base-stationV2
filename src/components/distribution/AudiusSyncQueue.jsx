@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Music, ExternalLink, Loader2, Lock } from 'lucide-react';
+import { Music, ExternalLink, Loader2, Lock, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
+import { audiusPublishState, audiusTrackUrl } from '@/lib/audius/publishState';
 
 const AUDIO_TYPES = ['track', 'master', 'mashup', 'harmony'];
 
@@ -16,6 +17,14 @@ function SyncStatusBadge({ status }) {
   if (status === 'live') return (
     <Badge className="bg-emerald-500/20 text-emerald-300 border-0 gap-1">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live on Audius
+    </Badge>
+  );
+  if (status === 'simulated') return (
+    <Badge
+      className="bg-sky-500/15 text-sky-300 border-0 gap-1"
+      title="Audius publishing is not wired up yet — this track has not been distributed."
+    >
+      <FlaskConical className="w-3 h-3" /> Simulated — not live
     </Badge>
   );
   if (status === 'blocked') return (
@@ -34,7 +43,9 @@ export default function AudiusSyncQueue({ assets, connected }) {
 
   const rowState = (asset) => {
     if (syncing[asset.id]) return 'syncing';
-    if (published[asset.id] || asset.metadata?.audius_track_id) return 'live';
+    const id = published[asset.id] || asset.metadata?.audius_track_id;
+    const state = audiusPublishState(id, asset.metadata?.audius_publish_status);
+    if (state) return state;
     if ((asset.origin || 'creator') === 'loudly') return 'blocked';
     return 'idle';
   };
@@ -49,7 +60,11 @@ export default function AudiusSyncQueue({ assets, connected }) {
       const res = await base44.functions.invoke('publishToAudius', { assetId: asset.id });
       const trackId = res.data?.data?.audius_track_id;
       setPublished(p => ({ ...p, [asset.id]: trackId || true }));
-      toast.success(`"${asset.title}" published to Audius with full COS + provenance bundle`, { icon: '🛰️' });
+      if (audiusPublishState(trackId, res.data?.data?.status) === 'simulated') {
+        toast.info(`"${asset.title}" packaged with its full COS + provenance bundle — Audius delivery isn't wired up yet, so nothing was distributed.`);
+      } else {
+        toast.success(`"${asset.title}" published to Audius with full COS + provenance bundle`, { icon: '🛰️' });
+      }
     } catch (e) {
       toast.error(e?.response?.data?.error || 'Publish failed');
     } finally {
@@ -98,14 +113,14 @@ export default function AudiusSyncQueue({ assets, connected }) {
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <Switch
-                  checked={state === 'live' || state === 'syncing'}
+                  checked={state === 'live' || state === 'syncing' || state === 'simulated'}
                   disabled={state === 'live' || state === 'syncing' || state === 'blocked'}
                   onCheckedChange={(on) => on && publish(asset)}
-                  title={state === 'live' ? 'Already live on Audius' : state === 'blocked' ? 'Legacy catalog origin — publishing disabled' : 'Publish to Audius Network'}
+                  title={state === 'live' ? 'Already live on Audius' : state === 'simulated' ? 'Simulated publish — Audius delivery is not wired up yet' : state === 'blocked' ? 'Legacy catalog origin — publishing disabled' : 'Publish to Audius Network'}
                 />
-                {state === 'live' && audiusId && typeof audiusId === 'string' && !audiusId.startsWith('sim_') ? (
+                {state === 'live' && typeof audiusId === 'string' && audiusTrackUrl(audiusId) ? (
                   <a
-                    href={`https://audius.co/tracks/${audiusId}`}
+                    href={audiusTrackUrl(audiusId)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"

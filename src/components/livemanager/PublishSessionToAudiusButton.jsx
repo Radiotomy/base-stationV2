@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Headphones, Loader2, CheckCircle2 } from 'lucide-react';
+import { Headphones, Loader2, CheckCircle2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
+import { audiusPublishState } from '@/lib/audius/publishState';
 
 export default function PublishSessionToAudiusButton({ sessionId }) {
   const [bundle, setBundle] = useState(null);
@@ -16,10 +17,23 @@ export default function PublishSessionToAudiusButton({ sessionId }) {
 
   if (!bundle) return null;
 
-  if (bundle.audius_track_id) {
+  const state = audiusPublishState(bundle.audius_track_id, bundle.audius_publish_status);
+
+  if (state === 'live') {
     return (
       <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 px-3 py-1.5">
         <CheckCircle2 className="w-3.5 h-3.5" /> On Audius
+      </span>
+    );
+  }
+
+  if (state === 'simulated') {
+    return (
+      <span
+        className="flex items-center gap-1.5 text-xs font-bold text-sky-300 px-3 py-1.5"
+        title="Audius publishing is not wired up yet — this session has not been distributed."
+      >
+        <FlaskConical className="w-3.5 h-3.5" /> Simulated — not live
       </span>
     );
   }
@@ -29,8 +43,12 @@ export default function PublishSessionToAudiusButton({ sessionId }) {
     try {
       const r = await base44.functions.invoke('publishLiveSessionBundle', { bundleId: bundle.id });
       if (r.data?.audius_track_id) {
-        setBundle(b => ({ ...b, audius_track_id: r.data.audius_track_id }));
-        toast.success('Session published to Audius!', { icon: '🎧' });
+        setBundle(b => ({ ...b, audius_track_id: r.data.audius_track_id, audius_publish_status: r.data.status === 'simulated' ? 'pending' : b.audius_publish_status }));
+        if (audiusPublishState(r.data.audius_track_id, r.data.status) === 'simulated') {
+          toast.info("Session bundle packaged — Audius delivery isn't wired up yet, so nothing was distributed.");
+        } else {
+          toast.success('Session published to Audius!', { icon: '🎧' });
+        }
       } else {
         toast.error(r.data?.error || 'Publish failed');
       }
