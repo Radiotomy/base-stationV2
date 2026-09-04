@@ -58,22 +58,38 @@ export function emptySession() {
   };
 }
 
+// The demo arrangement is a REAL recording, rendered on Cadence from an authored
+// A-minor progression (Am F C G ×2 · Dm G Em Am · F G Am) at 96 BPM — 16 bars, 40s.
+// The previous demo was built from single-pitch synth clips, which is a test tone
+// repeating rather than music: nothing about it read as a part to a listener.
+const DEMO_BED_URL = 'https://base44.app/api/apps/69f37db5a0cc60c31a7afc80/files/mp/public/69f37db5a0cc60c31a7afc80/a5376378c_substation-demo-bed.wav';
+
+// Bar-by-bar roots of that same progression, so the demo bass PLAYS the bed's
+// harmony instead of droning against it. One chord per bar, 4 beats each.
+const DEMO_BASS_ROOTS = [
+  110.00, 87.31, 130.81, 98.00,   // Am  F  C  G
+  110.00, 87.31, 130.81, 98.00,   // Am  F  C  G
+  73.42,  98.00, 82.41,  110.00,  // Dm  G  Em Am
+  87.31,  98.00, 110.00, 110.00,  // F   G  Am Am
+];
+
 export function demoSession() {
   const s = emptySession();
   s.name = 'Demo Arrangement';
-  s.tracks = [newTrack('synth', 0), newTrack('synth', 1), newTrack('audio', 2), newTrack('aux', 3)];
-  s.tracks[0].name = 'Lead Synth';
+  s.tracks = [newTrack('audio', 0), newTrack('synth', 1), newTrack('audio', 2), newTrack('aux', 3)];
+  s.tracks[0].name = 'Cadence Bed';
   s.tracks[0].clips = [
-    { id: uid('c'), name: 'Motif A', kind: 'synth', start: 0, length: 8, pitch: 220, step: 0.5, gain: 0.9 },
-    { id: uid('c'), name: 'Motif B', kind: 'synth', start: 16, length: 8, pitch: 293.66, step: 0.5, gain: 0.9 },
+    { id: uid('c'), name: 'Neo-Soul Bed', kind: 'audio', start: 0, length: 64, url: DEMO_BED_URL, offset: 0, gain: 1 },
   ];
   s.tracks[1].name = 'Bass';
   s.tracks[1].pan = -0.15;
-  s.tracks[1].clips = [
-    { id: uid('c'), name: 'Sub Bass', kind: 'synth', start: 0, length: 16, pitch: 82.41, step: 1, gain: 1 },
-  ];
+  s.tracks[1].volume = 0.5; // sits under the bed rather than fighting it
+  s.tracks[1].clips = DEMO_BASS_ROOTS.map((pitch, bar) => ({
+    id: uid('c'), name: 'Bass', kind: 'synth', start: bar * 4, length: 4, pitch, step: 1, gain: 0.8,
+  }));
   s.tracks[2].name = 'Stem Slot';
   s.tracks[3].name = 'Reverb Bus';
+  s.loop = { enabled: false, start: 0, end: 64 };
   s.splits = [
     { id: uid('sp'), name: 'You', role: 'Writer', pct: 60 },
     { id: uid('sp'), name: 'Collaborator', role: 'Producer', pct: 40 },
