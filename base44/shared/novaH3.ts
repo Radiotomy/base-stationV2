@@ -23,22 +23,20 @@
 //   work: a performance clip's room tone, crowd and transient hits land on the
 //   frames they belong to.
 //
-// ENGINE CONTRACT — this Space is a Gradio app, not our FastAPI persistence
-// pattern, so the lifecycle is Gradio's two-step queue rather than /generate +
-// /status:
-//   POST /gradio_api/call/generate  { data: [...] } -> { event_id }
-//   GET  /gradio_api/call/generate/{event_id}       -> SSE: generating | complete | error
-// A completed event's payload stays readable for a short window after it
-// finishes, which is what lets us poll the stream in short windows instead of
-// holding one connection open for the whole render.
+// ENGINE CONTRACT — the same persistence-first shape every other BASE Station
+// engine uses, served by our own nova_jobs module on the Space:
+//   POST /nova/submit         -> { job_id }
+//   GET  /nova/job/{job_id}   -> { status, video_url, report, error }
+//   GET  /nova/file/{name}    -> the rendered MP4
+// Deliberately NOT Gradio's /gradio_api/call/generate stream: that handle is
+// one-shot, so a browser that blinks mid-render loses a finished job it already
+// paid GPU time for. A job record on the engine can be asked the same question
+// as many times as a creator's tab needs.
 
 const ENGINE_BASE = 'https://radiotomy-nova-h3.hf.space';
-const API_PATH = '/gradio_api/call/generate';
 
 const SUBMIT_TIMEOUT_MS = 60000;
-// One poll window. Deliberately short: each call either returns a finished
-// render or reports "still going", so a long window would just hold a socket.
-const POLL_WINDOW_MS = 25000;
+const POLL_TIMEOUT_MS = 20000;
 const DOWNLOAD_TIMEOUT_MS = 180000;
 
 export const NOVA_MODEL_ID = 'MiniMaxAI/MiniMax-H3';
@@ -159,20 +157,14 @@ export function screenNovaRequest(prompt: string): string | null {
   return null;
 }
 
-// Gradio file inputs. A reference is passed by URL — the engine fetches it
-// itself, so nothing is uploaded twice.
-function fileData(url: string) {
-  return url ? { path: url, url, meta: { _type: 'gradio.FileData' } } : null;
-}
-
 export function isNovaOutputUrl(url: string): boolean {
   return typeof url === 'string' && url.startsWith(`${ENGINE_BASE}/`);
 }
 
 /**
- * Queue a render. Returns the Gradio event id, which is the only handle to the
- * result — it is stored on the job before anything else can fail, so a booked
- * GPU render can never be orphaned by a lost response.
+ * Queue a render. Returns the engine's job id — the engine has already written
+ * its own record by the time this resolves, so a booked render can never be
+ * orphaned by a lost response on our side.
  */
 export async function submitNovaJob({
   prompt, canvas, duration, preset, seed,
@@ -182,29 +174,24 @@ export async function submitNovaJob({
   firstFrameUrl?: string; lastFrameUrl?: string; references?: string[]; enhancePrompt?: boolean;
 }) {
   const p = NOVA_PRESETS[preset] || NOVA_PRESETS[NOVA_DEFAULT_PRESET];
-  const refs = (references || []).filter(Boolean).map(fileData);
-  const data = [
+  const payload = {
     prompt,
-    fileData(firstFrameUrl || ''),
-    fileData(lastFrameUrl || ''),
     canvas,
     duration,
-    p.steps,
+    steps: p.steps,
     seed,
-    !!enhancePrompt,
-    p.acceleration,
-    'None',   // lora_preset — the presets that need a LoRA carry it in their own schedule
-    '',       // lora_repo
-    '',       // lora_filename
-    1.0,      // lora_strength
-    p.label,
-    refs.length ? refs : null,
-  ];
+    upsample: !!enhancePrompt,
+    acceleration: p.acceleration,
+    generation_preset: p.label,
+    first_frame_url: firstFrameUrl || '',
+    last_frame_url: lastFrameUrl || '',
+    references: (references || []).filter(Boolean),
+  };
 
-  const res = await fetch(`${ENGINE_BASE}${API_PATH}`, {
+  const res = await fetch(`${ENGINE_BASE}/nova/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data }),
+    body: JSON.stringify(payload),
     signal: AbortSignal.timeout(SUBMIT_TIMEOUT_MS),
   });
   if (!res.ok) {
@@ -212,75 +199,43 @@ export async function submitNovaJob({
     throw new Error(`Nova engine HTTP ${res.status}${t ? `: ${t.slice(0, 200)}` : ''}`);
   }
   const body = await res.json().catch(() => null);
-  const eventId = body?.event_id;
-  if (!eventId) throw new Error('Nova accepted the request but returned no event id');
+  const eventId = body?.job_id;
+  if (!eventId) throw new Error('Nova accepted the request but returned no job id');
   return { eventId };
 }
 
 /**
- * Read the event stream for one short window. Returns 'processing' when the
- * render is still running, 'completed' with the MP4 URL when it lands, or
- * 'failed' with the engine's own message. A dropped stream is reported as
- * processing, never as failure — a ZeroGPU worker that is still booked must not
- * be written off because our socket blinked.
+ * Ask the engine about one job. Returns 'processing' while it is queued or
+ * rendering, 'completed' with the MP4 URL when it lands, or 'failed' with the
+ * engine's own message. An unreachable engine is reported as processing, never
+ * as failure — a sleeping or restarting Space must not write off a render whose
+ * record is sitting on disk.
  */
 export async function pollNovaEvent(eventId: string) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), POLL_WINDOW_MS);
+  const pending = { status: 'processing', videoUrl: '', detail: '', error: '' };
+  let body: any = null;
   try {
-    const res = await fetch(`${ENGINE_BASE}${API_PATH}/${eventId}`, {
-      headers: { Accept: 'text/event-stream' },
-      signal: ctrl.signal,
+    const res = await fetch(`${ENGINE_BASE}/nova/job/${eventId}`, {
+      signal: AbortSignal.timeout(POLL_TIMEOUT_MS),
     });
     if (res.status === 404) {
-      return { status: 'failed', videoUrl: '', detail: '', error: 'Nova lost this render — the engine restarted before it finished.' };
+      return { ...pending, status: 'failed', error: 'Nova lost this render — the engine restarted before it finished.' };
     }
-    if (!res.ok) return { status: 'processing', videoUrl: '', detail: '', error: '' };
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let event = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (line.startsWith('event:')) { event = line.slice(6).trim(); continue; }
-        if (!line.startsWith('data:')) continue;
-        const raw = line.slice(5).trim();
-        if (!raw || raw === 'null') continue;
-
-        if (event === 'complete') {
-          let payload: any = null;
-          try { payload = JSON.parse(raw); } catch { /* keep the raw text below */ }
-          const out = Array.isArray(payload) ? payload : [];
-          const videoUrl = out[0]?.url || out[0]?.video?.url || '';
-          reader.cancel().catch(() => {});
-          if (!videoUrl) {
-            return { status: 'failed', videoUrl: '', detail: '', error: 'Nova finished but returned no video file' };
-          }
-          return { status: 'completed', videoUrl, detail: String(out[1] || out[2] || ''), error: '' };
-        }
-        if (event === 'error') {
-          reader.cancel().catch(() => {});
-          let msg = raw.slice(0, 300);
-          try { const j = JSON.parse(raw); msg = j?.message || j?.error || msg; } catch { /* raw message */ }
-          return { status: 'failed', videoUrl: '', detail: '', error: msg || 'Nova render failed' };
-        }
-      }
-    }
-    return { status: 'processing', videoUrl: '', detail: '', error: '' };
+    if (!res.ok) return pending;
+    body = await res.json();
   } catch {
-    // Window elapsed or stream dropped — the render is still on the worker.
-    return { status: 'processing', videoUrl: '', detail: '', error: '' };
-  } finally {
-    clearTimeout(timer);
+    return pending;
   }
+
+  if (body?.status === 'completed') {
+    const videoUrl = body.video_url ? `${ENGINE_BASE}${body.video_url}` : '';
+    if (!videoUrl) return { ...pending, status: 'failed', error: 'Nova finished but returned no video file' };
+    return { status: 'completed', videoUrl, detail: String(body.report || ''), error: '' };
+  }
+  if (body?.status === 'failed') {
+    return { ...pending, status: 'failed', error: String(body.error || 'Nova render failed').slice(0, 300) };
+  }
+  return pending;
 }
 
 /**
