@@ -26,9 +26,17 @@ const SONIC_LIMITS = {
   'sonic-v4-5':      { prompt: 3000, tags: 200, gpt: 200 },
   'sonic-v4-5-plus': { prompt: 3000, tags: 200, gpt: 200 },
   'sonic-v5':        { prompt: 3000, tags: 200, gpt: 200 },
-  'sonic-v5-5':      { prompt: 3000, tags: 200, gpt: 200 },
 };
-const VOCAL_GENDER_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5']);
+const VOCAL_GENDER_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5']);
+
+// Audit 2026-09-04 (docs.aimusicapi.ai/api-32136904): the mashup endpoint's own
+// model list stops at v5 — v5.5 is create-only. A v5.5 pick from the shared
+// catalog is mapped down rather than rejected, because the creator asked for
+// "newest" and a 400 would read to them as the mashup itself being broken.
+function resolveMashupModel(model) {
+  if (model === 'sonic-v5-5') return 'sonic-v5';
+  return SONIC_LIMITS[model] ? model : null;
+}
 
 function getWebhookConfig() {
   const url = Deno.env.get('AIMUSICAPI_WEBHOOK_URL');
@@ -119,7 +127,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       assetIds = [],
-      mv = 'sonic-v5',
+      mv: requestedMv = 'sonic-v5',
       custom_mode = false,            // mashups usually use AI description
       prompt,
       gpt_description_prompt,
@@ -139,7 +147,8 @@ Deno.serve(async (req) => {
     if (assetIds.length !== 2) {
       return Response.json({ error: 'Sonic mashup requires exactly 2 source tracks' }, { status: 400 });
     }
-    if (!SONIC_LIMITS[mv]) return Response.json({ error: `Invalid model: ${mv}` }, { status: 400 });
+    const mv = resolveMashupModel(requestedMv);
+    if (!mv) return Response.json({ error: `Invalid model: ${requestedMv}` }, { status: 400 });
     if (custom_mode && (!prompt || !prompt.trim()) && !make_instrumental) {
       return Response.json({ error: 'Custom mode requires lyrics in `prompt` (or enable instrumental)' }, { status: 400 });
     }

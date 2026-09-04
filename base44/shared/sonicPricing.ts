@@ -22,4 +22,9 @@ export const SONIC_COSTS = {
   upload: 2,          // added when a source must first be uploaded to Sonic
   stems_basic: 20,    // vocal + instrumental
   stems_full: 50,     // 12-track split
+  // Lossless / multi-format delivery via POST /sonic/download. Audit 2026-09-04:
+  // this replaced the legacy 1-credit /sonic/wav and costs 2 per CALL regardless
+  // of how many formats are asked for, so mp3 + wav + m4a are always requested
+  // together rather than one call per format. A 202 ("preparing") is free.
+  download: 2,
 };
