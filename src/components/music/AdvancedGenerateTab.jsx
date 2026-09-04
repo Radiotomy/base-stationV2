@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, memo } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,6 +14,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MidiExportButton from '@/components/music/MidiExportButton';
 import MasterDownloadButtons from '@/components/music/MasterDownloadButtons';
 import ChipSelector from '@/components/music/ChipSelector';
+import QuickErrorBanner from '@/components/music/quick/QuickErrorBanner';
 import ModelFamilySelect from '@/components/music/ModelFamilySelect';
 import SonicStyleControls from '@/components/music/SonicStyleControls';
 import { sonicGenerationCost } from '@/config/musicModelCatalog';
@@ -102,8 +103,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [runningMasters, setRunningMasters] = useState(false);
   const savedRef = useRef(false); // prevent duplicate auto-saves
 
-  // Debounced values to prevent input handler violations on rapid keystrokes
-  const debouncedSoundPrompt = useDebouncedValue(soundPrompt, 200);
+  // Debounced lyrics — the compatibility check re-runs on every keystroke otherwise
   const debouncedLyrics = useDebouncedValue(lyrics, 200);
 
   useEffect(() => {
@@ -492,65 +492,39 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   // Keep ref in sync so the keyboard shortcut always calls the latest generate
   generateRef.current = generate;
 
+  // Manual save — routes through the SAME builder the auto-save uses so a
+  // hand-saved track keeps its ID3 tags, lyrics, COS score and model metadata.
+  // Divergent copies of this payload were how manually-saved tracks lost their
+  // provenance fields.
   const saveToLibrary = async () => {
     const audioUrl = result?.audio_url || result?.output_url;
-    if (!audioUrl) return;
+    if (!audioUrl || savedAssetId) return;
     setSaving(true);
-    try {
-      const user = await base44.auth.me();
-      // Use the SAME complete metadata payload as auto-save so lyrics, model,
-      // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
-      const mergedLyrics = lyrics?.trim() ? lyrics : (result?.lyrics || '');
-      const participation = await calculateHumanParticipationScore({
-        userProvidedContent: (lyricsMode === 'custom' || lyricsMode === 'saved') && !!lyrics?.trim(),
-        prompt: soundPrompt || '',
-        styleOrTags: [genre, mood].filter(Boolean),
-        personaOrTemplate: selectedPersona !== 'none' || !!mastersBrief,
-        isIteration: false,
-      });
-      await base44.entities.UserAsset.create({
-        user_id: user.id,
-        user_email: user.email,
-        asset_type: 'track',
-        title: customTitle.trim() || result?.title || `${mood} ${genre} — ${providerLabel(provider)}`,
-        file_url: audioUrl,
-        thumbnail_url: result.cover_image_url || '',
-        is_public: false,
-        ai_label: participation.label,
-        ai_disclosure_label: participation.label,
-        ai_disclosure_basis: participation.basis,
-        human_participation_score: participation.score,
-        participation_signals: participation.signals,
-        ddex_ai_metadata: participation.ddex,
-        metadata: {
-          genre, mood, tempo, provider,
-          duration: result?.duration || duration,
-          bpm: result?.bpm,
-          key: result?.key,
-          model: result?.model_version || (provider === 'sonic' ? sonicModel : temporlorModel),
-          ai_assisted: true,
-          sound_prompt: soundPrompt || '',
-          lyrics: mergedLyrics,
-          tags: result?.tags || '',
-          vocal_gender: result?.vocal_gender || '',
-          vocal_timbre: result?.vocal_timbre || '',
-          content_hash: result?.content_hash || '',
-          clip_id: result?.clip_id || '',
-          wav_url: result?.wav_url || '',
-          ...(mastersBrief && {
-            masters_report: true,
-            masters_brief: mastersBrief.production_brief,
-            masters_key: mastersBrief.key,
-            masters_bpm: mastersBrief.bpm,
-            masters_chord_progression: mastersBrief.chord_progression,
-            masters_arrangement: mastersBrief.arrangement,
-            masters_used: mastersBrief.masters_used,
-          }),
-        },
-      });
+    const asset = await saveTrackToLibrary(
+      audioUrl,
+      result?.cover_image_url || '',
+      customTitle.trim() || result?.title || `${mood} ${genre} — ${providerLabel(provider)}`,
+      {
+        title: customTitle.trim() || result?.title || '',
+        bpm: result?.bpm,
+        key: result?.key,
+        duration: result?.duration || duration,
+        lyrics: lyrics?.trim() ? lyrics : (result?.lyrics || ''),
+        tags: result?.tags || '',
+        vocal_gender: result?.vocal_gender || '',
+        vocal_timbre: result?.vocal_timbre || '',
+        content_hash: result?.content_hash || '',
+        clip_id: result?.clip_id || '',
+        wav_url: result?.wav_url || '',
+        sound_prompt: soundPrompt || '',
+        model: result?.model_version || (provider === 'sonic' ? sonicModel : temporlorModel),
+      },
+    );
+    if (asset?.id) {
+      setSavedAssetId(asset.id);
       toast.success(mastersBrief ? '👑 Saved with full Masters report!' : 'Saved to library!');
-    } catch (err) {
-      toast.error(err?.response?.data?.message || err?.response?.data?.error || err.message);
+    } else {
+      toast.error('Could not save to your library — please try again.');
     }
     setSaving(false);
   };
@@ -848,43 +822,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           </div>
 
           {/* Persistent error banner — survives toast dismissal so users always see why generation stopped */}
-          <AnimatePresence>
-            {lastError && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                className={`p-4 rounded-xl border flex items-start gap-3 ${lastError.type === 'credits' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-                <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${lastError.type === 'credits' ? 'text-amber-400' : 'text-red-400'}`} />
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold mb-0.5 ${lastError.type === 'credits' ? 'text-amber-300' : 'text-red-300'}`}>
-                    {lastError.type === 'credits' ? 'Out of Credits' : 'Generation Failed'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{lastError.message}</p>
-                  {lastError.type === 'credits' && (lastError.required != null || lastError.balance != null) && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Required: <span className="font-semibold text-foreground">{lastError.required ?? '?'}</span> · Your balance: <span className="font-semibold text-foreground">{lastError.balance ?? '?'}</span>
-                    </p>
-                  )}
-                  {lastError.type === 'credits' && (
-                    <p className="text-xs text-amber-200/80 mt-2">
-                      💡 Buy a one-time credit pack or upgrade to a monthly plan for the best per-track value.
-                    </p>
-                  )}
-                  <div className="flex gap-2 mt-2 flex-wrap">
-                    {lastError.type === 'credits' && (
-                      <>
-                        <Link to="/credits">
-                          <Button size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold">Buy Credits</Button>
-                        </Link>
-                        <Link to="/credits?tab=subscriptions">
-                          <Button size="sm" variant="outline" className="rounded-lg text-xs border-amber-500/50 text-amber-300 hover:bg-amber-500/10">Upgrade Plan</Button>
-                        </Link>
-                      </>
-                    )}
-                    <Button size="sm" variant="ghost" onClick={() => setLastError(null)} className="rounded-lg text-xs">Dismiss</Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <QuickErrorBanner error={lastError} onDismiss={() => setLastError(null)} />
 
           {/* Generate Button */}
           <Button onClick={generate} disabled={isProcessing}
@@ -980,8 +918,10 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                   </div>
                 )}
                 <div className="flex gap-2 flex-wrap">
-                  <Button onClick={saveToLibrary} disabled={saving} className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
-                    <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save to Library'}
+                  <Button onClick={saveToLibrary} disabled={saving || !!savedAssetId}
+                    className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold disabled:opacity-100">
+                    {savedAssetId ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                    {savedAssetId ? 'In Your Library' : saving ? 'Saving…' : 'Save to Library'}
                   </Button>
                   <MasterDownloadButtons
                     mp3Url={audioUrl}
