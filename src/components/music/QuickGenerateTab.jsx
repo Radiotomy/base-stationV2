@@ -21,6 +21,8 @@ import { requestMaestroLyrics } from '@/lib/music/maestroLyricsBridge';
 import QuickModelPicker from '@/components/music/QuickModelPicker';
 import MaestroModelPrompt from '@/components/music/MaestroModelPrompt';
 import MaestroChatPanel from '@/components/music/maestro/MaestroChatPanel';
+import QuickSection from '@/components/music/quick/QuickSection';
+import QuickOptionsPanel from '@/components/music/quick/QuickOptionsPanel';
 import {
   DEFAULT_SONIC_MODEL,
   DEFAULT_TEMPOLOR_SONG_MODEL,
@@ -647,13 +649,55 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       {maestroMode ? <MaestroChatPanel /> : (
       <div className="space-y-6">
 
-      {/* Provider — Auto-Routed with manual override */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1.5">
-            AI Provider
-            <InfoTip text="Auto-routing picks the best provider based on your prompt: Sonic for vocals, Tempolor for genre fidelity and instrumentals (incl. Lyria 3 Pro). Override only if you have a strong preference." />
-          </p>
+      {/* Step 1 — the prompt. The only required input, so it leads the form. */}
+      <QuickSection
+        step="1"
+        title="Describe your track"
+        hint="⌘+Enter to generate"
+        tip="Describe instruments + atmosphere, not just genre. '808 sub, brushed snare, distant choir, late-night intimate' beats 'trap beat'. Stay under ~400 chars — longer prompts confuse the model."
+      >
+        <textarea
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder="e.g. An upbeat summer pop anthem with catchy hooks and bright synthesizers…"
+          rows={4}
+          className="w-full rounded-xl border border-input bg-background/60 px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
+        />
+        <p className="text-xs text-muted-foreground mt-1.5">AI will determine genre, mood, BPM, key, lyrics and more automatically.</p>
+        <details className="mt-3 rounded-xl bg-muted/40 border border-border overflow-hidden">
+          <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground">
+            Need a starting point? See examples
+          </summary>
+          <div className="p-2 pt-0 space-y-1.5">
+            {QUICK_EXAMPLES.map((ex, i) => (
+              <button key={i} onClick={() => setPrompt(ex)}
+                className="w-full text-left px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted text-xs text-muted-foreground transition-colors truncate">
+                "{ex}"
+              </button>
+            ))}
+          </div>
+        </details>
+      </QuickSection>
+
+      {/* Step 2 — everything optional, collapsed so it can't compete with the prompt */}
+      <QuickOptionsPanel
+        genreOptions={GENRE_OPTIONS}
+        selectedGenre={selectedGenre}
+        onGenre={setSelectedGenre}
+        voicePersonas={voicePersonas}
+        selectedPersona={selectedPersona}
+        onPersona={setSelectedPersona}
+        customTitle={customTitle}
+        onTitle={(v) => { setCustomTitle(v); titleRef.current = v; }}
+      />
+
+      {/* Step 3 — provider / model, auto-routed with manual override */}
+      <QuickSection
+        step="3"
+        title="Engine"
+        tip="Auto-routing picks the best provider based on your prompt: Sonic for vocals, Tempolor for genre fidelity and instrumentals (incl. Lyria 3 Pro). Override only if you have a strong preference."
+      >
+        <div className="flex items-center justify-end mb-2">
           <button onClick={() => { setShowProviderOverride(p => !p); setProviderOverride(null); setModelOverride(null); }}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors">
             {showProviderOverride ? 'Use Auto-Route' : '⚙ Pick model'}
@@ -709,92 +753,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-
-      {/* Genre Selection */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-          Genre (Optional)
-          <InfoTip text="Picking a genre locks the AI to that style. Leave blank to let the AI choose based on your prompt." />
-        </p>
-        <ChipSelector
-          chipType="genre"
-          defaults={GENRE_OPTIONS}
-          selected={selectedGenre}
-          onSelect={setSelectedGenre}
-          activeClass="bg-blue-600 text-white"
-          allowAny
-          anyLabel="Let AI Decide"
-        />
-        {selectedGenre && <p className="text-xs text-blue-300 mt-1.5">✓ AI will respect "{selectedGenre}" and tailor lyrics accordingly.</p>}
-      </div>
-
-      {/* Voice Persona Selection */}
-      {voicePersonas.length > 0 && (
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-            Voice
-            <InfoTip text="Pick a saved Voice Persona for consistent artist identity across tracks. Or let the AI choose the best fit for your prompt." />
-          </p>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setSelectedPersona('auto')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${selectedPersona === 'auto' ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground'}`}>
-              <Sparkles className="w-3 h-3" /> Best AI Voice
-            </button>
-            {voicePersonas.map(p => (
-              <button key={p.id} onClick={() => setSelectedPersona(p.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1 ${selectedPersona === p.id ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground'}`}>
-                <Mic2 className="w-3 h-3" /> {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Track Title (Optional) — custom override for the AI's auto-naming */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-          Track Title (Optional)
-          <InfoTip text="Let the AI name your track, or type your own title here — it overrides the AI's title everywhere: library, ID3 tags, and Community Buzz." />
-        </p>
-        <input
-          type="text"
-          value={customTitle}
-          onChange={e => { setCustomTitle(e.target.value); titleRef.current = e.target.value; }}
-          placeholder="Leave blank to let the AI name it"
-          maxLength={80}
-          className="w-full rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-      </div>
-
-      {/* Main Prompt */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-          <Sparkles className="w-3 h-3 text-yellow-400" /> Describe Your Track
-          <InfoTip text="Describe instruments + atmosphere, not just genre. '808 sub, brushed snare, distant choir, late-night intimate' beats 'trap beat'. Stay under ~400 chars — longer prompts confuse the model." />
-        </p>
-        <textarea
-          value={prompt}
-          onChange={e => setPrompt(e.target.value)}
-          placeholder="e.g. An upbeat summer pop anthem with catchy hooks and bright synthesizers…"
-          rows={4}
-          className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none"
-        />
-        <p className="text-xs text-muted-foreground mt-1.5">AI will determine genre, mood, BPM, key, lyrics and more automatically.</p>
-      </div>
-
-      {/* Quick Examples */}
-      <div>
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Examples</p>
-        <div className="space-y-1.5">
-          {QUICK_EXAMPLES.map((ex, i) => (
-            <button key={i} onClick={() => setPrompt(ex)}
-              className="w-full text-left px-3 py-2 rounded-lg bg-muted/50 hover:bg-muted text-xs text-muted-foreground transition-colors truncate">
-              "{ex}"
-            </button>
-          ))}
-        </div>
-      </div>
+      </QuickSection>
 
       {/* AI Params Preview */}
       <AnimatePresence>

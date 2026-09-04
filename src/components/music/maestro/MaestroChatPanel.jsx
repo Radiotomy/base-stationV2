@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, MessageSquare } from 'lucide-react';
 import MaestroAvatar from './MaestroAvatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -158,17 +158,28 @@ export default function MaestroChatPanel() {
         </div>
       )}
 
-      <div className="flex gap-2">
-        <input
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-          placeholder="Tell Maestro what you want — or ask for changes…"
-          className="flex-1 rounded-xl border border-input bg-transparent px-4 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
-        <Button onClick={() => send()} disabled={thinking || !input.trim()} className="rounded-xl px-4 gap-2 font-bold">
-          <Send className="w-4 h-4" />
-        </Button>
+      {/* Composer — deliberately raised out of the page: this is the only control
+          in a Maestro session, and on the dark studio surface a plain bordered
+          input read as decoration rather than as the place you type. */}
+      <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/[0.06] p-3 shadow-[0_0_24px_-6px_rgba(255,179,71,0.35)]">
+        <div className="flex items-center gap-1.5 mb-2">
+          <MessageSquare className="w-3.5 h-3.5 text-amber-300" />
+          <p className="text-xs font-bold text-amber-300 uppercase tracking-wide">Talk to Maestro</p>
+          <span className="text-xs text-muted-foreground ml-auto hidden sm:block">Enter to send</span>
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+            placeholder="Tell Maestro what you want — or ask for changes…"
+            className="flex-1 rounded-xl border border-amber-500/40 bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:border-amber-400"
+          />
+          <Button onClick={() => send()} disabled={thinking || !input.trim()}
+            className="rounded-xl px-5 gap-2 font-bold bg-amber-500 hover:bg-amber-400 text-black">
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <MaestroModelPrompt
