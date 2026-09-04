@@ -1,21 +1,17 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Zap, Mic2, CheckCircle, Download, Save, RotateCcw, Sparkles, Image, Palette, ChevronsRight, AlertCircle, Info, ChevronDown } from 'lucide-react';
+import { Zap, Sparkles, AlertCircle, Info, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useJobPolling } from '@/hooks/useJobPolling';
-import MidiExportButton from '@/components/music/MidiExportButton';
 import { cacheManager } from '@/utils/cacheManager';
-import ChipSelector from '@/components/music/ChipSelector';
 import { routeProvider, PROVIDER_DETAILS, providerLabel } from '@/utils/providerRouter';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
-import InfoTip from '@/components/common/InfoTip';
-import { calculateHumanParticipationScore } from '@/utils/participationScore';
+import { buildQuickTrackAsset } from '@/lib/music/quickTrackAsset';
 import MaestroModeToggle from '@/components/music/MaestroModeToggle';
 import { requestMaestroLyrics } from '@/lib/music/maestroLyricsBridge';
 import QuickModelPicker from '@/components/music/QuickModelPicker';
@@ -23,6 +19,8 @@ import MaestroModelPrompt from '@/components/music/MaestroModelPrompt';
 import MaestroChatPanel from '@/components/music/maestro/MaestroChatPanel';
 import QuickSection from '@/components/music/quick/QuickSection';
 import QuickOptionsPanel from '@/components/music/quick/QuickOptionsPanel';
+import QuickErrorBanner from '@/components/music/quick/QuickErrorBanner';
+import QuickResultCard from '@/components/music/quick/QuickResultCard';
 import {
   DEFAULT_SONIC_MODEL,
   DEFAULT_TEMPOLOR_SONG_MODEL,
@@ -60,7 +58,6 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   const [customTitle, setCustomTitle] = useState('');
   const [voicePersonas, setVoicePersonas] = useState([]);
   const [selectedPersona, setSelectedPersona] = useState('auto');
-  const titleRef = useRef('');
   // Derived: effective provider is the override (if set) or the auto-routed one
   const provider = providerOverride || routingDecision?.provider || 'sonic';
   const [generating, setGenerating] = useState(false);
@@ -69,6 +66,10 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   const [jobId, setJobId] = useState('');
   const [result, setResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  // A finished track is auto-saved server-side already. Tracking both saves keeps
+  // the button from silently filing a SECOND copy of the same recording.
+  const [autoSaved, setAutoSaved] = useState(false);
+  const [savedManually, setSavedManually] = useState(false);
   const [aiParams, setAiParams] = useState(null); // what AI decided
   const [lastError, setLastError] = useState(null); // persistent failure banner
   // Maestro Mode — lyrics routed through the Maestro Superagent craft engine (default on)
@@ -148,49 +149,16 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         console.warn('ID3 tagging skipped:', tagErr.message);
       }
 
-      // Creative Ownership Score — Quick mode is AI-driven (auto lyrics, auto params)
-      const participation = await calculateHumanParticipationScore({
-        userProvidedContent: false,
-        prompt,
-        styleOrTags: selectedGenre ? [selectedGenre] : [],
-        personaOrTemplate: selectedPersona !== 'auto',
-        isIteration: false,
-      });
-
-      await base44.entities.UserAsset.create({
-        user_id: user.id,
-        user_email: user.email,
-        asset_type: 'track',
-        title: params?.title || prompt.slice(0, 40) || 'Generated Track',
-        file_url: finalUrl,
-        thumbnail_url: coverImageUrl || '',
-        is_public: false,
-        ai_label: participation.label,
-        ai_disclosure_label: participation.label,
-        ai_disclosure_basis: participation.basis,
-        human_participation_score: participation.score,
-        participation_signals: participation.signals,
-        ddex_ai_metadata: participation.ddex,
-        metadata: {
-          genre: params?.genre,
-          mood: params?.mood,
-          bpm: params?.bpm,
-          key: params?.key,
-          duration: params?.duration,
-          provider,
-          model: params?.model || '',
-          ai_assisted: true,
-          prompt,
-          sound_prompt: params?.sound_prompt || '',
-          lyrics: params?.lyrics || '',
-          tags: params?.tags || '',
-          vocal_gender: params?.vocal_gender || '',
-          vocal_timbre: params?.vocal_timbre || '',
-          content_hash: contentHash || '',
-          auto_saved: true,
-          id3_tagged: finalUrl !== audioUrl,
-        },
-      });
+      await base44.entities.UserAsset.create(await buildQuickTrackAsset({
+        user, prompt, provider,
+        genreTag: selectedGenre,
+        personaSelected: selectedPersona !== 'auto',
+        fileUrl: finalUrl,
+        coverImageUrl,
+        params: { ...params, content_hash: contentHash },
+        metadata: { auto_saved: true, id3_tagged: finalUrl !== audioUrl },
+      }));
+      setAutoSaved(true);
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
@@ -415,6 +383,8 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     setRoutingDecision(null);
     setLastError(null);
     savedRef.current = false;
+    setAutoSaved(false);
+    setSavedManually(false);
 
     try {
       // Step 1: AI determines all parameters — check cache first
@@ -554,7 +524,6 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     } catch (err) {
       setGenerating(false);
       setMaestroStatus(null);
-      const status = err?.response?.status;
       const data = err?.response?.data;
       // Only flag as user credit issue when our own backend says so (not upstream provider 402)
       const isCredits = data?.error === 'Insufficient credits' && !data?.provider_status;
@@ -583,47 +552,30 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       // Use the SAME complete metadata payload as auto-save so lyrics, model,
       // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
       const mergedLyrics = lyricsRef.current?.trim() ? lyricsRef.current : (result?.lyrics || '');
-      const participation = await calculateHumanParticipationScore({
-        userProvidedContent: false,
-        prompt,
-        styleOrTags: selectedGenre ? [selectedGenre] : [],
-        personaOrTemplate: selectedPersona !== 'auto',
-        isIteration: false,
-      });
-      await base44.entities.UserAsset.create({
-        user_id: user.id,
-        user_email: user.email,
-        asset_type: 'track',
-        title: result?.title || aiParams?.title || prompt.slice(0, 40),
-        file_url: audioUrl,
-        thumbnail_url: result.cover_image_url || '',
-        is_public: false,
-        ai_label: participation.label,
-        ai_disclosure_label: participation.label,
-        ai_disclosure_basis: participation.basis,
-        human_participation_score: participation.score,
-        participation_signals: participation.signals,
-        ddex_ai_metadata: participation.ddex,
-        metadata: {
+      await base44.entities.UserAsset.create(await buildQuickTrackAsset({
+        user, prompt, provider,
+        genreTag: selectedGenre,
+        personaSelected: selectedPersona !== 'auto',
+        fileUrl: audioUrl,
+        coverImageUrl: result.cover_image_url,
+        params: {
+          title: result?.title || aiParams?.title || prompt.slice(0, 40),
           genre: result?.genre || aiParams?.genre,
           mood: result?.mood || aiParams?.mood,
           bpm: result?.bpm || aiParams?.bpm,
           key: result?.key,
           duration: result?.duration || aiParams?.duration,
-          provider,
           model: result?.model_version || aiParams?.model || '',
-          ai_assisted: true,
-          prompt,
           sound_prompt: aiParams?.sound_prompt || '',
           lyrics: mergedLyrics,
           tags: result?.tags || '',
           vocal_gender: result?.vocal_gender || '',
           vocal_timbre: result?.vocal_timbre || '',
           content_hash: result?.content_hash || '',
-          clip_id: result?.clip_id || '',
-          wav_url: result?.wav_url || '',
         },
-      });
+        metadata: { clip_id: result?.clip_id || '', wav_url: result?.wav_url || '' },
+      }));
+      setSavedManually(true);
       toast.success('Saved to library!');
     } catch (err) {
       toast.error(err.message);
@@ -688,7 +640,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         selectedPersona={selectedPersona}
         onPersona={setSelectedPersona}
         customTitle={customTitle}
-        onTitle={(v) => { setCustomTitle(v); titleRef.current = v; }}
+        onTitle={setCustomTitle}
       />
 
       {/* Step 3 — provider / model, auto-routed with manual override */}
@@ -792,43 +744,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       />
 
       {/* Persistent error banner — survives toast dismissal so users always see why generation stopped */}
-      <AnimatePresence>
-        {lastError && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className={`p-4 rounded-xl border flex items-start gap-3 ${lastError.type === 'credits' ? 'bg-amber-500/10 border-amber-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
-            <AlertCircle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${lastError.type === 'credits' ? 'text-amber-400' : 'text-red-400'}`} />
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-bold mb-0.5 ${lastError.type === 'credits' ? 'text-amber-300' : 'text-red-300'}`}>
-                {lastError.type === 'credits' ? 'Out of Credits' : 'Generation Failed'}
-              </p>
-              <p className="text-xs text-muted-foreground">{lastError.message}</p>
-              {lastError.type === 'credits' && (lastError.required != null || lastError.balance != null) && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Required: <span className="font-semibold text-foreground">{lastError.required ?? '?'}</span> · Your balance: <span className="font-semibold text-foreground">{lastError.balance ?? '?'}</span>
-                </p>
-              )}
-              {lastError.type === 'credits' && (
-                <p className="text-xs text-amber-200/80 mt-2">
-                  💡 Buy a one-time credit pack or upgrade to a monthly plan for the best per-track value.
-                </p>
-              )}
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {lastError.type === 'credits' && (
-                  <>
-                    <Link to="/credits">
-                      <Button size="sm" className="rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold">Buy Credits</Button>
-                    </Link>
-                    <Link to="/credits?tab=subscriptions">
-                      <Button size="sm" variant="outline" className="rounded-lg text-xs border-amber-500/50 text-amber-300 hover:bg-amber-500/10">Upgrade Plan</Button>
-                    </Link>
-                  </>
-                )}
-                <Button size="sm" variant="ghost" onClick={() => setLastError(null)} className="rounded-lg text-xs">Dismiss</Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <QuickErrorBanner error={lastError} onDismiss={() => setLastError(null)} />
 
       {/* Generate Button — wrapped so empty-prompt clicks still show feedback */}
       <div onClick={() => { if (!prompt.trim() && !isProcessing) toast.error('Enter a description for your track first.'); }}>
@@ -868,89 +784,19 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       {/* Result */}
       <AnimatePresence>
         {audioUrl && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-card rounded-2xl border border-emerald-500/30 p-5 space-y-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-bold text-emerald-400">Track Ready</span>
-              {result?.bpm && <Badge variant="outline" className="text-xs">{result.bpm} BPM</Badge>}
-              {result?.key && <Badge variant="outline" className="text-xs">{result.key}</Badge>}
-            </div>
-
-            {/* Cover Art — always shown after track completes */}
-            <div className="flex items-start gap-4">
-              {generatingCover ? (
-                <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                  <div className="w-5 h-5 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
-                </div>
-              ) : result?.cover_image_url ? (
-                <img src={result.cover_image_url} alt="Cover art" className="w-20 h-20 rounded-xl object-cover flex-shrink-0 border border-border" />
-              ) : (
-                <div className="w-20 h-20 rounded-xl bg-muted flex items-center justify-center flex-shrink-0 border border-border">
-                  <Image className="w-6 h-6 text-muted-foreground opacity-30" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-                  <Image className="w-3 h-3" />
-                  {generatingCover ? 'Generating cover art…' : result?.cover_image_url ? 'Auto-generated cover art' : 'Cover art'}
-                </p>
-                <Link to="/cover-art-studio">
-                  <Button variant="outline" size="sm" className="text-xs gap-1 rounded-lg">
-                    <Palette className="w-3 h-3" /> Upgrade in Cover Art Studio
-                  </Button>
-                </Link>
-              </div>
-            </div>
-
-            {/* Primary track */}
-            <audio controls className="w-full rounded-xl" src={audioUrl} />
-
-            {/* Lyrics preview — shows provider-returned or AI-generated lyrics */}
-            {(result?.lyrics || lyricsRef.current) && (
-              <details className="rounded-xl bg-muted/50 border border-border overflow-hidden">
-                <summary className="cursor-pointer px-4 py-2.5 text-xs font-semibold text-foreground hover:bg-muted flex items-center gap-2">
-                  <Mic2 className="w-3.5 h-3.5 text-pink-400" /> Lyrics (embedded in ID3 tags)
-                </summary>
-                <pre className="px-4 py-3 text-xs text-muted-foreground whitespace-pre-wrap font-sans max-h-72 overflow-y-auto border-t border-border">
-                  {result?.lyrics || lyricsRef.current}
-                </pre>
-              </details>
-            )}
-
-            {/* Additional Sonic tracks (track 2, 3...) */}
-            {result?.audio_urls?.length > 1 && result.audio_urls.slice(1).map((url, i) => (
-              <div key={url} className="space-y-1">
-                <p className="text-xs text-muted-foreground font-semibold">🎵 Track {i + 2}</p>
-                <audio controls className="w-full rounded-xl" src={url} />
-              </div>
-            ))}
-
-            {result?.extended_url && (
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground font-semibold">🎵 Extended Version</p>
-                <audio controls className="w-full rounded-xl" src={result.extended_url} />
-              </div>
-            )}
-            <div className="flex gap-2 flex-wrap">
-              <Button onClick={saveToLibrary} disabled={saving} className="flex-1 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold">
-                <Save className="w-4 h-4" /> {saving ? 'Saving…' : 'Save to Library'}
-              </Button>
-              <a href={audioUrl} download className="flex-1">
-                <Button variant="outline" className="w-full gap-2 rounded-xl">
-                  <Download className="w-4 h-4" /> Download
-                </Button>
-              </a>
-              <MidiExportButton clipId={result?.clip_id} bpm={result?.bpm} musicalKey={result?.key} title={aiParams?.title || 'Track'} />
-              <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
-                {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
-                {extending ? 'Extending…' : 'Extend'}
-              </Button>
-              <Button variant="outline" onClick={() => { setResult(null); setJobId(''); setAiParams(null); }} className="gap-2 rounded-xl">
-                <RotateCcw className="w-4 h-4" />
-              </Button>
-            </div>
-          </motion.div>
+          <QuickResultCard
+            result={result}
+            audioUrl={audioUrl}
+            lyrics={result?.lyrics || lyricsRef.current}
+            generatingCover={generatingCover}
+            saving={saving}
+            saved={autoSaved || savedManually}
+            onSave={saveToLibrary}
+            extending={extending}
+            onExtend={extendTrack}
+            onReset={() => { setResult(null); setJobId(''); setAiParams(null); }}
+            title={aiParams?.title}
+          />
         )}
       </AnimatePresence>
       </div>
