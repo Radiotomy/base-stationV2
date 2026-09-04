@@ -170,6 +170,16 @@ export default function SubStation() {
     patchTrack(target.id, { clips: [...target.clips, clip] });
   };
 
+  // The demo template was only reachable from onboarding, so anyone who had
+  // already onboarded had no way back to it — Reset only ever gave an empty page.
+  const loadDemo = () => {
+    if (!window.confirm('Replace this arrangement with the demo template?')) return;
+    stop();
+    setSession(demoSession());
+    setSelectedTrackId(null);
+    setSelectedClipId(null);
+  };
+
   const reset = () => {
     if (!window.confirm('Clear this arrangement and start empty?')) return;
     stop();
@@ -199,6 +209,9 @@ export default function SubStation() {
           />
           <InfoTip size="sm" side="bottom" text="A multi-track arrangement workstation. Sessions autosave to this browser; bounce a master to keep it." />
           <div className="flex-1" />
+          <button onClick={loadDemo} className="text-[10px] font-mono text-white/45 hover:text-[#14b8a6] inline-flex items-center gap-1">
+            <Sliders className="w-3 h-3" /> Load Demo
+          </button>
           <button onClick={reset} className="text-[10px] font-mono text-white/35 hover:text-[#fb7185] inline-flex items-center gap-1">
             <RotateCcw className="w-3 h-3" /> Reset
           </button>
