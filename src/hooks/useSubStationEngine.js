@@ -20,9 +20,12 @@ export default function useSubStationEngine(session) {
 
   // Keep the live graph in step with the mixer without rebuilding it
   useEffect(() => {
-    if (!engine.ctx) return;
-    engine.syncTracks(session.tracks);
+    // FX is applied unconditionally: before the first sound it is remembered by
+    // the engine and applied as the graph is built, which is what stops the
+    // audio graph ever running on raw Web Audio defaults. Track sync waits for a
+    // real context so merely opening the page never starts an audio context.
     engine.applyFx(session.fx);
+    if (engine.ctx) engine.syncTracks(session.tracks);
   }, [engine, session.tracks, session.fx]);
 
   // Loop wrap — a coarse timer is plenty and costs nothing between checks

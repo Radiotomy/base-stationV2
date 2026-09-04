@@ -96,6 +96,15 @@ export default class SubEngine {
     this.reverbMix = ctx.createGain();
     this.reverb.connect(this.reverbMix);
 
+    // The delay send is a self-feeding loop, and Web Audio's own defaults for it
+    // are delayTime 0 with unity feedback — i.e. an instant runaway oscillation
+    // the moment anything reaches it. The graph therefore starts with both sends
+    // silent and a real delay time, and only opens up once applyFx has run.
+    this.delay.delayTime.value = 0.3;
+    this.delayFb.gain.value = 0;
+    this.delayMix.gain.value = 0;
+    this.reverbMix.gain.value = 0;
+
     this.input.connect(this.eqLow); this.eqLow.connect(this.eqMid); this.eqMid.connect(this.eqHigh);
     this.eqHigh.connect(this.comp); this.comp.connect(this.limiter);
     this.limiter.connect(this.master);
@@ -103,13 +112,16 @@ export default class SubEngine {
     this.delayMix.connect(this.master); this.reverbMix.connect(this.master);
     this.master.connect(this.analyser);
     this.analyser.connect(ctx.destination);
+    // Mixer settings made before the first sound are remembered, not lost
+    if (this._pendingFx) this.applyFx(this._pendingFx);
     return ctx;
   }
 
   async resume() { this.ensure(); if (this.ctx.state === 'suspended') await this.ctx.resume(); }
 
   applyFx(fx) {
-    if (!this.ctx) return;
+    if (!this.ctx) { this._pendingFx = fx; return; }
+    this._pendingFx = null;
     this.eqLow.gain.value = fx.eq.low;
     this.eqMid.gain.value = fx.eq.mid;
     this.eqMid.frequency.value = fx.eq.midFreq;
@@ -119,8 +131,10 @@ export default class SubEngine {
     this.comp.attack.value = fx.comp.attack;
     this.comp.release.value = fx.comp.release;
     this.limiter.threshold.value = fx.limiter.ceiling;
-    this.delay.delayTime.value = fx.delay.time;
-    this.delayFb.gain.value = Math.min(0.85, fx.delay.feedback);
+    // A delay time at or near zero turns the feedback path into direct
+    // self-oscillation, so it is floored regardless of what is asked for.
+    this.delay.delayTime.value = Math.max(0.02, fx.delay.time);
+    this.delayFb.gain.value = Math.min(0.85, Math.max(0, fx.delay.feedback));
     this.delayMix.gain.value = fx.delay.mix;
     this.reverbMix.gain.value = fx.reverb.mix;
     if (this._revSize !== fx.reverb.size) {
@@ -262,6 +276,13 @@ export default class SubEngine {
   allNotesOff() {
     [...this.voices.keys()].forEach((m) => this.noteOff(m));
     this.voices.clear();
+    // Silencing the voices does not empty the delay line, which holds its own
+    // signal — Panic has to drain it or the tail keeps ringing with nothing playing.
+    if (this.ctx) {
+      const fb = this.delayFb.gain.value;
+      this.delayFb.gain.value = 0;
+      setTimeout(() => { if (this.ctx) this.delayFb.gain.value = fb; }, 400);
+    }
   }
 
   pause() {
