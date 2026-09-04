@@ -1,20 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw, Sparkles, Waves, Feather, Sunrise } from 'lucide-react';
+import { Zap, SlidersHorizontal, RotateCcw, Boxes } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
-import HarmonixGenerateTab from '@/components/music/HarmonixGenerateTab';
-import SirenSongGenerateTab from '@/components/music/SirenSongGenerateTab';
-import SkyeGenerateTab from '@/components/music/SkyeGenerateTab';
-import AuroraGenerateTab from '@/components/music/AuroraGenerateTab';
+import BaseEnginesTab from '@/components/music/base/BaseEnginesTab';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
-  { id: 'harmonix', label: '🧬 BASE CODA',         icon: Sparkles,          desc: 'BASE Engine · in-house, self-hosted — tag-driven generation across Micro, Pro & Vault tiers' },
-  { id: 'sirensong', label: '🌊 BASE Siren Song',  icon: Waves,             desc: 'BASE Engine · in-house, self-hosted — tag & lyric conditioned generation up to 6 minutes' },
-  { id: 'skye',     label: '🪶 BASE Skye',         icon: Feather,           desc: 'BASE Engine · in-house, self-hosted — prose style steering, seed-reproducible, long-form 95s–210s' },
-  { id: 'aurora',   label: '🌅 BASE Aurora',       icon: Sunrise,           desc: 'Powered by MiniMax-Music3 · self-hosted — structured-caption steering, complete songs up to 5 minutes, native 32kHz stereo WAV' },
+  { id: 'base',     label: '🏗️ BASE Engines',    icon: Boxes,             desc: 'Our in-house, self-hosted engines — CODA, Siren Song, Skye & Aurora' },
 ];
 
 export default function MusicStudio() {
@@ -76,10 +70,7 @@ export default function MusicStudio() {
       <div className="max-w-5xl mx-auto px-6 py-10">
         {activeTab === 'quick' && <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />}
         {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
-        {activeTab === 'harmonix' && <HarmonixGenerateTab />}
-        {activeTab === 'sirensong' && <SirenSongGenerateTab />}
-        {activeTab === 'skye' && <SkyeGenerateTab />}
-        {activeTab === 'aurora' && <AuroraGenerateTab />}
+        {activeTab === 'base' && <BaseEnginesTab />}
       </div>
     </div>
   );
