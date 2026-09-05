@@ -32,7 +32,12 @@ function audioExt(url, fallback = 'mp3') {
 // Coda vault renders, retrying and never completing. Above the ceiling we keep
 // the provider URL: a track that plays from the engine is strictly better than a
 // finished render reported as failed.
-const MAX_PERSIST_BYTES = 45 * 1024 * 1024;
+// A blob is handed straight to the File below rather than being decoded to an
+// ArrayBuffer first: that removes the second full-size copy, which is what
+// forced the old low ceiling and left long Coda vault WAVs (a 265s 48kHz stereo
+// render is ~100MB) sitting on the engine's ephemeral disk instead of our own
+// storage. Those tracks then died with the Space and could not be published.
+const MAX_PERSIST_BYTES = 120 * 1024 * 1024;
 
 async function persistUrl(base44, url, filename) {
   try {
@@ -45,13 +50,13 @@ async function persistUrl(base44, url, filename) {
       await r.body?.cancel();
       return url;
     }
-    const buf = await r.arrayBuffer();
-    if (buf.byteLength > MAX_PERSIST_BYTES) {
-      console.warn(`Skipping persist of ${filename}: ${buf.byteLength} bytes exceeds the in-memory ceiling`);
+    const blob = await r.blob();
+    if (blob.size > MAX_PERSIST_BYTES) {
+      console.warn(`Skipping persist of ${filename}: ${blob.size} bytes exceeds the in-memory ceiling`);
       return url;
     }
     const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
-    const file = new File([buf], safeName, { type: r.headers.get('content-type') || 'application/octet-stream' });
+    const file = new File([blob], safeName, { type: r.headers.get('content-type') || 'application/octet-stream' });
     const up = await base44.integrations.Core.UploadFile({ file });
     return up?.file_url || url;
   } catch {
