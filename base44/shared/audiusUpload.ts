@@ -20,12 +20,21 @@
 // v16's exports map forces the BROWSER bundle in this runtime, which imports
 // crypto-browserify (an Audius dev-dependency) and cannot be resolved. v9 has no
 // exports map, so the Node CJS build can be requested by path directly.
+import { Buffer } from 'node:buffer';
 import * as audiusSdkPkg from 'npm:@audius/sdk@9.1.0/dist/index.cjs.js';
 // CJS interop: the named export may sit on the namespace or under `default`.
 const sdk = audiusSdkPkg.sdk || audiusSdkPkg.default?.sdk;
 
-/** Downloads a URL into the { buffer, name } shape the SDK's file params expect. */
-async function fetchAsFile(url, fallbackName) {
+/**
+ * Downloads a URL into the file shape the SDK hands to the content node.
+ *
+ * A `File` (not a bare `{ buffer }`) is what this runtime needs: the SDK puts the
+ * value straight into FormData, and its HTTP layer rejects a raw Uint8Array with
+ * "Data after transformation must be a string, an ArrayBuffer, a Buffer, or a
+ * Stream" — every storage node then fails in turn and the upload reports as if all
+ * nodes were unhealthy, which is why this failure looked like an Audius outage.
+ */
+async function fetchAsFile(url, fallbackName, mimeFallback) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Could not read source file (${res.status}) — ${url.slice(0, 120)}`);
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -33,7 +42,11 @@ async function fetchAsFile(url, fallbackName) {
   // name without one is rejected as an unsupported file rather than transcoded.
   const fromUrl = (url.split('?')[0].split('/').pop() || '').trim();
   const name = /\.[a-z0-9]{2,4}$/i.test(fromUrl) ? fromUrl : fallbackName;
-  return { buffer: bytes, name };
+  // A Node Buffer, not a Uint8Array and not a File: the SDK branches on Blob-ness
+  // (and reaches for a browser-only helper when it sees one), while its HTTP layer
+  // only accepts a string, ArrayBuffer, Buffer or Stream. Buffer is the one shape
+  // that satisfies both, which is why neither of the obvious types works here.
+  return { buffer: Buffer.from(bytes), name };
 }
 
 /**
@@ -59,9 +72,9 @@ export async function uploadTrackToAudius({
   if (bearerToken) config.bearerToken = bearerToken;
   const audiusSdk = sdk(config);
 
-  const trackFile = await fetchAsFile(audioUrl, 'track.mp3');
+  const trackFile = await fetchAsFile(audioUrl, 'track.mp3', 'audio/mpeg');
   const coverArtFile = coverUrl
-    ? await fetchAsFile(coverUrl, 'cover.jpg').catch(() => null)
+    ? await fetchAsFile(coverUrl, 'cover.jpg', 'image/jpeg').catch(() => null)
     : null;
 
   const uploadArgs = {
