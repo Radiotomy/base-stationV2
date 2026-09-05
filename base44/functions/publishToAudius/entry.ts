@@ -114,6 +114,7 @@ Deno.serve(async (req) => {
         // Whose Audius account the upload is filed under. Without it the client
         // reports SIMULATED rather than guessing an account.
         audius_user_id: user.metadata?.audius?.audius_user_id,
+        isrc: asset.metadata?.isrc,
         stems,
         human_participation_score: cosScore,
         ai_disclosure_label: disclosureLabel,

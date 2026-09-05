@@ -60,17 +60,25 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Bundle publishing is not supported by Audius through our client yet, so this
+    // now returns a real failure. Recording anything else as success is what made
+    // the Live Manager show "On Audius" for a session that never left the platform.
+    const publishError = publishRes?.error || publishRes?.data?.error;
+    if (publishError) {
+      await base44.asServiceRole.entities.LiveSessionBundle.update(bundleId, {
+        audius_publish_status: 'failed',
+        audius_publish_error: publishError,
+      });
+      return Response.json({ error: publishError }, { status: 501 });
+    }
+
     const audiusTrackId = publishRes?.data?.audius_track_id || publishRes?.audius_track_id;
     const status = publishRes?.data?.status || 'pending';
-    const note = publishRes?.data?.note || null;
 
-    // A simulated publish is NOT a success. Recording it as one is what made the
-    // Live Manager show an "On Audius" checkmark for a session that never left
-    // the platform, so it stays 'pending' and carries the reason.
     await base44.asServiceRole.entities.LiveSessionBundle.update(bundleId, {
       audius_track_id: audiusTrackId,
       audius_publish_status: status === 'success' ? 'success' : 'pending',
-      audius_publish_error: status === 'simulated' ? (note || 'Audius publishing is not wired yet — this was a simulated publish.') : '',
+      audius_publish_error: '',
     });
 
     return Response.json({

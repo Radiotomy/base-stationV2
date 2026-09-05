@@ -74,6 +74,12 @@ export async function uploadTrackToAudius({
       mood: metadata.mood || undefined,
       tags: Array.isArray(metadata.tags) ? metadata.tags.join(',') : undefined,
       isUnlisted: metadata.isUnlisted === true,
+      // Audius' own rights + AI fields. Only sent when we actually hold a value:
+      // an empty isrc would overwrite a real one on a later edit, and
+      // aiAttributionUserId is Audius' AI-disclosure flag — setting it on a
+      // human recording would misdeclare the release on their platform.
+      isrc: metadata.isrc || undefined,
+      aiAttributionUserId: metadata.aiAttributionUserId || undefined,
     },
   };
   if (coverArtFile) uploadArgs.coverArtFile = coverArtFile;

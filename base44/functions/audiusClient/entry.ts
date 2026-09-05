@@ -164,6 +164,12 @@ Deno.serve(async (req) => {
             genre: payload.genre,
             mood: payload.mood,
             tags: payload.tags,
+            isrc: payload.isrc,
+            // Audius flags an AI release by attributing it to the account it was
+            // made under, so this is only set when our own disclosure says the
+            // recording is AI-generated.
+            aiAttributionUserId:
+              payload.ai_disclosure_label === 'ai_generated' ? audiusUserId : undefined,
           },
         });
         return Response.json({
@@ -171,20 +177,16 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Still simulated — not single-track uploads; each needs its own shape.
+      // Not implemented. These are NOT single-track uploads — a bundle, a stem set
+      // and a metadata-only edit each need their own Audius shape. They return an
+      // explicit failure rather than a `sim_` id: handing back a plausible id let
+      // callers persist a release that never happened.
       case 'publishMetadata':
       case 'publishStems':
       case 'publishBundle': {
         return Response.json({
-          simulated: true,
-          data: {
-            audius_track_id: `sim_${Date.now()}`,
-            status: 'simulated',
-            note: apiKey
-              ? 'Audius publishing is not wired yet — an API key alone cannot authorize writes. A write-scope OAuth token (or app bearer token) plus a multipart upload is required.'
-              : 'Audius publishing is not wired yet, and no AUDIUS_API_KEY is configured.',
-          }
-        }, { status: 200 });
+          error: `'${action}' is not supported yet — only single-track publishing is wired to Audius.`,
+        }, { status: 501 });
       }
 
       default:
