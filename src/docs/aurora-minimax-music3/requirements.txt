@@ -5,7 +5,9 @@ git+https://github.com/huggingface/diffusers@dafe3733fcfdbf3c48915fe77be3aef65b5
 transformers
 accelerate
 soundfile
-torch
+# Pinned as well as base-imaged: an unpinned `torch` is already satisfied by
+# whatever the image ships, so pip silently leaves an unusable 2.4 in place.
+torch>=2.6
 fastapi
 uvicorn
 pydantic
