@@ -2,7 +2,7 @@ import { base44 } from '@/api/base44Client';
 
 /**
  * Get the origin tag of an asset.
- * Returns: "creator" | "audius" | "loudly" (legacy only) | null
+ * Returns: "creator" | "audius" | null
  */
 export async function getAssetOrigin(assetId) {
   if (!assetId) return null;
@@ -15,20 +15,16 @@ export async function getAssetOrigin(assetId) {
 }
 
 /**
- * Check if asset can be published to Audius.
- * Legacy "loudly" origin (from removed Loudly integration) is still blocked.
+ * Check if asset can be published to Audius. Every origin the platform still
+ * produces (creator, audius) is eligible — there is no restricted origin.
  */
 export async function canPublishToAudius(assetId) {
-  const origin = await getAssetOrigin(assetId);
-  return origin !== 'loudly';
+  return !!(await getAssetOrigin(assetId));
 }
 
-/**
- * Sync filter — returns array of assets that pass the Audius gate.
- * Legacy "loudly" origin assets are excluded.
- */
+/** Sync filter — every asset with a known origin is Audius-eligible. */
 export function filterAudiusEligible(assets = []) {
-  return assets.filter(a => (a.origin || 'creator') !== 'loudly');
+  return assets;
 }
 
 export const ORIGIN_LABEL = {

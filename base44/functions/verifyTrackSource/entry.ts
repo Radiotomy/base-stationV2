@@ -13,7 +13,6 @@ const SOURCES = [
   { name: "Apple Music", domains: ["music.apple.com"] },
   { name: "Bandcamp", domains: ["bandcamp.com"] },
   { name: "Instagram", domains: ["instagram.com"] },
-  { name: "Loudly", domains: ["loudly.com"] },
   { name: "Boomy", domains: ["boomy.com"] },
   { name: "Mubert", domains: ["mubert.com"] },
   { name: "Beatoven", domains: ["beatoven.ai"] },

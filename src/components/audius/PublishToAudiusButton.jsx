@@ -1,21 +1,16 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Headphones, Loader2, CheckCircle2, Lock } from 'lucide-react';
+import { Headphones, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-/**
- * Reusable "Publish to Audius" button.
- * Legacy "loudly" origin assets remain blocked for licensing safety.
- */
+/** Reusable "Publish to Audius" button. */
 export default function PublishToAudiusButton({ asset, className = '', onPublished }) {
   const [loading, setLoading] = useState(false);
   const [published, setPublished] = useState(!!asset?.metadata?.audius_track_id);
 
-  const origin = asset?.origin || 'creator';
-  const isBlocked = origin === 'loudly'; // legacy assets only — no new content gets this tag
   const missingMeta = !asset?.title || !asset?.file_url;
-  const disabled = isBlocked || missingMeta || loading || published;
+  const disabled = missingMeta || loading || published;
 
   const handlePublish = async () => {
     setLoading(true);
@@ -39,14 +34,6 @@ export default function PublishToAudiusButton({ asset, className = '', onPublish
     return (
       <Button disabled variant="outline" className={`gap-2 text-emerald-400 border-emerald-500/30 ${className}`}>
         <CheckCircle2 className="w-4 h-4" /> Published to Audius
-      </Button>
-    );
-  }
-
-  if (isBlocked) {
-    return (
-      <Button disabled variant="outline" className={`gap-2 text-muted-foreground ${className}`}>
-        <Lock className="w-4 h-4" /> Audius publish unavailable
       </Button>
     );
   }

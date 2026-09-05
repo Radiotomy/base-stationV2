@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Music, ExternalLink, Loader2, Lock, FlaskConical } from 'lucide-react';
+import { Music, ExternalLink, Loader2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { audiusPublishState, audiusTrackUrl } from '@/lib/audius/publishState';
 
@@ -27,11 +27,6 @@ function SyncStatusBadge({ status }) {
       <FlaskConical className="w-3 h-3" /> Simulated — not live
     </Badge>
   );
-  if (status === 'blocked') return (
-    <Badge className="bg-white/10 text-white/50 border-0 gap-1">
-      <Lock className="w-3 h-3" /> Origin Restricted
-    </Badge>
-  );
   return <Badge className="bg-white/10 text-white/50 border-0">Not Synced</Badge>;
 }
 
@@ -46,7 +41,6 @@ export default function AudiusSyncQueue({ assets, connected }) {
     const id = published[asset.id] || asset.metadata?.audius_track_id;
     const state = audiusPublishState(id, asset.metadata?.audius_publish_status);
     if (state) return state;
-    if ((asset.origin || 'creator') === 'loudly') return 'blocked';
     return 'idle';
   };
 
@@ -114,9 +108,9 @@ export default function AudiusSyncQueue({ assets, connected }) {
               <div className="flex items-center gap-3 flex-shrink-0">
                 <Switch
                   checked={state === 'live' || state === 'syncing' || state === 'simulated'}
-                  disabled={state === 'live' || state === 'syncing' || state === 'blocked'}
+                  disabled={state === 'live' || state === 'syncing'}
                   onCheckedChange={(on) => on && publish(asset)}
-                  title={state === 'live' ? 'Already live on Audius' : state === 'simulated' ? 'Simulated publish — Audius delivery is not wired up yet' : state === 'blocked' ? 'Legacy catalog origin — publishing disabled' : 'Publish to Audius Network'}
+                  title={state === 'live' ? 'Already live on Audius' : state === 'simulated' ? 'Simulated publish — Audius delivery is not wired up yet' : 'Publish to Audius Network'}
                 />
                 {state === 'live' && typeof audiusId === 'string' && audiusTrackUrl(audiusId) ? (
                   <a
