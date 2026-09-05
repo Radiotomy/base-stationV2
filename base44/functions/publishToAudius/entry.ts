@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { getUserBearerToken } from '../../shared/audiusOAuth.ts';
+import { normalizeAudiusGenre, resolveCoverArtUrl, assertSourceReadable } from '../../shared/audiusMetadata.ts';
 
 /**
  * Publish a UserAsset (track) to Audius.
@@ -28,12 +29,23 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Asset missing title or file_url' }, { status: 400 });
     }
 
-    // Optional cover art
-    let coverArt = null;
-    if (coverArtId) {
-      const cov = await base44.entities.UserAsset.filter({ id: coverArtId });
-      coverArt = cov[0];
+    // === PRE-FLIGHT ===
+    // Audius validates artwork, genre and file readability at its content node, i.e.
+    // AFTER the whole audio file has been streamed there. Checking first turns a slow
+    // opaque rejection into an answer the creator can act on.
+    await assertSourceReadable(asset.file_url);
+
+    const cover = await resolveCoverArtUrl(base44, asset, coverArtId);
+    if (!cover.url) {
+      return Response.json({
+        error: 'Audius requires cover art on every release. Generate artwork for this track in the Cover Art Studio, then publish again.',
+        code: 'cover_art_required',
+      }, { status: 400 });
     }
+
+    // Audius' genre vocabulary is a closed list — free-text genre metadata from our
+    // studios ("neo-soul", "lofi hip hop") is rejected unless translated.
+    const audiusGenre = normalizeAudiusGenre(asset.metadata?.genre);
 
     // Embed COS provenance ID3 frames into the audio buffer before publishing
     // (mp3 only — ID3v2 is not valid inside WAV containers). Non-fatal on failure.
@@ -102,8 +114,8 @@ Deno.serve(async (req) => {
         title: asset.title,
         description: enrichedDescription,
         file_url: publishFileUrl,
-        cover_url: coverArt?.file_url || asset.thumbnail_url,
-        genre: asset.metadata?.genre,
+        cover_url: cover.url,
+        genre: audiusGenre,
         mood: asset.metadata?.mood,
         bpm: asset.metadata?.bpm,
         tags: complianceTags,

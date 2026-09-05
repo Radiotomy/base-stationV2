@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Music, ExternalLink, Loader2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { audiusPublishState, audiusTrackUrl } from '@/lib/audius/publishState';
+import MissingArtworkHint from '@/components/distribution/MissingArtworkHint';
 
 const AUDIO_TYPES = ['track', 'master', 'mashup', 'harmony'];
 
@@ -35,6 +36,13 @@ export default function AudiusSyncQueue({ assets, connected }) {
   const [published, setPublished] = useState({}); // assetId -> audius_track_id (session results)
 
   const audioAssets = assets.filter(a => AUDIO_TYPES.includes(a.asset_type));
+
+  // Cover Art Studio files artwork as its own asset pointing back at the track, so
+  // a track can have artwork without carrying a thumbnail of its own.
+  const tracksWithCoverAsset = new Set(
+    assets.filter(a => a.asset_type === 'coverart' && a.related_track_id).map(a => a.related_track_id)
+  );
+  const hasArtwork = (asset) => !!asset.thumbnail_url || tracksWithCoverAsset.has(asset.id);
 
   const rowState = (asset) => {
     if (syncing[asset.id]) return 'syncing';
@@ -106,20 +114,24 @@ export default function AudiusSyncQueue({ assets, connected }) {
                 <SyncStatusBadge status={state} />
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
-                <Switch
-                  checked={state === 'live' || state === 'syncing' || state === 'simulated'}
-                  disabled={!connected || state === 'live' || state === 'syncing'}
-                  onCheckedChange={(on) => on && publish(asset)}
-                  title={
-                    !connected
-                      ? 'Connect your Audius account above to publish'
-                      : state === 'live'
-                        ? 'Already live on Audius'
-                        : state === 'simulated'
-                          ? 'Simulated publish — this track was never distributed'
-                          : 'Publish to Audius Network'
-                  }
-                />
+                {state === 'idle' && !hasArtwork(asset) ? (
+                  <MissingArtworkHint />
+                ) : (
+                  <Switch
+                    checked={state === 'live' || state === 'syncing' || state === 'simulated'}
+                    disabled={!connected || state === 'live' || state === 'syncing'}
+                    onCheckedChange={(on) => on && publish(asset)}
+                    title={
+                      !connected
+                        ? 'Connect your Audius account above to publish'
+                        : state === 'live'
+                          ? 'Already live on Audius'
+                          : state === 'simulated'
+                            ? 'Simulated publish — this track was never distributed'
+                            : 'Publish to Audius Network'
+                    }
+                  />
+                )}
                 {state === 'live' && typeof audiusId === 'string' && audiusTrackUrl(audiusId) ? (
                   <a
                     href={audiusTrackUrl(audiusId)}
