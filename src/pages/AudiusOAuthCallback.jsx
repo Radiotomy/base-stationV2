@@ -21,6 +21,12 @@ export default function AudiusOAuthCallback() {
     (async () => {
       try {
         const sdk = await getAudiusSdk();
+        // Nothing to complete if this page was opened without a code/state —
+        // handleRedirect() on a bare visit throws and would read as a failure.
+        if (!sdk.oauth.hasRedirectResult()) {
+          setError('No Audius sign-in is in progress.');
+          return;
+        }
         await sdk.oauth.handleRedirect();
         setDone(true);
       } catch (e) {

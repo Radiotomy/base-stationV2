@@ -180,6 +180,11 @@ const AuthenticatedApp = () => {
           {/* In-world venue panel — loaded inside the Portals 3D room by every
               fan, so it sits outside MobileLayout and needs no account */}
           <Route path="/venue-panel" element={<VenuePanel />} />
+          {/* Audius OAuth return — renders inside a POPUP whose only job is to
+              forward the auth code to the opener. It must stay outside the auth
+              guard and the app chrome: a login redirect in that popup would
+              swallow the code and leave the parent's publish waiting forever. */}
+          <Route path="/audius-oauth" element={<AudiusOAuthCallback />} />
           {/* Public community forum — open to guests, no BASE Station account required */}
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/:id" element={<ForumThread />} />
@@ -248,7 +253,6 @@ const AuthenticatedApp = () => {
               <Route path="/ai-studio/history" element={<StudioHistory />} />
               <Route path="/voice-creator" element={<VoiceCreator />} />
               <Route path="/audius-callback" element={<AudiusCallback />} />
-              <Route path="/audius-oauth" element={<AudiusOAuthCallback />} />
               <Route path="/my-profile" element={<MyProfile />} />
               <Route path="/fan-hub" element={<FanHub />} />
               <Route path="/submit" element={<SubmitTrack />} />

@@ -42,11 +42,10 @@ export default function useAudiusBrowserPublish() {
       }
       const me = await sdk.oauth.getUser();
 
-      // /v1/me reports the NUMERIC id, but the upload API requires the encoded
-      // ("hashed") one — passing the numeric form fails the write. Resolving via
-      // handle is the documented way to get it.
-      const { data: profile } = await sdk.users.getUserByHandle({ handle: me.handle });
-      const userId = profile?.id;
+      // The id carried by the OAuth token is the one the upload API expects —
+      // resolving a second id by handle was wrong and produced a mismatched
+      // account on the write.
+      const userId = String(me?.userId ?? me?.sub ?? '');
       if (!userId) throw new Error('Could not resolve your Audius account id.');
 
       setPhase('preparing');
@@ -60,8 +59,13 @@ export default function useAudiusBrowserPublish() {
       ]);
 
       setPhase('uploading');
-      const audioResult = await sdk.uploads.createAudioUpload({ file: audioFile, userId }).start();
-      const coverArtSizes = await sdk.uploads.createImageUpload({ file: coverFile }).start();
+      // Independent transfers — started together so a full-length master and its
+      // artwork are not uploaded one after the other.
+      const [audioResult, coverArtSizes] = await Promise.all([
+        sdk.uploads.createAudioUpload({ file: audioFile, userId }).start(),
+        sdk.uploads.createImageUpload({ file: coverFile }).start(),
+      ]);
+      if (!audioResult?.trackCid) throw new Error('Audius did not accept the audio file.');
 
       setPhase('registering');
       const created = await sdk.tracks.createTrack({
@@ -69,6 +73,7 @@ export default function useAudiusBrowserPublish() {
         metadata: {
           ...prep.metadata,
           ...audioResult,
+          trackCid: audioResult.trackCid,
           coverArtSizes,
           // Audius flags an AI release by attributing it to the uploading account,
           // so this is set only when our own disclosure says the recording is
