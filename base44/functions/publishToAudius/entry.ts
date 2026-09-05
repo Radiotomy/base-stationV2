@@ -111,6 +111,9 @@ Deno.serve(async (req) => {
         mood: asset.metadata?.mood,
         bpm: asset.metadata?.bpm,
         tags: complianceTags,
+        // Whose Audius account the upload is filed under. Without it the client
+        // reports SIMULATED rather than guessing an account.
+        audius_user_id: user.metadata?.audius?.audius_user_id,
         stems,
         human_participation_score: cosScore,
         ai_disclosure_label: disclosureLabel,

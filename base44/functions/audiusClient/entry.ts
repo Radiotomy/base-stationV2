@@ -135,7 +135,9 @@ Deno.serve(async (req) => {
       // plausible-looking id renders in the app as a real release.
       case 'publishTrack': {
         const apiSecret = Deno.env.get('AUDIUS_API_SECRET');
-        const bearerToken = Deno.env.get('AUDIUS_BEARER_TOKEN') || undefined;
+        // A per-user OAuth bearer token can be passed in by a caller that has one;
+        // the app itself writes with apiKey + apiSecret.
+        const bearerToken = payload.bearer_token || undefined;
         const audiusUserId = payload.audius_user_id;
         if (!apiKey || !(apiSecret || bearerToken) || !audiusUserId) {
           return Response.json({

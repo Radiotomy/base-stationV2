@@ -17,9 +17,12 @@
  * named explicitly rather than collapsed into one "secret" argument.
  */
 
-// Node build explicitly: the package's default entry is the BROWSER bundle,
-// which pulls crypto-browserify and cannot resolve in this runtime.
-import { sdk } from 'npm:@audius/sdk@16.0.0/dist/index.esm.js';
+// v16's exports map forces the BROWSER bundle in this runtime, which imports
+// crypto-browserify (an Audius dev-dependency) and cannot be resolved. v9 has no
+// exports map, so the Node CJS build can be requested by path directly.
+import * as audiusSdkPkg from 'npm:@audius/sdk@9.1.0/dist/index.cjs.js';
+// CJS interop: the named export may sit on the namespace or under `default`.
+const sdk = audiusSdkPkg.sdk || audiusSdkPkg.default?.sdk;
 
 /** Downloads a URL into the { buffer, name } shape the SDK's file params expect. */
 async function fetchAsFile(url, fallbackName) {
