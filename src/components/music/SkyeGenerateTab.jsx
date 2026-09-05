@@ -9,6 +9,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import InfoTip from '@/components/common/InfoTip';
 import SkyeStyleControls from '@/components/music/SkyeStyleControls';
 import BaseEngineNotice from '@/components/music/BaseEngineNotice';
+import GenreMoodPicker from '@/components/music/GenreMoodPicker';
 import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
@@ -26,6 +27,7 @@ export default function SkyeGenerateTab() {
   const [style, setStyle] = useState({ stylePrompt: '', referenceUrl: '' });
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
+  const [release, setRelease] = useState({ genre: '', mood: '' });
   const [duration, setDuration] = useState(95);
   const [seed, setSeed] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | submitting | rendering | done | error
@@ -88,6 +90,8 @@ export default function SkyeGenerateTab() {
         duration,
         seed: Number.isFinite(numSeed) && numSeed > 0 ? Math.round(numSeed) : undefined,
         title: title || undefined,
+        genre: release.genre || undefined,
+        mood: release.mood || undefined,
       });
       refreshCreditsFromResponse(res.data);
       if (res.data?.job_id) {
@@ -156,6 +160,8 @@ export default function SkyeGenerateTab() {
           placeholder={'[Verse]\nWalking down a dusty road…\n\nor timestamped:\n[00:12.50] Walking down a dusty road…'}
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none font-mono" />
       </div>
+
+      <GenreMoodPicker genre={release.genre} mood={release.mood} onChange={setRelease} disabled={isBusy} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>

@@ -16,6 +16,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { resolveTier } from '../../shared/harmonix.ts';
 import { submitCodaGeneration, CODA_MODEL_VERSION, CODA_FIXED_PARAMS } from '../../shared/codaEngine.ts';
+import { releaseMetadata } from '../../shared/trackMetadata.ts';
 
 async function checkCreditBalance(base44, user, requiredCredits) {
   const credits = await base44.asServiceRole.entities.UserCredit.filter({ user_id: user.id });
@@ -32,7 +33,7 @@ Deno.serve(async (req) => {
 
     const {
       tier = 'pro', prompt, lyrics, duration = 60, title,
-      bpm, key_scale, time_signature, seed,
+      bpm, key_scale, time_signature, seed, genre, mood,
     } = await req.json();
     if (!prompt || !prompt.trim()) return Response.json({ error: 'prompt is required' }, { status: 400 });
 
@@ -98,6 +99,9 @@ Deno.serve(async (req) => {
         // Legacy rows without it keep the old Replicate poll path.
         engine: 'coda_hf', model: CODA_MODEL_VERSION,
         tags,
+        // Release metadata — folded into the tags channel above only if the
+        // creator typed it there; here it is stored as the track's own label.
+        ...releaseMetadata({ genre, mood }),
         bpm: safeBpm, key_scale: safeKey, time_signature: safeTimeSig || 'auto',
         seed: safeSeed,
         // Fixed by the XL Turbo engine — recorded for provenance only.

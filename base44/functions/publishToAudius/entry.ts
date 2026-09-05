@@ -49,7 +49,9 @@ Deno.serve(async (req) => {
         file_url: publishFileUrl,
         cover_url: cover.url,
         genre: audiusGenre,
-        mood: asset.metadata?.mood,
+        // Normalized by the shared payload builder — Audius' mood vocabulary is
+        // closed, so a raw free-text mood is rejected after the upload completes.
+        mood: prepared.metadata.mood,
         bpm: asset.metadata?.bpm,
         tags: complianceTags,
         // Whose Audius account the upload is filed under. Without it the client

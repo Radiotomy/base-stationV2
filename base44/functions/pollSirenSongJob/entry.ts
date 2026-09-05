@@ -105,6 +105,12 @@ Deno.serve(async (req) => {
     // mark from — marking it would embed an unrecoverable watermark, which is
     // worse than none. (48kHz ingest policy is the open decision in the Siren
     // Song integration doc.)
+    // Creative Ownership Score — this path finalizes itself rather than going
+    // through autoSaveJobAsset, so it scores with the same shared engine.
+    const { fields: cos } = cosForJob({
+      input_data: { ...job.input_data, prompt: job.input_data?.tags || '' },
+    });
+
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id, user_email: user.email,
       asset_type: 'track',
@@ -120,6 +126,10 @@ Deno.serve(async (req) => {
         provider: 'sirensong', engine: 'hf_space', model: 'HeartMuLa 3B',
         tags: job.input_data?.tags || '',
         lyrics: job.input_data?.lyrics || '',
+        // Release metadata the creator set at submit — carried onto the asset so
+        // the library and every distribution channel read it from one place.
+        genre: job.input_data?.genre || null,
+        mood: job.input_data?.mood || null,
         seed: job.input_data?.seed,
         max_audio_length_ms: job.input_data?.max_audio_length_ms,
         sample_rate: 48000, format: 'wav',

@@ -8,6 +8,7 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { submitSirenSongAudio, sirenBalance, SIREN_SONG_COST } from '../../shared/sirenSongHf.ts';
+import { releaseMetadata } from '../../shared/trackMetadata.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -15,7 +16,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { tags, lyrics, max_audio_length_ms, seed, title } = await req.json();
+    const { tags, lyrics, max_audio_length_ms, seed, title, genre, mood } = await req.json();
     if (!tags || !String(tags).trim()) {
       return Response.json({ error: 'At least one style tag is required' }, { status: 400 });
     }
@@ -66,6 +67,9 @@ Deno.serve(async (req) => {
         max_audio_length_ms: safeMs, seed: safeSeed,
         title: title || '', credit_cost: cost,
         engine: 'hf_space', model: 'HeartMuLa 3B',
+        // Release metadata — not a render parameter. Normalized at submit so the
+        // library and every distribution channel read one already-valid value.
+        ...releaseMetadata({ genre, mood }),
       },
       provider_job_id: submitted.jobId,
       started_at: startedAt,

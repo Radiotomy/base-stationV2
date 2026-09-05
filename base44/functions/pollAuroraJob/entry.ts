@@ -136,6 +136,10 @@ Deno.serve(async (req) => {
         caption_mode: job.input_data?.caption_mode || 'structured',
         caption_fields: job.input_data?.caption_fields || null,
         lyrics: job.input_data?.lyrics || '',
+        // Release metadata the creator set at submit. Distinct from the caption's
+        // own genre wording above, which is conditioning text for the model.
+        genre: job.input_data?.genre || null,
+        mood: job.input_data?.mood || null,
         duration: job.input_data?.duration,
         seed: job.input_data?.seed,
         format: 'wav',

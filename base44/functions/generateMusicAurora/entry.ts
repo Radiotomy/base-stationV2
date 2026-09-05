@@ -17,6 +17,7 @@ import {
   AURORA_COST, AURORA_MIN_DURATION, AURORA_MAX_DURATION, AURORA_DEFAULT_DURATION,
   AURORA_MODEL_ID, AURORA_MODEL_LABEL,
 } from '../../shared/auroraEngine.ts';
+import { releaseMetadata } from '../../shared/trackMetadata.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -24,7 +25,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { prompt, lyrics, duration, seed, title, caption_mode, caption_fields } = await req.json();
+    const { prompt, lyrics, duration, seed, title, caption_mode, caption_fields, genre, mood } = await req.json();
 
     if (!prompt || !String(prompt).trim()) {
       return Response.json({ error: 'A music description is required' }, { status: 400 });
@@ -86,6 +87,10 @@ Deno.serve(async (req) => {
         engine: 'hf_space',
         model: AURORA_MODEL_LABEL,
         model_id: AURORA_MODEL_ID,
+        // Release metadata — distinct from the caption's own genre wording, which
+        // is conditioning text. Normalized at submit so the library and every
+        // distribution channel read one already-valid value.
+        ...releaseMetadata({ genre, mood }),
         // How the creator authored the description. Recorded because a structured
         // caption and a prose paragraph are different authorship inputs, and the
         // COS engine reads the difference rather than guessing at it.

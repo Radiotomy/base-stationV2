@@ -15,6 +15,7 @@ import HarmonixMastersPanel from '@/components/songwriting/HarmonixMastersPanel'
 import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import HarmonixGrooveControls from '@/components/music/HarmonixGrooveControls';
 import BaseEngineNotice from '@/components/music/BaseEngineNotice';
+import GenreMoodPicker from '@/components/music/GenreMoodPicker';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
@@ -30,6 +31,7 @@ export default function HarmonixGenerateTab() {
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState(60);
+  const [release, setRelease] = useState({ genre: '', mood: '' });
   const [groove, setGroove] = useState({
     bpm: null, key_scale: '', time_signature: 'auto', seed: null,
   });
@@ -91,6 +93,11 @@ export default function HarmonixGenerateTab() {
           engine: data?.engine || engineRef.current.engine,
           prompt,
           lyrics: lyrics || '',
+          // Release metadata the creator chose before generating. Stored here as
+          // well as on the job because this tab writes its own asset row, and a
+          // track saved without it publishes as an unlabelled release.
+          genre: release.genre || null,
+          mood: release.mood || null,
           duration: data?.duration || duration,
           content_hash: data?.content_hash || '',
           ai_assisted: true,
@@ -109,7 +116,7 @@ export default function HarmonixGenerateTab() {
       toast.error(`Save failed: ${err.message}`);
     }
     setSaving(false);
-  }, [prompt, lyrics, title, duration]);
+  }, [prompt, lyrics, title, duration, release]);
 
   // Cover art — generated once per track, then attached to the saved asset.
   const generateCover = useCallback(async () => {
@@ -181,6 +188,8 @@ export default function HarmonixGenerateTab() {
         key_scale: groove.key_scale || undefined,
         time_signature: groove.time_signature,
         seed: groove.seed || undefined,
+        genre: release.genre || undefined,
+        mood: release.mood || undefined,
       });
       refreshCreditsFromResponse(res.data);
       engineRef.current = { engine: res.data?.engine || '', model: res.data?.model || '' };
@@ -288,6 +297,8 @@ export default function HarmonixGenerateTab() {
           placeholder="Leave blank for instrumental, or paste your lyrics here…"
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
       </div>
+
+      <GenreMoodPicker genre={release.genre} mood={release.mood} onChange={setRelease} disabled={isProcessing} />
 
       <div className="grid grid-cols-2 gap-3">
         <div>

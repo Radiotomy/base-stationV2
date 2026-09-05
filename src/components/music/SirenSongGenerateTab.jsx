@@ -11,6 +11,7 @@ import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage 
 import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import SongIdeaAssistant from '@/components/music/SongIdeaAssistant';
 import BaseEngineNotice from '@/components/music/BaseEngineNotice';
+import GenreMoodPicker from '@/components/music/GenreMoodPicker';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
@@ -23,6 +24,7 @@ export default function SirenSongGenerateTab() {
   const [tags, setTags] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
+  const [release, setRelease] = useState({ genre: '', mood: '' });
   const [lengthSec, setLengthSec] = useState(30);
   const [seed, setSeed] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | submitting | rendering | done | error
@@ -81,6 +83,8 @@ export default function SirenSongGenerateTab() {
         max_audio_length_ms: Math.round(lengthSec * 1000),
         seed: Number.isFinite(numSeed) && numSeed > 0 ? Math.round(numSeed) : undefined,
         title: title || undefined,
+        genre: release.genre || undefined,
+        mood: release.mood || undefined,
       });
       refreshCreditsFromResponse(res.data);
       if (res.data?.job_id) {
@@ -156,6 +160,8 @@ export default function SirenSongGenerateTab() {
           placeholder={'[Verse]\nWalking down a dusty road…\n\n[Chorus]\n…'}
           className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none font-mono" />
       </div>
+
+      <GenreMoodPicker genre={release.genre} mood={release.mood} onChange={setRelease} disabled={isBusy} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>

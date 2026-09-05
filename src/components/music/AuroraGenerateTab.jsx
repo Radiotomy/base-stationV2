@@ -12,6 +12,7 @@ import ModelMastersPanel from '@/components/songwriting/ModelMastersPanel';
 import { MODEL_DIALECTS } from '@/utils/modelLyricDialects';
 import AuroraCaptionBuilder from '@/components/music/aurora/AuroraCaptionBuilder';
 import AuroraLyricEditor from '@/components/music/aurora/AuroraLyricEditor';
+import GenreMoodPicker from '@/components/music/GenreMoodPicker';
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 import { EMPTY_CAPTION, resolveAuroraPrompt } from '@/lib/music/auroraCaption';
@@ -28,6 +29,7 @@ export default function AuroraGenerateTab() {
   const [prose, setProse] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [title, setTitle] = useState('');
+  const [release, setRelease] = useState({ genre: '', mood: '' });
   const [duration, setDuration] = useState(120);
   const [seed, setSeed] = useState('');
   const [phase, setPhase] = useState('idle'); // idle | submitting | rendering | done | error
@@ -104,6 +106,8 @@ export default function AuroraGenerateTab() {
         title: title || undefined,
         caption_mode: mode,
         caption_fields: mode === 'structured' ? caption : undefined,
+        genre: release.genre || undefined,
+        mood: release.mood || undefined,
       });
       refreshCreditsFromResponse(res.data);
       if (res.data?.job_id) {
@@ -150,6 +154,8 @@ export default function AuroraGenerateTab() {
       />
 
       <AuroraLyricEditor value={lyrics} onChange={setLyrics} disabled={isBusy} />
+
+      <GenreMoodPicker genre={release.genre} mood={release.mood} onChange={setRelease} disabled={isBusy} />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>

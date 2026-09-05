@@ -153,6 +153,10 @@ Deno.serve(async (req) => {
         provider: 'skye', engine: 'hf_space', model: 'DiffRhythm 2 (Skye)',
         style_prompt: job.input_data?.style_prompt || '',
         lyrics: job.input_data?.lyrics || '',
+        // Release metadata the creator set at submit — carried onto the asset so
+        // the library and every distribution channel read it from one place.
+        genre: job.input_data?.genre || null,
+        mood: job.input_data?.mood || null,
         // Sweep overrides recorded at submit win; otherwise the calibrated defaults.
         cfg_strength: job.input_data?.cfg_strength ?? SKYE_CFG_STRENGTH,
         sample_steps: job.input_data?.sample_steps ?? SKYE_SAMPLE_STEPS,

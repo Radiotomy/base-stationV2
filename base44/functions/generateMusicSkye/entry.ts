@@ -11,6 +11,7 @@ import {
   submitSkyeAudio, skyeBalance,
   SKYE_COST, SKYE_MIN_DURATION, SKYE_MAX_DURATION, SKYE_DEFAULT_DURATION,
 } from '../../shared/skyeEngine.ts';
+import { releaseMetadata } from '../../shared/trackMetadata.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -21,7 +22,7 @@ Deno.serve(async (req) => {
     const {
       style_prompt, lyrics,
       reference_audio_url, duration, seed, title,
-      cfg_strength, sample_steps,
+      cfg_strength, sample_steps, genre, mood,
     } = await req.json();
 
     // Calibration overrides — admin only. Creators always get the calibrated
@@ -101,6 +102,9 @@ Deno.serve(async (req) => {
         duration: safeDuration, seed: safeSeed,
         title: title || '', credit_cost: cost,
         engine: 'hf_space', model: 'DiffRhythm 2 (Skye)',
+        // Release metadata — not a render parameter. Normalized at submit so the
+        // library and every distribution channel read one already-valid value.
+        ...releaseMetadata({ genre, mood }),
         // Recorded so a sweep take is reproducible; absent = calibrated defaults.
         ...(cfgOverride !== undefined ? { cfg_strength: cfgOverride } : {}),
         ...(stepsOverride !== undefined ? { sample_steps: stepsOverride } : {}),
