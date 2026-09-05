@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { annotateTrack, annotateTracks } from '../../shared/audiusLicense.ts';
+import { uploadTrackToAudius } from '../../shared/audiusUpload.ts';
 
 /**
  * Unified Audius / OpenAudio Protocol client wrapper.
@@ -126,13 +127,49 @@ Deno.serve(async (req) => {
         });
       }
 
-      // === WRITE — NOT YET IMPLEMENTED ===
-      // Real Audius writes need a per-user OAuth access token (write scope) or
-      // the backend-only bearer token, plus a multipart upload to POST /tracks.
-      // Until that lands, every write reports itself as SIMULATED. It must never
-      // report 'pending' or return a plausible-looking id: callers persist what
-      // they are told, and a fabricated id renders as a real distribution.
-      case 'publishTrack':
+      // === WRITE ===
+      // A real upload needs the app's api key + api secret (or, when a creator has
+      // authorized the app individually, their OAuth bearer token) AND the
+      // creator's Audius user id. Missing any of them reports SIMULATED rather
+      // than 'pending' — callers persist what they are told, and a
+      // plausible-looking id renders in the app as a real release.
+      case 'publishTrack': {
+        const apiSecret = Deno.env.get('AUDIUS_API_SECRET');
+        const bearerToken = Deno.env.get('AUDIUS_BEARER_TOKEN') || undefined;
+        const audiusUserId = payload.audius_user_id;
+        if (!apiKey || !(apiSecret || bearerToken) || !audiusUserId) {
+          return Response.json({
+            simulated: true,
+            data: {
+              audius_track_id: `sim_${Date.now()}`,
+              status: 'simulated',
+              note: !audiusUserId
+                ? 'No linked Audius account — connect Audius in Distribution before publishing.'
+                : 'Audius credentials are incomplete (API key + API secret required).',
+            }
+          }, { status: 200 });
+        }
+        const uploaded = await uploadTrackToAudius({
+          apiKey,
+          apiSecret,
+          bearerToken,
+          audiusUserId,
+          audioUrl: payload.file_url,
+          coverUrl: payload.cover_url,
+          metadata: {
+            title: payload.title,
+            description: payload.description,
+            genre: payload.genre,
+            mood: payload.mood,
+            tags: payload.tags,
+          },
+        });
+        return Response.json({
+          data: { audius_track_id: uploaded.audiusTrackId, status: 'success' }
+        });
+      }
+
+      // Still simulated — not single-track uploads; each needs its own shape.
       case 'publishMetadata':
       case 'publishStems':
       case 'publishBundle': {
