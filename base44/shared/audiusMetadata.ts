@@ -232,9 +232,11 @@ export async function assertSourceReadable(url) {
   } catch (e) {
     throw new Error(`This track's audio file could not be reached for upload (${e.message}). Re-save it to your library and try again.`);
   }
-  // Some stores reject HEAD but serve GET — a ranged GET distinguishes "no HEAD
-  // support" from a genuinely unreachable file.
-  if (res.status === 405 || res.status === 501) {
+  // Some stores reject HEAD but serve GET — and they do not all answer 405/501
+  // when they do: our own file host returns a plain 404 to HEAD on files it
+  // serves perfectly over GET. So ANY failed HEAD is re-tried as a ranged GET,
+  // which is the only answer that actually proves the bytes are unreachable.
+  if (!res.ok) {
     res = await fetch(url, { headers: { Range: 'bytes=0-1' } });
   }
   if (!res.ok && res.status !== 206) {
