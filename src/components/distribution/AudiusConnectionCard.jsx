@@ -18,7 +18,15 @@ export default function AudiusConnectionCard({ audiusProfile, onConnected, onDis
   useEffect(() => {
     base44.functions
       .invoke('audiusConnection', { action: 'status' })
-      .then((res) => setConnection(res.data?.data || null))
+      .then((res) => {
+        const status = res.data?.data || null;
+        setConnection(status);
+        // The grant is the real source of truth for "can this creator publish" — the
+        // profile snapshot in user.metadata is written by a later sync and is absent
+        // right after connecting, which left the publish queue believing nobody was
+        // linked. Report the status upward so the queue unlocks immediately.
+        if (status?.connected) onConnected?.(status);
+      })
       .catch(() => setConnection(null))
       .finally(() => setLoading(false));
   }, []);

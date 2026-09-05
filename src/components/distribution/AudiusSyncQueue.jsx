@@ -108,9 +108,17 @@ export default function AudiusSyncQueue({ assets, connected }) {
               <div className="flex items-center gap-3 flex-shrink-0">
                 <Switch
                   checked={state === 'live' || state === 'syncing' || state === 'simulated'}
-                  disabled={state === 'live' || state === 'syncing'}
+                  disabled={!connected || state === 'live' || state === 'syncing'}
                   onCheckedChange={(on) => on && publish(asset)}
-                  title={state === 'live' ? 'Already live on Audius' : state === 'simulated' ? 'Simulated publish — Audius delivery is not wired up yet' : 'Publish to Audius Network'}
+                  title={
+                    !connected
+                      ? 'Connect your Audius account above to publish'
+                      : state === 'live'
+                        ? 'Already live on Audius'
+                        : state === 'simulated'
+                          ? 'Simulated publish — this track was never distributed'
+                          : 'Publish to Audius Network'
+                  }
                 />
                 {state === 'live' && typeof audiusId === 'string' && audiusTrackUrl(audiusId) ? (
                   <a
