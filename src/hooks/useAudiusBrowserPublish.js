@@ -42,11 +42,15 @@ export default function useAudiusBrowserPublish() {
       }
       const me = await sdk.oauth.getUser();
 
-      // The id carried by the OAuth token is the one the upload API expects —
-      // resolving a second id by handle was wrong and produced a mismatched
-      // account on the write.
-      const userId = String(me?.userId ?? me?.sub ?? '');
+      // getUser() returns whatever /v1/me gave back, and that response nests the
+      // account under `data` — so the id sits at me.data.id (the ENCODED form,
+      // which is the one the upload API requires), not at a top-level `userId`.
+      // Both shapes are accepted because the flat form is what an id decoded
+      // straight from the OAuth token looks like.
+      const profile = me?.data ?? me;
+      const userId = String(profile?.id ?? profile?.userId ?? me?.userId ?? '');
       if (!userId) throw new Error('Could not resolve your Audius account id.');
+      const handle = profile?.handle ?? me?.handle;
 
       setPhase('preparing');
       const prepRes = await base44.functions.invoke('audiusPublishPrepare', { assetId: asset.id });
@@ -89,7 +93,7 @@ export default function useAudiusBrowserPublish() {
         assetId: asset.id,
         audiusTrackId,
         audiusUserId: userId,
-        audiusHandle: me.handle,
+        audiusHandle: handle,
       });
 
       return audiusTrackId;
