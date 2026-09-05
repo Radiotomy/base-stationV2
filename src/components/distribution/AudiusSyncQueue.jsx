@@ -1,18 +1,25 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Music, ExternalLink, Loader2, FlaskConical } from 'lucide-react';
 import { toast } from 'sonner';
 import { audiusPublishState, audiusTrackUrl } from '@/lib/audius/publishState';
 import MissingArtworkHint from '@/components/distribution/MissingArtworkHint';
+import useAudiusBrowserPublish from '@/hooks/useAudiusBrowserPublish';
 
 const AUDIO_TYPES = ['track', 'master', 'mashup', 'harmony'];
 
-function SyncStatusBadge({ status }) {
+const PHASE_LABEL = {
+  signin: 'Waiting for Audius sign-in…',
+  preparing: 'Preparing release…',
+  uploading: 'Uploading to Audius…',
+  registering: 'Registering on protocol…',
+};
+
+function SyncStatusBadge({ status, phaseLabel }) {
   if (status === 'syncing') return (
     <Badge className="bg-amber-500/20 text-amber-300 border-0 gap-1">
-      <Loader2 className="w-3 h-3 animate-spin" /> Syncing via IPFS…
+      <Loader2 className="w-3 h-3 animate-spin" /> {phaseLabel || 'Publishing…'}
     </Badge>
   );
   if (status === 'live') return (
@@ -32,8 +39,12 @@ function SyncStatusBadge({ status }) {
 }
 
 export default function AudiusSyncQueue({ assets, connected }) {
-  const [syncing, setSyncing] = useState({});   // assetId -> true while publishing
   const [published, setPublished] = useState({}); // assetId -> audius_track_id (session results)
+  // The file itself is uploaded from the browser: Audius' upload API sends the
+  // audio straight to a storage node, which is the only path that works for a
+  // full-length master — our backend cannot send a body that large.
+  const { publish: publishFromBrowser, phase, activeAssetId } = useAudiusBrowserPublish();
+  const syncing = activeAssetId ? { [activeAssetId]: true } : {};
 
   const audioAssets = assets.filter(a => AUDIO_TYPES.includes(a.asset_type));
 
@@ -53,24 +64,15 @@ export default function AudiusSyncQueue({ assets, connected }) {
   };
 
   const publish = async (asset) => {
-    if (!connected) {
-      toast.error('Connect your Audius account above before publishing.');
-      return;
-    }
-    setSyncing(s => ({ ...s, [asset.id]: true }));
+    // No pre-check on the server-side grant: this flow signs the creator into
+    // Audius in a popup at publish time and uploads as whoever they authorize,
+    // so requiring the older grant would block a creator who has never made one.
     try {
-      const res = await base44.functions.invoke('publishToAudius', { assetId: asset.id });
-      const trackId = res.data?.data?.audius_track_id;
-      setPublished(p => ({ ...p, [asset.id]: trackId || true }));
-      if (audiusPublishState(trackId, res.data?.data?.status) === 'simulated') {
-        toast.info(`"${asset.title}" packaged with its full COS + provenance bundle — Audius delivery isn't wired up yet, so nothing was distributed.`);
-      } else {
-        toast.success(`"${asset.title}" published to Audius with full COS + provenance bundle`, { icon: '🛰️' });
-      }
+      const trackId = await publishFromBrowser(asset);
+      setPublished(p => ({ ...p, [asset.id]: trackId }));
+      toast.success(`"${asset.title}" published to Audius with full COS + provenance bundle`, { icon: '🛰️' });
     } catch (e) {
-      toast.error(e?.response?.data?.error || 'Publish failed');
-    } finally {
-      setSyncing(s => ({ ...s, [asset.id]: false }));
+      toast.error(e?.response?.data?.error || e?.message || 'Publish failed');
     }
   };
 
@@ -111,7 +113,7 @@ export default function AudiusSyncQueue({ assets, connected }) {
                 <p className="text-[9px] uppercase tracking-wider text-muted-foreground">COS</p>
               </div>
               <div className="w-40 flex-shrink-0">
-                <SyncStatusBadge status={state} />
+                <SyncStatusBadge status={state} phaseLabel={PHASE_LABEL[phase]} />
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 {state === 'idle' && !hasArtwork(asset) ? (
@@ -119,16 +121,14 @@ export default function AudiusSyncQueue({ assets, connected }) {
                 ) : (
                   <Switch
                     checked={state === 'live' || state === 'syncing' || state === 'simulated'}
-                    disabled={!connected || state === 'live' || state === 'syncing'}
+                    disabled={state === 'live' || state === 'syncing'}
                     onCheckedChange={(on) => on && publish(asset)}
                     title={
-                      !connected
-                        ? 'Connect your Audius account above to publish'
-                        : state === 'live'
-                          ? 'Already live on Audius'
-                          : state === 'simulated'
-                            ? 'Simulated publish — this track was never distributed'
-                            : 'Publish to Audius Network'
+                      state === 'live'
+                        ? 'Already live on Audius'
+                        : state === 'simulated'
+                          ? 'Simulated publish — this track was never distributed'
+                          : 'Publish to Audius — you will be asked to sign in to Audius'
                     }
                   />
                 )}

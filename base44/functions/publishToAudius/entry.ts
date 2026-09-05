@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { getUserBearerToken } from '../../shared/audiusOAuth.ts';
-import { normalizeAudiusGenre, resolveCoverArtUrl, assertSourceReadable } from '../../shared/audiusMetadata.ts';
+import { buildAudiusPublishPayload } from '../../shared/audiusPublishPayload.ts';
 
 /**
  * Publish a UserAsset (track) to Audius.
@@ -24,83 +24,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'You do not own this asset' }, { status: 403 });
     }
 
-    // Required metadata
-    if (!asset.title || !asset.file_url) {
-      return Response.json({ error: 'Asset missing title or file_url' }, { status: 400 });
-    }
-
-    // === PRE-FLIGHT ===
-    // Audius validates artwork, genre and file readability at its content node, i.e.
-    // AFTER the whole audio file has been streamed there. Checking first turns a slow
-    // opaque rejection into an answer the creator can act on.
-    await assertSourceReadable(asset.file_url);
-
-    const cover = await resolveCoverArtUrl(base44, asset, coverArtId);
-    if (!cover.url) {
-      return Response.json({
-        error: 'Audius requires cover art on every release. Generate artwork for this track in the Cover Art Studio, then publish again.',
-        code: 'cover_art_required',
-      }, { status: 400 });
-    }
-
-    // Audius' genre vocabulary is a closed list — free-text genre metadata from our
-    // studios ("neo-soul", "lofi hip hop") is rejected unless translated.
-    const audiusGenre = normalizeAudiusGenre(asset.metadata?.genre);
-
-    // Embed COS provenance ID3 frames into the audio buffer before publishing
-    // (mp3 only — ID3v2 is not valid inside WAV containers). Non-fatal on failure.
-    let publishFileUrl = asset.file_url;
-    let provenanceEmbedded = false;
-    if (/\.mp3(\?|#|$)/i.test(asset.file_url)) {
-      try {
-        const tagRes = await base44.functions.invoke('editID3Tags', {
-          audio_url: asset.file_url,
-          asset_id: assetId,
-          tags: { title: asset.title, artist: user.full_name || 'BASE Station Artist' },
-        });
-        const taggedUrl = tagRes?.data?.download_url || tagRes?.download_url;
-        if (taggedUrl) { publishFileUrl = taggedUrl; provenanceEmbedded = true; }
-      } catch (_) { /* publish the original file */ }
-    }
-
-    // COS / DDEX provenance travels with the publish payload
-    const sig = asset.participation_signals || {};
-    const cosScore = asset.human_participation_score ?? 0;
-    const ddexMeta = (asset.ddex_ai_metadata && Object.keys(asset.ddex_ai_metadata).length > 0)
-      ? asset.ddex_ai_metadata
-      : {
-          ai_lyrical_content: !sig.user_content,
-          ai_composition: cosScore < 50,
-          ai_instrumentation: !sig.reference_material,
-          ai_generated_vocals: !!sig.persona_used,
-          ai_post_production: asset.asset_type === 'master',
-        };
-
-    // === COMPLIANCE-ENRICHED EXPORT PACKAGE ===
-    // COS metrics, C2PA provenance hash, and DDEX AI-attribution descriptors
-    // travel natively in the track description + tags so the release is
-    // self-authenticating on Audius.
-    const disclosureLabel = asset.ai_disclosure_label || asset.ai_label || 'ai_generated';
-    const c2paHash = asset.c2pa_provenance_hash || asset.metadata?.c2pa_provenance_hash || null;
-    const ddexDescriptors = Object.entries(ddexMeta)
-      .filter(([, v]) => v === true)
-      .map(([k]) => k);
-    const complianceFooter = [
-      '─── PROVENANCE & AI DISCLOSURE (BASE Station) ───',
-      `Creative Ownership Score (COS): ${cosScore}/100`,
-      `AI Disclosure Label (RIAA/IFPI GenAI standard): ${disclosureLabel === 'ai_assisted' ? 'AI-Assisted' : disclosureLabel === 'human' ? 'Human' : 'AI-Generated'}`,
-      `DDEX AI Attribution: ${ddexDescriptors.length > 0 ? ddexDescriptors.join(', ') : 'none declared'}`,
-      c2paHash ? `C2PA Provenance Hash: ${c2paHash}` : null,
-      'Full provenance manifest available via BASE Station.',
-    ].filter(Boolean).join('\n');
-    const enrichedDescription = [asset.description || '', complianceFooter].filter(Boolean).join('\n\n');
-    const complianceTags = [
-      ...(asset.tags || []),
-      `cos-${Math.round(cosScore)}`,
-      disclosureLabel.replace(/_/g, '-'),
-      ...ddexDescriptors.map((d) => `ddex-${d.replace(/_/g, '-')}`),
-      ...(c2paHash ? ['c2pa-signed'] : []),
-    ];
+    // Pre-flight, genre normalization, ID3 provenance embed and the COS / DDEX /
+    // C2PA compliance package — shared with the browser publish path so both
+    // produce the same release.
+    const prepared = await buildAudiusPublishPayload(base44, user, asset, coverArtId);
+    const { cosScore, disclosureLabel, ddexMeta, c2paHash, provenanceEmbedded } = prepared;
+    const publishFileUrl = prepared.fileUrl;
+    const enrichedDescription = prepared.metadata.description;
+    const complianceTags = prepared.metadata.tags;
+    const audiusGenre = prepared.metadata.genre;
+    const cover = { url: prepared.coverUrl };
 
     // Prefer the creator's OWN Audius grant. Without it the upload would be filed
     // under the platform's app account, which misattributes the release — the whole
@@ -157,6 +90,7 @@ Deno.serve(async (req) => {
       }
     });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    const status = error.code === 'cover_art_required' ? 400 : 500;
+    return Response.json({ error: error.message, code: error.code }, { status });
   }
 });
