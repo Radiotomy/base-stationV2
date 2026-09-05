@@ -2,7 +2,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Publish a UserAsset (track) to Audius.
- * Validates origin !== "loudly" before publishing.
  *
  * Payload: { assetId, metadata?, coverArtId?, stems? }
  */
@@ -21,15 +20,6 @@ Deno.serve(async (req) => {
     if (!asset) return Response.json({ error: 'Asset not found' }, { status: 404 });
     if (asset.user_id !== user.id) {
       return Response.json({ error: 'You do not own this asset' }, { status: 403 });
-    }
-
-    // === LEGAL GATE: legacy "loudly"-origin assets remain blocked ===
-    const origin = asset.origin || 'creator';
-    if (origin === 'loudly') {
-      return Response.json({
-        error: 'This legacy asset cannot be published to Audius due to its origin.',
-        origin,
-      }, { status: 403 });
     }
 
     // Required metadata

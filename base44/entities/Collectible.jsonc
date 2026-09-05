@@ -16,7 +16,7 @@
     },
     "media_asset_id": {
       "type": "string",
-      "description": "FK to UserAsset (creator-origin or audius-origin only)"
+      "description": "FK to UserAsset"
     },
     "media_url": {
       "type": "string",
@@ -55,7 +55,7 @@
         "audius"
       ],
       "default": "creator",
-      "description": "Legal origin gate \u2014 never 'loudly'"
+      "description": "Content origin of the underlying media"
     },
     "is_active": {
       "type": "boolean",

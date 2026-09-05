@@ -80,11 +80,10 @@
       "type": "string",
       "enum": [
         "creator",
-        "loudly",
         "audius"
       ],
       "default": "creator",
-      "description": "Content origin tag for legal separation. creator=user-generated AI; loudly=Loudly catalog/AI; audius=imported from Audius"
+      "description": "Content origin tag for legal separation. creator=user-generated AI; audius=imported from Audius"
     },
     "ai_label": {
       "type": "string",

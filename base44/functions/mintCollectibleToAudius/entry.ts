@@ -20,11 +20,6 @@ Deno.serve(async (req) => {
     if (!c) return Response.json({ error: 'Not found' }, { status: 404 });
     if (c.creator_id !== user.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    // Legal gate
-    if (c.origin === 'loudly') {
-      return Response.json({ error: 'Loudly-origin cannot be minted' }, { status: 403 });
-    }
-
     // Delegate to audiusClient — graceful no-op if not implemented
     let audius_collectible_id = null;
     try {

@@ -2,7 +2,6 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 /**
  * Publish a LiveSessionBundle to Audius.
- * Validates that no Loudly-origin assets were used in the session.
  *
  * Payload: { bundleId }
  */
@@ -20,26 +19,6 @@ Deno.serve(async (req) => {
     if (!bundle) return Response.json({ error: 'Bundle not found' }, { status: 404 });
     if (bundle.performer_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // === LEGAL GATE: validate no Loudly assets used ===
-    const tracksUsed = bundle.metadata?.tracks_used || [];
-    if (tracksUsed.length > 0) {
-      const usedAssets = await Promise.all(
-        tracksUsed.map(id =>
-          base44.asServiceRole.entities.UserAsset.filter({ id }).then(r => r[0]).catch(() => null)
-        )
-      );
-      const hasLoudly = usedAssets.some(a => a && a.origin === 'loudly');
-      if (hasLoudly) {
-        await base44.asServiceRole.entities.LiveSessionBundle.update(bundleId, {
-          audius_publish_status: 'failed',
-          audius_publish_error: 'Session contains Loudly catalog tracks — cannot publish to Audius.',
-        });
-        return Response.json({
-          error: 'Session contains Loudly catalog tracks. Cannot publish to Audius.',
-        }, { status: 403 });
-      }
     }
 
     // Mark pending

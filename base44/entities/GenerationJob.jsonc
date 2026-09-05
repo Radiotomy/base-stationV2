@@ -23,7 +23,6 @@
     "provider": {
       "type": "string",
       "enum": [
-        "loudly",
         "nuro",
         "sonic",
         "producer",
