@@ -8,7 +8,7 @@
  * provenance record — it is two different claims about the same recording.
  */
 
-import { normalizeAudiusGenre, resolveCoverArtUrl, assertSourceReadable } from './audiusMetadata.ts';
+import { normalizeAudiusGenre, normalizeAudiusMood, resolveCoverArtUrl, assertSourceReadable } from './audiusMetadata.ts';
 
 export async function buildAudiusPublishPayload(base44, user, asset, coverArtId) {
   if (!asset.title || !asset.file_url) {
@@ -94,7 +94,7 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
       title: asset.title,
       description: [asset.description || '', complianceFooter].filter(Boolean).join('\n\n'),
       genre: audiusGenre,
-      mood: asset.metadata?.mood || undefined,
+      mood: normalizeAudiusMood(asset.metadata?.mood),
       tags,
       isrc: asset.metadata?.isrc || undefined,
     },

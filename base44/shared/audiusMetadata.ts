@@ -143,6 +143,55 @@ export function normalizeAudiusGenre(raw, fallback = 'Electronic') {
   return hit ? GENRE_ALIASES[hit] : fallback;
 }
 
+// Audius' mood field is a CLOSED vocabulary, exactly like genre — a free-text mood
+// from our studios ("Energetic", "Chill") is rejected by the track write with a bare
+// 400, after the audio has already been uploaded.
+const AUDIUS_MOODS = [
+  'Peaceful', 'Romantic', 'Sentimental', 'Tender', 'Easygoing', 'Yearning',
+  'Sophisticated', 'Sensual', 'Cool', 'Gritty', 'Melancholy', 'Serious',
+  'Brooding', 'Fiery', 'Defiant', 'Aggressive', 'Rowdy', 'Excited',
+  'Energizing', 'Empowering', 'Stirring', 'Upbeat', 'Other',
+];
+
+const MOOD_ALIASES = {
+  'energetic': 'Energizing', 'energy': 'Energizing', 'hype': 'Excited',
+  'hyped': 'Excited', 'happy': 'Upbeat', 'joyful': 'Upbeat', 'fun': 'Upbeat',
+  'playful': 'Easygoing', 'chill': 'Easygoing', 'chilled': 'Easygoing',
+  'relaxed': 'Peaceful', 'calm': 'Peaceful', 'ambient': 'Peaceful',
+  'dreamy': 'Yearning', 'nostalgic': 'Sentimental', 'emotional': 'Sentimental',
+  'sad': 'Melancholy', 'somber': 'Melancholy', 'dark': 'Brooding',
+  'moody': 'Brooding', 'intense': 'Fiery', 'angry': 'Aggressive',
+  'hard': 'Aggressive', 'confident': 'Empowering', 'triumphant': 'Empowering',
+  'epic': 'Stirring', 'cinematic': 'Stirring', 'smooth': 'Cool',
+  'sexy': 'Sensual', 'raw': 'Gritty', 'party': 'Rowdy', 'love': 'Romantic',
+};
+
+/**
+ * Best Audius mood for a free-text value, or undefined when nothing matches.
+ *
+ * Returns undefined rather than a default: mood is optional on a release, so an
+ * unmappable value is better omitted than guessed — a wrong mood is a false claim
+ * about the record, while a missing one costs nothing.
+ */
+export function normalizeAudiusMood(raw) {
+  if (!raw || typeof raw !== 'string') return undefined;
+  const cleaned = raw.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (!cleaned) return undefined;
+
+  const exact = AUDIUS_MOODS.find((m) => m.toLowerCase() === cleaned);
+  if (exact) return exact;
+  if (MOOD_ALIASES[cleaned]) return MOOD_ALIASES[cleaned];
+
+  for (const part of cleaned.split(/[,/|>&]+|\band\b/)) {
+    const p = part.trim();
+    if (!p) continue;
+    const partExact = AUDIUS_MOODS.find((m) => m.toLowerCase() === p);
+    if (partExact) return partExact;
+    if (MOOD_ALIASES[p]) return MOOD_ALIASES[p];
+  }
+  return undefined;
+}
+
 /**
  * Finds artwork for a track. Audius REQUIRES cover art on upload, so a track with
  * none cannot be published at all.
