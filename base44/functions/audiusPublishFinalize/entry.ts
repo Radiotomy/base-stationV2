@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { assetId, audiusTrackId, audiusUserId, audiusHandle } = await req.json();
+    const { assetId, audiusTrackId, audiusUserId, audiusHandle, audiusPermalink } = await req.json();
     if (!assetId || !audiusTrackId) {
       return Response.json({ error: 'assetId and audiusTrackId required' }, { status: 400 });
     }
@@ -38,6 +38,12 @@ Deno.serve(async (req) => {
         // the grant can later be disconnected or reconnected to a different account,
         // and the release must keep saying where it went.
         audius_published_by: audiusHandle || audiusUserId || undefined,
+        // Public audius.co URL, for share links and press material. A CONVENIENCE
+        // CACHE only: Audius rewrites the slug when a track is renamed, so the
+        // track id above stays the record of the release.
+        audius_permalink: audiusPermalink
+          ? (audiusPermalink.startsWith('http') ? audiusPermalink : `https://audius.co${audiusPermalink}`)
+          : undefined,
       },
     });
 

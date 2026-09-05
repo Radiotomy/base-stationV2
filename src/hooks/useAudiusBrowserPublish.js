@@ -94,6 +94,9 @@ export default function useAudiusBrowserPublish() {
         audiusTrackId,
         audiusUserId: userId,
         audiusHandle: handle,
+        // Only stored when Audius hands it back with the create response — never
+        // worth a second round trip, since the id alone resolves the track.
+        audiusPermalink: created?.permalink || created?.data?.permalink || undefined,
       });
 
       return audiusTrackId;
