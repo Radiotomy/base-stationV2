@@ -82,6 +82,19 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
     ...(c2paHash ? ['c2pa-signed'] : []),
   ];
 
+  // Audius caps a track description at 1000 characters and rejects the whole write
+  // past it. The disclosure footer is the part that must survive, so the creator's
+  // own prose is what gets trimmed.
+  const footerRoom = 1000 - complianceFooter.length - 2;
+  const ownDescription = (asset.description || '').slice(0, Math.max(0, footerRoom));
+  const description = [ownDescription, complianceFooter].filter(Boolean).join('\n\n');
+
+  // ISRC is format-validated by Audius (CCXXXYYNNNNN). Anything else is dropped
+  // rather than sent — a malformed code would fail the release over a field the
+  // track does not need.
+  const rawIsrc = String(asset.metadata?.isrc || '').replace(/-/g, '').toUpperCase();
+  const isrc = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(rawIsrc) ? rawIsrc : undefined;
+
   return {
     fileUrl: publishFileUrl,
     coverUrl: cover.url,
@@ -92,11 +105,11 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
     c2paHash,
     metadata: {
       title: asset.title,
-      description: [asset.description || '', complianceFooter].filter(Boolean).join('\n\n'),
+      description,
       genre: audiusGenre,
       mood: normalizeAudiusMood(asset.metadata?.mood),
       tags,
-      isrc: asset.metadata?.isrc || undefined,
+      isrc,
     },
   };
 }
