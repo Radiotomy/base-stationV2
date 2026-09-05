@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { getUserBearerToken } from '../../shared/audiusOAuth.ts';
 
 /**
  * Publish a UserAsset (track) to Audius.
@@ -89,6 +90,11 @@ Deno.serve(async (req) => {
       ...(c2paHash ? ['c2pa-signed'] : []),
     ];
 
+    // Prefer the creator's OWN Audius grant. Without it the upload would be filed
+    // under the platform's app account, which misattributes the release — the whole
+    // point of the provenance metadata below is that the artist is stated correctly.
+    const audiusAuth = await getUserBearerToken(base44, user.id, Deno.env.get('AUDIUS_API_KEY'));
+
     // Call audiusClient via service-role
     const publishRes = await base44.asServiceRole.functions.invoke('audiusClient', {
       action: 'publishTrack',
@@ -102,8 +108,11 @@ Deno.serve(async (req) => {
         bpm: asset.metadata?.bpm,
         tags: complianceTags,
         // Whose Audius account the upload is filed under. Without it the client
-        // reports SIMULATED rather than guessing an account.
-        audius_user_id: user.metadata?.audius?.audius_user_id,
+        // reports SIMULATED rather than guessing an account. The OAuth grant wins over
+        // the profile snapshot: the snapshot is display data a creator could have set
+        // for any handle, while the grant is an account they proved they control.
+        audius_user_id: audiusAuth?.audiusUserId || user.metadata?.audius?.audius_user_id,
+        bearer_token: audiusAuth?.accessToken,
         isrc: asset.metadata?.isrc,
         stems,
         human_participation_score: cosScore,

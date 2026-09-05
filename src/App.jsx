@@ -58,6 +58,7 @@ const AudiusTrending = lazy(() => import('./pages/AudiusTrending'));
 const AudiusSearch = lazy(() => import('./pages/AudiusSearch'));
 const AudiusArtist = lazy(() => import('./pages/AudiusArtist'));
 const AudiusTrack = lazy(() => import('./pages/AudiusTrack'));
+const AudiusCallback = lazy(() => import('./pages/AudiusCallback'));
 const CoverArtStudio = lazy(() => import('./pages/CoverArtStudio'));
 const StemCreatorStudio = lazy(() => import('./pages/StemCreatorStudio'));
 const LeadSheetStudio = lazy(() => import('./pages/LeadSheetStudio'));
@@ -245,6 +246,7 @@ const AuthenticatedApp = () => {
               <Route path="/sfx-studio" element={<SoundFXStudio />} />
               <Route path="/ai-studio/history" element={<StudioHistory />} />
               <Route path="/voice-creator" element={<VoiceCreator />} />
+              <Route path="/audius-callback" element={<AudiusCallback />} />
               <Route path="/my-profile" element={<MyProfile />} />
               <Route path="/fan-hub" element={<FanHub />} />
               <Route path="/submit" element={<SubmitTrack />} />
