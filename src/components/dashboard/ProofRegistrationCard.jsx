@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DownloadCertificateButton from "@/components/blockchain/DownloadCertificateButton";
 import RegistrationStatusBadge from "@/components/blockchain/RegistrationStatusBadge";
+import AudiusChainBridgeRow from "@/components/blockchain/AudiusChainBridgeRow";
 
 export default function ProofRegistrationCard({ registration, blockchain, index }) {
   const chainColor = blockchain === "base" ? "from-blue-900 to-slate-900" : "from-violet-900 to-slate-900";
@@ -49,6 +50,18 @@ export default function ProofRegistrationCard({ registration, blockchain, index 
           )}
         </div>
       </div>
+
+      {/* Renders itself away unless this work is BOTH anchored and released. */}
+      {blockchain === "base" && (
+        <div className="mt-3">
+          <AudiusChainBridgeRow
+            audiusTrackId={registration.audius_track_id}
+            audiusPermalink={registration.audius_permalink}
+            linkBasis={registration.audius_link_basis}
+            txHash={registration.transaction_hash}
+          />
+        </div>
+      )}
     </motion.div>
   );
 }

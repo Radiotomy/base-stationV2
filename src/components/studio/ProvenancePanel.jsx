@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Shield, Cpu, Layers, Combine, Sparkles, Film, Hash } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import FoundryProvenanceRow from './FoundryProvenanceRow';
+import AudiusChainBridgeRow from '@/components/blockchain/AudiusChainBridgeRow';
 
 /**
  * Phase 3 — Provenance Viewer
@@ -19,6 +20,10 @@ import FoundryProvenanceRow from './FoundryProvenanceRow';
 export default function ProvenancePanel({ assetId, asset: assetProp }) {
   const [asset, setAsset] = useState(assetProp || null);
   const [sources, setSources] = useState([]);
+  // The anchor row, not the asset, is what knows HOW the Audius link was made
+  // (inside the calldata vs. an off-chain back-link). The asset only knows that
+  // both facts exist, which is not enough to state the strength of the claim.
+  const [anchor, setAnchor] = useState(null);
 
   useEffect(() => {
     if (assetProp) { setAsset(assetProp); return; }
@@ -34,6 +39,14 @@ export default function ProvenancePanel({ assetId, asset: assetProp }) {
     Promise.all(ids.map(id => base44.entities.UserAsset.filter({ id }).then(r => r[0]).catch(() => null)))
       .then(rows => setSources(rows.filter(Boolean)));
   }, [asset?.id]);
+
+  useEffect(() => {
+    const registryId = asset?.chain_registry_id;
+    if (!registryId) { setAnchor(null); return; }
+    base44.entities.BaseTrackRegistry.filter({ id: registryId })
+      .then(rows => setAnchor(rows[0] || null))
+      .catch(() => setAnchor(null));
+  }, [asset?.chain_registry_id]);
 
   if (!asset) return null;
   const m = asset.metadata || {};
@@ -91,6 +104,14 @@ export default function ProvenancePanel({ assetId, asset: assetProp }) {
       )}
 
       <FoundryProvenanceRow insert={m.foundry_insert} />
+
+      {/* Renders itself away unless this work is BOTH anchored and released. */}
+      <AudiusChainBridgeRow
+        audiusTrackId={anchor?.audius_track_id || m.audius_track_id}
+        audiusPermalink={anchor?.audius_permalink || m.audius_permalink}
+        linkBasis={anchor?.audius_link_basis}
+        txHash={asset.chain_tx_hash || anchor?.transaction_hash}
+      />
 
       {m.content_hash && (
         <div className="flex items-center gap-2 p-2.5 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">

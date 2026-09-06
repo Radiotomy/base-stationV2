@@ -56,11 +56,14 @@ the chain actually proves.
 - `registerOnBase` admin retry reproduces the full field set instead of a narrower anchor.
 
 ### Remaining Tier 2 polish (small, high value)
-1. **Surface the link in the UI** — show "Anchored + Published" with both the BaseScan
-   and audius.co links on `ProvenancePanel` / `ProofOfOwnershipTab`, including the
-   in-calldata vs back-link distinction.
+1. ✅ **UI surface** — `components/blockchain/AudiusChainBridgeRow.jsx`, shown on
+   `ProofRegistrationCard` (Proof of Ownership) and `ProvenancePanel`. It renders the
+   two link strengths differently *in words*, not just colour, and defaults to the
+   WEAKER claim when the basis is unknown — never overstate what the chain proves.
+   `ProvenancePanel` reads the anchor row rather than the asset, because only the
+   registry row knows how the link was made.
 2. **Backfill** — a one-off pass linking already-published + already-anchored assets
-   (back-link basis only; their calldata cannot change).
+   (back-link basis only; their calldata cannot change). *Deliberately deferred.*
 3. **`getCosManifest`** — include the anchor tx + Audius id so the exported manifest
    carries the bridge.
 
