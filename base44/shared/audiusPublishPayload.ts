@@ -9,6 +9,9 @@
  */
 
 import { normalizeAudiusGenre, normalizeAudiusMood, resolveCoverArtUrl, assertSourceReadable } from './audiusMetadata.ts';
+// The disclosure package is shared with the metadata-refresh path so a correction
+// to a live release restates the same claim rather than composing a new one.
+import { buildComplianceMetadata, normalizeIsrc } from './audiusCompliance.ts';
 
 export async function buildAudiusPublishPayload(base44, user, asset, coverArtId) {
   if (!asset.title || !asset.file_url) {
@@ -47,61 +50,16 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
     } catch (_) { /* publish the original file */ }
   }
 
-  const sig = asset.participation_signals || {};
-  const cosScore = asset.human_participation_score ?? 0;
-  const ddexMeta = (asset.ddex_ai_metadata && Object.keys(asset.ddex_ai_metadata).length > 0)
-    ? asset.ddex_ai_metadata
-    : {
-        ai_lyrical_content: !sig.user_content,
-        ai_composition: cosScore < 50,
-        ai_instrumentation: !sig.reference_material,
-        ai_generated_vocals: !!sig.persona_used,
-        ai_post_production: asset.asset_type === 'master',
-      };
-
   // COS metrics, C2PA provenance hash and DDEX AI-attribution descriptors travel
   // natively in the description + tags so the release is self-authenticating on
   // Audius even for someone who never visits BASE Station.
-  const disclosureLabel = asset.ai_disclosure_label || asset.ai_label || 'ai_generated';
-  const c2paHash = asset.c2pa_provenance_hash || asset.metadata?.c2pa_provenance_hash || null;
-  // Audius ↔ chain bridge, off-platform half: when this work is already anchored on
-  // Base, the transaction is named in the release itself. That is what lets a
-  // listener who never visits BASE Station verify the recording against a public
-  // chain record instead of taking the footer's word for it.
-  const anchorTxHash = asset.chain_status === 'registered' ? (asset.chain_tx_hash || null) : null;
-  const ddexDescriptors = Object.entries(ddexMeta).filter(([, v]) => v === true).map(([k]) => k);
-  const complianceFooter = [
-    '─── PROVENANCE & AI DISCLOSURE (BASE Station) ───',
-    `Creative Ownership Score (COS): ${cosScore}/100`,
-    `AI Disclosure Label (RIAA/IFPI GenAI standard): ${disclosureLabel === 'ai_assisted' ? 'AI-Assisted' : disclosureLabel === 'human' ? 'Human' : 'AI-Generated'}`,
-    `DDEX AI Attribution: ${ddexDescriptors.length > 0 ? ddexDescriptors.join(', ') : 'none declared'}`,
-    c2paHash ? `C2PA Provenance Hash: ${c2paHash}` : null,
-    anchorTxHash ? `On-Chain Provenance Anchor (Base mainnet): ${anchorTxHash}` : null,
-    anchorTxHash ? `Verify: https://basescan.org/tx/${anchorTxHash}` : null,
-    'Full provenance manifest available via BASE Station.',
-  ].filter(Boolean).join('\n');
-
-  const tags = [
-    ...(asset.tags || []),
-    `cos-${Math.round(cosScore)}`,
-    disclosureLabel.replace(/_/g, '-'),
-    ...ddexDescriptors.map((d) => `ddex-${d.replace(/_/g, '-')}`),
-    ...(c2paHash ? ['c2pa-signed'] : []),
-    ...(anchorTxHash ? ['base-anchored'] : []),
-  ];
-
-  // Audius caps a track description at 1000 characters and rejects the whole write
-  // past it. The disclosure footer is the part that must survive, so the creator's
-  // own prose is what gets trimmed.
-  const footerRoom = 1000 - complianceFooter.length - 2;
-  const ownDescription = (asset.description || '').slice(0, Math.max(0, footerRoom));
-  const description = [ownDescription, complianceFooter].filter(Boolean).join('\n\n');
+  const compliance = buildComplianceMetadata(asset);
+  const { cosScore, disclosureLabel, ddexMeta, c2paHash, anchorTxHash, description, tags } = compliance;
 
   // ISRC is format-validated by Audius (CCXXXYYNNNNN). Anything else is dropped
   // rather than sent — a malformed code would fail the release over a field the
   // track does not need.
-  const rawIsrc = String(asset.metadata?.isrc || '').replace(/-/g, '').toUpperCase();
-  const isrc = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/.test(rawIsrc) ? rawIsrc : undefined;
+  const isrc = normalizeIsrc(asset.metadata?.isrc);
 
   return {
     fileUrl: publishFileUrl,

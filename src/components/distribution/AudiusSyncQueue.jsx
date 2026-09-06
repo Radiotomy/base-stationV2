@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { audiusPublishState, audiusTrackUrl } from '@/lib/audius/publishState';
 import MissingArtworkHint from '@/components/distribution/MissingArtworkHint';
 import useAudiusBrowserPublish from '@/hooks/useAudiusBrowserPublish';
+import RefreshProvenanceButton from '@/components/distribution/RefreshProvenanceButton';
 
 const AUDIO_TYPES = ['track', 'master', 'mashup', 'harmony'];
 
@@ -132,6 +133,7 @@ export default function AudiusSyncQueue({ assets, connected }) {
                     }
                   />
                 )}
+                {state === 'live' ? <RefreshProvenanceButton asset={asset} /> : null}
                 {state === 'live' && typeof audiusId === 'string' && audiusTrackUrl(audiusId) ? (
                   <a
                     href={audiusTrackUrl(audiusId)}

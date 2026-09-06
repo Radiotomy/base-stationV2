@@ -75,10 +75,25 @@ Each of these is genuinely valuable but adds real complexity. Ordered so the che
 wins come first.
 
 ### 3a. Complete Audius publishing (no new infra)
-`audiusClient` currently returns **501** for these. Highest-value gap, no new concepts.
-- **`publishMetadata`** — metadata-only edits to an existing release (title, genre,
-  description). Needed so a corrected COS score or disclosure label can reach a track
-  that is already live. *Smallest and most useful of the three.*
+- ✅ **`publishMetadata`** — IMPLEMENTED. `shared/audiusUpdate.ts` + the
+  `refreshAudiusMetadata` function, surfaced as "Refresh provenance" on live rows in
+  the Distribution sync queue. Three things are load-bearing:
+  1. **Read-merge-write.** Audius' update REPLACES metadata, so the live record is
+     fetched first and corrections are laid over it. Sending only changed fields
+     would blank a title or artwork the creator edited on Audius itself.
+  2. **Ownership is verified against the live track**, not our database — a stored
+     `audius_track_id` can be stale, and an edit must never land on a stranger's
+     release. (Confirmed working: a mismatched id was refused by handle.)
+  3. **The footer is composed server-side** from the stored asset via
+     `shared/audiusCompliance.ts` (extracted from `audiusPublishPayload.ts` so a
+     correction restates the same claim a fresh publish would make, rather than
+     composing a second one). A creator cannot talk their release into a better
+     disclosure than their records support.
+  A no-op is reported as `unchanged`, not as a failure — matching values are the
+  desired end state. Asset records `audius_declared_cos` / `audius_declared_label`
+  so a release published under a superseded label is distinguishable from a
+  restated one. **Not yet exercised:** an actual mutating write (both live test
+  tracks already matched), so `tracks.updateTrack` itself is unverified against Audius.
 - **`publishStems`** — Audius models stems as a track relationship, not a multi-upload;
   needs the parent track id plus per-stem category mapping. Pairs naturally with the
   existing Sever/on-device stem engines.

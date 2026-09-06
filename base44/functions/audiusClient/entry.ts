@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { annotateTrack, annotateTracks } from '../../shared/audiusLicense.ts';
 import { uploadTrackToAudius } from '../../shared/audiusUpload.ts';
+import { updateTrackOnAudius } from '../../shared/audiusUpdate.ts';
 
 /**
  * Unified Audius / OpenAudio Protocol client wrapper.
@@ -177,11 +178,49 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Not implemented. These are NOT single-track uploads — a bundle, a stem set
-      // and a metadata-only edit each need their own Audius shape. They return an
-      // explicit failure rather than a `sim_` id: handing back a plausible id let
-      // callers persist a release that never happened.
-      case 'publishMetadata':
+      // Metadata-only correction to a release that is already live. Never an
+      // upload: re-uploading the same recording would create a second release,
+      // which is precisely what a provenance record must not do.
+      case 'publishMetadata': {
+        const apiSecret = Deno.env.get('AUDIUS_API_SECRET');
+        const bearerToken = payload.bearer_token || undefined;
+        const audiusUserId = payload.audius_user_id;
+        if (!apiKey || !(apiSecret || bearerToken) || !audiusUserId) {
+          return Response.json({
+            error: !audiusUserId
+              ? 'No linked Audius account — connect Audius in Distribution before editing a release.'
+              : 'Audius credentials are incomplete (API key + API secret required).',
+          }, { status: 400 });
+        }
+        const result = await updateTrackOnAudius({
+          apiKey,
+          apiSecret,
+          bearerToken,
+          audiusUserId,
+          audiusTrackId: payload.audius_track_id,
+          changes: {
+            title: payload.title,
+            description: payload.description,
+            genre: payload.genre,
+            mood: payload.mood,
+            tags: payload.tags,
+            isrc: payload.isrc,
+          },
+        });
+        return Response.json({
+          data: {
+            audius_track_id: result.audiusTrackId,
+            updated_fields: result.updated,
+            unchanged: result.unchanged,
+            status: 'success',
+          }
+        });
+      }
+
+      // Not implemented. These are NOT single-track uploads — a bundle and a stem
+      // set each need their own Audius shape. They return an explicit failure
+      // rather than a `sim_` id: handing back a plausible id let callers persist a
+      // release that never happened.
       case 'publishStems':
       case 'publishBundle': {
         return Response.json({
