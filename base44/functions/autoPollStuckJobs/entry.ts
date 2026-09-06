@@ -33,6 +33,37 @@ Deno.serve(async (req) => {
 
     const candidates = stuck.filter(j => j.provider_job_id && j.created_date < cutoff);
 
+    const errors = [];
+
+    // ── Orphan reaping ───────────────────────────────────────────────────────
+    // A job with NO provider_job_id never reached its provider: submission failed
+    // or the submitting worker died before it could record the task id. There is
+    // nothing to poll, so the finalize path above can never see these rows — they
+    // sat in 'processing' forever, which is why "stuck jobs" looked like a
+    // permanent condition rather than a transient one.
+    //
+    // The window is deliberately much longer than the finalize cutoff: some submit
+    // paths record the task id from a background continuation moments after the row
+    // is created, and failing a job that is still mid-handshake would destroy a
+    // perfectly good render. 15 minutes is far past any legitimate submit.
+    const ORPHAN_CUTOFF = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const orphans = stuck.filter(j => !j.provider_job_id && j.created_date < ORPHAN_CUTOFF);
+    let reaped = 0;
+    for (const job of orphans) {
+      try {
+        await base44.asServiceRole.entities.GenerationJob.update(job.id, {
+          status: 'failed',
+          // Named plainly: the creator's credits were never deducted (that happens
+          // on finalize), so the honest instruction is simply to run it again.
+          error_message: 'This generation never started at the provider — the submission did not complete. No credits were charged; please try again.',
+          completed_at: new Date().toISOString(),
+        });
+        reaped += 1;
+      } catch (err) {
+        errors.push({ job_id: job.id, error: err.message });
+      }
+    }
+
     // Finalizing a job can hold an entire master in memory to re-host it (the
     // persist ceiling alone is 120MB), and this worker has one memory budget for
     // the whole invocation. Draining every candidate in one pass is what was
@@ -46,7 +77,6 @@ Deno.serve(async (req) => {
     const toProcess = candidates.slice(0, BATCH);
 
     let finalized = 0;
-    const errors = [];
     for (const job of toProcess) {
       try {
         // Pass the plain admin-scoped client (not .asServiceRole) — finalizeJob
@@ -80,6 +110,9 @@ Deno.serve(async (req) => {
       // never drains is visible rather than silently deferred forever.
       deferred: Math.max(0, candidates.length - toProcess.length),
       finalized,
+      // Jobs that never reached their provider and were closed out as failed.
+      orphans: orphans.length,
+      reaped,
       siren_song: sirenSong,
       errors,
       timestamp: new Date().toISOString(),

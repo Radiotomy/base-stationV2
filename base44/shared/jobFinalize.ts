@@ -37,7 +37,37 @@ function audioExt(url, fallback = 'mp3') {
 // forced the old low ceiling and left long Coda vault WAVs (a 265s 48kHz stereo
 // render is ~100MB) sitting on the engine's ephemeral disk instead of our own
 // storage. Those tracks then died with the Space and could not be published.
-const MAX_PERSIST_BYTES = 120 * 1024 * 1024;
+// 120MB was aspirational, not survivable. Re-hosting needs the bytes AND the File
+// the upload is built from live at once, so the true cost is a multiple of the file
+// size — a 100MB WAV killed the isolate outright. An OOM is not a caught failure:
+// the worker dies mid-finalize, so the job is never marked completed OR failed and
+// the next run repeats the identical crash forever. That is what made "stuck jobs"
+// look permanent. A ceiling the worker can actually survive is worth more than a
+// high one that turns a finished render into an infinite retry.
+const MAX_PERSIST_BYTES = 40 * 1024 * 1024;
+
+// Read at most `cap` bytes, aborting the moment the body proves larger.
+// Necessary because a provider that omits content-length (HF Spaces do) gave the
+// old code nothing to check before `blob()` swallowed the whole file — so the
+// size guard could only ever catch the well-behaved providers, and the ones that
+// actually produce huge WAVs sailed straight past it into an OOM.
+async function readCapped(res, cap) {
+  const reader = res.body?.getReader();
+  if (!reader) return null;
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > cap) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+  return new Blob(chunks);
+}
 
 async function persistUrl(base44, url, filename) {
   try {
@@ -50,9 +80,9 @@ async function persistUrl(base44, url, filename) {
       await r.body?.cancel();
       return url;
     }
-    const blob = await r.blob();
-    if (blob.size > MAX_PERSIST_BYTES) {
-      console.warn(`Skipping persist of ${filename}: ${blob.size} bytes exceeds the in-memory ceiling`);
+    const blob = await readCapped(r, MAX_PERSIST_BYTES);
+    if (!blob) {
+      console.warn(`Skipping persist of ${filename}: exceeded the ${MAX_PERSIST_BYTES} byte in-memory ceiling`);
       return url;
     }
     const safeName = (filename || 'file').replace(/[^\w.\-]/g, '_');
