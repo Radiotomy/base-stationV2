@@ -5,6 +5,7 @@ import RegistrationProcessSteps from "@/components/blockchain/RegistrationProces
 import ProofRegistrationCard from "@/components/dashboard/ProofRegistrationCard";
 import ProofRegisterLauncher from "@/components/dashboard/ProofRegisterLauncher";
 import AutoAnchorToggle from "@/components/blockchain/AutoAnchorToggle";
+import BridgeCompletionNudge from "@/components/blockchain/BridgeCompletionNudge";
 
 export default function ProofOfOwnershipTab({ userId, user, assets = [] }) {
   const [baseRegistrations, setBaseRegistrations] = useState([]);
@@ -58,6 +59,8 @@ export default function ProofOfOwnershipTab({ userId, user, assets = [] }) {
           onRegistered={load}
         />
       </div>
+
+      <BridgeCompletionNudge assets={assets} registrations={baseRegistrations} />
 
       <AutoAnchorToggle user={user} />
 
