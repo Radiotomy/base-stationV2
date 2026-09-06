@@ -1,0 +1,119 @@
+{
+  "name": "AudiusSweepFinding",
+  "type": "object",
+  "description": "One Audius track examined by the BASE Print sweep, and what the comparison against our reference prints found. Deliberately records EVERY examined track, not only the hits: a sweep that stored only matches could never tell 'we looked and found nothing' apart from 'we never looked', and the second is not a clean bill of health. A row here is a RESEMBLANCE measurement and never an infringement claim \u2014 see match_status.",
+  "properties": {
+    "audius_track_id": {
+      "type": "string",
+      "description": "The Audius release that was scanned"
+    },
+    "audius_title": {
+      "type": "string"
+    },
+    "audius_handle": {
+      "type": "string",
+      "description": "Audius account that uploaded it, snapshotted at scan time. Kept as recorded rather than re-resolved later: a handle can be changed or the upload deleted, and the finding must keep saying who it was found under."
+    },
+    "audius_permalink": {
+      "type": "string"
+    },
+    "audius_artist_name": {
+      "type": "string"
+    },
+    "match_status": {
+      "type": "string",
+      "enum": [
+        "no_match",
+        "resembles_registered_work",
+        "own_release",
+        "not_scannable",
+        "error"
+      ],
+      "default": "no_match",
+      "description": "What the scan concluded. 'resembles_registered_work' is the strongest thing a Print sweep may ever say: the Print Layer measures acoustic resemblance and carries no payload, so it CANNOT establish authorship or infringement \u2014 only a spectral BASE Mark recovery confirmed against the asset registry can do that. 'own_release' means the audio is one of our creators' own published tracks, so our print matching it is expected and is not a finding. 'not_scannable' records a track whose audio could not be read at all, which is a coverage gap and must never be filed as a clean 'no_match'."
+    },
+    "matched_asset_id": {
+      "type": "string",
+      "description": "UserAsset whose reference print the audio resembled"
+    },
+    "matched_asset_title": {
+      "type": "string"
+    },
+    "matched_user_id": {
+      "type": "string",
+      "description": "BASE Station creator who owns the resembled work \u2014 who would need to be told"
+    },
+    "lift": {
+      "type": "number",
+      "description": "Print match lift (peak line votes over what random scatter predicts at that warp). The ranking statistic, NOT a probability."
+    },
+    "beta": {
+      "type": "number",
+      "description": "Fitted warp factor: the query's timebase relative to the reference. 1.0 = untouched, >1 = played faster, <1 = slower. This is the most diagnostic number on the row \u2014 measured Print behaviour is that genuine matches recover beta to within a quarter of one percent while spurious fits are wrong by tens of percent, so a beta far from a plausible edit is evidence AGAINST the match no matter how high the lift."
+    },
+    "inliers": {
+      "type": "number",
+      "description": "Matched hash pairs sitting on the fitted line"
+    },
+    "residual_rms": {
+      "type": "number",
+      "description": "Spread of the fitted line in seconds \u2014 the honest confidence interval on beta"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why a track was not scannable, or the error encountered. A named reason is what keeps a coverage gap from being read as a result."
+    },
+    "spectral_confirmed": {
+      "type": "string",
+      "enum": [
+        "not_attempted",
+        "attributed",
+        "not_recovered"
+      ],
+      "default": "not_attempted",
+      "description": "Whether a real BASE Mark payload was later recovered from this audio and resolved to a single registered work. This is the ONLY field that can turn a resemblance into an attribution. Left 'not_attempted' by the sweep itself: recovery is a separate, costlier step, and pre-filling it would let a resemblance be mistaken for proof."
+    },
+    "reviewed": {
+      "type": "boolean",
+      "default": false,
+      "description": "An admin has looked at this finding. Kept so a queue can be worked through without deleting the evidence."
+    },
+    "review_note": {
+      "type": "string",
+      "maxLength": 2000
+    },
+    "scanned_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "print_version": {
+      "type": "number",
+      "description": "Print extraction version the scan ran under. Load-bearing: prints from two versions are not comparable at all, so a finding is meaningless without knowing which constants produced it."
+    }
+  },
+  "required": [
+    "audius_track_id"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
