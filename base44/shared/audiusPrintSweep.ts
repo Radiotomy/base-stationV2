@@ -60,6 +60,10 @@ const SCAN_SECONDS = 45;
 // recover beta to within a fraction of a percent of a plausible edit, while
 // spurious fits land tens of percent away. So a candidate is only filed when its
 // warp is within a musically believable range.
+// Replicate's documented floor is 6 predictions/minute with a burst of 1 while
+// account credit is low, so candidates are spaced just over that interval.
+const PREDICTION_SPACING_MS = 11000;
+
 const MIN_LIFT = 12;
 const BETA_MIN_PLAUSIBLE = 0.9;
 const BETA_MAX_PLAUSIBLE = 1.12;
@@ -249,7 +253,14 @@ export async function runSweepBatch(
   }
 
   const findings: any[] = [];
-  for (const c of queue) {
+  for (let i = 0; i < queue.length; i++) {
+    const c = queue[i];
+    // Space the extractions out. Replicate enforces a BURST of 1 prediction on a
+    // low-credit account, so firing a batch back to back throttled two of every
+    // three candidates — the sweep reported them as unreadable when the audio was
+    // never the problem. Same serial discipline the high-compute generation
+    // engines already follow.
+    if (i > 0) await new Promise((r) => setTimeout(r, PREDICTION_SPACING_MS));
     let row;
     try {
       row = await scanCandidate(c, references);

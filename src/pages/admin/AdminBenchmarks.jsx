@@ -10,6 +10,8 @@ import AttackGridForm from '@/components/admin/benchmarks/AttackGridForm';
 import JobMonitor from '@/components/admin/benchmarks/JobMonitor';
 import BackfillPanel from '@/components/admin/benchmarks/BackfillPanel';
 import SpeechPrintCalibrationPanel from '@/components/admin/benchmarks/SpeechPrintCalibrationPanel';
+import PrintReferenceBuilder from '@/components/admin/sweep/PrintReferenceBuilder';
+import AudiusSweepPanel from '@/components/admin/sweep/AudiusSweepPanel';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const LAYERS = ['speed', 'spectral', 'neural', 'drift'];
@@ -62,6 +64,7 @@ export default function AdminBenchmarks() {
           <TabsTrigger value="null">False positives</TabsTrigger>
           <TabsTrigger value="robustness">Robustness</TabsTrigger>
           <TabsTrigger value="print">Print (speech)</TabsTrigger>
+          <TabsTrigger value="sweep">Audius sweep</TabsTrigger>
           <TabsTrigger value="runs">Runs</TabsTrigger>
         </TabsList>
 
@@ -89,6 +92,11 @@ export default function AdminBenchmarks() {
 
         <TabsContent value="print" className="mt-4">
           <SpeechPrintCalibrationPanel />
+        </TabsContent>
+
+        <TabsContent value="sweep" className="mt-4 space-y-4">
+          <PrintReferenceBuilder onBuilt={() => setRefreshKey((k) => k + 1)} />
+          <AudiusSweepPanel refreshKey={refreshKey} />
         </TabsContent>
 
         <TabsContent value="runs" className="mt-4">
