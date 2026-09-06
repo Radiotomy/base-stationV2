@@ -88,6 +88,22 @@
       "type": "string",
       "description": "Why this correction anchor was published"
     },
+    "audius_track_id": {
+      "type": "string",
+      "description": "The Audius release this anchor covers, when one exists. Half of the Audius \u2194 chain bridge: it lets a reader who arrives at the on-chain anchor resolve the live release, and a reader who arrives from Audius verify the recording against a Base transaction. Read `audius_link_basis` before trusting it as an on-chain fact \u2014 the same value means two different strengths of claim depending on when it was written."
+    },
+    "audius_permalink": {
+      "type": "string",
+      "description": "Public audius.co URL for the linked release. A CONVENIENCE CACHE only: Audius rewrites the slug when a track is renamed, so audius_track_id stays the record of the release."
+    },
+    "audius_link_basis": {
+      "type": "string",
+      "enum": [
+        "in_calldata",
+        "off_chain_backlink"
+      ],
+      "description": "How strong the Audius link actually is, recorded because the two cases are indistinguishable once written and must never be conflated. 'in_calldata' = the track was already published when this anchor was broadcast, so the id is INSIDE the signed transaction and is provable on-chain. 'off_chain_backlink' = the anchor predates the release, so calldata could not name it and this database row is the only thing asserting the pairing. Calldata is immutable, so a back-link is never upgraded in place \u2014 the weaker claim stays honestly labelled as the weaker claim."
+    },
     "tags": {
       "type": "array",
       "items": {

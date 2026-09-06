@@ -64,6 +64,11 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
   // Audius even for someone who never visits BASE Station.
   const disclosureLabel = asset.ai_disclosure_label || asset.ai_label || 'ai_generated';
   const c2paHash = asset.c2pa_provenance_hash || asset.metadata?.c2pa_provenance_hash || null;
+  // Audius ↔ chain bridge, off-platform half: when this work is already anchored on
+  // Base, the transaction is named in the release itself. That is what lets a
+  // listener who never visits BASE Station verify the recording against a public
+  // chain record instead of taking the footer's word for it.
+  const anchorTxHash = asset.chain_status === 'registered' ? (asset.chain_tx_hash || null) : null;
   const ddexDescriptors = Object.entries(ddexMeta).filter(([, v]) => v === true).map(([k]) => k);
   const complianceFooter = [
     '─── PROVENANCE & AI DISCLOSURE (BASE Station) ───',
@@ -71,6 +76,8 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
     `AI Disclosure Label (RIAA/IFPI GenAI standard): ${disclosureLabel === 'ai_assisted' ? 'AI-Assisted' : disclosureLabel === 'human' ? 'Human' : 'AI-Generated'}`,
     `DDEX AI Attribution: ${ddexDescriptors.length > 0 ? ddexDescriptors.join(', ') : 'none declared'}`,
     c2paHash ? `C2PA Provenance Hash: ${c2paHash}` : null,
+    anchorTxHash ? `On-Chain Provenance Anchor (Base mainnet): ${anchorTxHash}` : null,
+    anchorTxHash ? `Verify: https://basescan.org/tx/${anchorTxHash}` : null,
     'Full provenance manifest available via BASE Station.',
   ].filter(Boolean).join('\n');
 
@@ -80,6 +87,7 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
     disclosureLabel.replace(/_/g, '-'),
     ...ddexDescriptors.map((d) => `ddex-${d.replace(/_/g, '-')}`),
     ...(c2paHash ? ['c2pa-signed'] : []),
+    ...(anchorTxHash ? ['base-anchored'] : []),
   ];
 
   // Audius caps a track description at 1000 characters and rejects the whole write
@@ -103,6 +111,7 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
     disclosureLabel,
     ddexMeta,
     c2paHash,
+    anchorTxHash,
     metadata: {
       title: asset.title,
       description,

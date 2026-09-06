@@ -187,7 +187,12 @@ Deno.serve(async (req) => {
         const rpcUrl = Deno.env.get('BASE_RPC_URL') || 'https://mainnet.base.org';
         const provider = new ethers.JsonRpcProvider(rpcUrl, 8453, { staticNetwork: true });
         const wallet = new ethers.Wallet(pk, provider);
-        const anchorData = toHex(`BSTN1|${rec.fingerprint_hash || ''}|${rec.metadata_uri || ''}`);
+        // Same field order the shared core signs, Audius bridge field included —
+        // a retry must reproduce the anchor that was intended, not a narrower one.
+        const anchorData = toHex(
+          `BSTN1|${rec.fingerprint_hash || ''}|${rec.metadata_uri || ''}` +
+          (rec.audius_track_id ? `|audius:${rec.audius_track_id}` : ''),
+        );
         const tx = await wallet.sendTransaction({ to: wallet.address, value: 0n, data: anchorData });
 
         await base44.asServiceRole.entities.BaseTrackRegistry.update(registry_id, {

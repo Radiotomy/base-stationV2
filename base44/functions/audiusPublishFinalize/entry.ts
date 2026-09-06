@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
+import { linkAudiusReleaseToAnchor } from '../../shared/audiusChainBridge.ts';
 
 /**
  * Phase 3 of a browser-side Audius publish: record the release.
@@ -47,7 +48,25 @@ Deno.serve(async (req) => {
       },
     });
 
-    return Response.json({ data: { asset_id: assetId, audius_track_id: audiusTrackId, status: 'success' } });
+    // Audius ↔ chain bridge, anchor-first case: the anchor predates this release, so
+    // its calldata could not name it. Recorded off-chain and labelled as the weaker
+    // claim. Non-fatal by design — the release itself already succeeded.
+    const normalizedPermalink = audiusPermalink
+      ? (audiusPermalink.startsWith('http') ? audiusPermalink : `https://audius.co${audiusPermalink}`)
+      : undefined;
+    const anchorLink = await linkAudiusReleaseToAnchor(base44, asset, {
+      audiusTrackId,
+      audiusPermalink: normalizedPermalink,
+    });
+
+    return Response.json({
+      data: {
+        asset_id: assetId,
+        audius_track_id: audiusTrackId,
+        status: 'success',
+        anchor_link: anchorLink,
+      },
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

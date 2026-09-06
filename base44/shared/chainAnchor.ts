@@ -19,6 +19,22 @@ const ANCHOR_PREFIX = 'BSTN1';
 /** Calldata prefix for an anchor that corrects an earlier one. */
 const CORRECTION_PREFIX = 'BSTN1C';
 
+/**
+ * Audius ↔ chain bridge, on-chain half.
+ *
+ * When the work was ALREADY published to Audius at broadcast time, the release id
+ * is appended to the calldata as `audius:<id>` — so the signed transaction itself
+ * names the release and the pairing is provable without trusting our database.
+ * Appended as an extra pipe-delimited field rather than a new prefix, so readers
+ * that only know BSTN1 keep parsing these anchors correctly.
+ *
+ * The reverse order (anchor first, publish later) cannot be recorded here at all:
+ * calldata is immutable. That case is handled off-chain by
+ * shared/audiusChainBridge.ts and is deliberately labelled as the weaker claim.
+ */
+const audiusField = (audiusTrackId?: string | null) =>
+  audiusTrackId ? `|audius:${audiusTrackId}` : '';
+
 export const isTxHash = (h: string) => /^0x[0-9a-fA-F]{64}$/.test(h || '');
 
 /** Normalize a pasted private key: trim whitespace/quotes, add 0x if missing. */
@@ -111,6 +127,12 @@ export async function prepareAnchorRecord(
     description: t.description || '',
     supersedes_tx_hash: body.supersedes_tx_hash || undefined,
     correction_reason: body.correction_reason || undefined,
+    // Carried onto the row BEFORE broadcast so broadcastAnchor can put the id in
+    // the calldata. Present only when the track was already published to Audius —
+    // its absence here is what makes this an anchor-first release.
+    audius_track_id: t.audius_track_id || undefined,
+    audius_permalink: t.audius_permalink || undefined,
+    audius_link_basis: t.audius_track_id ? 'in_calldata' : undefined,
     wallet_address: body.wallet_address || '',
     fingerprint_hash: fingerprint,
     metadata_uri: pin?.metadata_uri || '',
@@ -157,10 +179,14 @@ export async function broadcastAnchor(
   const provider = new ethers.JsonRpcProvider(rpcUrl, 8453, { staticNetwork: true });
   const wallet = new ethers.Wallet(pk, provider);
 
+  // Read from the record rather than taken as an argument: the id was already
+  // resolved and stored by prepareAnchorRecord, and re-passing it at every call
+  // site is how the two would eventually disagree about what got signed.
+  const audius = audiusField(record.audius_track_id);
   const anchorData = toHex(
     supersedes
-      ? `${CORRECTION_PREFIX}|${fingerprint}|${metadataUri}|supersedes:${supersedes}`
-      : `${ANCHOR_PREFIX}|${fingerprint}|${metadataUri}`,
+      ? `${CORRECTION_PREFIX}|${fingerprint}|${metadataUri}|supersedes:${supersedes}${audius}`
+      : `${ANCHOR_PREFIX}|${fingerprint}|${metadataUri}${audius}`,
   );
   const tx = await wallet.sendTransaction({ to: wallet.address, value: 0n, data: anchorData });
 

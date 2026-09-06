@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { getUserBearerToken } from '../../shared/audiusOAuth.ts';
 import { buildAudiusPublishPayload } from '../../shared/audiusPublishPayload.ts';
+import { linkAudiusReleaseToAnchor } from '../../shared/audiusChainBridge.ts';
 
 /**
  * Publish a UserAsset (track) to Audius.
@@ -83,12 +84,21 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Audius ↔ chain bridge, anchor-first case: this work was anchored before it
+    // had a release, so the calldata could not name one. Recorded off-chain and
+    // labelled as such. Never fatal — a successful publish must not be reported as
+    // a failure because the cross-reference could not be written.
+    const anchorLink = status === 'success'
+      ? await linkAudiusReleaseToAnchor(base44, asset, { audiusTrackId })
+      : { linked: false, reason: 'publish_not_successful' };
+
     return Response.json({
       data: {
         asset_id: assetId,
         audius_track_id: audiusTrackId,
         status,
         provenance_embedded: provenanceEmbedded,
+        anchor_link: anchorLink,
       }
     });
   } catch (error) {

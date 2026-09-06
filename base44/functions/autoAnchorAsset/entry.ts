@@ -96,6 +96,12 @@ Deno.serve(async (req) => {
           ai_label: asset.ai_label || asset.ai_disclosure_label || undefined,
           description: asset.ai_disclosure_basis || asset.description || '',
           asset_id: asset.id,
+          // Audius ↔ chain bridge: when the track is ALREADY on Audius, the release
+          // id goes into the signed calldata, making the pairing provable on-chain.
+          // Absent here means this is an anchor-first release, and the link is
+          // written back off-chain at publish time instead.
+          audius_track_id: asset.metadata?.audius_track_id || undefined,
+          audius_permalink: asset.metadata?.audius_permalink || undefined,
         },
       },
     );
