@@ -66,6 +66,12 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 _LOCK = threading.Lock()
 PIPE = None
 SAMPLE_RATE = 32000
+# Why the model load is not at import: pulling ~22GB of bf16 weights takes many
+# minutes, and uvicorn cannot bind port 7860 until import finishes. The Space's
+# startup probe gives up long before that and reports the container as failed —
+# so the load runs in a background thread and the port opens immediately.
+MODEL_STATE = "loading"
+MODEL_ERROR = ""
 
 
 # ── Durable job records ──────────────────────────────────────────────────────
@@ -95,11 +101,13 @@ def read_job(job_id):
 
 # ── Model ────────────────────────────────────────────────────────────────────
 def load_model():
-    """Loaded once at import — a per-request load would re-stream ~11B params."""
+    """Loaded once, in the background — a per-request load would re-stream ~11B params."""
     global PIPE, SAMPLE_RATE
     if PIPE is not None:
         return PIPE
-    pipe = ModularPipeline.from_pretrained(MODEL_ID)
+    # Authenticated: an anonymous pull of this many files is rate-limited and
+    # frequently dies partway, which looks identical to a broken build.
+    pipe = ModularPipeline.from_pretrained(MODEL_ID, token=os.environ.get("HF_TOKEN"))
     pipe.load_components(dtype=torch.bfloat16)
     # Explicit .to(DEVICE): the meta-tensor errors our other engines hit came
     # from relying on implicit placement.
@@ -109,7 +117,19 @@ def load_model():
     return PIPE
 
 
-load_model()
+def _load_in_background():
+    global MODEL_STATE, MODEL_ERROR
+    try:
+        load_model()
+        MODEL_STATE = "ready"
+    except Exception as e:
+        traceback.print_exc()
+        # Recorded rather than raised: a failed load must leave the service up so
+        # /engine/health can say WHY, instead of the container dying silently.
+        MODEL_STATE, MODEL_ERROR = "failed", str(e)
+
+
+threading.Thread(target=_load_in_background, daemon=True).start()
 
 
 class GenReq(BaseModel):
@@ -135,6 +155,16 @@ def render(job_id, req):
             lyrics = "[Intro]\n[Instrumental]\n[Solo]\n[Instrumental]\n[Outro]"
 
         with _LOCK:
+            # Weights may still be streaming on a cold container. Waiting inside
+            # the lock keeps the job queued rather than failing it for a reason
+            # that resolves itself in a few minutes.
+            waited = 0
+            while MODEL_STATE == "loading" and waited < 1800:
+                write_job(job_id, progress="Engine warming up…")
+                time.sleep(10)
+                waited += 10
+            if MODEL_STATE != "ready":
+                raise RuntimeError(f"Engine unavailable: {MODEL_ERROR or 'model still loading'}")
             write_job(job_id, progress="Composing…")
             generator = None
             if req.seed is not None:
@@ -208,6 +238,8 @@ def engine_health():
         "job_records": pending,
         "model_id": MODEL_ID,
         "model_loaded": PIPE is not None,
+        "model_state": MODEL_STATE,
+        "model_error": MODEL_ERROR,
         "device": DEVICE,
         "sample_rate": SAMPLE_RATE,
     }
