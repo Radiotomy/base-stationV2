@@ -24,11 +24,26 @@ Deno.serve(async (req) => {
     }
 
     const cutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    // OLDEST first. This is a safety net against provider retention windows, so the
+    // job nearest to having its output purged is the one that must be finalized
+    // first — newest-first ordering worked against the entire point of the sweep.
     const stuck = await base44.asServiceRole.entities.GenerationJob.filter(
-      { status: 'processing' }, '-created_date', 100
+      { status: 'processing' }, 'created_date', 100
     ).catch(() => []);
 
-    const toProcess = stuck.filter(j => j.provider_job_id && j.created_date < cutoff);
+    const candidates = stuck.filter(j => j.provider_job_id && j.created_date < cutoff);
+
+    // Finalizing a job can hold an entire master in memory to re-host it (the
+    // persist ceiling alone is 120MB), and this worker has one memory budget for
+    // the whole invocation. Draining every candidate in one pass is what was
+    // getting the isolate OOM-killed — which reported as a bare "user worker threw
+    // an exception" and finalized NOTHING, so the same backlog retried forever and
+    // jobs still aged out of their provider's retention window.
+    //
+    // A small batch per run keeps peak memory bounded and lets the 5-minute cadence
+    // drain the queue instead: slower per run, but it actually completes.
+    const BATCH = 3;
+    const toProcess = candidates.slice(0, BATCH);
 
     let finalized = 0;
     const errors = [];
@@ -59,7 +74,11 @@ Deno.serve(async (req) => {
     return Response.json({
       success: true,
       scanned: stuck.length,
-      candidates: toProcess.length,
+      candidates: candidates.length,
+      attempted: toProcess.length,
+      // Anything left over is picked up by the next run. Reported so a backlog that
+      // never drains is visible rather than silently deferred forever.
+      deferred: Math.max(0, candidates.length - toProcess.length),
       finalized,
       siren_song: sirenSong,
       errors,
