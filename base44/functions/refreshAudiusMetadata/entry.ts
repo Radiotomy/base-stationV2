@@ -84,6 +84,9 @@ Deno.serve(async (req) => {
     });
 
     const updatedFields = result.updated || [];
+    // An unchanged release already carries the corrected values, so it is settled by
+    // definition. A written one is only settled once we have read it back.
+    const settled = !!result.unchanged || !!result.confirmed;
     // Recorded so the library can show whether the live release reflects the
     // CURRENT score — a track published under an old label and never refreshed is
     // materially different from one that has been restated.
@@ -93,6 +96,11 @@ Deno.serve(async (req) => {
         audius_metadata_refreshed_at: new Date().toISOString(),
         audius_declared_cos: compliance.cosScore,
         audius_declared_label: compliance.disclosureLabel,
+        // Whether the live release was VERIFIED to carry these values. Stored
+        // separately from the declaration itself so a correction that was issued but
+        // not yet visible on Audius cannot be mistaken for one that demonstrably
+        // landed — the whole point of the record is that it can be trusted.
+        audius_metadata_confirmed: settled,
       },
     });
 
@@ -102,6 +110,7 @@ Deno.serve(async (req) => {
         audius_track_id: audiusTrackId,
         updated_fields: updatedFields,
         unchanged: !!result.unchanged,
+        confirmed: settled,
         declared_cos: compliance.cosScore,
         declared_label: compliance.disclosureLabel,
       }

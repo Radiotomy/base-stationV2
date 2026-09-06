@@ -108,5 +108,27 @@ export async function updateTrackOnAudius({
     metadata: merged,
   });
 
-  return { audiusTrackId, updated, unchanged: false };
+  // Read the release back and check the correction actually landed. An accepted
+  // write is not a completed one: the SDK resolving tells us Audius took the
+  // request, not that the live record now says what we asked it to say.
+  //
+  // A negative result is reported, never thrown — Audius indexes a write through
+  // its discovery nodes asynchronously, so a just-issued edit legitimately reads
+  // back stale. Callers therefore treat `confirmed: false` as "not yet visible",
+  // which is why this returns a third state instead of success/failure.
+  let confirmed = false;
+  try {
+    const after = await fetchLiveTrack({ apiKey, trackId: audiusTrackId });
+    confirmed = updated.every((key) => {
+      if (key === 'tags') {
+        const liveAfter = Array.isArray(after.tags) ? after.tags.join(',') : (after.tags || '');
+        return liveAfter === merged.tags;
+      }
+      return (after[key] || '') === (merged[key] || '');
+    });
+  } catch {
+    // Could not re-read; leave unconfirmed rather than assuming either outcome.
+  }
+
+  return { audiusTrackId, updated, unchanged: false, confirmed };
 }
