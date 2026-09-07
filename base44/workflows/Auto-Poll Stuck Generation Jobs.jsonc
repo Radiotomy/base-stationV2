@@ -1,6 +1,6 @@
 {
   "name": "Auto-Poll Stuck Generation Jobs",
-  "description": "Safety-net poller \u2014 finalizes any GenerationJob stuck in 'processing' for 2+ minutes across all users, before provider output data (e.g. Replicate) expires.",
+  "description": "Safety-net poller \u2014 finalizes any GenerationJob stuck in 'processing' for 2+ minutes across all users, before provider output data (e.g. Replicate) expires. Runs every 15 minutes: the sweep exists to beat provider retention windows (an hour or more), not to feel responsive \u2014 live renders are finalized by interactive polling while the tab is open.",
   "trigger": {
     "condition": null,
     "config": {
@@ -10,7 +10,7 @@
       "cron_expression": null,
       "one_time_date": null,
       "timezone": "UTC",
-      "interval_value": 5,
+      "interval_value": 15,
       "interval_unit": "minutes",
       "interval_anchor": "2026-07-27T18:24:27.317000",
       "ends_type": "never",
