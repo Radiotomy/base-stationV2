@@ -133,9 +133,10 @@ export default async function (req) {
       // A targeted push is open to anyone in the room, including unsigned-in
       // fans, because the in-world panel is what keeps the wall in step with the
       // programme between scheduled sweeps (cron cannot run more often than
-      // every 5 minutes, and tracks are shorter than that). It is safe to expose:
-      // the caller supplies no content, everything is derived from the venue's
-      // own stored programme, and a repeat call is a no-op once the item matches.
+      // every 5 minutes, and tracks are shorter than that). The SYNC itself is safe
+      // to expose: what goes on the wall is derived entirely from the venue's own
+      // stored programme, and a repeat call is a no-op once the item matches. That
+      // reasoning does NOT extend to the transport values in the body — see below.
       const rows = await base44.asServiceRole.entities.PortalVenue.filter({ id: body.venueId });
       const venue = rows?.[0];
       if (!venue) return Response.json({ error: 'Venue not found' }, { status: 404 });
