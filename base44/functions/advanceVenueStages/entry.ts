@@ -140,10 +140,23 @@ export default async function (req) {
       const venue = rows?.[0];
       if (!venue) return Response.json({ error: 'Venue not found' }, { status: 404 });
       if (!venue.room_id) return Response.json({ error: 'Venue has no room' }, { status: 400 });
-      const result = await pushVenue(base44, venue, now, {
+
+      // TRANSPORT IS OWNER-ONLY. Syncing the wall to the stored programme is safe
+      // for anyone (nothing about it originates with the caller), but volume and
+      // pause are persisted room SETTINGS supplied in the request body — accepting
+      // them from an anonymous caller let anyone mute or silence another creator's
+      // venue. Non-owners may still push; their transport values are ignored, so
+      // the in-world sync path keeps working exactly as before.
+      const wantsTransport = typeof body.volume === 'number' || typeof body.paused === 'boolean';
+      const isOwner = !!user && (user.id === venue.user_id || user.role === 'admin');
+      if (wantsTransport && !isOwner) {
+        return Response.json({ error: 'Forbidden: only the venue owner can change room volume or pause' }, { status: 403 });
+      }
+
+      const result = await pushVenue(base44, venue, now, isOwner ? {
         volume: body.volume,
         paused: body.paused,
-      });
+      } : {});
       return Response.json({ results: [result] });
     }
 
