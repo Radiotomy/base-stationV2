@@ -2,6 +2,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { embedMark, parseWav, BASE_MARK_VERSION } from '../../shared/baseMark.ts';
 import { derivePayloadForAsset, payloadStamp } from '../../shared/baseMarkPayload.ts';
 import { isFlac, decodeFlacToWav } from '../../shared/flacDecoder.ts';
+import { assertSafeUrl } from '../../shared/safeUrl.ts';
 
 // Automation handler: auto-embeds a BASE Mark into newly created WAV audio assets.
 Deno.serve(async (req) => {
@@ -48,7 +49,18 @@ Deno.serve(async (req) => {
     const url = data.metadata?.wav_url || data.file_url;
     if (!url) return Response.json({ skipped: true, reason: 'No file URL' });
 
-    const dl = await fetch(url);
+    // The stored URL is caller-influenced (a creator controls file_url on the
+    // assets they create), so it is validated before any server-side fetch —
+    // otherwise this function is a proxy for probing internal addresses and cloud
+    // metadata endpoints. Same guard autoBaseMarkV2 applies.
+    let safeUrl;
+    try {
+      safeUrl = assertSafeUrl(url);
+    } catch (e) {
+      return Response.json({ skipped: true, reason: 'Unsafe url: ' + e.message });
+    }
+
+    const dl = await fetch(safeUrl);
     if (!dl.ok) return Response.json({ skipped: true, reason: 'Could not download audio' });
     let bytes = new Uint8Array(await dl.arrayBuffer());
 
