@@ -15,8 +15,6 @@ const PLATFORMS = [
   { key: "reddit", label: "Reddit" },
 ];
 
-const BRAND_CONTEXT = `BASE Station is an AI music creation platform for creators: 11+ AI studios (music, lyrics, mastering, cover art, video, visualizers), live streaming with 3D venues, community charts & radio, a fan economy (tips, collectibles, fan clubs), and industry-leading AI transparency — Creative Ownership Scores, RIAA/IFPI AI labels, on-chain provenance on Base, and DDEX exports. Human-first, transparent AI music.`;
-
 export default function SocialPostGenerator({ onSaved }) {
   const [platform, setPlatform] = useState("twitter");
   const [topic, setTopic] = useState("");
@@ -31,21 +29,10 @@ export default function SocialPostGenerator({ onSaved }) {
     setGenerating(true);
     setResult(null);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are the marketing lead for BASE Station. ${BRAND_CONTEXT}\n\nWrite a ${platform} post promoting: ${topic}\n\nMatch the platform's tone and length conventions (e.g. punchy and short for X, hook-first for TikTok, professional for LinkedIn). Include a strong hook and a call to action. Also provide 4-8 relevant hashtags and a one-line image concept for an accompanying visual.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            title: { type: "string", description: "Short internal title for this post" },
-            body: { type: "string", description: "The post caption, ready to publish" },
-            hashtags: { type: "array", items: { type: "string" } },
-            image_concept: { type: "string" },
-          },
-        },
-      });
-      setResult({ ...res, image_url: null });
+      const res = await base44.functions.invoke('generateMarketingPost', { platform, topic });
+      setResult({ ...res.data, image_url: null });
     } catch (e) {
-      toast.error(e.message || "Generation failed");
+      toast.error(e?.response?.data?.error || e.message || "Generation failed");
     } finally {
       setGenerating(false);
     }
@@ -54,12 +41,12 @@ export default function SocialPostGenerator({ onSaved }) {
   const generateImage = async () => {
     setImageLoading(true);
     try {
-      const { url } = await base44.integrations.Core.GenerateImage({
-        prompt: `Social media promotional graphic for BASE Station, an AI music creation platform. ${result.image_concept}. Dark obsidian background with warm orange/amber chrome accents, modern, bold, music-tech aesthetic. No text overlays.`,
+      const res = await base44.functions.invoke('generateMarketingPost', {
+        image_concept: result.image_concept,
       });
-      setResult(r => ({ ...r, image_url: url }));
+      setResult(r => ({ ...r, image_url: res.data?.image_url }));
     } catch (e) {
-      toast.error(e.message || "Image generation failed");
+      toast.error(e?.response?.data?.error || e.message || "Image generation failed");
     } finally {
       setImageLoading(false);
     }

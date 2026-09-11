@@ -6,8 +6,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-const BRAND_CONTEXT = `BASE Station is an AI music creation platform: 11+ AI studios (music, lyrics, mastering, cover art, video, visualizers), live streaming with 3D venues, community charts & radio, a fan economy (tips, collectibles, fan clubs), and industry-leading AI transparency — Creative Ownership Scores, RIAA/IFPI-aligned AI labels, on-chain provenance records on Base, and DDEX metadata exports. The platform's mission is human-first, transparent AI music creation.`;
-
 export default function PressReleaseGenerator({ onSaved }) {
   const [announcement, setAnnouncement] = useState("");
   const [quoteFrom, setQuoteFrom] = useState("");
@@ -21,19 +19,13 @@ export default function PressReleaseGenerator({ onSaved }) {
     setGenerating(true);
     setResult(null);
     try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a music-tech PR professional writing for BASE Station. ${BRAND_CONTEXT}\n\nWrite a complete, professional press release announcing: ${announcement}\n${quoteFrom ? `Include an attributed quote from: ${quoteFrom}.` : "Include a quote attributed to a BASE Station spokesperson."}\n\nUse standard press release structure: headline, subheadline, dateline (city + today's date), lead paragraph with the key news, body paragraphs with detail and context, the quote, a boilerplate "About BASE Station" section, and a media contact placeholder. Write in AP style.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            headline: { type: "string" },
-            body: { type: "string", description: "Full press release text including subheadline, dateline, paragraphs, quote, boilerplate and contact" },
-          },
-        },
+      const res = await base44.functions.invoke('generatePressRelease', {
+        announcement,
+        quote_from: quoteFrom,
       });
-      setResult(res);
+      setResult(res.data);
     } catch (e) {
-      toast.error(e.message || "Generation failed");
+      toast.error(e?.response?.data?.error || e.message || "Generation failed");
     } finally {
       setGenerating(false);
     }
