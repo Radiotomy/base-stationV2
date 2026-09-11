@@ -2,19 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, CheckCircle2, XCircle, Loader2, Music, Sparkles, Library, ExternalLink } from 'lucide-react';
+import { Bell, CheckCircle2, XCircle, Loader2, Music, Sparkles, Library, ExternalLink, Film, FileText, Image, Waves, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Job types we watch — cover song + mastering jobs.
-// Mastering jobs run through job_type='music' with provider='sonic' too, so we
-// distinguish them by input_data.task_kind.
-const WATCHED_TASK_KINDS = new Set([
-  'cover_upload_music',
-  'cover_song',
-  'master',
-  'mastering',
-  'remaster',
-]);
 
 const POLL_INTERVAL_MS = 8000;
 // When nothing is processing, back off to a slow heartbeat instead of
@@ -26,28 +15,35 @@ const IDLE_POLL_INTERVAL_MS = 60000;
 const DRIVE_POLL_AFTER_SECONDS = 90;
 // Stop driving after this many minutes — anything still processing is hung.
 const GIVE_UP_AFTER_MINUTES = 10;
+// A job whose FIRST observed state is already finished still deserves a ping if
+// it only just landed — otherwise a job that starts and finishes between two
+// polls (or before the bell mounted) is silently swallowed, which is why the
+// panel looked empty while the emails arrived.
+const RECENT_FINISH_WINDOW_MS = 10 * 60 * 1000;
 
+// Most studios never wrote input_data.task_kind, so the type label is derived
+// from the job's own job_type/provider first and only refined by task_kind when
+// one happens to be present.
 function describeJob(job) {
   const kind = job.input_data?.task_kind || '';
-  if (kind.includes('cover')) {
-    return {
-      type: 'Cover Song',
-      icon: Music,
-      title: job.input_data?.title || job.output_metadata?.title || 'Untitled Cover',
-    };
+  const title =
+    job.output_metadata?.title ||
+    job.input_data?.title ||
+    job.input_data?.source_title ||
+    job.input_data?.topic ||
+    'Untitled';
+
+  if (kind.includes('cover')) return { type: 'Cover Song', icon: Music, title };
+  if (kind.includes('master') || kind === 'remaster') return { type: 'Mastered Track', icon: Sparkles, title };
+
+  switch (job.job_type) {
+    case 'video': return { type: 'Video', icon: Film, title };
+    case 'lyrics': return { type: 'Lyrics', icon: FileText, title };
+    case 'cover_art': return { type: 'Cover Art', icon: Image, title };
+    case 'sfx': return { type: 'Sound Effect', icon: Waves, title };
+    case 'loop': return { type: 'Loop', icon: Repeat, title };
+    default: return { type: 'Track', icon: Music, title };
   }
-  if (kind.includes('master') || kind === 'remaster') {
-    return {
-      type: 'Mastered Track',
-      icon: Sparkles,
-      title: job.input_data?.title || job.output_metadata?.title || 'Mastered Track',
-    };
-  }
-  return {
-    type: 'Track',
-    icon: Music,
-    title: job.input_data?.title || 'Track',
-  };
 }
 
 export default function JobNotificationBell() {
@@ -81,9 +77,7 @@ export default function JobNotificationBell() {
 
         if (cancelled) return false;
 
-        const watched = jobs.filter(j =>
-          WATCHED_TASK_KINDS.has(j.input_data?.task_kind || '')
-        );
+        const watched = jobs;
 
         // Count currently-processing watched jobs (for the pulsing dot)
         const processing = watched.filter(j => j.status === 'processing' || j.status === 'pending');
@@ -110,11 +104,21 @@ export default function JobNotificationBell() {
           const curr = job.status;
           seenStatusRef.current.set(job.id, curr);
 
-          // First time we see this job, just record its status (don't ping for
-          // already-finished old jobs on mount)
-          if (prev === undefined) continue;
+          const isFinished = curr === 'completed' || curr === 'failed';
 
-          if (prev !== curr && (curr === 'completed' || curr === 'failed')) {
+          // First sighting: only ping when the job finished moments ago, so a
+          // job that completed between polls still surfaces while the mount-time
+          // backlog of old jobs stays quiet.
+          const finishedAt = job.completed_at ? new Date(job.completed_at).getTime() : 0;
+          const justFinished =
+            prev === undefined &&
+            isFinished &&
+            finishedAt > 0 &&
+            Date.now() - finishedAt < RECENT_FINISH_WINDOW_MS;
+
+          if (prev === undefined && !justFinished) continue;
+
+          if ((justFinished || prev !== curr) && isFinished) {
             const meta = describeJob(job);
             const fileUrl = job.output_url || null;
 
@@ -242,7 +246,7 @@ export default function JobNotificationBell() {
                     </p>
                   ) : (
                     <p className="text-[11px] text-white/50 mt-0.5">
-                      Cover song & mastering updates
+                      Generation job updates
                     </p>
                   )}
                 </div>
@@ -262,7 +266,7 @@ export default function JobNotificationBell() {
                     <Bell className="w-8 h-8 mx-auto text-white/20 mb-2" />
                     <p className="text-xs text-white/50">No notifications yet</p>
                     <p className="text-[10px] text-white/30 mt-1">
-                      You'll be pinged when a cover or mastering job finishes
+                      You'll be pinged when a generation job finishes
                     </p>
                   </div>
                 ) : (
