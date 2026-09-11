@@ -89,6 +89,11 @@
     "print_version": {
       "type": "number",
       "description": "Print extraction version the scan ran under. Load-bearing: prints from two versions are not comparable at all, so a finding is meaningless without knowing which constants produced it."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional free-text summary of this finding. Admin-only like the rest of this entity, so it carries no public SEO value \u2014 it is a place to write what a reviewer concluded in prose, distinct from `reason` (why a scan could not run) and `review_note` (the reviewer's decision record)."
     }
   },
   "required": [
