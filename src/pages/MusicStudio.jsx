@@ -4,11 +4,12 @@ import { Zap, SlidersHorizontal, RotateCcw, Boxes } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import BaseEnginesTab from '@/components/music/base/BaseEnginesTab';
+import BetaGate from '@/components/auth/BetaGate';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
-  { id: 'base',     label: '🏗️ BASE Engines',    icon: Boxes,             desc: 'Our in-house, self-hosted engines — CODA, Siren Song, Skye & Aurora' },
+  { id: 'base',     label: '🏗️ BASE Engines',    icon: Boxes,             desc: 'In beta — our in-house, self-hosted engines (CODA, Siren Song, Skye & Aurora). Approved beta testers only.', beta: true },
 ];
 
 export default function MusicStudio() {
@@ -57,6 +58,11 @@ export default function MusicStudio() {
                 className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-card border border-border text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 <tab.icon className="w-4 h-4" />
                 <span>{tab.label}</span>
+                {tab.beta && (
+                  <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[9px] font-mono uppercase tracking-wider">
+                    Beta
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -70,7 +76,11 @@ export default function MusicStudio() {
       <div className="max-w-5xl mx-auto px-6 py-10">
         {activeTab === 'quick' && <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />}
         {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
-        {activeTab === 'base' && <BaseEnginesTab />}
+        {activeTab === 'base' && (
+          <BetaGate feature="BASE Engines">
+            <BaseEnginesTab />
+          </BetaGate>
+        )}
       </div>
     </div>
   );
