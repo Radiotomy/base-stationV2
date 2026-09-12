@@ -1,0 +1,294 @@
+# Inspire — BASE Station's InspireMusic engine (Hugging Face Space handler).
+#
+# Upstream: https://github.com/QwenAudio/FunMusic (FunAudioLLM/InspireMusic),
+# Apache-2.0. Audio tokenizer → Qwen2.5-backbone autoregressive transformer →
+# flow-matching super-resolution → vocoder. Tasks: text-to-music and
+# continuation (audio prompt). Instrumental only; no vocal checkpoint released.
+#
+# This is NOT the upstream Gradio demo. It follows the same persistence-first
+# contract every other BASE engine uses, for reasons learned the hard way:
+#
+#   1. JOBS ARE PERSISTED BEFORE THEY RUN. The job table lives in /data (a
+#      mounted HF Storage bucket), not in memory. A Space restart mid-render must
+#      leave a readable 'failed' row rather than a job id the platform polls
+#      forever ("unknown job_id" was exactly the Cantor failure mode).
+#   2. RENDERS ARE SERIAL. One worker thread, one queue. Concurrent requests each
+#      re-entering the model loader is what produces the 'meta tensor' crashes
+#      seen on Coda and Siren Song.
+#   3. MODELS LOAD ONCE per process and are cached per checkpoint — a 1.5B model
+#      reloaded per request cannot finish inside any sane timeout.
+#   4. OUTPUTS ARE WRITTEN TO /data/outputs AND SERVED. The platform copies the
+#      WAV into its own storage immediately, but the file has to survive long
+#      enough to be fetched, which ephemeral /tmp does not guarantee.
+#
+# HTTP contract consumed by base44/shared/inspireEngine.ts:
+#   POST /generate {task, text, audio_prompt_url, chorus, duration,
+#                   sample_rate, model, seed} -> {task_id, status}
+#   GET  /status/{task_id} -> {status, progress, result_url, error}
+#   GET  /outputs/{filename} -> the WAV
+#   GET  /health -> {ok, models_cached, queue_depth}
+
+import os, sys, json, uuid, time, threading, queue, traceback
+import requests
+import torch
+import torchaudio
+from fastapi import FastAPI
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(f"{ROOT}/third_party/Matcha-TTS")
+os.environ.setdefault("PYTHONPATH", "third_party/Matcha-TTS")
+
+# Persistent mount. An ephemeral Space disk loses the job table and every render
+# on restart, which is data loss the platform cannot recover from.
+DATA_DIR = os.environ.get("INSPIRE_DATA_DIR", "/data")
+JOBS_DIR = os.path.join(DATA_DIR, "jobs")
+OUT_DIR = os.path.join(DATA_DIR, "outputs")
+PROMPT_DIR = os.path.join(DATA_DIR, "prompts")
+MODEL_ROOT = os.path.join(DATA_DIR, "pretrained_models")
+for d in (JOBS_DIR, OUT_DIR, PROMPT_DIR, MODEL_ROOT):
+    os.makedirs(d, exist_ok=True)
+
+ALLOWED_MODELS = {
+    "InspireMusic-1.5B-Long": 48000,
+    "InspireMusic-1.5B": 48000,
+    "InspireMusic-Base": 48000,
+    "InspireMusic-1.5B-24kHz": 24000,
+    "InspireMusic-Base-24kHz": 24000,
+}
+DEFAULT_MODEL = "InspireMusic-1.5B-Long"
+MIN_SECONDS, MAX_SECONDS = 10.0, 300.0
+# Upstream trims the audio prompt to 5s; longer prompts are not used by the model.
+PROMPT_SECONDS = 5
+
+app = FastAPI()
+_model_cache = {}
+_cache_lock = threading.Lock()
+_work = queue.Queue()
+
+
+# ── job records on disk ──────────────────────────────────────────────────────
+def job_path(task_id):
+    return os.path.join(JOBS_DIR, f"{task_id}.json")
+
+
+def write_job(rec):
+    tmp = job_path(rec["task_id"]) + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(rec, f)
+    os.replace(tmp, job_path(rec["task_id"]))  # atomic: a half-written job is unreadable
+
+
+def read_job(task_id):
+    try:
+        with open(job_path(task_id)) as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def update_job(task_id, **patch):
+    rec = read_job(task_id)
+    if rec:
+        rec.update(patch)
+        write_job(rec)
+    return rec
+
+
+# ── model handling ───────────────────────────────────────────────────────────
+def ensure_weights(model_name):
+    """Download the checkpoint into the persistent mount on first use."""
+    target = os.path.join(MODEL_ROOT, model_name)
+    if os.path.isdir(target) and os.listdir(target):
+        return target
+    token = os.environ.get("HF_TOKEN", "")
+    auth = f"https://user:{token}@" if token else "https://"
+    url = f"{auth}huggingface.co/FunAudioLLM/{model_name}"
+    os.system(f"git lfs install && git clone {url} {target}")
+    # Upstream ships relative paths in the yaml that only resolve from its own
+    # examples/ directory — flattened here so the config works from any cwd.
+    os.system(f"""cd {target} && sed -i -e "s/\\.\\.\\/\\.\\.\\///g" inspiremusic.yaml""")
+    return target
+
+
+def get_model(model_name):
+    with _cache_lock:
+        if model_name in _model_cache:
+            return _model_cache[model_name]
+    from inspiremusic.cli.inference import InspireMusicModel, env_variables
+    env_variables()
+    model_dir = ensure_weights(model_name)
+    out_rate = ALLOWED_MODELS[model_name]
+    model = InspireMusicModel(
+        model_name=model_name,
+        model_dir=model_dir,
+        min_generate_audio_seconds=MIN_SECONDS,
+        max_generate_audio_seconds=MAX_SECONDS,
+        sample_rate=24000,
+        output_sample_rate=out_rate,
+        load_jit=True,
+        load_onnx=False,
+        # 24kHz checkpoints have no flow-matching stage — 'fast' is what upstream
+        # calls skipping it, so it tracks the checkpoint, never a user preference.
+        fast=(out_rate == 24000),
+        result_dir=OUT_DIR,
+    )
+    with _cache_lock:
+        _model_cache[model_name] = model
+    return model
+
+
+def fetch_prompt(url, task_id):
+    """Download and trim the continuation prompt. The platform sends a URL rather
+    than bytes, so the audio never has to be held in a serverless function."""
+    dest_raw = os.path.join(PROMPT_DIR, f"{task_id}_raw")
+    with requests.get(url, stream=True, timeout=120) as r:
+        r.raise_for_status()
+        with open(dest_raw, "wb") as f:
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+    audio, sr = torchaudio.load(dest_raw)
+    trimmed = os.path.join(PROMPT_DIR, f"{task_id}.wav")
+    torchaudio.save(trimmed, audio[:, : PROMPT_SECONDS * sr], sr)
+    os.remove(dest_raw)
+    return trimmed
+
+
+# ── serial worker ────────────────────────────────────────────────────────────
+def worker():
+    while True:
+        task_id = _work.get()
+        rec = read_job(task_id)
+        if not rec:
+            _work.task_done()
+            continue
+        try:
+            update_job(task_id, status="processing", progress="Loading model…")
+            model = get_model(rec["model"])
+
+            prompt_file = None
+            if rec["task"] == "continuation":
+                update_job(task_id, progress="Preparing audio prompt…")
+                prompt_file = fetch_prompt(rec["audio_prompt_url"], task_id)
+
+            update_job(task_id, progress="Running inference…")
+            out_fn = task_id
+            path = model.inference(
+                task=rec["task"],
+                text=rec["text"] or None,
+                audio_prompt=prompt_file,
+                chorus=rec["chorus"],
+                time_start=0.0,
+                time_end=float(rec["duration"]),
+                output_fn=out_fn,
+                max_audio_prompt_length=float(PROMPT_SECONDS),
+                fade_out_duration=1.0,
+                output_format="wav",
+                fade_out_mode=True,
+                trim=False,
+            )
+            filename = os.path.basename(path) if path else f"{out_fn}.wav"
+            final = os.path.join(OUT_DIR, filename)
+            if not os.path.exists(final):
+                raise RuntimeError("inference reported success but wrote no file")
+            update_job(
+                task_id,
+                status="completed",
+                progress="",
+                result_url=f"/outputs/{filename}",
+                filename=filename,
+                completed_at=time.time(),
+            )
+        except Exception as e:
+            traceback.print_exc()
+            update_job(task_id, status="failed", error=f"{type(e).__name__}: {e}", progress="")
+        finally:
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+            _work.task_done()
+
+
+threading.Thread(target=worker, daemon=True).start()
+
+
+# Requeue anything left mid-flight by a restart. Re-run rather than fail: the
+# creator was already told the render was accepted.
+def requeue_orphans():
+    for name in os.listdir(JOBS_DIR):
+        if not name.endswith(".json"):
+            continue
+        rec = read_job(name[:-5])
+        if rec and rec.get("status") in ("queued", "processing"):
+            update_job(rec["task_id"], status="queued", progress="Re-queued after engine restart")
+            _work.put(rec["task_id"])
+
+
+requeue_orphans()
+
+
+# ── API ──────────────────────────────────────────────────────────────────────
+class GenerateRequest(BaseModel):
+    task: str = "text-to-music"
+    text: str = ""
+    audio_prompt_url: str = ""
+    chorus: str = "intro"
+    duration: float = 60.0
+    sample_rate: int = 48000
+    model: str = DEFAULT_MODEL
+    seed: int | None = None
+
+
+@app.post("/generate")
+def generate(req: GenerateRequest):
+    task = req.task if req.task in ("text-to-music", "continuation") else "text-to-music"
+    if task == "continuation" and not req.audio_prompt_url:
+        return JSONResponse({"error": "continuation requires audio_prompt_url"}, status_code=400)
+    if task == "text-to-music" and not req.text.strip():
+        return JSONResponse({"error": "text-to-music requires text"}, status_code=400)
+
+    model = req.model if req.model in ALLOWED_MODELS else DEFAULT_MODEL
+    duration = max(MIN_SECONDS, min(float(req.duration), MAX_SECONDS))
+    chorus = req.chorus if req.chorus in ("intro", "verse", "chorus", "outro") else "intro"
+    if req.seed:
+        torch.manual_seed(int(req.seed))
+
+    task_id = uuid.uuid4().hex
+    write_job({
+        "task_id": task_id, "status": "queued", "progress": "Queued",
+        "task": task, "text": req.text.strip(), "audio_prompt_url": req.audio_prompt_url,
+        "chorus": chorus, "duration": duration, "model": model,
+        "seed": req.seed, "created_at": time.time(),
+        "result_url": "", "error": "",
+    })
+    _work.put(task_id)
+    return {"task_id": task_id, "status": "queued", "queue_depth": _work.qsize()}
+
+
+@app.get("/status/{task_id}")
+def status(task_id: str):
+    rec = read_job(task_id)
+    if not rec:
+        # 404 is meaningful to the platform: it fails the job instead of polling
+        # a render that no longer exists.
+        return JSONResponse({"error": "unknown task_id"}, status_code=404)
+    return {
+        "status": rec.get("status", "queued"),
+        "progress": rec.get("progress", ""),
+        "result_url": rec.get("result_url", ""),
+        "error": rec.get("error", ""),
+    }
+
+
+@app.get("/outputs/{filename}")
+def outputs(filename: str):
+    safe = os.path.basename(filename)
+    path = os.path.join(OUT_DIR, safe)
+    if not os.path.exists(path):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(path, media_type="audio/wav", filename=safe)
+
+
+@app.get("/health")
+def health():
+    return {"ok": True, "models_cached": list(_model_cache.keys()), "queue_depth": _work.qsize()}

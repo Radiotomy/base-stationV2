@@ -80,6 +80,7 @@ Deno.serve(async (req) => {
     // who navigated away lost the render when the engine slept.
     const ENGINE_POLL_FN = {
       aurora: 'pollAuroraJob',
+      inspire: 'pollInspireJob',
       skye: 'pollSkyeJob',
       sirensong: 'pollSirenSongJob',
       novah3: 'pollNovaH3Job',

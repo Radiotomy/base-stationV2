@@ -26,6 +26,7 @@ const GIVE_UP_AFTER_MINUTES = 60;
 // the creator left the studio page.
 const POLL_FN_BY_PROVIDER = {
   aurora: 'pollAuroraJob',
+  inspire: 'pollInspireJob',
   skye: 'pollSkyeJob',
   sirensong: 'pollSirenSongJob',
   novah3: 'pollNovaH3Job',
