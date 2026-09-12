@@ -13,12 +13,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && git lfs install \
     && rm -rf /var/lib/apt/lists/*
 
-# Miniconda — pynini only installs cleanly from conda-forge.
-RUN curl -fsSL https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/mc.sh \
+# Miniforge, NOT Miniconda — pynini only installs cleanly from conda-forge, and
+# Anaconda's own channels (repo.anaconda.com) now refuse to install until their
+# Terms of Service are accepted interactively, which fails every Docker build.
+# Miniforge ships conda-forge as its only channel, so the gate never applies.
+RUN curl -fsSL https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -o /tmp/mc.sh \
     && bash /tmp/mc.sh -b -p /opt/conda && rm /tmp/mc.sh
 ENV PATH=/opt/conda/bin:$PATH
 
-RUN conda install -y python=3.10 && conda install -y -c conda-forge pynini==2.1.5 && conda clean -afy
+RUN conda install -y -c conda-forge --override-channels python=3.10 pynini==2.1.5 && conda clean -afy
 
 WORKDIR /app
 
