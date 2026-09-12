@@ -30,6 +30,9 @@ RUN git clone --recursive https://github.com/QwenAudio/FunMusic.git /tmp/funmusi
     && cp -r /tmp/funmusic/inspiremusic /app/inspiremusic \
     && cp -r /tmp/funmusic/third_party /app/third_party \
     && cp /tmp/funmusic/setup.py /app/setup.py \
+    # Upstream setup.py reads README.md for its long_description, so the install
+    # fails outright without it — the Space's own README is NOT a substitute.
+    && cp /tmp/funmusic/README.md /app/README.md \
     && rm -rf /tmp/funmusic
 
 RUN pip install --no-cache-dir torch==2.3.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
@@ -49,7 +52,7 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # A PIP_CONSTRAINT pin does NOT reach pip's isolated build env, so bypassing that
 # isolation is the only thing that actually holds the pin during the build.
 RUN pip install --no-cache-dir --no-build-isolation openai-whisper==20231117
-RUN pip install --no-cache-dir -e /app
+RUN pip install --no-cache-dir --no-build-isolation -e /app
 
 # flash-attn is a speed-up, not a requirement — a build failure here must not
 # take the whole image down with it.
