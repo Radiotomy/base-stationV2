@@ -34,6 +34,14 @@ RUN git clone --recursive https://github.com/QwenAudio/FunMusic.git /tmp/funmusi
 
 RUN pip install --no-cache-dir torch==2.3.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
 
+# openai-whisper's setup.py imports pkg_resources, which setuptools >=81 no longer
+# ships. pip builds it in an ISOLATED env, so pinning setuptools in the image is
+# not enough on its own — PIP_CONSTRAINT is also applied to build dependencies,
+# which is what actually holds the pin inside that isolated build env.
+RUN printf 'setuptools<81\nwheel\n' > /tmp/constraints.txt
+ENV PIP_CONSTRAINT=/tmp/constraints.txt
+RUN pip install --no-cache-dir "setuptools<81" wheel
+
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --no-cache-dir -e /app
