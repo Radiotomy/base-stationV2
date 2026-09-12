@@ -46,16 +46,28 @@ DATA_DIR = os.environ.get("INSPIRE_DATA_DIR", "/data")
 JOBS_DIR = os.path.join(DATA_DIR, "jobs")
 OUT_DIR = os.path.join(DATA_DIR, "outputs")
 PROMPT_DIR = os.path.join(DATA_DIR, "prompts")
-MODEL_ROOT = os.path.join(DATA_DIR, "pretrained_models")
+# Weights live on the CONTAINER disk, not the mount. The mounted volume rejects
+# the dot-prefixed temp entries both the ModelScope and HF downloaders create
+# (Errno 13 even as uid 0 with a 0777 parent), so a checkpoint can never be
+# written there. Jobs and outputs — the data that must survive a restart — stay
+# on /data; weights are reproducible and are simply re-fetched on a cold start.
+MODEL_ROOT = os.environ.get("INSPIRE_MODEL_ROOT", "/models")
 for d in (JOBS_DIR, OUT_DIR, PROMPT_DIR, MODEL_ROOT):
     os.makedirs(d, exist_ok=True)
+    # The mount squashes root, so a directory left at 0755 by an earlier
+    # container rejects writes even from uid 0 — every path this process must
+    # write to is opened up explicitly rather than trusted to be writable.
+    try:
+        os.chmod(d, 0o777)
+    except Exception:
+        pass
 
 # Upstream's loader falls back to a modelscope download when a checkpoint folder
 # is incomplete, and modelscope writes its scratch dir wherever its cache points.
 # Both are pinned into the mount here so a download never lands on a path this
 # process cannot write (that is the '._____temp' Permission denied failure).
-os.environ.setdefault("MODELSCOPE_CACHE", os.path.join(DATA_DIR, "modelscope"))
-os.environ.setdefault("HF_HOME", os.path.join(DATA_DIR, "hf"))
+os.environ.setdefault("MODELSCOPE_CACHE", "/models/.modelscope")
+os.environ.setdefault("HF_HOME", "/models/.hf")
 os.makedirs(os.environ["MODELSCOPE_CACHE"], exist_ok=True)
 os.makedirs(os.environ["HF_HOME"], exist_ok=True)
 
@@ -115,8 +127,17 @@ def ensure_weights(model_name):
     """
     target = os.path.join(MODEL_ROOT, model_name)
     if os.path.isfile(os.path.join(target, "inspiremusic.yaml")):
+        link_checkpoint(model_name, target)
         return target
+    # A leftover folder from an earlier failed attempt is NOT reusable: the
+    # partial tree was written by a different attempt and its own permissions
+    # then reject the next download's temp files ('._____temp', '.DS_Store'
+    # Permission denied), even though the parent mount is writable. Clearing it
+    # is what makes a retry actually retry.
+    import shutil
+    shutil.rmtree(target, ignore_errors=True)
     os.makedirs(target, exist_ok=True)
+    os.chmod(target, 0o777)
 
     # ModelScope is the AUTHORITATIVE source: upstream took the FunAudioLLM
     # checkpoints off Hugging Face, so an HF-first loader 404s on every model.
@@ -144,7 +165,29 @@ def ensure_weights(model_name):
     # Upstream ships relative paths in the yaml that only resolve from its own
     # examples/ directory — flattened here so the config works from any cwd.
     os.system(f"""cd {target} && sed -i -e "s/\\.\\.\\/\\.\\.\\///g" inspiremusic.yaml""")
+    link_checkpoint(model_name, target)
     return target
+
+
+def link_checkpoint(model_name, target):
+    """Expose the checkpoint at ./pretrained_models/<name>, relative to cwd.
+
+    Upstream's yaml (and the flattening sed above) leaves RELATIVE paths that the
+    transformers loader resolves against the working directory, so a checkpoint
+    stored anywhere else is simply not found no matter that it downloaded
+    correctly. A symlink satisfies those paths without editing every config.
+    """
+    link_root = os.path.join(os.getcwd(), "pretrained_models")
+    os.makedirs(link_root, exist_ok=True)
+    link = os.path.join(link_root, model_name)
+    if os.path.islink(link) or os.path.exists(link):
+        if os.path.realpath(link) == os.path.realpath(target):
+            return
+        if os.path.islink(link):
+            os.unlink(link)
+        else:
+            return
+    os.symlink(target, link)
 
 
 def get_model(model_name):

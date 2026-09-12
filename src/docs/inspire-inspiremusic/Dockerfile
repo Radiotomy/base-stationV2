@@ -67,7 +67,10 @@ COPY app.py /app/app.py
 
 # Checkpoints, jobs and outputs all live on the mounted Storage bucket. Created
 # here so the container still starts (degraded) if the mount is missing.
-RUN mkdir -p /data/jobs /data/outputs /data/prompts /data/pretrained_models
+RUN mkdir -p /data/jobs /data/outputs /data/prompts
+# Checkpoints live on the container disk — the mounted volume refuses the
+# downloaders' temp files (see MODEL_ROOT in app.py).
+RUN mkdir -p /models && chmod 777 /models
 
 EXPOSE 7860
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "7860", "--timeout-keep-alive", "600"]
