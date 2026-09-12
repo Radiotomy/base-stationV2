@@ -176,13 +176,38 @@ def ensure_weights(model_name):
     return target
 
 
-def patch_attention(target):
-    """Rewrite flash_attention_2 requests to sdpa when flash-attn is absent."""
+def flash_available():
     try:
         import flash_attn  # noqa: F401
-        return
+        return True
     except Exception:
-        pass
+        return False
+
+
+def patch_source_attention():
+    """Upstream HARDCODES attn_implementation='flash_attention_2' in
+    qwen_encoder.py — it is not a config value, so no checkpoint edit can reach
+    it. flash-attn is an optional build on this image (it frequently fails to
+    compile, and making it mandatory would take the whole engine down), so the
+    source request is rewritten to PyTorch's SDPA kernel, which is numerically
+    equivalent for inference."""
+    if flash_available():
+        return
+    p = os.path.join(ROOT, "inspiremusic", "transformer", "qwen_encoder.py")
+    try:
+        with open(p) as f:
+            body = f.read()
+        if "flash_attention_2" in body:
+            with open(p, "w") as f:
+                f.write(body.replace("flash_attention_2", "sdpa"))
+    except Exception:
+        traceback.print_exc()
+
+
+def patch_attention(target):
+    """Rewrite flash_attention_2 requests to sdpa when flash-attn is absent."""
+    if flash_available():
+        return
     for dirpath, _dirs, files in os.walk(target):
         for fn in files:
             if not fn.endswith((".yaml", ".json")):
@@ -223,6 +248,7 @@ def get_model(model_name):
     with _cache_lock:
         if model_name in _model_cache:
             return _model_cache[model_name]
+    patch_source_attention()
     from inspiremusic.cli.inference import InspireMusicModel, env_variables
     env_variables()
     model_dir = ensure_weights(model_name)
