@@ -117,12 +117,30 @@ def ensure_weights(model_name):
     if os.path.isfile(os.path.join(target, "inspiremusic.yaml")):
         return target
     os.makedirs(target, exist_ok=True)
-    from huggingface_hub import snapshot_download
-    snapshot_download(
-        repo_id=f"FunAudioLLM/{model_name}",
-        local_dir=target,
-        token=os.environ.get("HF_TOKEN") or None,
-    )
+
+    # ModelScope is the AUTHORITATIVE source: upstream took the FunAudioLLM
+    # checkpoints off Hugging Face, so an HF-first loader 404s on every model.
+    # The HF community mirror is kept only as a fallback for the day ModelScope
+    # is unreachable, and never as the primary.
+    errors = []
+    try:
+        from modelscope import snapshot_download as ms_download
+        ms_download(model_id=f"iic/{model_name}", local_dir=target)
+    except Exception as e:
+        errors.append(f"modelscope: {type(e).__name__}: {e}")
+        try:
+            from huggingface_hub import snapshot_download as hf_download
+            hf_download(
+                repo_id=f"rtikw/{model_name}",
+                local_dir=target,
+                token=os.environ.get("HF_TOKEN") or None,
+            )
+        except Exception as e2:
+            errors.append(f"hf mirror: {type(e2).__name__}: {e2}")
+            raise RuntimeError("checkpoint download failed — " + " | ".join(errors))
+
+    if not os.path.isfile(os.path.join(target, "inspiremusic.yaml")):
+        raise RuntimeError(f"{model_name} downloaded without inspiremusic.yaml — incomplete checkpoint")
     # Upstream ships relative paths in the yaml that only resolve from its own
     # examples/ directory — flattened here so the config works from any cwd.
     os.system(f"""cd {target} && sed -i -e "s/\\.\\.\\/\\.\\.\\///g" inspiremusic.yaml""")
