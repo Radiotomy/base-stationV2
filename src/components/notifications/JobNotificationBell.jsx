@@ -12,9 +12,30 @@ const IDLE_POLL_INTERVAL_MS = 60000;
 // After this many seconds of "processing", the bell starts driving the
 // provider poll itself. Covers the case where the user left the studio page
 // and the in-page polling loop was torn down.
-const DRIVE_POLL_AFTER_SECONDS = 90;
-// Stop driving after this many minutes — anything still processing is hung.
-const GIVE_UP_AFTER_MINUTES = 10;
+const DRIVE_POLL_AFTER_SECONDS = 45;
+// Stop driving after this many minutes. Long-form renders (Skye up to 285s of
+// audio, Aurora up to 300s, Nova video) routinely run well past ten minutes on a
+// cold engine, and the old ceiling abandoned them exactly when they needed
+// driving — the render finished on the engine and nothing ever collected it.
+const GIVE_UP_AFTER_MINUTES = 60;
+
+// Each in-house engine has its OWN poll function: that function is what persists
+// the render, writes the UserAsset and deducts credits. pollGenerationJob only
+// knows the third-party providers, so driving every job through it left Aurora,
+// Skye, Siren Song, Nova, Cantor, Cadence and Sever renders uncollected whenever
+// the creator left the studio page.
+const POLL_FN_BY_PROVIDER = {
+  aurora: 'pollAuroraJob',
+  skye: 'pollSkyeJob',
+  sirensong: 'pollSirenSongJob',
+  novah3: 'pollNovaH3Job',
+  diffsinger: 'pollDiffSingerVocals',
+  musicgenchord: 'pollMusicGenChordBed',
+  sever: 'pollSeverStems',
+};
+// A maestro row is a work order the craft engine fills — polling it would do
+// nothing, and 'ondevice' never left the browser.
+const NOT_DRIVABLE = new Set(['maestro', 'ondevice', 'core']);
 // A job whose FIRST observed state is already finished still deserves a ping if
 // it only just landed — otherwise a job that starts and finishes between two
 // polls (or before the bell mounted) is silently swallowed, which is why the
@@ -24,6 +45,16 @@ const RECENT_FINISH_WINDOW_MS = 10 * 60 * 1000;
 // Most studios never wrote input_data.task_kind, so the type label is derived
 // from the job's own job_type/provider first and only refined by task_kind when
 // one happens to be present.
+// Where the finished thing actually lives. /asset-gallery is the VIDEO gallery
+// only — sending a finished track there showed the creator an empty video list
+// and made a saved song look lost.
+function libraryPathFor(job) {
+  if (job.job_type === 'video') return '/asset-gallery';
+  if (job.job_type === 'lyrics') return '/ai-studio/history';
+  if (job.job_type === 'loop') return '/loop-studio';
+  return '/creator-dashboard';
+}
+
 function describeJob(job) {
   const kind = job.input_data?.task_kind || '';
   const title =
@@ -92,8 +123,10 @@ export default function JobNotificationBell() {
           const ageSec = (Date.now() - new Date(job.created_date).getTime()) / 1000;
           if (ageSec < DRIVE_POLL_AFTER_SECONDS) continue;
           if (ageSec > GIVE_UP_AFTER_MINUTES * 60) continue; // hung — leave for cleanup
+          if (NOT_DRIVABLE.has(job.provider)) continue;
+          const fn = POLL_FN_BY_PROVIDER[job.provider] || 'pollGenerationJob';
           drivingRef.current.add(job.id);
-          base44.functions.invoke('pollGenerationJob', { job_id: job.id })
+          base44.functions.invoke(fn, { job_id: job.id })
             .catch(() => {})
             .finally(() => { drivingRef.current.delete(job.id); });
         }
@@ -121,6 +154,7 @@ export default function JobNotificationBell() {
           if ((justFinished || prev !== curr) && isFinished) {
             const meta = describeJob(job);
             const fileUrl = job.output_url || null;
+            const libraryPath = libraryPathFor(job);
 
             setNotifications(prev => [{
               id: job.id,
@@ -131,6 +165,7 @@ export default function JobNotificationBell() {
               completedAt: Date.now(),
               read: false,
               fileUrl,
+              libraryPath,
               errorMessage: job.error_message,
             }, ...prev].slice(0, 10));
 
@@ -139,7 +174,7 @@ export default function JobNotificationBell() {
               toast.success(`${meta.type} ready: ${meta.title}`, {
                 icon: '✨',
                 duration: 8000,
-                action: { label: 'Library', onClick: () => { window.location.href = '/asset-gallery'; } },
+                action: { label: 'Library', onClick: () => { window.location.href = libraryPath; } },
               });
             } else {
               toast.error(`${meta.type} failed: ${meta.title}`, {
@@ -305,7 +340,7 @@ export default function JobNotificationBell() {
                               {isDone && (
                                 <div className="flex gap-2 mt-2">
                                   <Link
-                                    to="/asset-gallery"
+                                    to={n.libraryPath || '/creator-dashboard'}
                                     onClick={() => setOpen(false)}
                                     className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 hover:text-emerald-200"
                                   >

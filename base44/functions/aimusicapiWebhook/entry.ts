@@ -17,6 +17,7 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { finalizeMashupAsset } from '../../shared/mashupFinalize.ts';
+import { autoSaveJobAsset } from '../../shared/autoSaveAsset.ts';
 
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 
@@ -335,6 +336,13 @@ Deno.serve(async (req) => {
         });
       }
     } catch (e) { console.warn('Log finalize failed:', e.message); }
+
+    // Library save — the webhook is what runs when the studio page is gone, so
+    // every take a creator paid for lands in their library regardless.
+    // Idempotent by file_url; a mashup is skipped (handled above with lineage).
+    try {
+      await autoSaveJobAsset(base44, job, { ...normalized, lyrics: finalLyrics }, outputUrl);
+    } catch (e) { console.warn('Library auto-save failed:', e.message); }
 
     return Response.json({ ok: true, status: 'completed', job_id: job.id });
   } catch (error) {

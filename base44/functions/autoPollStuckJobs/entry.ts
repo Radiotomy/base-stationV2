@@ -73,8 +73,33 @@ Deno.serve(async (req) => {
     //
     // A small batch per run keeps peak memory bounded and lets the 5-minute cadence
     // drain the queue instead: slower per run, but it actually completes.
+    // The in-house engines are finalized by their OWN poll function — that is
+    // where the render is persisted, the asset written and credits deducted.
+    // finalizeJob's pollProvider knows nothing about them, so before this they
+    // were rescued only while a browser tab happened to be open, and a creator
+    // who navigated away lost the render when the engine slept.
+    const ENGINE_POLL_FN = {
+      aurora: 'pollAuroraJob',
+      skye: 'pollSkyeJob',
+      sirensong: 'pollSirenSongJob',
+      novah3: 'pollNovaH3Job',
+      diffsinger: 'pollDiffSingerVocals',
+      musicgenchord: 'pollMusicGenChordBed',
+      sever: 'pollSeverStems',
+    };
+    const engineJobs = candidates.filter(j => ENGINE_POLL_FN[j.provider]).slice(0, 3);
+    let enginesDriven = 0;
+    for (const job of engineJobs) {
+      try {
+        await base44.functions.invoke(ENGINE_POLL_FN[job.provider], { job_id: job.id });
+        enginesDriven += 1;
+      } catch (err) {
+        errors.push({ job_id: job.id, error: err.message });
+      }
+    }
+
     const BATCH = 3;
-    const toProcess = candidates.slice(0, BATCH);
+    const toProcess = candidates.filter(j => !ENGINE_POLL_FN[j.provider]).slice(0, BATCH);
 
     let finalized = 0;
     for (const job of toProcess) {
@@ -110,6 +135,7 @@ Deno.serve(async (req) => {
       // never drains is visible rather than silently deferred forever.
       deferred: Math.max(0, candidates.length - toProcess.length),
       finalized,
+      engines_driven: enginesDriven,
       // Jobs that never reached their provider and were closed out as failed.
       orphans: orphans.length,
       reaped,

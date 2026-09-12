@@ -22,6 +22,7 @@
 // data from earlier callbacks.
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
+import { autoSaveJobAsset } from '../../shared/autoSaveAsset.ts';
 
 const WEBHOOK_SECRET = Deno.env.get('TEMPOLOR_WEBHOOK_SECRET') || '';
 
@@ -262,6 +263,21 @@ Deno.serve(async (req) => {
             });
           }
         } catch (e) { console.warn('Tempolor log finalize failed:', e.message); }
+
+        // Library save. The webhook is the ONLY thing that runs when the creator
+        // has navigated away, so without this a finished Tempolor render was
+        // charged for and then existed nowhere the creator could see it.
+        // Idempotent by file_url, so the studio page saving too is harmless.
+        try {
+          await autoSaveJobAsset(base44, job, {
+            title: mergedMeta.title,
+            lyrics: mergedMeta.lyrics,
+            wav_url: mergedMeta.wav_url,
+            cover_image_url: mergedMeta.cover_image_url,
+            duration: mergedMeta.duration,
+            model_version: mergedMeta.model_version,
+          }, audioUrl);
+        } catch (e) { console.warn('Tempolor library auto-save failed:', e.message); }
       } else {
         // Mid-flight callback (wav_complete or lrcsections_complete after audio_complete already
         // finalized the job) — just merge metadata onto the already-completed job.
