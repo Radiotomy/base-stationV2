@@ -50,6 +50,15 @@ MODEL_ROOT = os.path.join(DATA_DIR, "pretrained_models")
 for d in (JOBS_DIR, OUT_DIR, PROMPT_DIR, MODEL_ROOT):
     os.makedirs(d, exist_ok=True)
 
+# Upstream's loader falls back to a modelscope download when a checkpoint folder
+# is incomplete, and modelscope writes its scratch dir wherever its cache points.
+# Both are pinned into the mount here so a download never lands on a path this
+# process cannot write (that is the '._____temp' Permission denied failure).
+os.environ.setdefault("MODELSCOPE_CACHE", os.path.join(DATA_DIR, "modelscope"))
+os.environ.setdefault("HF_HOME", os.path.join(DATA_DIR, "hf"))
+os.makedirs(os.environ["MODELSCOPE_CACHE"], exist_ok=True)
+os.makedirs(os.environ["HF_HOME"], exist_ok=True)
+
 ALLOWED_MODELS = {
     "InspireMusic-1.5B-Long": 48000,
     "InspireMusic-1.5B": 48000,
@@ -98,14 +107,22 @@ def update_job(task_id, **patch):
 
 # ── model handling ───────────────────────────────────────────────────────────
 def ensure_weights(model_name):
-    """Download the checkpoint into the persistent mount on first use."""
+    """Download the checkpoint into the persistent mount on first use.
+
+    Uses the hub client rather than `git clone`: a shelled-out clone reports
+    nothing on failure, so a partial download looked like a present checkpoint
+    and the real error only surfaced later as a write into an unwritable temp dir.
+    """
     target = os.path.join(MODEL_ROOT, model_name)
-    if os.path.isdir(target) and os.listdir(target):
+    if os.path.isfile(os.path.join(target, "inspiremusic.yaml")):
         return target
-    token = os.environ.get("HF_TOKEN", "")
-    auth = f"https://user:{token}@" if token else "https://"
-    url = f"{auth}huggingface.co/FunAudioLLM/{model_name}"
-    os.system(f"git lfs install && git clone {url} {target}")
+    os.makedirs(target, exist_ok=True)
+    from huggingface_hub import snapshot_download
+    snapshot_download(
+        repo_id=f"FunAudioLLM/{model_name}",
+        local_dir=target,
+        token=os.environ.get("HF_TOKEN") or None,
+    )
     # Upstream ships relative paths in the yaml that only resolve from its own
     # examples/ directory — flattened here so the config works from any cwd.
     os.system(f"""cd {target} && sed -i -e "s/\\.\\.\\/\\.\\.\\///g" inspiremusic.yaml""")
@@ -292,3 +309,35 @@ def outputs(filename: str):
 @app.get("/health")
 def health():
     return {"ok": True, "models_cached": list(_model_cache.keys()), "queue_depth": _work.qsize()}
+
+
+@app.get("/diag")
+def diag():
+    """Mount and identity report. A render that cannot write its checkpoint fails
+    minutes into inference, so the writability of every path is checked here up
+    front rather than diagnosed from a stack trace."""
+    def probe(path):
+        try:
+            os.makedirs(path, exist_ok=True)
+            p = os.path.join(path, ".write_probe")
+            with open(p, "w") as f:
+                f.write("ok")
+            os.remove(p)
+            writable = True
+            err = ""
+        except Exception as e:
+            writable, err = False, f"{type(e).__name__}: {e}"
+        st = os.stat(path) if os.path.exists(path) else None
+        return {
+            "writable": writable, "error": err,
+            "owner_uid": getattr(st, "st_uid", None),
+            "mode": oct(getattr(st, "st_mode", 0) & 0o777),
+        }
+
+    return {
+        "uid": os.getuid(),
+        "gid": os.getgid(),
+        "cuda": torch.cuda.is_available(),
+        "paths": {p: probe(p) for p in (DATA_DIR, JOBS_DIR, OUT_DIR, MODEL_ROOT, os.environ["MODELSCOPE_CACHE"])},
+        "checkpoints_present": sorted(os.listdir(MODEL_ROOT)) if os.path.isdir(MODEL_ROOT) else [],
+    }
