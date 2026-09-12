@@ -127,6 +127,7 @@ def ensure_weights(model_name):
     """
     target = os.path.join(MODEL_ROOT, model_name)
     if os.path.isfile(os.path.join(target, "inspiremusic.yaml")):
+        patch_attention(target)
         link_checkpoint(model_name, target)
         return target
     # A leftover folder from an earlier failed attempt is NOT reusable: the
@@ -165,8 +166,36 @@ def ensure_weights(model_name):
     # Upstream ships relative paths in the yaml that only resolve from its own
     # examples/ directory — flattened here so the config works from any cwd.
     os.system(f"""cd {target} && sed -i -e "s/\\.\\.\\/\\.\\.\\///g" inspiremusic.yaml""")
+    # The published checkpoint asks for flash_attention_2, but flash-attn is an
+    # optional build here (it fails to compile on this image often enough that
+    # making it required would break the whole engine). PyTorch's own SDPA kernel
+    # is numerically equivalent for inference, so the request is rewritten rather
+    # than the dependency forced.
+    patch_attention(target)
     link_checkpoint(model_name, target)
     return target
+
+
+def patch_attention(target):
+    """Rewrite flash_attention_2 requests to sdpa when flash-attn is absent."""
+    try:
+        import flash_attn  # noqa: F401
+        return
+    except Exception:
+        pass
+    for dirpath, _dirs, files in os.walk(target):
+        for fn in files:
+            if not fn.endswith((".yaml", ".json")):
+                continue
+            p = os.path.join(dirpath, fn)
+            try:
+                with open(p) as f:
+                    body = f.read()
+                if "flash_attention_2" in body:
+                    with open(p, "w") as f:
+                        f.write(body.replace("flash_attention_2", "sdpa"))
+            except Exception:
+                pass
 
 
 def link_checkpoint(model_name, target):
