@@ -31,6 +31,9 @@ rich==13.7.1
 soundfile==0.12.1
 tensorboard==2.14.0
 transformers==4.44.1
+# transformers loads the Qwen2.5 backbone with low_cpu_mem_usage=True, which is
+# an accelerate code path — without this the checkpoint loads not at all.
+accelerate==0.33.0
 wget==3.2
 WeTextProcessing==1.0.3
 # pynini is a WeTextProcessing dependency and must come from conda-forge in the
