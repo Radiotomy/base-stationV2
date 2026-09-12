@@ -44,6 +44,11 @@ RUN pip install --no-cache-dir "setuptools<81" wheel
 
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
+# Installed on its own with build isolation OFF so it uses the setuptools pinned
+# above (its setup.py still imports pkg_resources, dropped in setuptools >=81).
+# A PIP_CONSTRAINT pin does NOT reach pip's isolated build env, so bypassing that
+# isolation is the only thing that actually holds the pin during the build.
+RUN pip install --no-cache-dir --no-build-isolation openai-whisper==20231117
 RUN pip install --no-cache-dir -e /app
 
 # flash-attn is a speed-up, not a requirement — a build failure here must not

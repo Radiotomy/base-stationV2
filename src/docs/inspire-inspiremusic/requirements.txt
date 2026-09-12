@@ -23,7 +23,7 @@ modelscope==1.20.0
 networkx==3.1
 omegaconf==2.3.0
 onnxruntime-gpu==1.18.0
-openai-whisper==20231117
+# openai-whisper is installed in the Dockerfile with --no-build-isolation
 protobuf==4.25
 pydantic-settings>=2.2
 rich==13.7.1
