@@ -35,6 +35,13 @@ RUN git clone --recursive https://github.com/QwenAudio/FunMusic.git /tmp/funmusi
     && cp /tmp/funmusic/README.md /app/README.md \
     && rm -rf /tmp/funmusic
 
+# Upstream hardcodes attn_implementation="flash_attention_2" in qwen_encoder.py,
+# which no config edit can reach. flash-attn is an optional build below, so the
+# request is rewritten at BUILD time to PyTorch's SDPA kernel (equivalent for
+# inference) — baked in rather than patched at runtime, so a render can never
+# race the patch.
+RUN sed -i 's/flash_attention_2/sdpa/g' /app/inspiremusic/transformer/qwen_encoder.py
+
 RUN pip install --no-cache-dir torch==2.3.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu121
 
 # openai-whisper's setup.py imports pkg_resources, which setuptools >=81 no longer
