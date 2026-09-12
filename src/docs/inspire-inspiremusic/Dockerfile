@@ -52,7 +52,11 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # A PIP_CONSTRAINT pin does NOT reach pip's isolated build env, so bypassing that
 # isolation is the only thing that actually holds the pin during the build.
 RUN pip install --no-cache-dir --no-build-isolation openai-whisper==20231117
-RUN pip install --no-cache-dir --no-build-isolation -e /app
+# --no-deps is required, not an optimization: upstream's setup.py pins
+# fastapi==0.111.0 AND gradio==5.5.0, which demands fastapi>=0.115 — an
+# unsolvable pair. Our requirements.txt is the real dependency set, and the
+# gradio demo deps upstream pins are unused here (we serve FastAPI ourselves).
+RUN pip install --no-cache-dir --no-deps --no-build-isolation -e /app
 
 # flash-attn is a speed-up, not a requirement — a build failure here must not
 # take the whole image down with it.
