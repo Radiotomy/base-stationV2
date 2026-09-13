@@ -12,7 +12,16 @@
 # banner for every login shell, which is the duplicated banner in the logs and
 # pure noise.
 
+# The Space injects CUDA_VISIBLE_DEVICES=1 into the RUNTIME environment, which
+# overrides any ENV baked into the image — measured: the render worker reported
+# visible_devices "1", device_count 0, cuda_available False on a single-GPU box,
+# so inference silently fell back to CPU. Exported here, at runtime, which is the
+# only place that beats the injected value.
+export CUDA_VISIBLE_DEVICES=0
+
 echo "[boot] python  = $(which python) ($(python -V 2>&1))"
+echo "[boot] CUDA_VISIBLE_DEVICES = $CUDA_VISIBLE_DEVICES"
+python -c "import torch; print('[boot] cuda=%s devices=%d' % (torch.cuda.is_available(), torch.cuda.device_count()))"
 echo "[boot] uvicorn = $(which uvicorn)"
 echo "[boot] cwd     = $(pwd)"
 
