@@ -84,6 +84,24 @@ MIN_SECONDS, MAX_SECONDS = 10.0, 300.0
 PROMPT_SECONDS = 5
 
 app = FastAPI()
+
+# Upstream calls torch.load() with NO map_location in several places (the VQVAE
+# tokenizer is the first one a render hits). The published checkpoints were saved
+# from a CUDA device, so torch tries to restore each storage onto that exact
+# device and raises "Attempting to deserialize object on a CUDA device but
+# torch.cuda.is_available() is False" before inference even starts. Every load is
+# forced to CPU here and the engine moves the model to its device afterwards,
+# which is the standard checkpoint-loading contract and is correct on GPU too.
+_torch_load = torch.load
+
+
+def _cpu_first_load(*args, **kwargs):
+    kwargs.setdefault("map_location", "cpu")
+    return _torch_load(*args, **kwargs)
+
+
+torch.load = _cpu_first_load
+
 _model_cache = {}
 _cache_lock = threading.Lock()
 _work = queue.Queue()
