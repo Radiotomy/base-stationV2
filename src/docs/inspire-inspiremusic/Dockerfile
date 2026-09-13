@@ -90,7 +90,16 @@ RUN pip install --no-cache-dir flash-attn==2.6.3 --no-build-isolation || \
 # target folder was left without inspiremusic.yaml, the image shipped no usable
 # checkpoint, and the engine re-downloaded multiple GB on every cold start —
 # which is exactly the "loading model" wait in front of the first render.
-RUN python -c "import shutil; from modelscope import snapshot_download; p = snapshot_download('iic/InspireMusic-1.5B-Long', cache_dir='/models/.modelscope'); shutil.copytree(p, '/models/InspireMusic-1.5B-Long', dirs_exist_ok=True)" \
+# Downloaded and MOVED, never copied: a copytree holds the whole multi-GB tree in
+# flight alongside the original and the Space builder is OOM-killed (exit 137)
+# partway through. A move is a rename on the same filesystem — no second copy, no
+# memory spike. The fetch is also pinned to one worker: modelscope's parallel
+# downloader buffers each shard in memory, and several multi-GB shards at once is
+# the other half of the same OOM.
+ENV MODELSCOPE_DOWNLOAD_PARALLELS=1
+RUN python -c "from modelscope import snapshot_download; p = snapshot_download('iic/InspireMusic-1.5B-Long', cache_dir='/models/.modelscope'); print(p)" > /tmp/ckpt_path \
+    && mv "$(cat /tmp/ckpt_path | tail -n1)" /models/InspireMusic-1.5B-Long \
+    && rm -rf /models/.modelscope /tmp/ckpt_path \
     && test -f /models/InspireMusic-1.5B-Long/inspiremusic.yaml \
     && sed -i -e "s|\.\./\.\./||g" -e "s/flash_attention_2/sdpa/g" /models/InspireMusic-1.5B-Long/inspiremusic.yaml \
     && chmod -R 777 /models
