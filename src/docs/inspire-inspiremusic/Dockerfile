@@ -76,10 +76,38 @@ RUN pip install --no-cache-dir flash-attn==2.6.3 --no-build-isolation || \
 # An image layer is cached by the Space builder, so a restart is instant.
 # The sed also flattens upstream's relative yaml paths (they only resolve from
 # its own examples/ dir) and rewrites the flash_attention_2 request to sdpa.
-RUN python -c "from modelscope import snapshot_download; snapshot_download(model_id='iic/InspireMusic-1.5B-Long', local_dir='/models/InspireMusic-1.5B-Long')" \
+# Downloaded into the ModelScope CACHE and then COPIED, never via local_dir: with
+# local_dir the client resolves the snapshot through a dot-mangled symlink
+# ('InspireMusic-1___5B-Long') whose creation fails on this filesystem, so the
+# target folder was left without inspiremusic.yaml, the image shipped no usable
+# checkpoint, and the engine re-downloaded multiple GB on every cold start —
+# which is exactly the "loading model" wait in front of the first render.
+RUN python -c "import shutil; from modelscope import snapshot_download; p = snapshot_download('iic/InspireMusic-1.5B-Long', cache_dir='/models/.modelscope'); shutil.copytree(p, '/models/InspireMusic-1.5B-Long', dirs_exist_ok=True)" \
     && test -f /models/InspireMusic-1.5B-Long/inspiremusic.yaml \
     && sed -i -e "s|\.\./\.\./||g" -e "s/flash_attention_2/sdpa/g" /models/InspireMusic-1.5B-Long/inspiremusic.yaml \
     && chmod -R 777 /models
+
+# Upstream calls torch.load() with NO map_location (vqvae.py is the first one a
+# render hits) and the published checkpoints were saved from a CUDA device, so
+# torch tries to restore each storage onto that exact device and dies with
+# "Attempting to deserialize object on a CUDA device but torch.cuda.is_available()
+# is False". app.py patches torch.load, but the checkpoint is loaded from a WORKER
+# THREAD via hyperpyyaml, and a stale app.py on the Space leaves that patch out
+# entirely. sitecustomize is imported by the interpreter itself before ANY app or
+# library code, so the mapping cannot be raced or skipped. Loading to CPU first
+# and moving the model to its device afterwards is the standard contract and is
+# correct on GPU too.
+RUN printf '%s\n' \
+  "try:" \
+  "    import torch" \
+  "    _orig_load = torch.load" \
+  "    def _cpu_first_load(*a, **kw):" \
+  "        kw.setdefault('map_location', 'cpu')" \
+  "        return _orig_load(*a, **kw)" \
+  "    torch.load = _cpu_first_load" \
+  "except Exception:" \
+  "    pass" \
+  > /opt/conda/lib/python3.10/site-packages/sitecustomize.py
 
 COPY app.py /app/app.py
 
