@@ -6,7 +6,13 @@ FROM nvidia/cuda:12.1.1-cudnn8-devel-ubuntu22.04
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/third_party/Matcha-TTS \
-    INSPIRE_DATA_DIR=/data
+    INSPIRE_DATA_DIR=/data \
+    # The Space environment arrives with CUDA_VISIBLE_DEVICES=1, which on a
+    # single-GPU box names a device that does not exist — torch then reports
+    # device_count 0 and the render falls back to CPU (measured: the render
+    # thread saw cuda_available False while the web thread saw True). Pinned to
+    # the first visible device so every thread in the process agrees.
+    CUDA_VISIBLE_DEVICES=0
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
       git git-lfs curl ca-certificates ffmpeg sox libsox-dev build-essential \

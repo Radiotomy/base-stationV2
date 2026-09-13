@@ -30,6 +30,12 @@ onnxruntime-gpu==1.18.0
 # openai-whisper is installed in the Dockerfile with --no-build-isolation
 protobuf==4.25
 pydantic-settings>=2.2
+# inspiremusic.dataset.processor imports pyarrow at MODULE level, and
+# inspiremusic.cli.inference imports that module — so a missing pyarrow is not a
+# training-only gap, it fails every render at import time. Upstream leaves it out
+# of requirements.txt because their examples run inside a dataset pipeline that
+# pulls it in transitively.
+pyarrow==17.0.0
 rich==13.7.1
 soundfile==0.12.1
 tensorboard==2.14.0
