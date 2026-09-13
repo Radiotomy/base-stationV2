@@ -335,7 +335,26 @@ def worker():
             )
         except Exception as e:
             traceback.print_exc()
-            update_job(task_id, status="failed", error=f"{type(e).__name__}: {e}", progress="")
+            # CUDA state is recorded from INSIDE the worker process. /diag answers
+            # from the web request context, and the two disagreeing is exactly the
+            # failure being chased — a device report from anywhere else is not
+            # evidence about the process that actually ran the render.
+            try:
+                dev = {
+                    "cuda_available": torch.cuda.is_available(),
+                    "device_count": torch.cuda.device_count(),
+                    "visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", "<unset>"),
+                    "torch": torch.__version__,
+                }
+            except Exception as de:
+                dev = {"probe_error": f"{type(de).__name__}: {de}"}
+            update_job(
+                task_id,
+                status="failed",
+                error=f"{type(e).__name__}: {e}",
+                worker_device=dev,
+                progress="",
+            )
         finally:
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
@@ -410,6 +429,7 @@ def status(task_id: str):
         "progress": rec.get("progress", ""),
         "result_url": rec.get("result_url", ""),
         "error": rec.get("error", ""),
+        "worker_device": rec.get("worker_device"),
     }
 
 

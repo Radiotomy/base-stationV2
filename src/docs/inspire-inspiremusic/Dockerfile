@@ -70,6 +70,17 @@ RUN pip install --no-cache-dir --no-deps --no-build-isolation -e /app
 RUN pip install --no-cache-dir flash-attn==2.6.3 --no-build-isolation || \
     echo "flash-attn unavailable — continuing without it"
 
+# Weights are baked into the IMAGE, not downloaded at first render. The
+# container disk is ephemeral, so a runtime download repeated itself on every
+# cold start and put a multi-GB fetch in front of the creator's first render.
+# An image layer is cached by the Space builder, so a restart is instant.
+RUN python -c "from modelscope import snapshot_download; snapshot_download(model_id='iic/InspireMusic-1.5B-Long', local_dir='/models/InspireMusic-1.5B-Long')" \
+    && test -f /models/InspireMusic-1.5B-Long/inspiremusic.yaml \
+    # Upstream's yaml carries relative paths that only resolve from its own
+    # examples/ dir, and asks for flash_attention_2 which is optional here.
+    && sed -i -e "s|\.\./\.\./||g" -e "s/flash_attention_2/sdpa/g" /models/InspireMusic-1.5B-Long/inspiremusic.yaml \
+    && chmod -R 777 /models
+
 COPY app.py /app/app.py
 
 # Checkpoints, jobs and outputs all live on the mounted Storage bucket. Created
