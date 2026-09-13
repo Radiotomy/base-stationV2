@@ -137,15 +137,12 @@ RUN mkdir -p /models && chmod 777 /models
 
 EXPOSE 7860
 
-# Started through an explicit shell that reports what it found BEFORE handing off
-# to uvicorn. The Space exited 0 with nothing but the CUDA banner in the log —
-# no traceback and no uvicorn line — which says the handoff itself failed rather
-# than the app crashing. These three lines separate the possible causes (missing
-# interpreter, unimportable app module, uvicorn returning immediately) instead of
-# leaving them indistinguishable. `exec` keeps uvicorn as PID 1 so signals and
-# exit codes still reach it.
-CMD ["bash", "-lc", "\
-echo \"[boot] python=$(which python) $(python -V 2>&1)\"; \
-echo \"[boot] uvicorn=$(which uvicorn)\"; \
-python -c 'import app; print(\"[boot] app module imported OK\")' || echo '[boot] APP IMPORT FAILED'; \
-exec uvicorn app:app --host 0.0.0.0 --port 7860 --timeout-keep-alive 600 --log-level info"]
+# Startup lives in start.sh, NOT inline here. An exec-form CMD holding a
+# multi-line shell script is not valid JSON (a backslash before a newline is not
+# a legal JSON escape), so Docker falls back to shell form and the mangled
+# command exits immediately — producing a clean "exit code 0" with no output
+# whatsoever, which is unreadable as a failure. A copied script has no escaping
+# to get wrong, and it logs what it found before handing off to uvicorn.
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+CMD ["bash", "/app/start.sh"]
