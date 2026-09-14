@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Download, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getSonicDownload } from '@/lib/music/sonicDownloadCache';
 
 /**
  * WavDownloadButton — smart WAV download button.
  *
  * Why it exists: aimusicapi.ai does not pre-publish WAV files to its CDN.
- * Constructed URLs (e.g. /stems/{clip_id}.wav) return 404. Instead, WAVs must be
- * fetched on-demand via POST /api/v1/sonic/wav — which we wrap in our backend
- * function `getWavUrl`. Producer/Tempolor return a `wav_url` at task completion,
- * which we accept directly.
+ * Constructed URLs (e.g. /stems/{clip_id}.wav) return 404. Instead, files are
+ * fetched on-demand via POST /api/v1/sonic/download — 2 credits per call for
+ * ANY number of formats, so we ask for mp3 + wav + m4a at once through the
+ * shared cache rather than paying again for a second format. Producer/Tempolor
+ * return a `wav_url` at task completion, which we accept directly.
  *
  * Props:
  *   - wavUrl?: string  — direct provider-returned wav_url (Producer/Tempolor)
@@ -30,10 +31,10 @@ export default function WavDownloadButton({ wavUrl, clipId, provider = 'sonic', 
     try {
       let finalUrl = wavUrl;
 
-      // Sonic: WAV is on-demand — always re-fetch a fresh signed URL
+      // Sonic: files are on-demand — one paid call fetches every format
       if (provider === 'sonic' && clipId) {
-        const res = await base44.functions.invoke('getWavUrl', { clip_id: clipId, provider: 'sonic' });
-        finalUrl = res?.data?.wav_url;
+        const data = await getSonicDownload(clipId);
+        finalUrl = data?.wav_url;
         if (!finalUrl) throw new Error('No WAV URL returned by provider');
       }
 
