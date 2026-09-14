@@ -14,10 +14,9 @@ const FAMILIES = [
   {
     name: 'Sonic', maker: 'Sonic AI', provider: 'sonic',
     versions: [
-      { value: 'sonic-v5-5', label: 'v5.5', desc: 'Flagship — best overall quality, richest vocals, 2 variations per run.' },
-      { value: 'sonic-v5', label: 'v5', desc: 'Latest generation — improved coherence and vocal realism.' },
-      { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Premium tier — fast, reliable, strong vocal fidelity. Great default.' },
-      { value: 'sonic-v4-5', label: 'v4.5', desc: 'Enhanced vocal quality at a balanced speed.' },
+      { value: 'sonic-v6', label: 'v6', desc: 'Flagship — newest generation, richest vocals, 2 variations per run.' },
+      { value: 'sonic-v6-wild', label: 'v6 Wild', desc: 'More adventurous arrangements and phrasing on the same lyric.' },
+      { value: 'sonic-v6-mini', label: 'v6 Mini', desc: 'Lighter, faster variant — ideal for quick lyric drafts.' },
     ],
   },
   {

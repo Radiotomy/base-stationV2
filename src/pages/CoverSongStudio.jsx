@@ -20,15 +20,14 @@ import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 
-// Sonic upload-cover / extend-upload endpoints require v4.5+ to work reliably.
-// v3.5 and v4 frequently hang or fail on upload tasks. v5 / v5.5 strongly
-// recommended for longer source tracks (> 90s).
+// Sonic v6 family (provider notice 2026-09-09). Retired v3.5–v5.5 ids are rendered
+// by v6 upstream, so only the live variants are offered.
 const SONIC_MODELS = [
-  { id: 'sonic-v5-5',      label: 'Sonic v5.5',      desc: 'Latest · best for long covers', vocalGender: true, recommended: true },
-  { id: 'sonic-v5',        label: 'Sonic v5',        desc: 'Recommended · premium quality', vocalGender: true, recommended: true },
-  { id: 'sonic-v4-5-plus', label: 'Sonic v4.5+',     desc: 'Enhanced v4.5',                 vocalGender: true },
-  { id: 'sonic-v4-5',      label: 'Sonic v4.5',      desc: 'Stable · short tracks only',    vocalGender: true },
+  { id: 'sonic-v6',      label: 'Sonic v6',      desc: 'Recommended · newest generation, best for long covers', vocalGender: true, recommended: true },
+  { id: 'sonic-v6-wild', label: 'Sonic v6 Wild', desc: 'More adventurous reinterpretation',                     vocalGender: true },
+  { id: 'sonic-v6-mini', label: 'Sonic v6 Mini', desc: 'Lighter, faster · quick drafts',                        vocalGender: true },
 ];
+const SONIC_LYRICS_MAX = 5000;
 
 export default function CoverSongStudio() {
   // Mode: 'cover' = re-imagine in new style · 'extend' = continue the track
@@ -45,7 +44,7 @@ export default function CoverSongStudio() {
   const [continueAt, setContinueAt] = useState(0.1);
 
   // Creative controls
-  const [model, setModel] = useState('sonic-v5');
+  const [model, setModel] = useState('sonic-v6');
   const [customMode, setCustomMode] = useState(true);     // true = lyrics, false = AI description
   const [lyrics, setLyrics] = useState('');
   const [aiDescription, setAiDescription] = useState('');
@@ -339,11 +338,11 @@ export default function CoverSongStudio() {
                   onChange={e => setLyrics(e.target.value)}
                   placeholder={`[Verse]\nNew lyrics for the cover\nA different melody\n\n[Chorus]\nCover song, cover song\nSing along with me`}
                   rows={10}
-                  maxLength={modelMeta.id.includes('v4-5') || modelMeta.id.includes('v5') ? 5000 : 3000}
+                  maxLength={SONIC_LYRICS_MAX}
                   className="rounded-xl font-mono text-xs"
                 />
                 <p className="text-[10px] text-muted-foreground text-right">
-                  {lyrics.length} / {modelMeta.id.includes('v4-5') || modelMeta.id.includes('v5') ? 5000 : 3000}
+                  {lyrics.length} / {SONIC_LYRICS_MAX}
                 </p>
               </TabsContent>
 
@@ -520,7 +519,7 @@ export default function CoverSongStudio() {
             {generating
               ? (taskKind === 'extend' ? 'Extending…' : 'Generating cover…')
               : (taskKind === 'extend' ? 'Extend Track' : 'Generate Cover Song')}
-            {!generating && <CostBadge cost={10} />}
+            {!generating && <CostBadge cost={taskKind === 'extend' ? 10 : 14} />}
           </Button>
 
           {/* Result */}

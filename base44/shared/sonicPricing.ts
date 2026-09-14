@@ -2,14 +2,19 @@
  * BASE Station credit prices for Sonic operations — matched 1:1 to the upstream
  * aimusicapi.ai Credits Usage Guide (audit 2026-09-03), by the owner's decision.
  *
- * Generation: advanced models (v4.5, v4.5+, v5, v5.5) and description mode
- * (custom_mode=false on any model) cost 14; v3.5 / v4 with custom lyrics cost 10.
+ * v6 update (2026-09-09): no price change — v6 costs exactly what the models it
+ * replaces cost. Every live model is now a v6 variant, and v6 is the successor of
+ * the advanced tier (v4.5 → v5.5), so generation is 14 in both custom-lyrics and
+ * description mode. Legacy ids are rendered by v6 upstream and are priced as v6.
  * Every generation still returns two takes.
  */
-export const SONIC_ADVANCED_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5']);
+import { SONIC_MODELS } from './sonicModels.ts';
 
-export function sonicGenerationCost(model: string, customMode: boolean): number {
-  return (SONIC_ADVANCED_MODELS.has(model) || !customMode) ? 14 : 10;
+export const SONIC_ADVANCED_MODELS = new Set(Object.keys(SONIC_MODELS));
+
+export function sonicGenerationCost(_model: string, _customMode: boolean): number {
+  // Every id resolves to a v6 variant, and v6 sits on the advanced tier.
+  return 14;
 }
 
 export const SONIC_COSTS = {

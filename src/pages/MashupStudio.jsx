@@ -17,6 +17,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import { useJobPolling } from '@/hooks/useJobPolling';
 import { handleCreditError } from '@/utils/creditErrors';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
+import { DEFAULT_SONIC_MODEL, sonicGenerationCost } from '@/config/musicModelCatalog';
 
 export default function MashupStudio() {
   const params = new URLSearchParams(window.location.search);
@@ -130,7 +131,7 @@ export default function MashupStudio() {
     try {
       const payload = {
         assetIds: selected,
-        mv: 'sonic-v5',
+        mv: DEFAULT_SONIC_MODEL,
         custom_mode: false,
         gpt_description_prompt: description.trim() || 'Energetic mashup blending both source tracks',
         title: title || undefined,
@@ -225,7 +226,7 @@ export default function MashupStudio() {
             className="w-full rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 gap-2 font-bold py-6">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
             {running ? 'Mashing…' : 'Generate Mashup'}
-            {!running && <CostBadge cost={10} />}
+            {!running && <CostBadge cost={sonicGenerationCost(DEFAULT_SONIC_MODEL, false)} />}
           </Button>
         </div>
 

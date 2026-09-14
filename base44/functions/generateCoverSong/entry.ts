@@ -12,20 +12,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
+import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, SONIC_DEFAULT_MODEL } from '../../shared/sonicModels.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
-
-const SONIC_LIMITS = {
-  'sonic-v3-5':      { prompt: 3000, tags: 200 },
-  'sonic-v4':        { prompt: 3000, tags: 200 },
-  'sonic-v4-5':      { prompt: 5000, tags: 1000 },
-  'sonic-v4-5-plus': { prompt: 5000, tags: 1000 },
-  'sonic-v5':        { prompt: 5000, tags: 1000 },
-  'sonic-v5-5':      { prompt: 5000, tags: 1000 },
-};
-const VOCAL_GENDER_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5']);
 
 function getWebhookConfig() {
   const url = Deno.env.get('AIMUSICAPI_WEBHOOK_URL');
@@ -100,9 +91,8 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       url,                       // required — source audio URL (≤ 8 min)
-      // Default to v5 — upload-cover hangs/fails on v3-5 and v4; v4-5 is unreliable for
-      // longer source tracks. v5/v5-5 strongly recommended per Sonic docs.
-      mv = 'sonic-v5',
+      // Any legacy id is resolved to the v6 model that actually renders it.
+      mv: requestedMv = SONIC_DEFAULT_MODEL,
       custom_mode = true,
       prompt,
       gpt_description_prompt,
@@ -121,7 +111,7 @@ Deno.serve(async (req) => {
 
     // ── Validation ───────────────────────────────────────────────────────────
     if (!url) return Response.json({ error: 'Provide source audio `url`' }, { status: 400 });
-    if (!SONIC_LIMITS[mv]) return Response.json({ error: `Invalid model: ${mv}` }, { status: 400 });
+    const mv = resolveSonicModel(requestedMv);
     if (custom_mode && (!prompt || !prompt.trim()) && !make_instrumental) {
       return Response.json({ error: 'Custom mode requires lyrics in `prompt` (or enable instrumental)' }, { status: 400 });
     }
@@ -142,7 +132,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Build Sonic upload-cover body ────────────────────────────────────────
-    const limits = SONIC_LIMITS[mv];
+    const limits = sonicLimits(mv);
     const tagParts = [tags, genre, mood].filter(Boolean).map(s => String(s).trim()).filter(Boolean);
     const mergedTags = tagParts.join(', ').slice(0, limits.tags);
 
@@ -160,7 +150,7 @@ Deno.serve(async (req) => {
     if (typeof style_weight === 'number')         apiBody.style_weight = Math.max(0, Math.min(1, style_weight));
     if (typeof weirdness_constraint === 'number') apiBody.weirdness_constraint = Math.max(0, Math.min(1, weirdness_constraint));
     if (typeof audio_weight === 'number')         apiBody.audio_weight = Math.max(0, Math.min(1, audio_weight));
-    if (vocal_gender && VOCAL_GENDER_MODELS.has(mv) && (vocal_gender === 'f' || vocal_gender === 'm')) {
+    if (vocal_gender && sonicSupportsVocalGender(mv) && (vocal_gender === 'f' || vocal_gender === 'm')) {
       apiBody.vocal_gender = vocal_gender;
     }
     const wh = getWebhookConfig();

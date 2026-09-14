@@ -75,7 +75,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   // Maestro Mode — lyrics routed through the Maestro Superagent craft engine (default on)
   const [maestroMode, setMaestroMode] = useState(true);
   const [maestroStatus, setMaestroStatus] = useState(null); // 'pending' | 'processing' while waiting
-  // Manual model choice — null means "use the default / auto-routed model" (Sonic v5)
+  // Manual model choice — null means "use the default / auto-routed model" (Sonic v6)
   const [modelOverride, setModelOverride] = useState(null);
   // Maestro's model suggestion, awaiting the creator's yes/no before anything is generated
   const [modelRecommendation, setModelRecommendation] = useState(null);
@@ -271,7 +271,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
     setExtending(false);
   };
 
-  // The creator's own pick always wins; otherwise the routed/default model (Sonic v5)
+  // The creator's own pick always wins; otherwise the routed/default model (Sonic v6)
   const resolveModel = (routing) => modelOverride
     || routing.model
     || (routing.provider === 'sonic' ? DEFAULT_SONIC_MODEL : DEFAULT_TEMPOLOR_SONG_MODEL);
@@ -485,7 +485,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         }
       }
 
-      // Step 4: model choice. The creator's pick (or Sonic v5) stands unless
+      // Step 4: model choice. The creator's pick (or Sonic v6) stands unless
       // Maestro suggests otherwise AND the creator accepts — the craft engine
       // is never allowed to swap the model silently.
       const chosenModel = resolveModel(routing);
@@ -668,7 +668,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
               </div>
             ) : (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-border bg-muted text-xs text-muted-foreground">
-                <Sparkles className="w-3 h-3" /> Default: Sonic v5 (2 tracks per run) — auto-routed after prompt analysis
+                <Sparkles className="w-3 h-3" /> Default: Sonic v6 (2 tracks per run) — auto-routed after prompt analysis
               </div>
             )}
             {routingDecision?.reason && (

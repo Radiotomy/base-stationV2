@@ -1,7 +1,8 @@
 /**
  * Per-model lyrics & prompting capability spec — single source of truth.
  * Mirrors backend truncation rules in generateMusic:
- *   Sonic:    lyrics go in `prompt` — 3000 chars (v3.5/v4, no vocals) / 5000 (v4.5+)
+ *   Sonic:    lyrics go in `prompt` — 5000 chars on every v6 variant (retired
+ *             v3.5–v5.5 ids are rendered by v6 upstream and share that budget)
  *   Producer: lyrics ≤ 5000 chars
  *   Tempolor: lyrics ≤ 3000 chars (ALL song models), prompt ≤ 1000 chars
  * Anything over the limit is hard-truncated by the provider — songs get cut mid-verse.
@@ -11,8 +12,8 @@ const SPECS = {
   sonic: {
     default: { maxLyricsChars: 5000, structureTags: true, vocal: true, languages: 'Multilingual' },
     models: {
-      'sonic-v3-5': { maxLyricsChars: 3000, vocal: false, notes: 'Legacy — no vocal support (auto-upgraded to v4.5 for vocals)' },
-      'sonic-v4':   { maxLyricsChars: 3000, vocal: false, notes: 'Legacy — no vocal support (auto-upgraded to v4.5 for vocals)' },
+      'sonic-v6-wild': { notes: 'Wild variant — more experimental arrangements; keep section tags explicit to hold structure' },
+      'sonic-v6-mini': { notes: 'Mini variant — fastest v6 render, best for drafting' },
     },
   },
   producer: {

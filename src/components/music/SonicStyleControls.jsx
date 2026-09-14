@@ -21,7 +21,7 @@ export default function SonicStyleControls({ model, value, onChange }) {
           <button disabled={!genderOk} onClick={() => set({ instrumental: false, vocal_gender: 'm' })} className={`${chip(value.vocal_gender === 'm')} disabled:opacity-40`}>Male</button>
           <button onClick={() => set({ instrumental: true, vocal_gender: null })} className={chip(!!value.instrumental)}>Instrumental</button>
         </div>
-        {!genderOk && <p className="text-[10px] text-muted-foreground mt-1">Vocal gender needs Sonic v4.5 or newer.</p>}
+        {!genderOk && <p className="text-[10px] text-muted-foreground mt-1">Vocal gender is available on Sonic v6 models.</p>}
       </div>
 
       <div>

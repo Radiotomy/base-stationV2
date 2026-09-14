@@ -15,28 +15,15 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { waitUntil } from 'base44:runtime';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
+import { resolveSonicModel, sonicSupportsVocalGender, SONIC_DEFAULT_MODEL } from '../../shared/sonicModels.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
 const AI_BASE = 'https://api.aimusicapi.ai/api/v1';
 
-const SONIC_LIMITS = {
-  'sonic-v3-5':      { prompt: 3000, tags: 200, gpt: 200 },
-  'sonic-v4':        { prompt: 3000, tags: 200, gpt: 200 },
-  'sonic-v4-5':      { prompt: 3000, tags: 200, gpt: 200 },
-  'sonic-v4-5-plus': { prompt: 3000, tags: 200, gpt: 200 },
-  'sonic-v5':        { prompt: 3000, tags: 200, gpt: 200 },
-};
-const VOCAL_GENDER_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5']);
-
-// Audit 2026-09-04 (docs.aimusicapi.ai/api-32136904): the mashup endpoint's own
-// model list stops at v5 — v5.5 is create-only. A v5.5 pick from the shared
-// catalog is mapped down rather than rejected, because the creator asked for
-// "newest" and a 400 would read to them as the mashup itself being broken.
-function resolveMashupModel(model) {
-  if (model === 'sonic-v5-5') return 'sonic-v5';
-  return SONIC_LIMITS[model] ? model : null;
-}
+// The mashup endpoint has tighter text budgets than /sonic/create (200-char
+// description, 200-char tags, 3000-char lyrics) on every model.
+const MASHUP_LIMITS = { prompt: 3000, tags: 200, gpt: 200 };
 
 function getWebhookConfig() {
   const url = Deno.env.get('AIMUSICAPI_WEBHOOK_URL');
@@ -127,7 +114,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const {
       assetIds = [],
-      mv: requestedMv = 'sonic-v5',
+      mv: requestedMv = SONIC_DEFAULT_MODEL,
       custom_mode = false,            // mashups usually use AI description
       prompt,
       gpt_description_prompt,
@@ -147,8 +134,7 @@ Deno.serve(async (req) => {
     if (assetIds.length !== 2) {
       return Response.json({ error: 'Sonic mashup requires exactly 2 source tracks' }, { status: 400 });
     }
-    const mv = resolveMashupModel(requestedMv);
-    if (!mv) return Response.json({ error: `Invalid model: ${requestedMv}` }, { status: 400 });
+    const mv = resolveSonicModel(requestedMv);
     if (custom_mode && (!prompt || !prompt.trim()) && !make_instrumental) {
       return Response.json({ error: 'Custom mode requires lyrics in `prompt` (or enable instrumental)' }, { status: 400 });
     }
@@ -190,7 +176,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Build mashup body (clip IDs filled in background) ────────────────────
-    const limits = SONIC_LIMITS[mv];
+    const limits = MASHUP_LIMITS;
     const tagParts = [tags].filter(Boolean).map(s => String(s).trim()).filter(Boolean);
     const mergedTags = tagParts.join(', ').slice(0, limits.tags);
 
@@ -207,7 +193,7 @@ Deno.serve(async (req) => {
     if (typeof style_weight === 'number')         mashupBody.style_weight = Math.max(0, Math.min(1, style_weight));
     if (typeof weirdness_constraint === 'number') mashupBody.weirdness_constraint = Math.max(0, Math.min(1, weirdness_constraint));
     if (typeof audio_weight === 'number')         mashupBody.audio_weight = Math.max(0, Math.min(1, audio_weight));
-    if (vocal_gender && VOCAL_GENDER_MODELS.has(mv) && (vocal_gender === 'f' || vocal_gender === 'm')) {
+    if (vocal_gender && sonicSupportsVocalGender(mv) && (vocal_gender === 'f' || vocal_gender === 'm')) {
       mashupBody.vocal_gender = vocal_gender;
     }
     const wh = getWebhookConfig();

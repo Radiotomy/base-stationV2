@@ -6,17 +6,17 @@
  * Priority axes (in order):
  *   1. Duration > 360s          → Tempolor (Sonic caps its `duration` target at 6 min;
  *                                  Tempolor/MiniMax reach 5–6 min natively)
- *   2. Vocal / needs_lyrics      → Sonic v5 (best vocal fidelity after Nuro deprecation)
- *   3. Multiple variations       → Sonic v5 (returns 2 clips per call)
- *   4. Speed priority            → TemPolor i3 instrumental / Sonic v5 vocal
- *   5. Default / general purpose → Sonic v5
+ *   2. Vocal / needs_lyrics      → Sonic v6 (best vocal fidelity after Nuro deprecation)
+ *   3. Multiple variations       → Sonic v6 (returns 2 clips per call)
+ *   4. Speed priority            → TemPolor i3 instrumental / Sonic v6 vocal
+ *   5. Default / general purpose → Sonic v6
  *
  * Audit 2026-09-03: the old ">120s → Tempolor" rule predates Sonic's `duration`
  * field (10–360s). Sonic now handles full-length songs directly.
  */
 
 export const PROVIDER_DETAILS = {
-  sonic:      { label: 'Sonic',      model: 'sonic-v5',        emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
+  sonic:      { label: 'Sonic',      model: 'sonic-v6',        emoji: '🎵', color: 'border-cyan-500 bg-cyan-500/10 text-cyan-300' },
   tempcolor:  { label: 'Tempolor',   model: 'tempolor-latest', emoji: '🎶', color: 'border-amber-500 bg-amber-500/10 text-amber-300' },
   elevenlabs: { label: 'ElevenLabs', model: 'music_v1',        emoji: '🎧', color: 'border-violet-500 bg-violet-500/10 text-violet-300' },
 };
@@ -58,12 +58,12 @@ export function routeProvider({
     };
   }
 
-  // Rule 2: Vocal / lyrics-heavy — Sonic v4-5-plus has strong vocal quality
+  // Rule 2: Vocal / lyrics-heavy — Sonic v6 has the strongest vocal quality
   if (needs_lyrics) {
     return {
       provider: 'sonic',
-      model: 'sonic-v5',
-      reason: `Sonic v5 selected — default model, strongest vocals and 2 tracks per run.`,
+      model: 'sonic-v6',
+      reason: `Sonic v6 selected — default model, strongest vocals and 2 tracks per run.`,
       routing_key: 'vocal_track',
       fallbackChain: ['tempcolor'],
     };
@@ -73,15 +73,15 @@ export function routeProvider({
   if (want_variations) {
     return {
       provider: 'sonic',
-      model: 'sonic-v5',
-      reason: `Sonic v5 selected — generates 2 track variations per call for comparison.`,
+      model: 'sonic-v6',
+      reason: `Sonic v6 selected — generates 2 track variations per call for comparison.`,
       routing_key: 'multiple_variations',
       fallbackChain: ['tempcolor'],
     };
   }
 
   // Rule 4: Speed priority — TemPolor i3 generates instrumentals in under 3 seconds
-  // (industry-leading per Tempolor docs); vocal tracks stay on Sonic v4-5-plus.
+  // (industry-leading per Tempolor docs); vocal tracks stay on Sonic v6.
   if (speed_priority) {
     if (!needs_lyrics) {
       return {
@@ -95,18 +95,18 @@ export function routeProvider({
     }
     return {
       provider: 'sonic',
-      model: 'sonic-v5',
-      reason: `Sonic v5 selected — fastest reliable route for vocal tracks.`,
+      model: 'sonic-v6',
+      reason: `Sonic v6 selected — fastest reliable route for vocal tracks.`,
       routing_key: 'speed_priority',
       fallbackChain: ['tempcolor'],
     };
   }
 
-  // Rule 5: General purpose default — Sonic v5 is the platform default model
+  // Rule 5: General purpose default — Sonic v6 is the platform default model
   return {
     provider: 'sonic',
-    model: 'sonic-v5',
-    reason: `Sonic v5 selected — platform default, 2 tracks per generation.`,
+    model: 'sonic-v6',
+    reason: `Sonic v6 selected — platform default, 2 tracks per generation.`,
     routing_key: 'general_purpose',
     fallbackChain: ['tempcolor'],
   };

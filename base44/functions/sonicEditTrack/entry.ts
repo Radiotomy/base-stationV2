@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { sonicPost, resolveClipId, webhookConfig } from '../../shared/sonicClient.ts';
 import { SONIC_COSTS } from '../../shared/sonicPricing.ts';
+import { resolveSonicModel } from '../../shared/sonicModels.ts';
 
 /**
  * Sonic edit tools on an existing library track (audit 2026-09-03, docs.aimusicapi.ai):
@@ -18,7 +19,6 @@ import { SONIC_COSTS } from '../../shared/sonicPricing.ts';
  *
  * Payload: { assetId, action, mv?, title?, tags?, ...action params }
  */
-const MODELS = new Set(['sonic-v4', 'sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5']);
 const clamp01 = (v) => Math.max(0, Math.min(1, Number(v)));
 
 Deno.serve(async (req) => {
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
 
     const p = await req.json();
     const { assetId, action, title, tags } = p;
-    const mv = MODELS.has(p.mv) ? p.mv : 'sonic-v5';
+    const mv = resolveSonicModel(p.mv);
     if (!assetId || !action) return Response.json({ error: 'assetId and action required' }, { status: 400 });
     if (!(action in SONIC_COSTS) || action === 'upload' || action.startsWith('stems')) {
       return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });

@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
+import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender } from '../../shared/sonicModels.ts';
 
 // Sonic (aimusicapi.ai) — bearer token for the Sonic endpoints.
 // Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone (docs
@@ -41,43 +42,24 @@ function getWebhookConfig() {
 //   gpt_description_prompt: 400 (all models)
 //   title:                 80 (all models)
 //
-// Model suitability: sonic-v3-5 and sonic-v4 have no vocal-gender support. Force v4-5
-// minimum for vocal/auto-lyrics generation.
+// Model table lives in ../../shared/sonicModels.ts (v6 update 2026-09-09): every
+// legacy id is rendered by v6 upstream and is resolved to the v6 model here so the
+// recorded model_version is the one that produced the audio.
 //
 // Audit 2026-09-03 (docs.aimusicapi.ai/llms.txt):
 //   - `use_suno_cdn` is now a REQUIRED boolean on /sonic/create (400 if absent).
 //     false → files served from aimusicapi's own CDN, which is what we persist from.
 //   - `duration` (integer 10–360s) is supported on create/persona/extend/cover.
-//   - `vocal_gender` ('f'|'m') on v4-5, v4-5-plus, v5, v5-5.
-//   - `sonic-v4-5-all` is NOT in the create endpoint enum (sample/mashup only) —
-//     mapped to sonic-v4-5 here so a stale picker value can't 400.
-//   - Upstream cost: advanced models (v4.5+/v5/v5.5) and description mode = 14
-//     provider credits; v3.5/v4 custom mode = 10. Our user charge stays flat.
-const SONIC_LIMITS = {
-  'sonic-v3-5':     { prompt: 3000, tags: 200 },
-  'sonic-v4':       { prompt: 3000, tags: 200 },
-  'sonic-v4-5':     { prompt: 5000, tags: 1000 },
-  'sonic-v4-5-plus':{ prompt: 5000, tags: 1000 },
-  'sonic-v5':       { prompt: 5000, tags: 1000 },
-  'sonic-v5-5':     { prompt: 5000, tags: 1000 },
-};
-const VOCAL_GENDER_MODELS = new Set(['sonic-v4-5', 'sonic-v4-5-plus', 'sonic-v5', 'sonic-v5-5']);
+//   - `vocal_gender` ('f'|'m') on every live (v6) model.
 const SONIC_DURATION_MIN = 10;
 const SONIC_DURATION_MAX = 360;
-
-function resolveSonicModel(model) {
-  const LEGACY_MODELS = ['sonic-v3-5', 'sonic-v4'];
-  if (!model || LEGACY_MODELS.includes(model)) return 'sonic-v5';
-  if (model === 'sonic-v4-5-all') return 'sonic-v4-5';
-  return SONIC_LIMITS[model] ? model : 'sonic-v5';
-}
 
 async function generateWithSonic({
   genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id, title: userTitle,
   instrumental, vocal_gender, negative_tags, style_weight, weirdness_constraint,
 }) {
   const safeModel = resolveSonicModel(model);
-  const limits = SONIC_LIMITS[safeModel];
+  const limits = sonicLimits(safeModel);
 
   // Per-spec field truncation
   const tags = [genre, mood].filter(Boolean).join(', ').slice(0, limits.tags);
@@ -131,7 +113,7 @@ async function generateWithSonic({
     body.duration = Math.min(Math.max(Math.round(Number(duration)), SONIC_DURATION_MIN), SONIC_DURATION_MAX);
   }
   if (instrumental) body.make_instrumental = true;
-  if (vocal_gender && VOCAL_GENDER_MODELS.has(safeModel) && (vocal_gender === 'f' || vocal_gender === 'm')) {
+  if (vocal_gender && sonicSupportsVocalGender(safeModel) && (vocal_gender === 'f' || vocal_gender === 'm')) {
     body.vocal_gender = vocal_gender;
   }
   if (negative_tags) body.negative_tags = String(negative_tags).slice(0, limits.tags);
