@@ -24,6 +24,8 @@ import { Crown } from 'lucide-react';
 import { handleCreditError, refreshCreditsFromResponse, getProviderErrorMessage } from '@/utils/creditErrors';
 import CostBadge from '@/components/credits/CostBadge';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
+import SavedLyricsPicker from '@/components/music/SavedLyricsPicker';
+import { loadLyricAssetText } from '@/lib/music/lyricAssetText';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { providerLabel } from '@/utils/providerRouter';
@@ -124,12 +126,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     (async () => {
       try {
         const asset = await base44.entities.UserAsset.get(initialLyricsAssetId);
-        // Prefer inline metadata.content (set by Lyrics Studio export); fall back to fetching the .txt
-        let text = asset?.metadata?.content;
-        if (!text && asset?.file_url) {
-          const res = await fetch(asset.file_url);
-          if (res.ok) text = await res.text();
-        }
+        const text = await loadLyricAssetText(asset);
         if (text) {
           setLyrics(text);
           setLyricsMode('custom');
@@ -780,14 +777,14 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             )}
 
             {lyricsMode === 'saved' && savedLyrics.length > 0 && (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                {savedLyrics.map(l => (
-                  <button key={l.id} onClick={() => setLyrics(l.metadata?.content || l.description || l.title)}
-                    className="w-full text-left px-3 py-2 rounded-lg bg-muted hover:bg-muted/80 text-xs transition-colors">
-                    <p className="font-semibold text-foreground">{l.title}</p>
-                    <p className="text-muted-foreground truncate">{l.description}</p>
-                  </button>
-                ))}
+              <div className="space-y-2">
+                <SavedLyricsPicker assets={savedLyrics} onSelect={setLyrics} />
+                {/* The loaded words are shown and stay editable — otherwise there is
+                    no way to tell whether the selection actually carried any lyrics. */}
+                {lyrics && (
+                  <textarea value={lyrics} onChange={e => setLyrics(e.target.value)} rows={6}
+                    className="w-full rounded-xl border border-input bg-transparent px-3 py-2 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
+                )}
               </div>
             )}
 
