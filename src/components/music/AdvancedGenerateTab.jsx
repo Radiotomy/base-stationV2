@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { base44 } from '@/api/base44Client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -27,6 +27,7 @@ import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityChec
 import SavedLyricsPicker from '@/components/music/SavedLyricsPicker';
 import { loadLyricAssetText } from '@/lib/music/lyricAssetText';
 import { mastersBriefFromAsset } from '@/lib/music/mastersBriefFromAsset';
+import { resolveTrackTitle } from '@/lib/music/trackTitle';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { providerLabel } from '@/utils/providerRouter';
@@ -109,6 +110,14 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   // Debounced lyrics — the compatibility check re-runs on every keystroke otherwise
   const debouncedLyrics = useDebouncedValue(lyrics, 200);
 
+  // The name the track will actually carry if the creator types nothing — derived
+  // from the song (lyric hook → Masters title → sound description), never from the
+  // style chips or the rendering engine.
+  const autoTitle = useMemo(
+    () => resolveTrackTitle({ customTitle, mastersTitle: mastersBrief?.title, lyrics, soundPrompt, genre, mood }),
+    [customTitle, mastersBrief, lyrics, soundPrompt, genre, mood],
+  );
+
   useEffect(() => {
     base44.auth.me().then(user => {
       Promise.all([
@@ -186,7 +195,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           audio_url: audioUrl,
           cover_image_url: coverImageUrl || undefined,
           tags: {
-            title: extraMeta?.title || titleOverride || `${mood} ${genre}`,
+            title: extraMeta?.title || titleOverride || autoTitle,
             artist: user.full_name || 'BASE Station Artist',
             albumArtist: user.full_name || 'BASE Station Artist',
             album: 'BASE Station — AI Generated',
@@ -225,7 +234,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
-        title: extraMeta?.title || titleOverride || `${mood} ${genre} — ${providerLabel(provider)}`,
+        title: extraMeta?.title || titleOverride || autoTitle,
         file_url: finalUrl,
         thumbnail_url: coverImageUrl || '',
         is_public: false,
@@ -267,7 +276,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
       console.warn('Auto-save failed:', err.message);
       return null;
     }
-  }, [mood, genre, provider, tempo, duration, mastersBrief, lyricsMode, selectedPersona]);
+  }, [mood, genre, provider, tempo, duration, mastersBrief, lyricsMode, selectedPersona, autoTitle]);
 
   const onComplete = useCallback(async (data) => {
     if (savedRef.current) return; // prevent duplicate calls
@@ -291,11 +300,18 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     const primaryUrl = data.audio_url || data.output_url || data.audio_urls?.[0];
     if (primaryUrl) {
       const mergedLyrics = lyrics?.trim() ? lyrics : (data.lyrics || '');
-      const resolvedTitle = customTitle.trim() || `${mood} ${genre} — ${providerLabel(provider)}`;
+      // The model's own title counts here — it named the song it just wrote.
+      const resolvedTitle = resolveTrackTitle({
+        customTitle,
+        providerTitle: data.title,
+        mastersTitle: mastersBrief?.title,
+        lyrics: mergedLyrics,
+        soundPrompt, genre, mood,
+      });
       const savedAsset = await saveTrackToLibrary(primaryUrl, coverImageUrl, resolvedTitle, {
         wav_url: data.wav_url || '',
         clip_id: data.clip_id || '',
-        title: customTitle.trim() || data.title || resolvedTitle,
+        title: resolvedTitle,
         bpm: data.bpm,
         key: data.key,
         duration: data.duration || duration,
@@ -440,7 +456,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         ...(duration && { duration }),
         genre, mood,
         tempo: parseInt(tempo, 10) || 120,
-        title: customTitle.trim() || `${mood} ${genre} — ${providerLabel(provider)}`,
+        title: autoTitle,
         sound_prompt: currentPrompt || `${mood} ${genre} track`,
         ...(currentLyrics && lyricsMode !== 'none' && { lyrics: currentLyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
@@ -496,12 +512,19 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     const audioUrl = result?.audio_url || result?.output_url;
     if (!audioUrl || savedAssetId) return;
     setSaving(true);
+    const manualTitle = resolveTrackTitle({
+      customTitle,
+      providerTitle: result?.title,
+      mastersTitle: mastersBrief?.title,
+      lyrics: lyrics?.trim() ? lyrics : result?.lyrics,
+      soundPrompt, genre, mood,
+    });
     const asset = await saveTrackToLibrary(
       audioUrl,
       result?.cover_image_url || '',
-      customTitle.trim() || result?.title || `${mood} ${genre} — ${providerLabel(provider)}`,
+      manualTitle,
       {
-        title: customTitle.trim() || result?.title || '',
+        title: manualTitle,
         bpm: result?.bpm,
         key: result?.key,
         duration: result?.duration || duration,
@@ -562,11 +585,13 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           type="text"
           value={customTitle}
           onChange={e => setCustomTitle(e.target.value)}
-          placeholder={`Auto: ${mood} ${genre} — ${providerLabel(provider)}`}
+          placeholder={`Auto: ${autoTitle}`}
           maxLength={80}
           className="rounded-xl bg-background text-base font-semibold border-cyan-500/40 focus-visible:ring-2 focus-visible:ring-cyan-400/70"
         />
-        <p className="text-[10px] text-muted-foreground mt-1.5">Leave blank to use "{mood} {genre} — {providerLabel(provider)}". Your title is applied everywhere: library, ID3 tags, and Community Buzz.</p>
+        <p className="text-[10px] text-muted-foreground mt-1.5">
+          Leave blank and we'll name it <span className="text-foreground font-semibold">"{autoTitle}"</span> — auto-naming takes the song's own title from the model, then the 243 Masters title, then your lyric hook, then your sound description. Your title is applied everywhere: library, ID3 tags, and Community Buzz.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -928,9 +953,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                     clipId={result?.clip_id}
                     provider={provider}
                     assetId={savedAssetId}
-                    title={customTitle.trim() || `${mood} ${genre}`}
+                    title={result?.title || autoTitle}
                   />
-                  <MidiExportButton clipId={result?.clip_id} bpm={result?.bpm} musicalKey={result?.key} title={`${mood} ${genre}`} />
+                  <MidiExportButton clipId={result?.clip_id} bpm={result?.bpm} musicalKey={result?.key} title={result?.title || autoTitle} />
                   <Button variant="outline" onClick={extendTrack} disabled={extending} className="gap-2 rounded-xl text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10">
                     {extending ? <RotateCcw className="w-4 h-4 animate-spin" /> : <ChevronsRight className="w-4 h-4" />}
                     {extending ? 'Extending…' : 'Extend'}
