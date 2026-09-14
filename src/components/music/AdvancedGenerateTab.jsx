@@ -26,6 +26,7 @@ import CostBadge from '@/components/credits/CostBadge';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import SavedLyricsPicker from '@/components/music/SavedLyricsPicker';
 import { loadLyricAssetText } from '@/lib/music/lyricAssetText';
+import { mastersBriefFromAsset } from '@/lib/music/mastersBriefFromAsset';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { providerLabel } from '@/utils/providerRouter';
@@ -120,6 +121,19 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     }).catch(() => {});
   }, []);
 
+  // Restore the FULL 243 Masters output from a saved lyric asset — chords,
+  // arrangement, key, BPM and the production brief, not just the words. Shared by
+  // the ?lyrics= import and the "From Library" picker so both paths carry the same
+  // song, instead of one of them quietly degrading a Masters track to bare lyrics.
+  const applyMastersBrief = (asset) => {
+    const brief = mastersBriefFromAsset(asset);
+    if (!brief) return;
+    setMastersBrief(brief);
+    if (brief.production_brief) setSoundPrompt(brief.production_brief);
+    if (brief.bpm) setTempo(String(brief.bpm));
+    toast.success('👑 243 Masters brief restored — chords, arrangement & prompt loaded');
+  };
+
   // Import lyrics from Lyrics Studio via ?lyrics=<assetId>
   useEffect(() => {
     if (!initialLyricsAssetId) return;
@@ -133,22 +147,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
           setImportedFromStudio(true);
           toast.success('🎤 Lyrics imported from Lyrics Studio');
         }
-        // 243 Masters brief — if present on the asset, surface it + prefill the sound prompt
-        const meta = asset?.metadata || {};
-        if (meta.masters_brief) {
-          setMastersBrief({
-            title: asset.title,
-            key: meta.masters_key,
-            bpm: meta.masters_bpm,
-            chord_progression: meta.masters_chord_progression || [],
-            arrangement: meta.masters_arrangement || [],
-            production_brief: meta.masters_brief,
-            masters_used: meta.masters_used || [],
-          });
-          setSoundPrompt(prev => prev || meta.masters_brief);
-          if (meta.masters_bpm) setTempo(String(meta.masters_bpm));
-          toast.success('👑 243 Masters brief loaded — production prompt prefilled');
-        }
+        applyMastersBrief(asset);
       } catch {
         toast.error('Could not load lyrics from your library');
       }
@@ -778,7 +777,10 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
 
             {lyricsMode === 'saved' && savedLyrics.length > 0 && (
               <div className="space-y-2">
-                <SavedLyricsPicker assets={savedLyrics} onSelect={setLyrics} />
+                <SavedLyricsPicker
+                  assets={savedLyrics}
+                  onSelect={(text, asset) => { setLyrics(text); applyMastersBrief(asset); }}
+                />
                 {/* The loaded words are shown and stay editable — otherwise there is
                     no way to tell whether the selection actually carried any lyrics. */}
                 {lyrics && (

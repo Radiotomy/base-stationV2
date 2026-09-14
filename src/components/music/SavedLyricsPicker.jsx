@@ -21,7 +21,7 @@ export default function SavedLyricsPicker({ assets, onSelect }) {
         toast.error('This saved lyric has no text to load.');
         return;
       }
-      onSelect(text);
+      onSelect(text, asset);
       setLoadedId(asset.id);
       toast.success(`🎤 Loaded "${asset.title}"`);
     } catch {
