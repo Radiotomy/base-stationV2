@@ -14,7 +14,7 @@
 // Credits: 10 (Sonic generation)
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
-import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, SONIC_DEFAULT_MODEL } from '../../shared/sonicModels.ts';
+import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, sonicRenderedBy, SONIC_DEFAULT_MODEL } from '../../shared/sonicModels.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
@@ -274,6 +274,7 @@ Deno.serve(async (req) => {
       timestamp: generatedAt, job_id: job.id,
       metadata: {
         model_version: mv,
+        rendered_by: sonicRenderedBy(mv),
         base44_job_id: job.id,
         provider_job_id: taskId,
         upload_clip_id: clipId,

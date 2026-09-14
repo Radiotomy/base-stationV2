@@ -48,8 +48,11 @@ export default function ModelFamilySelect({ families, value, onSelect, accentCla
         <div className="grid grid-cols-2 gap-1.5">
           {open.versions.map(v => (
             <button key={v.value} type="button" onClick={() => onSelect(v.value)}
-              className={`px-2.5 py-2 rounded-lg border text-left transition-all ${value === v.value ? accentClass : 'border-border bg-card hover:border-border/60'}`}>
-              <p className="text-xs font-bold text-foreground">{open.name} {v.label}</p>
+              className={`px-2.5 py-2 rounded-lg border text-left transition-all ${value === v.value ? accentClass : 'border-border bg-card hover:border-border/60'} ${v.deprecated ? 'opacity-60' : ''}`}>
+              <p className="text-xs font-bold text-foreground">
+                {open.name} {v.label}
+                {v.deprecated && <span className="ml-1.5 text-[9px] font-semibold uppercase text-amber-400">Deprecated</span>}
+              </p>
               <p className="text-xs text-muted-foreground">{v.desc}</p>
             </button>
           ))}

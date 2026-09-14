@@ -14,6 +14,8 @@ const SPECS = {
     models: {
       'sonic-v6-wild': { notes: 'Wild variant — more experimental arrangements; keep section tags explicit to hold structure' },
       'sonic-v6-mini': { notes: 'Mini variant — fastest v6 render, best for drafting' },
+      'sonic-v3-5': { maxLyricsChars: 3000, notes: 'Deprecated — accepted, rendered by v6 upstream' },
+      'sonic-v4':   { maxLyricsChars: 3000, notes: 'Deprecated — accepted, rendered by v6 upstream' },
     },
   },
   producer: {

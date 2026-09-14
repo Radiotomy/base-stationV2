@@ -17,6 +17,10 @@ const FAMILIES = [
       { value: 'sonic-v6', label: 'v6', desc: 'Flagship — newest generation, richest vocals, 2 variations per run.' },
       { value: 'sonic-v6-wild', label: 'v6 Wild', desc: 'More adventurous arrangements and phrasing on the same lyric.' },
       { value: 'sonic-v6-mini', label: 'v6 Mini', desc: 'Lighter, faster variant — ideal for quick lyric drafts.' },
+      { value: 'sonic-v5-5', label: 'v5.5', desc: 'Deprecated — still accepted, now rendered by v6.', deprecated: true },
+      { value: 'sonic-v5', label: 'v5', desc: 'Deprecated — still accepted, now rendered by v6.', deprecated: true },
+      { value: 'sonic-v4-5-plus', label: 'v4.5 Plus', desc: 'Deprecated — still accepted, now rendered by v6.', deprecated: true },
+      { value: 'sonic-v4-5', label: 'v4.5', desc: 'Deprecated — still accepted, now rendered by v6.', deprecated: true },
     ],
   },
   {
@@ -85,9 +89,10 @@ export default function TargetModelSelect({ value, onChange }) {
               <DropdownMenuSubContent className="w-72">
                 {f.versions.map(v => (
                   <DropdownMenuItem key={v.value} onSelect={() => onChange(`${f.provider}|${v.value}`)}
-                    className="flex-col items-start gap-0.5 cursor-pointer">
+                    className={`flex-col items-start gap-0.5 cursor-pointer ${v.deprecated ? 'opacity-60' : ''}`}>
                     <p className="text-sm font-semibold flex items-center gap-1.5">
                       {f.name} {v.label}
+                      {v.deprecated && <span className="text-[9px] font-semibold uppercase text-amber-400">Deprecated</span>}
                       {model === v.value && f.provider === provider && <Check className="w-3.5 h-3.5 text-pink-400" />}
                       <span className="text-[10px] font-normal text-muted-foreground">· {getLyricsSpec(f.provider, v.value).maxLyricsChars.toLocaleString()} chars</span>
                     </p>

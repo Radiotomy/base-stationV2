@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
-import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender } from '../../shared/sonicModels.ts';
+import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, sonicRenderedBy } from '../../shared/sonicModels.ts';
 
 // Sonic (aimusicapi.ai) — bearer token for the Sonic endpoints.
 // Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone (docs
@@ -500,6 +500,9 @@ Deno.serve(async (req) => {
       // RIAA/IFPI GenAI label — entirely prompt-generated sound recording
       ai_label: 'ai_generated',
       model_version: modelVersion,
+      // Retired Sonic ids are still accepted but Suno renders them with v6 —
+      // record the engine that actually produced the audio next to what was asked for.
+      ...(provider === 'sonic' && { rendered_by: sonicRenderedBy(modelVersion) }),
       input_parameters: { duration, mood, genre, tempo, sound_prompt: (sound_prompt || '').slice(0, 200), has_lyrics: !!(lyrics && lyrics.trim()) },
       routing_reason: routing_reason || 'direct',
       provider_job_id: providerResult.task_id || null,
@@ -571,6 +574,7 @@ Deno.serve(async (req) => {
         credit_cost: cost,
         tempolor_mode: tempolor_mode || null,
         ...(provider === 'sonic' && {
+          rendered_by: sonicRenderedBy(modelVersion),
           make_instrumental: wantsInstrumental,
           vocal_gender: vocal_gender || null,
           negative_tags: negative_tags || null,

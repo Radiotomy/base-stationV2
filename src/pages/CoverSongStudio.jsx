@@ -26,6 +26,10 @@ const SONIC_MODELS = [
   { id: 'sonic-v6',      label: 'Sonic v6',      desc: 'Recommended · newest generation, best for long covers', vocalGender: true, recommended: true },
   { id: 'sonic-v6-wild', label: 'Sonic v6 Wild', desc: 'More adventurous reinterpretation',                     vocalGender: true },
   { id: 'sonic-v6-mini', label: 'Sonic v6 Mini', desc: 'Lighter, faster · quick drafts',                        vocalGender: true },
+  { id: 'sonic-v5-5',      label: 'Sonic v5.5',    desc: 'Deprecated · rendered by v6',                            vocalGender: true, deprecated: true },
+  { id: 'sonic-v5',        label: 'Sonic v5',      desc: 'Deprecated · rendered by v6',                            vocalGender: true, deprecated: true },
+  { id: 'sonic-v4-5-plus', label: 'Sonic v4.5+',   desc: 'Deprecated · rendered by v6',                            vocalGender: true, deprecated: true },
+  { id: 'sonic-v4-5',      label: 'Sonic v4.5',    desc: 'Deprecated · rendered by v6',                            vocalGender: true, deprecated: true },
 ];
 const SONIC_LYRICS_MAX = 5000;
 
@@ -273,11 +277,12 @@ export default function CoverSongStudio() {
                 <button key={m.id} onClick={() => setModel(m.id)}
                   className={`w-full p-2.5 rounded-xl border text-left text-xs transition-all ${
                     model === m.id ? 'border-rose-500 bg-rose-500/10' : 'border-border bg-muted/30 hover:border-rose-500/40'
-                  }`}>
+                  } ${m.deprecated ? 'opacity-60' : ''}`}>
                   <div className="flex items-center justify-between gap-1.5">
                     <p className="font-bold text-foreground">{m.label}</p>
                     <div className="flex items-center gap-1">
                       {m.recommended && <Badge className="text-[9px] bg-emerald-500/20 text-emerald-300 border-emerald-500/40">★</Badge>}
+                      {m.deprecated && <Badge variant="outline" className="text-[9px] text-amber-400 border-amber-500/40">Deprecated</Badge>}
                       {m.vocalGender && <Badge variant="outline" className="text-[9px]">VG</Badge>}
                     </div>
                   </div>

@@ -1,7 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { sonicPost, resolveClipId, webhookConfig } from '../../shared/sonicClient.ts';
 import { SONIC_COSTS } from '../../shared/sonicPricing.ts';
-import { resolveSonicModel } from '../../shared/sonicModels.ts';
+import { resolveSonicModel, sonicRenderedBy } from '../../shared/sonicModels.ts';
 
 /**
  * Sonic edit tools on an existing library track (audit 2026-09-03, docs.aimusicapi.ai):
@@ -131,7 +131,7 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email, user_name: user.full_name,
       provider: 'sonic', task: `sonic_${action}`, credits_used: 0, status: 'pending',
       timestamp: startedAt, job_id: job.id,
-      metadata: { action, source_asset_id: assetId, clip_id: clipId, provider_job_id: taskId, model_version: mv },
+      metadata: { action, source_asset_id: assetId, clip_id: clipId, provider_job_id: taskId, model_version: mv, rendered_by: sonicRenderedBy(mv) },
     }).catch(() => {});
 
     return Response.json({ job_id: job.id, status: 'processing', cost });

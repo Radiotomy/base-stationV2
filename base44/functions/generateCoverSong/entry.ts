@@ -12,7 +12,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
 import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
-import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, SONIC_DEFAULT_MODEL } from '../../shared/sonicModels.ts';
+import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, sonicRenderedBy, SONIC_DEFAULT_MODEL } from '../../shared/sonicModels.ts';
 
 const SONIC_API_KEY = Deno.env.get('SONIC_API_KEY');
 const WEBHOOK_SECRET = Deno.env.get('AIMUSICAPI_WEBHOOK_SECRET') || '';
@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       provider: 'sonic', task: 'generate_cover_song',
       credits_used: 0, status: 'pending',
       timestamp: generatedAt, job_id: job.id,
-      metadata: { model_version: mv, base44_job_id: job.id, task_kind: 'cover_upload_music' },
+      metadata: { model_version: mv, rendered_by: sonicRenderedBy(mv), base44_job_id: job.id, task_kind: 'cover_upload_music' },
     }).catch(() => {});
 
     // ── Background: ensure public URL + call combined upload-cover ──────────
