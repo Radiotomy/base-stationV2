@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Mic, Headphones, User } from 'lucide-react';
+import { providerLabel } from '@/utils/providerRouter';
 
 /**
  * Compact provenance badge — shows the origin of a track at a glance.
@@ -21,8 +22,10 @@ export default function ProvenanceBadge({ origin = 'creator', provider, model, s
   const style = ORIGIN_STYLES[origin] || ORIGIN_STYLES.creator;
   const Icon = style.icon;
   const isXs = size === 'xs';
+  // Internal provider keys are never shown raw — 'tempcolor' is a legacy id for
+  // Tempolor, and printing the key misspelled the vendor on every track card.
   const label = provider
-    ? `${style.label} · ${provider}${model ? ` ${model}` : ''}`
+    ? `${style.label} · ${providerLabel(provider)}${model ? ` ${model}` : ''}`
     : style.label;
 
   return (

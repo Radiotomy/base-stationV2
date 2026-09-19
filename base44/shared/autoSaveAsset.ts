@@ -8,8 +8,14 @@
 // recovered by hand out of GenerationJob. The save now happens server-side at
 // finalize time, so it does not depend on a page being open.
 //
-// Idempotent by output_url: finalizeJob is safe to call repeatedly, and the
-// studio page may still create its own asset, so this must never double-write.
+// Idempotent by JOB + TAKE, never by output_url. finalizeJob is called from
+// several places (provider webhook, page polling, the stuck-job sweep) and each
+// call re-persists the provider audio to a FRESH storage url, so a url key
+// matched nothing and wrote a new asset every time — one generation showed up in
+// the workspace as four or five mirrored cards. The BASE Mark cascade then
+// rewrites file_url again to the marked master, which a url key could never
+// survive either. The job id and take index are the only stable identity a
+// generated recording has.
 
 import { cosForJob, contentHash } from './cosStamp.ts';
 
@@ -51,8 +57,15 @@ async function saveOneTake(base44, job, p, outputUrl, index, total) {
   const assetType = ASSET_TYPE_BY_JOB[job.job_type];
   const svc = base44.asServiceRole || base44;
 
-  const existing = await svc.entities.UserAsset.filter({ file_url: outputUrl }).catch(() => []);
-  if (existing.length > 0) return existing[0];
+  // One row per take of this job, whatever its file_url has since become.
+  const takeNumber = total > 1 ? index + 1 : null;
+  const existing = await svc.entities.UserAsset
+    .filter({ 'metadata.generation_job_id': job.id }, '-created_date', 50)
+    .catch(() => []);
+  const alreadySaved = (existing || []).find(
+    (a) => (a.metadata?.take_number ?? null) === takeNumber,
+  );
+  if (alreadySaved) return alreadySaved;
 
   const baseTitle = job.input_data?.title || p.title || `${job.provider} ${job.job_type}`;
   const title = total > 1 ? `${baseTitle} (Take ${index + 1})` : baseTitle;
@@ -93,7 +106,7 @@ async function saveOneTake(base44, job, p, outputUrl, index, total) {
       tier: job.input_data?.tier || null,
       prompt: job.input_data?.prompt || job.input_data?.sound_prompt || null,
       duration: isPrimary ? (p.duration || job.input_data?.duration || null) : null,
-      take_number: total > 1 ? index + 1 : null,
+      take_number: takeNumber,
       bpm: p.bpm || null,
       key: p.key || null,
       genre: p.genre || job.input_data?.genre || null,

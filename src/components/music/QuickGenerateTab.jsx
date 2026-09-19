@@ -22,6 +22,7 @@ import QuickOptionsPanel from '@/components/music/quick/QuickOptionsPanel';
 import QuickErrorBanner from '@/components/music/quick/QuickErrorBanner';
 import QuickResultCard from '@/components/music/quick/QuickResultCard';
 import { DEFAULT_LANGUAGE } from '@/config/lyricLanguages';
+import { upsertTrackAsset } from '@/lib/music/upsertTrackAsset';
 import {
   DEFAULT_SONIC_MODEL,
   DEFAULT_TEMPOLOR_SONG_MODEL,
@@ -153,20 +154,27 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         console.warn('ID3 tagging skipped:', tagErr.message);
       }
 
-      await base44.entities.UserAsset.create(await buildQuickTrackAsset({
-        user, prompt, provider,
-        genreTag: selectedGenre,
-        personaSelected: selectedPersona !== 'auto',
-        fileUrl: finalUrl,
-        coverImageUrl,
-        params: { ...params, content_hash: contentHash },
-        metadata: { auto_saved: true, id3_tagged: finalUrl !== audioUrl },
-      }));
+      // Updates the row the server already wrote for this generation instead of
+      // adding a second card for the same recording.
+      await upsertTrackAsset({
+        userId: user.id,
+        matchUrl: audioUrl,
+        jobId,
+        payload: await buildQuickTrackAsset({
+          user, prompt, provider,
+          genreTag: selectedGenre,
+          personaSelected: selectedPersona !== 'auto',
+          fileUrl: finalUrl,
+          coverImageUrl,
+          params: { ...params, content_hash: contentHash },
+          metadata: { auto_saved: true, id3_tagged: finalUrl !== audioUrl },
+        }),
+      });
       setAutoSaved(true);
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
     }
-  }, [prompt, provider, selectedGenre, selectedPersona]);
+  }, [prompt, provider, selectedGenre, selectedPersona, jobId]);
 
   // Use a ref so onComplete always has access to the latest aiParams even when called from polling
   const aiParamsRef = React.useRef(null);
@@ -558,7 +566,11 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
       // Use the SAME complete metadata payload as auto-save so lyrics, model,
       // content_hash, clip_id, etc. are preserved on manually-saved tracks too.
       const mergedLyrics = lyricsRef.current?.trim() ? lyricsRef.current : (result?.lyrics || '');
-      await base44.entities.UserAsset.create(await buildQuickTrackAsset({
+      await upsertTrackAsset({
+        userId: user.id,
+        matchUrl: audioUrl,
+        jobId,
+        payload: await buildQuickTrackAsset({
         user, prompt, provider,
         genreTag: selectedGenre,
         personaSelected: selectedPersona !== 'auto',
@@ -580,7 +592,8 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
           content_hash: result?.content_hash || '',
         },
         metadata: { clip_id: result?.clip_id || '', wav_url: result?.wav_url || '' },
-      }));
+        }),
+      });
       setSavedManually(true);
       toast.success('Saved to library!');
     } catch (err) {

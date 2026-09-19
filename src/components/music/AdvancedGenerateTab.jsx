@@ -28,6 +28,7 @@ import SavedLyricsPicker from '@/components/music/SavedLyricsPicker';
 import { loadLyricAssetText } from '@/lib/music/lyricAssetText';
 import { mastersBriefFromAsset } from '@/lib/music/mastersBriefFromAsset';
 import { resolveTrackTitle } from '@/lib/music/trackTitle';
+import { upsertTrackAsset } from '@/lib/music/upsertTrackAsset';
 import LanguageSelect from '@/components/songwriting/LanguageSelect';
 import { DEFAULT_LANGUAGE } from '@/config/lyricLanguages';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
@@ -239,7 +240,13 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         console.warn('ID3 tagging skipped:', tagErr.message);
       }
 
-      return await base44.entities.UserAsset.create({
+      // Updates the row the server already wrote for this generation instead of
+      // adding a second card for the same recording.
+      return await upsertTrackAsset({
+        userId: user.id,
+        matchUrl: audioUrl,
+        jobId,
+        payload: {
         user_id: user.id,
         user_email: user.email,
         asset_type: 'track',
@@ -280,12 +287,13 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
             masters_used: mastersBrief.masters_used,
           }),
         },
+        },
       });
     } catch (err) {
       console.warn('Auto-save failed:', err.message);
       return null;
     }
-  }, [mood, genre, provider, tempo, duration, mastersBrief, lyricsMode, selectedPersona, autoTitle]);
+  }, [mood, genre, provider, tempo, duration, mastersBrief, lyricsMode, selectedPersona, autoTitle, jobId, language, customTitle]);
 
   const onComplete = useCallback(async (data) => {
     if (savedRef.current) return; // prevent duplicate calls
