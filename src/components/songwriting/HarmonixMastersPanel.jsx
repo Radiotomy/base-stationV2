@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError } from '@/utils/creditErrors';
 import { toAceStepLyrics, toHarmonixPrompt, getGrooveDefaults } from '@/utils/aceStepLyrics';
+import LanguageSelect from '@/components/songwriting/LanguageSelect';
+import { DEFAULT_LANGUAGE, isEnglishLanguage } from '@/config/lyricLanguages';
 
 const GENRES = ['Pop', 'Hip-Hop', 'R&B', 'Country', 'Rock', 'EDM', 'Lo-Fi', 'Soul', 'Folk', 'Afrobeats'];
 const MOODS = ['Energetic', 'Melancholy', 'Dreamy', 'Dark', 'Uplifting', 'Romantic', 'Aggressive', 'Chill'];
@@ -22,6 +24,7 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
   const [topic, setTopic] = useState('');
   const [genre, setGenre] = useState('Pop');
   const [mood, setMood] = useState('Energetic');
+  const [language, setLanguage] = useState(() => localStorage.getItem('lyricsStudioLanguage') || DEFAULT_LANGUAGE);
   const [running, setRunning] = useState(false);
   const [brief, setBrief] = useState(null);
 
@@ -35,11 +38,14 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
     setRunning(true);
     try {
       const res = await base44.functions.invoke('generate243Masters', {
-        topic: effectiveTopic, genre, mood, max_chars: 3000,
+        topic: effectiveTopic, genre, mood, language, max_chars: 3000,
       });
       const data = res.data;
       const aceLyrics = toAceStepLyrics(data.lyrics);
-      const prompt = toHarmonixPrompt(data, { genre, mood });
+      // CODA reads the comma-dense style prompt for delivery, so the language tag
+      // belongs there as well as in the lyrics themselves.
+      const basePrompt = toHarmonixPrompt(data, { genre, mood });
+      const prompt = isEnglishLanguage(language) ? basePrompt : `${basePrompt}, ${language} vocals`;
       setBrief({ ...data, aceLyrics, prompt });
       // The brief's own tempo/key win; otherwise fall back to the genre's pocket
       // so the groove is anchored rather than guessed.
@@ -92,6 +98,12 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
           {MOODS.map(m => <option key={m} value={m} className="bg-background">{m}</option>)}
         </select>
       </div>
+
+      <LanguageSelect
+        compact
+        value={language}
+        onChange={(v) => { setLanguage(v); localStorage.setItem('lyricsStudioLanguage', v); }}
+      />
 
       <Button onClick={run} disabled={running || !effectiveTopic}
         className="w-full gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 font-bold">

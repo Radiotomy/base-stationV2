@@ -10,6 +10,7 @@
 //
 // Credits: 3 (one InvokeLLM call to Claude with a long composed prompt).
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { languageDirective, languageMusicPhrase } from '../../shared/lyricLanguage.ts';
 
 // ─────────────────── THE 243 MASTERS — Canonical Roster ───────────────────
 // Curated across 20+ genres/traditions. Each entry: name + role + tradition.
@@ -350,7 +351,7 @@ function pickMasters({ genre, mood, referenceArtists, count = 6 }) {
 }
 
 // ───────────────────────────── ENGINE PROMPT ──────────────────────────────
-function buildEnginePrompt({ topic, title, genre, mood, bpm, rhymeScheme, sections, maxChars, masters }) {
+function buildEnginePrompt({ topic, title, genre, mood, bpm, rhymeScheme, sections, maxChars, masters, language }) {
   const masterList = masters
     .map(m => `- ${m.n} (${m.r}, ${m.g})`)
     .join('\n');
@@ -371,6 +372,10 @@ JOB BRIEF:
 - Rhyme scheme preference: ${rhymeScheme || 'Mixed'}
 - Section list override: ${sections || '(none — use idiomatic for genre)'}
 - Max lyrics chars: ${maxChars}
+- Lyric language: ${language || 'English'}
+
+${languageDirective(language, genre)}
+The PRODUCTION BRIEF must also state the vocal language, so the music model performs the song in it rather than defaulting to English.
 
 CRAFT RULES (NON-NEGOTIABLE):
 1. LYRICS — fully structured with labeled [Section] tags. Apply professional Nashville/LA-grade rhyme craft (perfect, slant, internal, multisyllabic — chosen per genre). Prosody must align stress with strong beats. Chorus must contain the title hook. No clichés, no padding, no explanations.
@@ -412,6 +417,7 @@ Deno.serve(async (req) => {
       rhyme_scheme,
       sections,
       max_chars = 5000,
+      language = 'English',
     } = await req.json();
 
     if (!topic && !title) {
@@ -437,7 +443,7 @@ Deno.serve(async (req) => {
     const prompt = buildEnginePrompt({
       topic, title, genre, mood, bpm,
       rhymeScheme: rhyme_scheme, sections, maxChars: max_chars,
-      masters,
+      masters, language,
     });
 
     const raw = await base44.integrations.Core.InvokeLLM({
@@ -520,13 +526,23 @@ Deno.serve(async (req) => {
       status: 'success', timestamp: new Date().toISOString(),
       metadata: {
         model_version: 'claude_sonnet_4_6',
-        input_parameters: { topic, title, genre, mood, bpm, reference_artists, rhyme_scheme, max_chars },
+        input_parameters: { topic, title, genre, mood, bpm, language, reference_artists, rhyme_scheme, max_chars },
         masters_used: masters.map(m => m.n),
         output_details: { original_length, clamped, content_hash },
       },
     }).catch(() => {});
 
+    // The brief is what gets pasted into a music model, so the vocal language has
+    // to be inside it. Added here rather than trusted to the model's compliance:
+    // a brief that omits the language yields an English vocal over foreign lyrics.
+    const langPhrase = languageMusicPhrase(language);
+    let brief = llmResult.production_brief || '';
+    if (langPhrase && !brief.toLowerCase().includes(String(language).toLowerCase())) {
+      brief = `${brief}${brief ? ' ' : ''}${langPhrase}.`;
+    }
+
     return Response.json({
+      language,
       title: llmResult.title || title || 'Untitled',
       key: llmResult.key,
       bpm: llmResult.bpm,
@@ -536,7 +552,7 @@ Deno.serve(async (req) => {
       original_length,
       chord_progression: llmResult.chord_progression || [],
       arrangement: llmResult.arrangement || [],
-      production_brief: llmResult.production_brief || '',
+      production_brief: brief,
       masters_used: masters,
       provider: '243_masters',
       credits_used: 3,

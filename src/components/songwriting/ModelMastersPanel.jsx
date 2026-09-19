@@ -8,6 +8,8 @@ import CostBadge from '@/components/credits/CostBadge';
 import { handleCreditError } from '@/utils/creditErrors';
 import { MODEL_DIALECTS } from '@/utils/modelLyricDialects';
 import { getGrooveDefaults } from '@/utils/aceStepLyrics';
+import LanguageSelect from '@/components/songwriting/LanguageSelect';
+import { DEFAULT_LANGUAGE, isEnglishLanguage } from '@/config/lyricLanguages';
 
 const GENRES = ['Pop', 'Hip-Hop', 'R&B', 'Country', 'Rock', 'EDM', 'Lo-Fi', 'Soul', 'Folk', 'Afrobeats'];
 const MOODS = ['Energetic', 'Melancholy', 'Dreamy', 'Dark', 'Uplifting', 'Romantic', 'Aggressive', 'Chill'];
@@ -33,6 +35,7 @@ export default function ModelMastersPanel({ dialect, onApply, fallbackTopic = ''
   const [topic, setTopic] = useState('');
   const [genre, setGenre] = useState('Pop');
   const [mood, setMood] = useState('Energetic');
+  const [language, setLanguage] = useState(() => localStorage.getItem('lyricsStudioLanguage') || DEFAULT_LANGUAGE);
   const [running, setRunning] = useState(false);
   const [brief, setBrief] = useState(null);
 
@@ -44,10 +47,13 @@ export default function ModelMastersPanel({ dialect, onApply, fallbackTopic = ''
     setRunning(true);
     try {
       const res = await base44.functions.invoke('generate243Masters', {
-        topic: effectiveTopic, genre, mood, max_chars: 3000,
+        topic: effectiveTopic, genre, mood, language, max_chars: 3000,
       });
       const data = res.data;
-      const style = spec.toStyle(data, { genre, mood });
+      // The style channel carries the vocal language too — these engines read
+      // style, not the lyrics, when deciding how to sing.
+      const baseStyle = spec.toStyle(data, { genre, mood });
+      const style = isEnglishLanguage(language) ? baseStyle : `${baseStyle}, ${language} vocals`;
       const lyrics = spec.toLyrics(data.lyrics);
       setBrief({ ...data, style });
       const fallback = getGrooveDefaults(genre);
@@ -102,6 +108,12 @@ export default function ModelMastersPanel({ dialect, onApply, fallbackTopic = ''
           {MOODS.map((m) => <option key={m} value={m} className="bg-background">{m}</option>)}
         </select>
       </div>
+
+      <LanguageSelect
+        compact
+        value={language}
+        onChange={(v) => { setLanguage(v); localStorage.setItem('lyricsStudioLanguage', v); }}
+      />
 
       <Button onClick={run} disabled={running || !effectiveTopic}
         className="w-full gap-2 rounded-xl bg-amber-600 hover:bg-amber-500 font-bold">

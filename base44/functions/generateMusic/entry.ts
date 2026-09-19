@@ -1,6 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { sonicGenerationCost } from '../../shared/sonicPricing.ts';
 import { resolveSonicModel, sonicLimits, sonicSupportsVocalGender, sonicRenderedBy } from '../../shared/sonicModels.ts';
+import { languageMusicPhrase, languageTag } from '../../shared/lyricLanguage.ts';
 
 // Sonic (aimusicapi.ai) — bearer token for the Sonic endpoints.
 // Note: Nuro and Producer have been retired — Nuro returns HTTP 410 Gone (docs
@@ -56,13 +57,16 @@ const SONIC_DURATION_MAX = 360;
 
 async function generateWithSonic({
   genre, mood, duration, sound_prompt, tempo, model, lyrics, sonic_persona_id, title: userTitle,
-  instrumental, vocal_gender, negative_tags, style_weight, weirdness_constraint,
+  instrumental, vocal_gender, negative_tags, style_weight, weirdness_constraint, language,
 }) {
   const safeModel = resolveSonicModel(model);
   const limits = sonicLimits(safeModel);
 
-  // Per-spec field truncation
-  const tags = [genre, mood].filter(Boolean).join(', ').slice(0, limits.tags);
+  // Per-spec field truncation. The language rides in the tag channel as well as
+  // the prompt — Sonic reads tags for delivery, and a foreign lyric with no
+  // language tag comes back sung with an English accent.
+  const tags = [genre, mood, instrumental ? '' : languageTag(language)]
+    .filter(Boolean).join(', ').slice(0, limits.tags);
   const title = (userTitle || `${mood} ${genre} Track`).slice(0, 80);
 
   let body;
@@ -405,12 +409,23 @@ Deno.serve(async (req) => {
     // the material" (see elevenLengthMs).
     let { provider = 'sonic', duration, mood = 'Energetic', genre = 'Hip-Hop',
           tempo, sound_prompt, lyrics, model, tempolor_mode, routing_reason,
-          voice_id, cover_audio_url, voice_persona_id, title,
+          voice_id, cover_audio_url, voice_persona_id, title, language,
           // Sonic style controls (all optional)
           vocal_gender, negative_tags, style_weight, weirdness_constraint, instrumental } = await req.json();
     // `tempolor_mode: 'instrumental'` is the long-standing UI signal for "no vocals";
     // honour it for Sonic too so the same toggle drives make_instrumental.
     const wantsInstrumental = !!instrumental || tempolor_mode === 'instrumental';
+
+    // Vocal language — stated inside the prompt every provider receives, because
+    // none of them infer it from the lyrics reliably and all default to English.
+    // Skipped for instrumentals, where there is no vocal to place.
+    const langPhrase = wantsInstrumental ? '' : languageMusicPhrase(language);
+    if (langPhrase) {
+      const base = sound_prompt || `${mood} ${genre} track`;
+      sound_prompt = base.toLowerCase().includes(String(language).toLowerCase())
+        ? base
+        : `${base}. ${langPhrase}.`;
+    }
 
     // Resolve a cloned Sonic voice persona (VoicePersona with provider='sonic')
     let sonicPersonaId = null;
@@ -456,7 +471,7 @@ Deno.serve(async (req) => {
       else // default: sonic
         providerResult = await generateWithSonic({
           genre, mood, duration, sound_prompt, tempo: tempo || undefined, model, lyrics,
-          sonic_persona_id: sonicPersonaId, title,
+          sonic_persona_id: sonicPersonaId, title, language,
           instrumental: wantsInstrumental, vocal_gender, negative_tags, style_weight, weirdness_constraint,
         });
     } catch (providerErr) {
@@ -503,7 +518,7 @@ Deno.serve(async (req) => {
       // Retired Sonic ids are still accepted but Suno renders them with v6 —
       // record the engine that actually produced the audio next to what was asked for.
       ...(provider === 'sonic' && { rendered_by: sonicRenderedBy(modelVersion) }),
-      input_parameters: { duration, mood, genre, tempo, sound_prompt: (sound_prompt || '').slice(0, 200), has_lyrics: !!(lyrics && lyrics.trim()) },
+      input_parameters: { duration, mood, genre, tempo, language: language || 'English', sound_prompt: (sound_prompt || '').slice(0, 200), has_lyrics: !!(lyrics && lyrics.trim()) },
       routing_reason: routing_reason || 'direct',
       provider_job_id: providerResult.task_id || null,
       generated_timestamp: generatedAt,
@@ -568,6 +583,7 @@ Deno.serve(async (req) => {
       ai_label: 'ai_generated',
       input_data: {
         duration, mood, genre, tempo, sound_prompt,
+        language: language || 'English',
         title: title || '',
         lyrics: lyrics || '',
         model: modelVersion,

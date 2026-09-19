@@ -1,8 +1,9 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 import { cosForJob } from '../../shared/cosStamp.ts';
+import { languageDirective } from '../../shared/lyricLanguage.ts';
 
 // ── Dedicated LLM Lyrics Generation (Claude Sonnet) ──────────────────────────
-async function generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars }) {
+async function generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars, language }) {
 
   const rhymeGuide = {
     'ABAB': 'Alternate rhyme (ABAB): lines 1 & 3 rhyme, lines 2 & 4 rhyme with a different sound. Most popular rap/pop scheme.',
@@ -53,7 +54,9 @@ ${structureGuide}
 
 Label each section clearly with [Section Name] tags.
 ${max_chars ? `HARD LENGTH LIMIT: The COMPLETE lyrics (including section tags) must be UNDER ${max_chars} characters — the music generation model truncates anything longer mid-song. If needed, trim verses rather than exceed this limit.` : ''}
-Output ONLY the song lyrics — no explanations, no commentary, no titles outside the lyrics.`;
+Output ONLY the song lyrics — no explanations, no commentary, no titles outside the lyrics.
+
+${languageDirective(language, style)}`;
 
   const result = await base44.integrations.Core.InvokeLLM({ prompt, model: 'claude_sonnet_4_6' });
   return { lyrics: result, provider: 'llm_fallback', credits_used: 2 };
@@ -94,7 +97,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { topic, mood = 'Happy', style = 'Hip-Hop', length = 'Medium (32 bars)', rhyme_scheme, structure, max_chars } = await req.json();
+    const { topic, mood = 'Happy', style = 'Hip-Hop', length = 'Medium (32 bars)', rhyme_scheme, structure, max_chars, language = 'English' } = await req.json();
     if (!topic) return Response.json({ error: 'Missing topic' }, { status: 400 });
 
     // Pre-check credit balance
@@ -112,12 +115,12 @@ Deno.serve(async (req) => {
       user_id: user.id, user_email: user.email,
       job_type: 'lyrics', provider: 'core',
       status: 'processing',
-      input_data: { topic, mood, style, length },
+      input_data: { topic, mood, style, length, language },
       started_at: new Date().toISOString(),
     });
 
     // Dedicated Claude Sonnet lyrics generation
-    const result = await generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars });
+    const result = await generateWithLLM(base44, { topic, mood, style, length, rhyme_scheme, structure, max_chars, language });
 
     if (!result?.lyrics) {
       await base44.entities.GenerationJob.update(job.id, { status: 'failed', error_message: 'All providers failed' });
@@ -159,14 +162,17 @@ Deno.serve(async (req) => {
         origin: 'creator',
         ...cos,
         c2pa_provenance_hash: contentHash,
-        tags: ['lyrics', style, mood].filter(Boolean),
+        tags: ['lyrics', style, mood, language].filter(Boolean),
         metadata: {
           content_hash: contentHash,
           cos_engine: '2.0',
+          // Recorded so a later music generation sings the words in the language
+          // they were written in, instead of defaulting the vocal back to English.
+          language,
           lyrics: result.lyrics,
           model_version: 'claude_sonnet_4_6',
           generation_job_id: job.id,
-          input_parameters: { topic: String(topic).slice(0, 200), mood, style, length, rhyme_scheme: rhyme_scheme || 'Mixed' },
+          input_parameters: { topic: String(topic).slice(0, 200), mood, style, length, language, rhyme_scheme: rhyme_scheme || 'Mixed' },
         },
       });
     } catch (e) { console.warn('Lyrics provenance save failed:', e.message); }
@@ -189,6 +195,7 @@ Deno.serve(async (req) => {
       job_id: job.id, status: 'completed',
       lyrics: result.lyrics,
       title: result.title,
+      language,
       provider: result.provider,
       credits_used: LYRICS_COST,
       credits_remaining: ded.balance,

@@ -1,4 +1,5 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { languageDirective } from '../../shared/lyricLanguage.ts';
 
 /**
  * Professional Songwriting Engine — Lyrics generator using Nashville/LA
@@ -216,6 +217,7 @@ Deno.serve(async (req) => {
       rhyme_scheme,
       sections,
       max_chars = 5000,
+      language = 'English',
     } = await req.json();
 
     if (!concept && !title) {
@@ -229,6 +231,7 @@ Deno.serve(async (req) => {
       `CONCEPT / TITLE: ${title ? `"${title}" — ` : ''}${concept || ''}`,
       `GENRE (raw): ${genre}`,
       `MOOD: ${mood}`,
+      `LANGUAGE: ${language}`,
       bpm ? `BPM: ${bpm}` : null,
       reference_artists ? `REFERENCE ARTISTS: ${reference_artists}` : null,
       rhyme_scheme ? `PREFERRED RHYME SCHEME OVERRIDE: ${rhyme_scheme}` : null,
@@ -242,6 +245,8 @@ Deno.serve(async (req) => {
 ${inputBlock}
 
 ${genreBlock}
+
+${languageDirective(language, genre)}
 
 Apply the genre craft sheet above. Honor any overrides in the input block. Produce the finished lyrics now. Lyrics only.`;
 
@@ -274,7 +279,7 @@ Apply the genre craft sheet above. Honor any overrides in the input block. Produ
         model_version: 'claude_sonnet_4_6',
         input_parameters: {
           concept: (concept || '').slice(0, 200), title, genre, matched_genre: matchedGenre,
-          mood, bpm, reference_artists, rhyme_scheme, sections, max_chars,
+          mood, bpm, language, reference_artists, rhyme_scheme, sections, max_chars,
         },
         output_details: { original_length, clamped, content_hash },
       },
@@ -287,6 +292,7 @@ Apply the genre craft sheet above. Honor any overrides in the input block. Produ
       original_length,
       matched_genre: matchedGenre,
       genre_craft: craft,
+      language,
       provider: 'pro_songwriter',
       credits_used: 2,
       content_hash,

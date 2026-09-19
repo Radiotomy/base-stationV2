@@ -21,6 +21,7 @@ import QuickSection from '@/components/music/quick/QuickSection';
 import QuickOptionsPanel from '@/components/music/quick/QuickOptionsPanel';
 import QuickErrorBanner from '@/components/music/quick/QuickErrorBanner';
 import QuickResultCard from '@/components/music/quick/QuickResultCard';
+import { DEFAULT_LANGUAGE } from '@/config/lyricLanguages';
 import {
   DEFAULT_SONIC_MODEL,
   DEFAULT_TEMPOLOR_SONG_MODEL,
@@ -55,6 +56,9 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
   const [routingDecision, setRoutingDecision] = useState(null);   // { provider, model, reason, routing_key }
   const [showProviderOverride, setShowProviderOverride] = useState(!!initialProvider);
   const [selectedGenre, setSelectedGenre] = useState(initialGenre);
+  // Vocal + lyric language. Shared default with Lyrics Studio so a creator who
+  // works in one language does not have to reselect it per studio.
+  const [language, setLanguage] = useState(() => localStorage.getItem('lyricsStudioLanguage') || DEFAULT_LANGUAGE);
   const [customTitle, setCustomTitle] = useState('');
   const [voicePersonas, setVoicePersonas] = useState([]);
   const [selectedPersona, setSelectedPersona] = useState('auto');
@@ -297,6 +301,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         mood: aiDecision.mood,
         tempo: aiDecision.bpm,
         sound_prompt: effectiveSoundPrompt,
+        language,
         routing_reason: routing.routing_key,
         model,
         ...(lyrics && { lyrics }),
@@ -468,6 +473,7 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
             mood: aiDecision.mood,
             style: aiDecision.genre,
             length: 'medium',
+            language,
           });
           lyrics = lyricsRes.data?.lyrics || '';
           lyricsRef.current = lyrics;
@@ -641,6 +647,8 @@ export default function QuickGenerateTab({ initialPrompt = '', initialGenre = ''
         onPersona={setSelectedPersona}
         customTitle={customTitle}
         onTitle={setCustomTitle}
+        language={language}
+        onLanguage={(v) => { setLanguage(v); localStorage.setItem('lyricsStudioLanguage', v); }}
       />
 
       {/* Step 3 — provider / model, auto-routed with manual override */}

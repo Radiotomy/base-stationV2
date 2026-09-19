@@ -24,6 +24,7 @@ export default function MusicStudio() {
       tab: sp.get('tab') || '',
       lyricsAssetId: sp.get('lyrics') || '',
       topic: sp.get('topic') || '',
+      language: sp.get('language') || '',
     };
   })();
   const hasPrefill = !!(prefill.prompt || prefill.genre);
@@ -75,7 +76,7 @@ export default function MusicStudio() {
       {/* Tab Content */}
       <div className="max-w-5xl mx-auto px-6 py-10">
         {activeTab === 'quick' && <QuickGenerateTab initialPrompt={prefill.prompt} initialGenre={prefill.genre} initialProvider={prefill.provider} />}
-        {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} />}
+        {activeTab === 'advanced' && <AdvancedGenerateTab initialLyricsAssetId={prefill.lyricsAssetId} initialGenre={prefill.genre} initialTopic={prefill.topic} initialLanguage={prefill.language} />}
         {activeTab === 'base' && (
           <BetaGate feature="BASE Engines">
             <BaseEnginesTab />

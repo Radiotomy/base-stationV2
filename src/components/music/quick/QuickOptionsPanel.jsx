@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Sparkles, Mic2 } from 'lucide-react';
 import ChipSelector from '@/components/music/ChipSelector';
 import InfoTip from '@/components/common/InfoTip';
+import LanguageSelect from '@/components/songwriting/LanguageSelect';
+import { isEnglishLanguage } from '@/config/lyricLanguages';
 
 /**
  * The optional half of Quick Generate — genre, voice persona and a custom title.
@@ -14,9 +16,15 @@ export default function QuickOptionsPanel({
   genreOptions, selectedGenre, onGenre,
   voicePersonas = [], selectedPersona, onPersona,
   customTitle, onTitle,
+  language, onLanguage,
 }) {
   const [open, setOpen] = useState(false);
-  const activeCount = [selectedGenre, selectedPersona !== 'auto' ? 'voice' : '', customTitle?.trim()].filter(Boolean).length;
+  const activeCount = [
+    selectedGenre,
+    selectedPersona !== 'auto' ? 'voice' : '',
+    customTitle?.trim(),
+    isEnglishLanguage(language) ? '' : 'language',
+  ].filter(Boolean).length;
 
   return (
     <div className="rounded-2xl border border-border bg-card/40">
@@ -75,6 +83,9 @@ export default function QuickOptionsPanel({
                   </div>
                 </div>
               )}
+
+              {/* Language drives both the auto-written lyrics and the sung vocal */}
+              {onLanguage && <LanguageSelect value={language} onChange={onLanguage} />}
 
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">

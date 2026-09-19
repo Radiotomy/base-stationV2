@@ -28,6 +28,8 @@ import SavedLyricsPicker from '@/components/music/SavedLyricsPicker';
 import { loadLyricAssetText } from '@/lib/music/lyricAssetText';
 import { mastersBriefFromAsset } from '@/lib/music/mastersBriefFromAsset';
 import { resolveTrackTitle } from '@/lib/music/trackTitle';
+import LanguageSelect from '@/components/songwriting/LanguageSelect';
+import { DEFAULT_LANGUAGE } from '@/config/lyricLanguages';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { calculateHumanParticipationScore } from '@/utils/participationScore';
 import { providerLabel } from '@/utils/providerRouter';
@@ -74,7 +76,7 @@ const PROMPT_TEMPLATES = [
 import TrainingFeedback from '@/components/training/TrainingFeedback';
 import { useTrainingTelemetry } from '@/hooks/useTrainingTelemetry';
 
-export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initialGenre = '', initialTopic = '' }) {
+export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initialGenre = '', initialTopic = '', initialLanguage = '' }) {
   const { sampleId, logGeneration, markRegenerated } = useTrainingTelemetry();
   const [provider, setProvider] = useState('sonic');
   const [importedFromStudio, setImportedFromStudio] = useState(false);
@@ -89,6 +91,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   const [tempo, setTempo] = useState('120');
   const [customTitle, setCustomTitle] = useState('');
   const [soundPrompt, setSoundPrompt] = useState(initialTopic || '');
+  // Lyric + vocal language. Seeded from Lyrics Studio's hand-off so a Spanish or
+  // Yoruba lyric sheet is never sung back in English.
+  const [language, setLanguage] = useState(() => initialLanguage || localStorage.getItem('lyricsStudioLanguage') || DEFAULT_LANGUAGE);
   const [lyrics, setLyrics] = useState('');
   const [lyricsMode, setLyricsMode] = useState('none'); // 'none' | 'custom' | 'generate' | 'saved'
   const [savedLyrics, setSavedLyrics] = useState([]);
@@ -135,6 +140,10 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
   // the ?lyrics= import and the "From Library" picker so both paths carry the same
   // song, instead of one of them quietly degrading a Masters track to bare lyrics.
   const applyMastersBrief = (asset) => {
+    // A saved lyric sheet records the language it was written in — restoring it
+    // is what keeps the vocal in that language on regeneration.
+    const savedLang = asset?.metadata?.language;
+    if (savedLang) setLanguage(savedLang);
     const brief = mastersBriefFromAsset(asset);
     if (!brief) return;
     setMastersBrief(brief);
@@ -245,7 +254,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         participation_signals: participation.signals,
         ddex_ai_metadata: participation.ddex,
         metadata: {
-          genre, mood, tempo, provider,
+          genre, mood, tempo, provider, language,
           model: extraMeta?.model || '',
           bpm: extraMeta?.bpm || undefined,
           key: extraMeta?.key || undefined,
@@ -398,7 +407,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
     try {
       const res = await base44.functions.invoke('generate243Masters', {
         topic: soundPrompt || `${mood} ${genre} track`,
-        genre, mood,
+        genre, mood, language,
         bpm: tempo ? Number(tempo) : undefined,
         // Model-aware budget so Masters lyrics never exceed the selected gen model's limit
         max_chars: activeLyricsMax,
@@ -425,6 +434,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         topic: soundPrompt || `${mood} ${genre} track`,
         mood,
         style: genre,
+        language,
         length: 'medium',
         // Model-aware char budget — keeps output within the selected gen model's lyric limit
         max_chars: activeLyricsMax,
@@ -457,6 +467,7 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
         genre, mood,
         tempo: parseInt(tempo, 10) || 120,
         title: autoTitle,
+        language,
         sound_prompt: currentPrompt || `${mood} ${genre} track`,
         ...(currentLyrics && lyricsMode !== 'none' && { lyrics: currentLyrics }),
         ...(selectedPersona !== 'none' && { voice_persona_id: selectedPersona }),
@@ -789,6 +800,9 @@ export default function AdvancedGenerateTab({ initialLyricsAssetId = '', initial
                 placeholder="Paste or write your lyrics here…" rows={6}
                 className="w-full rounded-xl border border-input bg-transparent px-3 py-2 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring resize-none" />
             )}
+
+            {/* Language — written lyrics AND the sung vocal follow this */}
+            <LanguageSelect value={language} onChange={(v) => { setLanguage(v); localStorage.setItem('lyricsStudioLanguage', v); }} />
 
             {/* Per-model compatibility check — chars vs budget, vocal support, language + tag guidance */}
             {lyricsMode !== 'none' && (

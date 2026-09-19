@@ -22,6 +22,8 @@ import TargetModelSelect from '@/components/songwriting/TargetModelSelect';
 import LyricsCompatibilityCheck from '@/components/music/LyricsCompatibilityCheck';
 import StyleReferenceDisclaimer from '@/components/songwriting/StyleReferenceDisclaimer';
 import EngineModeSelector from '@/components/songwriting/EngineModeSelector';
+import LanguageSelect from '@/components/songwriting/LanguageSelect';
+import { DEFAULT_LANGUAGE } from '@/config/lyricLanguages';
 import ManualWriterPanel from '@/components/songwriting/ManualWriterPanel';
 import { getLyricsSpec } from '@/config/modelLyricsSpec';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -80,6 +82,9 @@ export default function LyricsStudio() {
   const [mood, setMood] = useState(['Happy']);
   const [style, setStyle] = useState(['Hip-Hop']);
   const [length, setLength] = useState('Medium (32 bars)');
+  // Lyric + vocal language — remembered between sessions, since a writer working
+  // in Spanish or Yoruba should not have to reselect it on every visit.
+  const [language, setLanguage] = useState(() => localStorage.getItem('lyricsStudioLanguage') || DEFAULT_LANGUAGE);
   const [rhymeScheme, setRhymeScheme] = useState('Mixed');
   // Power setting — restore the last mode the user had loaded (defaults to Manual Writer)
   const [initialMode] = useState(() => localStorage.getItem('lyricsStudioMode') || 'manual');
@@ -176,6 +181,7 @@ export default function LyricsStudio() {
           genre: style.join(', '),
           mood: mood.join(', '),
           rhyme_scheme: rhymeScheme,
+          language,
           reference_artists: referenceArtists || undefined,
           bpm: proBpm ? Number(proBpm) : undefined,
           max_chars: effectiveMaxChars(length),
@@ -193,6 +199,7 @@ export default function LyricsStudio() {
           genre: style.join(', '),
           mood: mood.join(', '),
           rhyme_scheme: rhymeScheme,
+          language,
           reference_artists: referenceArtists || undefined,
           bpm: proBpm ? Number(proBpm) : undefined,
           max_chars: effectiveMaxChars(length),
@@ -205,7 +212,7 @@ export default function LyricsStudio() {
           toast.warning(`Clamped to ${text.length} chars (was ${res.data.original_length}) for ${tmModel} compatibility.`);
         }
       } else {
-        const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, rhyme_scheme: rhymeScheme, max_chars: effectiveMaxChars(length) });
+        const res = await base44.functions.invoke('generateLyrics', { topic, mood: mood.join(', '), style: style.join(', '), length, language, rhyme_scheme: rhymeScheme, max_chars: effectiveMaxChars(length) });
         lastResponse = res;
         text = res.data?.lyrics || res.data?.text || res.data?.content || '';
       }
@@ -280,7 +287,7 @@ export default function LyricsStudio() {
         human_participation_score: participation.score,
         participation_signals: participation.signals,
         metadata: {
-          mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics,
+          mood: mood.join(', '), style: style.join(', '), length, topic, language, content: lyrics,
           ...(isMasters && {
             masters_report: true,
             masters_brief: mastersResult.production_brief,
@@ -333,7 +340,7 @@ export default function LyricsStudio() {
         ai_disclosure_basis: participation.basis,
         human_participation_score: participation.score,
         participation_signals: participation.signals,
-        metadata: { mood: mood.join(', '), style: style.join(', '), length, topic, content: lyrics },
+        metadata: { mood: mood.join(', '), style: style.join(', '), length, topic, language, content: lyrics },
       });
       toast.success('🎵 Saved & exporting to Music Studio…');
       // If we have a Masters brief, persist it on the asset metadata so Music Studio can pick it up
@@ -355,6 +362,7 @@ export default function LyricsStudio() {
         lyrics: asset.id,
         ...(style[0] && { genre: style[0] }),
         ...(topic && { topic }),
+        ...(language && { language }),
         ...(mastersResult?.production_brief && { masters: '1' }),
       });
       navigate(`/music-studio?${params.toString()}`);
@@ -532,6 +540,13 @@ export default function LyricsStudio() {
 
               {/* Target music model — caps lyric budget per model */}
               <TargetModelSelect value={targetModel} onChange={setTargetModel} />
+
+              {/* Language — applies to every engine mode (Manual writing included,
+                  since the value travels with the lyrics into the music studio) */}
+              <LanguageSelect
+                value={language}
+                onChange={(v) => { setLanguage(v); localStorage.setItem('lyricsStudioLanguage', v); }}
+              />
 
               {!manualMode && (<>
               {/* Topic */}
