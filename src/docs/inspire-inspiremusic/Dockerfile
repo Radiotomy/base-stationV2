@@ -134,6 +134,13 @@ RUN mkdir -p /data/jobs /data/outputs /data/prompts
 # Checkpoints live on the container disk — the mounted volume refuses the
 # downloaders' temp files (see MODEL_ROOT in app.py).
 RUN mkdir -p /models && chmod 777 /models
+# The Space runs as uid 1000 but /app is root-owned, so app.py cannot create
+# ./pretrained_models at render time (Errno 13). Upstream resolves checkpoint
+# paths relative to cwd, so the folder and the baked checkpoint's link are made
+# here, and the folder is left writable for checkpoints fetched later.
+RUN mkdir -p /app/pretrained_models \
+    && ln -sfn /models/InspireMusic-1.5B-Long /app/pretrained_models/InspireMusic-1.5B-Long \
+    && chmod 777 /app/pretrained_models
 
 EXPOSE 7860
 

@@ -29,6 +29,19 @@
 #   GET  /health -> {ok, models_cached, queue_depth}
 
 import os, sys, json, uuid, time, threading, queue, traceback
+# librosa JIT-compiles through numba, which caches beside its own source by
+# default. site-packages is read-only for the Space user, so the first librosa
+# call raised "cannot cache function" and failed every render. Set BEFORE torch/
+# torchaudio import (they pull librosa in). Kept on /data so compiled kernels
+# survive restarts; no leading dot, because the mount rejects dot-prefixed entries.
+os.environ.setdefault("NUMBA_CACHE_DIR", "/data/numba_cache")
+try:
+    os.makedirs(os.environ["NUMBA_CACHE_DIR"], exist_ok=True)
+    os.chmod(os.environ["NUMBA_CACHE_DIR"], 0o777)
+except Exception:
+    # Unwritable mount must not stop the engine booting — fall back to /tmp.
+    os.environ["NUMBA_CACHE_DIR"] = "/tmp/numba_cache"
+    os.makedirs(os.environ["NUMBA_CACHE_DIR"], exist_ok=True)
 import requests
 import torch
 import torchaudio
@@ -165,7 +178,7 @@ def ensure_weights(model_name):
     errors = []
     try:
         from modelscope import snapshot_download as ms_download
-        ms_download(model_id=f"iic/{model_name}", local_dir=target)
+        ms_download(model_id="iic/InspireMusic" if model_name == "InspireMusic-Base" else f"iic/{model_name}", local_dir=target)
     except Exception as e:
         errors.append(f"modelscope: {type(e).__name__}: {e}")
         try:
@@ -284,6 +297,9 @@ def get_model(model_name):
         # calls skipping it, so it tracks the checkpoint, never a user preference.
         fast=(out_rate == 24000),
         result_dir=OUT_DIR,
+        # Upstream defaults gpu=1 and writes it into CUDA_VISIBLE_DEVICES inside
+        # __init__, hiding the only GPU on a single-A100 Space.
+        gpu=0,
     )
     with _cache_lock:
         _model_cache[model_name] = model
@@ -323,6 +339,13 @@ def worker():
                 update_job(task_id, progress="Preparing audio prompt…")
                 prompt_file = fetch_prompt(rec["audio_prompt_url"], task_id)
 
+            # Upstream renders max_generate_audio_seconds on EVERY call, so a 300s
+            # ceiling rendered 5 minutes for a 30s request. Set per job here.
+            dur = float(rec["duration"])
+            model.max_generate_audio_seconds = dur
+            model.max_generate_audio_length = int(model.output_sample_rate * dur)
+            if rec.get("seed"):
+                torch.manual_seed(int(rec["seed"]))
             update_job(task_id, progress="Running inference…")
             out_fn = task_id
             path = model.inference(
@@ -420,8 +443,6 @@ def generate(req: GenerateRequest):
     model = req.model if req.model in ALLOWED_MODELS else DEFAULT_MODEL
     duration = max(MIN_SECONDS, min(float(req.duration), MAX_SECONDS))
     chorus = req.chorus if req.chorus in ("intro", "verse", "chorus", "outro") else "intro"
-    if req.seed:
-        torch.manual_seed(int(req.seed))
 
     task_id = uuid.uuid4().hex
     write_job({
