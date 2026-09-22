@@ -101,11 +101,8 @@ export default function JobNotificationBell() {
       // stack of open tabs isn't each running an entity fetch loop.
       if (typeof document !== 'undefined' && document.hidden) return false;
       try {
-        const jobs = await base44.entities.GenerationJob.filter(
-          { user_id: userIdRef.current },
-          '-created_date',
-          20
-        );
+        const res = await base44.functions.invoke('listMyJobs', {});
+        const jobs = res?.data?.jobs || [];
 
         if (cancelled) return false;
 

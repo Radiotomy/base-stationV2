@@ -1,5 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
 import { secrets } from 'base44:runtime';
+import { synthesizeInworldSpeech } from '../../shared/inworldTts.ts';
+import { concatMp3 } from '../../shared/mp3Concat.ts';
+import { chunkSpeechText } from '../../shared/ttsChunk.ts';
 
 /**
  * ORVO Studio voiceover generation.
@@ -79,25 +82,21 @@ Brief: ${text}`,
         speechText = `${emotion_tags.join(' ')} ${speechText}`;
       }
 
-      const iwRes = await fetch('https://api.inworld.ai/tts/v1/voice', {
-        method: 'POST',
-        headers: { Authorization: `Basic ${iwKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: speechText,
-          voiceId: voice_id || 'Ashley',
-          modelId: model_id || 'inworld-tts-1',
-        }),
-      });
-      if (!iwRes.ok) {
-        const err = await iwRes.text();
-        return Response.json({ error: `Inworld TTS failed (${iwRes.status}): ${err.slice(0, 300)}` }, { status: 502 });
+      // Inworld caps each request at 2000 characters — voice long scripts in
+      // sentence-aligned parts, in order, and frame-join the MP3s.
+      const parts = [];
+      try {
+        for (const chunk of chunkSpeechText(speechText)) {
+          parts.push(await synthesizeInworldSpeech(iwKey, {
+            text: chunk,
+            voiceId: voice_id || 'Ashley',
+            modelId: model_id || 'inworld-tts-1',
+          }));
+        }
+      } catch (e) {
+        return Response.json({ error: e.message }, { status: 502 });
       }
-
-      const iwJson = await iwRes.json();
-      const b64 = iwJson.audioContent || iwJson.result?.audioContent;
-      if (!b64) return Response.json({ error: 'Inworld returned no audio content' }, { status: 502 });
-
-      const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      const bin = concatMp3(parts);
       const iwFile = new File([bin], 'orvo-voiceover.mp3', { type: 'audio/mpeg' });
       const { file_url: iwUrl } = await base44.integrations.Core.UploadFile({ file: iwFile });
 
