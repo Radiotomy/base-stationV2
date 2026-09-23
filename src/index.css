@@ -95,6 +95,18 @@
     min-height: 100vh;
   }
 
+  /* Native <select> popups are drawn by the browser on a white surface while
+     inheriting the app's white text — white on white. Tell the browser the UI
+     is dark and give every option an explicit dark surface. */
+  html {
+    color-scheme: dark;
+  }
+  select option,
+  select optgroup {
+    background-color: hsl(var(--popover));
+    color: hsl(var(--popover-foreground));
+  }
+
   /* Aurora painted on a fixed, GPU-composited layer — scrolling never
      repaints it (background-attachment: fixed forces a full-page repaint
      on every scroll frame and was a major reflow/jank source) */
