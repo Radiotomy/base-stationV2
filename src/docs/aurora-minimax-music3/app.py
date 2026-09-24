@@ -129,16 +129,30 @@ def _load_in_background():
         MODEL_STATE, MODEL_ERROR = "failed", str(e)
 
 
-# Pre-create the HF cache dir so the background load never fails on a missing
-# parent. HF_HOME is set in the Dockerfile to a writable mount; if /data is not
-# attached the makedirs silently no-ops and the load fails gracefully into
-# MODEL_ERROR via _load_in_background, which /engine/health then reports.
-_hf_home = os.environ.get("HF_HOME")
-if _hf_home:
-    try:
-        os.makedirs(_hf_home, exist_ok=True)
-    except OSError:
-        pass
+# Resolve a writable HF cache dir BEFORE the background load runs. The HF Space
+# root filesystem is read-only and HOME is unset at runtime, so huggingface_hub's
+# default /.cache is unwritable — which silently kills the modular_model_index
+# download and surfaces as a misleading "404 model_index.json" load failure.
+# Prefer the persistent /data mount (weights survive restarts); fall back to
+# ephemeral /tmp (re-downloads on cold start) when no storage bucket is attached.
+# Setting os.environ here is honoured by huggingface_hub, which reads HF_HOME
+# lazily at download time rather than at import.
+def _resolve_hf_cache():
+    for cand in ("/data/hf_cache", "/tmp/hf_cache"):
+        try:
+            os.makedirs(cand, exist_ok=True)
+            probe = os.path.join(cand, ".write_probe")
+            with open(probe, "w") as f:
+                f.write("ok")
+            os.remove(probe)
+            os.environ["HF_HOME"] = cand
+            return cand
+        except OSError:
+            continue
+    return None
+
+
+_resolve_hf_cache()
 
 threading.Thread(target=_load_in_background, daemon=True).start()
 
