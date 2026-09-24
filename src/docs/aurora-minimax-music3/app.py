@@ -129,6 +129,17 @@ def _load_in_background():
         MODEL_STATE, MODEL_ERROR = "failed", str(e)
 
 
+# Pre-create the HF cache dir so the background load never fails on a missing
+# parent. HF_HOME is set in the Dockerfile to a writable mount; if /data is not
+# attached the makedirs silently no-ops and the load fails gracefully into
+# MODEL_ERROR via _load_in_background, which /engine/health then reports.
+_hf_home = os.environ.get("HF_HOME")
+if _hf_home:
+    try:
+        os.makedirs(_hf_home, exist_ok=True)
+    except OSError:
+        pass
+
 threading.Thread(target=_load_in_background, daemon=True).start()
 
 
