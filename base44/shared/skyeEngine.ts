@@ -64,8 +64,10 @@ export const SKYE_COST = 14;
 //
 // 2026-09-01 vocal sweep (seed 9002): cfg 3.0 / 32 steps was judged the best
 // vocal take by ear — less flanged than cfg 4.0, and 64 steps did NOT improve
-// on it — so cfg moves to 3.0. Steps stay at 32.
-export const SKYE_CFG_STRENGTH = 3.0;
+// on it. Instrumentals therefore use cfg 4.0 (take H) and vocals use cfg 3.0;
+// steps stay at 32 for both. A sweep caller may still override either dial.
+export const SKYE_CFG_STRENGTH = 3.0;              // vocal default
+export const SKYE_CFG_STRENGTH_INSTRUMENTAL = 4.0; // instrumental default (take H)
 export const SKYE_SAMPLE_STEPS = 32;
 
 // Sweep bounds, mirroring the clamps the Space enforces. Kept here so a caller
@@ -143,7 +145,12 @@ export async function submitSkyeAudio({
     seed,
   };
   // Calibrated defaults are sent explicitly; a sweep caller may override them.
-  const cfg = cfgStrength ?? SKYE_CFG_STRENGTH;
+  // Instrumentals use the higher cfg validated for instrumental renders (take
+  // H held the arrangement at a steady, full-energy density with no stray
+  // vocals); vocals use the lower cfg that kept the lead dry and phase-coherent
+  // (seed 9002). The mode is already detected above from the lyrics channel.
+  const defaultCfg = instrumental ? SKYE_CFG_STRENGTH_INSTRUMENTAL : SKYE_CFG_STRENGTH;
+  const cfg = cfgStrength ?? defaultCfg;
   const steps = sampleSteps ?? SKYE_SAMPLE_STEPS;
   body.cfg_strength = Math.max(SKYE_CFG_RANGE.min, Math.min(cfg, SKYE_CFG_RANGE.max));
   body.sample_steps = Math.round(Math.max(SKYE_STEPS_RANGE.min, Math.min(steps, SKYE_STEPS_RANGE.max)));

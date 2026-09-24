@@ -13,6 +13,29 @@ import {
 } from '../../shared/skyeEngine.ts';
 import { releaseMetadata } from '../../shared/trackMetadata.ts';
 
+// Fold the chosen genre/mood into the prose style prompt. DiffRhythm 2 reads
+// style as a single MuLan text embedding, so a genre/mood pick that lives only
+// in release metadata steers the sound not at all. Leading with a genre/mood
+// clause puts that steering in front of the model; tokens the creator already
+// named are skipped so a detailed prompt isn't doubled.
+function enrichSkyeStyle(prose, genre, mood) {
+  const p = (prose || '').trim();
+  const lower = p.toLowerCase();
+  const add = [];
+  if (mood) {
+    const m = mood.toLowerCase();
+    if (!lower.includes(m)) add.push(m);
+  }
+  if (genre) {
+    const g = genre.toLowerCase().replace('/', ' ');
+    const tokens = g.split(/[\s-]+/).filter((t) => t.length > 2);
+    const present = tokens.some((t) => lower.includes(t));
+    if (!present) add.push(g);
+  }
+  if (!add.length) return p;
+  return `${add.join(' ')}. ${p}`;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -48,10 +71,19 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'A style prompt is required' }, { status: 400 });
     }
 
-    // Prose channel — kept as written. Unlike Siren Song's tag channel there is
-    // nothing to tokenize here; collapsing whitespace is the only normalization
-    // that cannot change the meaning the text encoder reads.
-    const safeStyle = String(style_prompt).replace(/\s+/g, ' ').trim().slice(0, 600);
+    // Prose channel. Unlike Siren Song's tag channel there is nothing to
+    // tokenize here; collapsing whitespace is the only normalization that
+    // cannot change the meaning the text encoder reads.
+    const rawStyle = String(style_prompt).replace(/\s+/g, ' ').trim().slice(0, 600);
+
+    // Genre/mood are release metadata, but DiffRhythm 2's ONLY style channel is
+    // the MuLan text embedding of this sentence — so if they are left out of the
+    // prose, a genre/mood pick steers nothing about the sound. Fold them in as a
+    // leading clause (skipping any token the creator already named) so the model
+    // actually receives that steering. Normalized labels are used so a bad input
+    // can't inject garbage into the prompt.
+    const { genre: normGenre, mood: normMood } = releaseMetadata({ genre, mood });
+    const safeStyle = enrichSkyeStyle(rawStyle, normGenre, normMood);
 
     // Lyrics pass through untouched: LRC timestamps ("[00:12.50] line") are
     // load-bearing for phonetic alignment, so reformatting them would break it.
