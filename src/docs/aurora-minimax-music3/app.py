@@ -229,6 +229,30 @@ def render(job_id, req):
         write_job(job_id, status="failed", progress="Failed", error=str(e))
 
 
+def _recover_interrupted_jobs():
+    """A container restart kills every render thread, but the job records survive
+    on /data — left alone they read 'processing' forever. Re-queue any job that
+    stored its request; fail the rest with a clear reason so the poller resolves."""
+    try:
+        names = [f for f in os.listdir(STATE_DIR) if f.endswith(".json")]
+    except OSError:
+        return
+    for name in names:
+        job = read_job(name[:-5])
+        if not job or job.get("status") not in ("queued", "processing"):
+            continue
+        req = job.get("request")
+        if req:
+            write_job(job["job_id"], status="queued", progress="Re-queued after engine restart")
+            threading.Thread(target=render, args=(job["job_id"], GenReq(**req)), daemon=True).start()
+        else:
+            write_job(job["job_id"], status="failed", progress="Failed",
+                      error="Engine restarted mid-render — please generate again.")
+
+
+_recover_interrupted_jobs()
+
+
 @app.post("/generate")
 def generate(req: GenReq):
     if not (req.prompt or "").strip():
@@ -236,7 +260,8 @@ def generate(req: GenReq):
     job_id = uuid.uuid4().hex
     # Written to durable storage BEFORE the thread starts, so a crash during
     # startup still leaves a record the poller can resolve.
-    write_job(job_id, status="queued", progress="Queued")
+    # The request is stored with the record so a restart can re-run it.
+    write_job(job_id, status="queued", progress="Queued", request=req.model_dump())
     threading.Thread(target=render, args=(job_id, req), daemon=True).start()
     return {"task_id": job_id, "job_id": job_id, "status": "queued"}
 
