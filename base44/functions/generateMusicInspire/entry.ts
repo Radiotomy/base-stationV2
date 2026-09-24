@@ -19,6 +19,7 @@ import {
   INSPIRE_DEFAULT_MODEL, INSPIRE_SECTIONS, INSPIRE_INSTRUMENTAL_HINT,
 } from '../../shared/inspireEngine.ts';
 import { releaseMetadata } from '../../shared/trackMetadata.ts';
+import { buildInspireCaption } from '../../shared/inspireCaption.ts';
 
 Deno.serve(async (req) => {
   try {
@@ -59,7 +60,9 @@ Deno.serve(async (req) => {
     }
 
     const chosen = resolveInspireModel(model || INSPIRE_DEFAULT_MODEL);
-    const safeSection = INSPIRE_SECTIONS.includes(String(section)) ? String(section) : 'intro';
+    // 'verse' by default: 'intro' conditions a sparse, quiet opening, which made
+    // every render start thin for its first 20 seconds.
+    const safeSection = INSPIRE_SECTIONS.includes(String(section)) ? String(section) : 'verse';
 
     // Clamped to the CHOSEN checkpoint's own ceiling, not the global one: only
     // 1.5B-Long is trained for multi-minute coherence, so asking the standard
@@ -82,9 +85,12 @@ Deno.serve(async (req) => {
       }, { status: 402 });
     }
 
-    // Upstream reads English prose and has no vocal path — the instrumental
-    // steer is appended once, here, so every render sends it.
-    const engineText = `${safePrompt.replace(/[.,;\s]+$/, '')}. ${INSPIRE_INSTRUMENTAL_HINT}.`;
+    // Text-to-music gets the prompt expanded into a training-style caption with
+    // genre and mood folded in. A continuation keeps the creator's own words —
+    // the audio prompt, not the text, carries most of the steering there.
+    const { caption: engineText, source: captionSource } = isContinuation
+      ? { caption: `${safePrompt.replace(/[.,;\s]+$/, '')}. ${INSPIRE_INSTRUMENTAL_HINT}.`, source: 'as_written' }
+      : await buildInspireCaption(base44, { prompt: safePrompt, genre, mood });
 
     let submitted;
     try {
@@ -111,6 +117,7 @@ Deno.serve(async (req) => {
       input_data: {
         prompt: safePrompt,
         engine_text: engineText,
+        caption_source: captionSource,
         task: isContinuation ? 'continuation' : 'text-to-music',
         section: safeSection,
         duration: safeDuration,

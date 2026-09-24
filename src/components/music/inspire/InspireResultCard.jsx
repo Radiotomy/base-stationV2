@@ -44,7 +44,7 @@ export default function InspireResultCard({ result, isContinuation, sourceTitle 
       </a>
 
       <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-        <Sparkles className="w-3 h-3" /> Saved to your library automatically — ready for mastering, stems or SUB-Station.
+        <Sparkles className="w-3 h-3" /> Saved to your library automatically — a good starting point for SUB-Station or a continuation.
       </p>
     </motion.div>
   );

@@ -4,10 +4,11 @@
 // transformer, then a flow-matching SUPER-RESOLUTION stage that lifts the
 // generated 24kHz token stream to a 48kHz waveform before the vocoder.
 //
-// Why it earns a slot next to the other BASE Engines rather than duplicating one:
-//   • 48kHz output — the HIGHEST native rate any engine on the platform emits
-//     (Aurora is 32kHz, Siren Song/Skye 44.1kHz), so an Inspire render is the
-//     best possible source for mastering, stem separation and BASE Mark.
+// Honest positioning (measured 2026-09): the file is a 48kHz container, but the
+// model emits MONO (upstream duplicates it to both channels) and carries very
+// little content above ~6kHz — the super-resolution stage raises the rate, not
+// the detail. It is a sketch / continuation engine, not a finished-master source;
+// UI copy must never claim otherwise. What it genuinely offers:
 //   • Music CONTINUATION — it is the only engine that accepts an audio prompt and
 //     keeps composing FROM it. That makes it the one engine that can extend a
 //     creator's own existing recording rather than starting from nothing, which

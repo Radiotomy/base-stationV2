@@ -6,10 +6,10 @@ import AssetPicker from '@/components/studio/AssetPicker';
 // continuation path brings a whole library picker with it, and the model choice
 // changes the duration ceiling — that coupling deserves its own file.
 export const INSPIRE_MODELS = [
-  { id: 'InspireMusic-1.5B-Long', label: 'Long-form · 48kHz', maxDuration: 300, note: 'Best for full pieces up to 5 minutes' },
-  { id: 'InspireMusic-1.5B', label: 'Standard · 48kHz', maxDuration: 90, note: 'Sharper on short pieces' },
-  { id: 'InspireMusic-Base', label: 'Base · 48kHz', maxDuration: 90, note: 'Lighter model, quicker renders' },
-  { id: 'InspireMusic-1.5B-24kHz', label: 'Fast draft · 24kHz', maxDuration: 90, note: 'Skips the 48kHz stage — draft quality' },
+  { id: 'InspireMusic-1.5B-Long', label: 'Long-form', maxDuration: 300, note: 'Most coherent over long pieces, up to 5 minutes' },
+  { id: 'InspireMusic-1.5B', label: 'Standard', maxDuration: 90, note: 'Tighter on short pieces' },
+  { id: 'InspireMusic-Base', label: 'Base', maxDuration: 90, note: 'Lighter model, quicker renders' },
+  { id: 'InspireMusic-1.5B-24kHz', label: 'Fast draft', maxDuration: 90, note: 'Quickest renders, smaller file — similar sound' },
 ];
 export const INSPIRE_SECTIONS = ['intro', 'verse', 'chorus', 'outro'];
 export const INSPIRE_MIN_DURATION = 10;
@@ -65,7 +65,7 @@ export default function InspireTaskControls({ value, onChange, disabled }) {
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
             Section
-            <InfoTip text="Which part of an arrangement this render should sound like. An 'intro' opens sparse and builds; a 'chorus' lands at full energy from the first bar." />
+            <InfoTip text="Which part of an arrangement this render should sound like. 'Verse' (the default) plays at steady energy; an 'intro' opens sparse and quiet; a 'chorus' lands at full energy from the first bar." />
           </p>
           <div className="flex gap-1.5 flex-wrap">
             {INSPIRE_SECTIONS.map(s => (

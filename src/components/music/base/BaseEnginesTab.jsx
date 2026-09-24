@@ -36,8 +36,8 @@ const ENGINES = [
   },
   {
     id: 'inspire', emoji: '💡', name: 'BASE Inspire', icon: Lightbulb,
-    tagline: 'Instrumental, 48kHz',
-    desc: 'Native 48kHz stereo instrumentals up to 5 minutes — and the only engine that continues your own audio.',
+    tagline: 'Sketches & continuation',
+    desc: 'Instrumental sketches up to 5 minutes — and the only engine that continues your own audio.',
     accent: 'border-teal-500 bg-teal-500/10',
   },
 ];

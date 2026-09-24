@@ -26,7 +26,7 @@ export default function InspireGenerateTab() {
   const [release, setRelease] = useState({ genre: '', mood: '' });
   const [cfg, setCfg] = useState({
     task: 'text-to-music', sourceId: '',
-    model: 'InspireMusic-1.5B-Long', section: 'intro', duration: 60, seed: '',
+    model: 'InspireMusic-1.5B-Long', section: 'verse', duration: 60, seed: '',
   });
   const [phase, setPhase] = useState('idle');
   const [statusMsg, setStatusMsg] = useState('');
@@ -128,16 +128,17 @@ export default function InspireGenerateTab() {
   return (
     <div className="space-y-6">
       <BaseEngineNotice accent="cyan" name="Inspire">
-        Built on the open-source InspireMusic toolkit and re-tuned for BASE Station. Renders{' '}
-        <span className="font-semibold">instrumental</span> music at{' '}
-        <span className="font-semibold">native 48kHz stereo</span> — the highest-fidelity source
-        on the platform — and it is the one engine that can keep composing from your own audio.
+        Built on the open-source InspireMusic toolkit. Best for{' '}
+        <span className="font-semibold">instrumental sketches</span> and for{' '}
+        <span className="font-semibold">continuing your own audio</span> — the one engine that can.
+        Output is mono with a soft, rolled-off top end, so for finished release-ready tracks use
+        Sonic or BASE Aurora.
       </BaseEngineNotice>
 
       <div>
         <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
           Describe the Music
-          <InfoTip text="Write a sentence or two about the production — instruments, feel, setting. Inspire reads natural-language descriptions, not comma-separated tags, and English works best." />
+          <InfoTip text="Describe instruments, feel and setting in English. Short prompts are automatically expanded into the detailed caption style Inspire was trained on, with your genre and mood included." />
         </p>
         <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={4} disabled={isBusy} maxLength={600}
           placeholder="Soothing instrumental jazz with a touch of Bossa Nova, warm upright bass and brushed drums, perfect for a late-night restaurant."
