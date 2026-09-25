@@ -5,7 +5,6 @@ import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import BaseEnginesTab from '@/components/music/base/BaseEnginesTab';
 import BetaGate from '@/components/auth/BetaGate';
-import ScoreExtractSection from '@/components/score/ScoreExtractSection';
 
 const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
@@ -83,7 +82,6 @@ export default function MusicStudio() {
             <BaseEnginesTab />
           </BetaGate>
         )}
-        <ScoreExtractSection />
       </div>
     </div>
   );

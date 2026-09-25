@@ -9,7 +9,7 @@ import downloadBase64Midi from '@/lib/music/downloadBase64Midi';
 
 const EMPTY = { loading: false, error: '', abc: '', midi: null, composition: null };
 
-export default function ScoreExtractDialog({ asset, onClose }) {
+export default function ScoreExtractDialog({ asset, onClose, onSaved }) {
   const [s, setS] = useState(EMPTY);
 
   const run = async () => {
@@ -17,6 +17,7 @@ export default function ScoreExtractDialog({ asset, onClose }) {
     try {
       const { data } = await base44.functions.invoke('transcribeScore', { asset_id: asset.id });
       setS({ loading: false, error: data.abc_error || '', abc: data.abc, midi: data.midi, composition: data.composition });
+      onSaved?.();
     } catch (e) {
       setS((p) => ({ ...p, loading: false, error: e?.response?.data?.error || e.message }));
     }
@@ -29,6 +30,12 @@ export default function ScoreExtractDialog({ asset, onClose }) {
     else { setS(EMPTY); run(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asset?.id]);
+
+  const midiUrl = s.composition?.midi_url;
+  const downloadMidi = () => {
+    if (s.midi) downloadBase64Midi(s.midi, asset?.title);
+    else if (midiUrl) window.open(midiUrl, '_blank');
+  };
 
   return (
     <Dialog open={!!asset} onOpenChange={(o) => !o && onClose()}>
@@ -46,12 +53,12 @@ export default function ScoreExtractDialog({ asset, onClose }) {
             <ScoreFootprintChips composition={s.composition} />
             <AbcScoreView abc={s.abc} />
             <div className="flex flex-wrap gap-2">
-              <Button disabled={!s.midi} onClick={() => downloadBase64Midi(s.midi, asset?.title)}>
+              <Button disabled={!s.midi && !midiUrl} onClick={downloadMidi}>
                 <Download className="w-4 h-4 mr-2" /> Download MIDI
               </Button>
               <Button variant="outline" onClick={run}><RefreshCw className="w-4 h-4 mr-2" /> Re-extract</Button>
             </div>
-            {s.abc && !s.midi && <p className="text-xs text-muted-foreground">Showing your saved score. Re-extract to download the MIDI.</p>}
+            {s.abc && !s.midi && !midiUrl && <p className="text-xs text-muted-foreground">This score was extracted before MIDI files were saved. Re-extract once to keep a downloadable MIDI.</p>}
             <p className="text-[11px] text-muted-foreground">
               Transcribed by Scribe, a BASE Engine. Section letters (A, B, C…) mark repeated material. The melody is most accurate on a vocal or lead stem.
             </p>

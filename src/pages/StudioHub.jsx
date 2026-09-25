@@ -16,6 +16,7 @@ const CATEGORIES = [
       { to: "/cover-song-studio",  emoji: "🎙️", label: "Cover & Extend Studio", desc: "Cover or extend any uploaded track" },
       { to: "/lyrics-studio",      emoji: "🎤", label: "Lyrics Studio",      desc: "Write song lyrics with AI" },
       { to: "/lead-sheet-studio",  emoji: "🎼", label: "Lead Sheet Studio",  desc: "Compose a score — Cantor sings it, Cadence plays your chords" },
+      { to: "/scribe-studio",      emoji: "📝", label: "Scribe Studio",      desc: "Turn any track into sheet music & MIDI" },
       { to: "/sub-station",        emoji: "🎛️", label: "SUB-Station",        desc: "Multi-track arrangement & mixdown workstation" },
       { to: "/voice-creator",      emoji: "🗣️", label: "Voice Creator",      desc: "Custom AI voices & personas" },
       { to: "/sfx-studio",         emoji: "💥", label: "Sound FX Studio",    desc: "Text-to-SFX with ElevenLabs" },

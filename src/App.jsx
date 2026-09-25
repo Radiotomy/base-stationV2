@@ -68,6 +68,7 @@ const AudiusOAuthCallback = lazy(() => import('./pages/AudiusOAuthCallback'));
 const CoverArtStudio = lazy(() => import('./pages/CoverArtStudio'));
 const StemCreatorStudio = lazy(() => import('./pages/StemCreatorStudio'));
 const LeadSheetStudio = lazy(() => import('./pages/LeadSheetStudio'));
+const ScribeStudio = lazy(() => import('./pages/ScribeStudio'));
 const MashupStudio = lazy(() => import('./pages/MashupStudio'));
 const VocalHarmonizer = lazy(() => import('./pages/VocalHarmonizer'));
 const MasteringStudio = lazy(() => import('./pages/MasteringStudio'));
@@ -248,6 +249,7 @@ const AuthenticatedApp = () => {
               <Route path="/loop-studio" element={<LoopStudio />} />
               <Route path="/stem-creator" element={<StemCreatorStudio />} />
               <Route path="/lead-sheet-studio" element={<LeadSheetStudio />} />
+              <Route path="/scribe-studio" element={<ScribeStudio />} />
               <Route path="/mashup-studio" element={<MashupStudio />} />
               <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
               <Route path="/mastering-studio" element={<MasteringStudio />} />

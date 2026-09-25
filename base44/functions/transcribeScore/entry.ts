@@ -39,11 +39,24 @@ export default async function (req: Request): Promise<Response> {
       return Response.json({ error: err.message }, { status: 502 });
     }
 
+    // Persist the MIDI as a real file so the score can be re-downloaded later
+    // without re-running the engine.
+    let midiUrl = null;
+    if (out.midi) {
+      const bytes = Uint8Array.from(atob(out.midi), (c) => c.charCodeAt(0));
+      const name = `${(asset.title || 'score').replace(/[^\w\-]+/g, '_').slice(0, 60)}.mid`;
+      const up = await base44.asServiceRole.integrations.Core.UploadFile({
+        file: new File([bytes], name, { type: 'audio/midi' }),
+      });
+      midiUrl = up?.file_url || null;
+    }
+
     const footprint = await compositionFootprint(out.summary || {});
     const composition = {
       ...footprint,
       abc: String(out.abc || '').slice(0, 60000),
       abc_error: out.abc_error || null,
+      midi_url: midiUrl,
       melody_only: !!melody_only,
       engine: SCORE_ENGINE,
       model_id: SCORE_MODEL_ID,
