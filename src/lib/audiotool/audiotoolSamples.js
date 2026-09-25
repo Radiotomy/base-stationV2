@@ -19,9 +19,10 @@ export async function sampleForEntity(at, entity) {
 
 /** The creator's own most recent uploads/bounces in their Audiotool library. */
 export async function listMyLibrary(at) {
-  const who = ok(await at.users.getWhoami({}));
-  const owner = who?.user?.name;
-  if (!owner) throw new Error("Couldn't read your Audiotool account id.");
+  // AuthenticatedClient.userName is the resource name ("users/{id}") that
+  // sample.owner_name is filtered on — normalise in case only the id is given.
+  if (!at.userName) throw new Error("Couldn't read your Audiotool account.");
+  const owner = at.userName.startsWith('users/') ? at.userName : `users/${at.userName}`;
   const res = ok(await at.samples.list({
     filter: `sample.owner_name == "${owner}"`,
     orderBy: 'sample.create_time desc',
