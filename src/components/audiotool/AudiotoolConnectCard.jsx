@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Loader2, LogIn, LogOut, Link2, AlertTriangle } from 'lucide-react';
-import { AUDIOTOOL_APP_ORIGIN, isOnPublishedOrigin } from '@/lib/audiotool/nexusClient';
+import { AUDIOTOOL_APP_ORIGIN, AUDIOTOOL_REDIRECT_URL, isOnPublishedOrigin } from '@/lib/audiotool/nexusClient';
 
 export default function AudiotoolConnectCard({ status, userName, error, login, logout }) {
   const onLive = isOnPublishedOrigin();
@@ -30,7 +30,10 @@ export default function AudiotoolConnectCard({ status, userName, error, login, l
       {status === 'unauthenticated' && !onLive && (
         <p className="text-xs text-amber-300 flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5" />
-          Audiotool only returns logins to {AUDIOTOOL_APP_ORIGIN} — open the live app to connect.
+          <span>
+            You're in the editor preview. Audiotool sends sign-ins back to {AUDIOTOOL_REDIRECT_URL}, so connect from the live app:{' '}
+            <a href={`${AUDIOTOOL_APP_ORIGIN}/audiotool`} target="_blank" rel="noreferrer" className="underline font-semibold">open {AUDIOTOOL_APP_ORIGIN}/audiotool</a>
+          </span>
         </p>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
