@@ -11,6 +11,7 @@ import NexusContributionMeter from '@/components/audiotool/NexusContributionMete
 import ProtectExportPanel from '@/components/audiotool/ProtectExportPanel';
 import FoundryDeviceMapper from '@/components/audiotool/foundry/FoundryDeviceMapper';
 import AudienceCoopPanel from '@/components/audiotool/coop/AudienceCoopPanel';
+import AudiotoolProjectList from '@/components/audiotool/AudiotoolProjectList';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -18,6 +19,13 @@ export default function AudiotoolProjectPanel({ at }) {
   const [ingest, setIngest] = useState({ loading: false, error: '', summary: null });
   const [openedUrl, setOpenedUrl] = useState('');
   const [telemetry, setTelemetry] = useState(null);
+
+  const openProject = (link) => {
+    setUrl(link.trim());
+    setOpenedUrl(link.trim());
+    setIngest({ loading: false, error: '', summary: null });
+    project.open(link);
+  };
 
   const sendToEngines = async () => {
     setIngest({ loading: true, error: '', summary: null });
@@ -32,13 +40,11 @@ export default function AudiotoolProjectPanel({ at }) {
 
   return (
     <section className="merc-card rounded-2xl p-6 space-y-4">
-      <div>
-        <h3 className="font-bold">Open a project</h3>
-        <p className="text-sm text-muted-foreground">Paste a project link from beta.audiotool.com/studio.</p>
-      </div>
+      <AudiotoolProjectList at={at} activeUrl={project.status === 'synced' ? openedUrl : ''} busy={project.status === 'opening'} onOpen={openProject} />
+      <p className="text-xs text-muted-foreground">Or paste a project link from beta.audiotool.com/studio:</p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://beta.audiotool.com/studio?project=…" />
-        <Button className="merc-button" disabled={!url.trim() || project.status === 'opening'} onClick={() => { setOpenedUrl(url.trim()); project.open(url); }}>
+        <Button className="merc-button" disabled={!url.trim() || project.status === 'opening'} onClick={() => openProject(url)}>
           {project.status === 'opening' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
           Open & sync
         </Button>
