@@ -69,7 +69,7 @@ Input notes (JSON): ${JSON.stringify(notes.slice(0, 400))}`,
 export async function writeRegion(nexus, region, notes, label) {
   const src = region.fields.region.fields;
   const duration = src.durationTicks.value;
-  await nexus.modify((t) => {
+  return nexus.modify((t) => {
     const collection = t.create('noteCollection', {});
     t.create('noteRegion', {
       track: region.fields.track.value,
@@ -85,5 +85,6 @@ export async function writeRegion(nexus, region, notes, label) {
       },
     });
     notes.forEach((n) => t.create('note', { ...n, doesSlide: false, collection: collection.location }));
+    return collection.id;
   });
 }

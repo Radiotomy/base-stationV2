@@ -7,11 +7,15 @@ import useNexusProject, { NEXUS_KINDS } from '@/hooks/useNexusProject';
 import AudiotoolIngestSummary from '@/components/audiotool/AudiotoolIngestSummary';
 import MidiCoProducerPanel from '@/components/audiotool/MidiCoProducerPanel';
 import InstrumentChainPanel from '@/components/audiotool/InstrumentChainPanel';
+import NexusContributionMeter from '@/components/audiotool/NexusContributionMeter';
+import ProtectExportPanel from '@/components/audiotool/ProtectExportPanel';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
   const project = useNexusProject(at);
   const [ingest, setIngest] = useState({ loading: false, error: '', summary: null });
+  const [openedUrl, setOpenedUrl] = useState('');
+  const [telemetry, setTelemetry] = useState(null);
 
   const sendToEngines = async () => {
     setIngest({ loading: true, error: '', summary: null });
@@ -32,7 +36,7 @@ export default function AudiotoolProjectPanel({ at }) {
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://beta.audiotool.com/studio?project=…" />
-        <Button className="merc-button" disabled={!url.trim() || project.status === 'opening'} onClick={() => project.open(url)}>
+        <Button className="merc-button" disabled={!url.trim() || project.status === 'opening'} onClick={() => { setOpenedUrl(url.trim()); project.open(url); }}>
           {project.status === 'opening' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
           Open & sync
         </Button>
@@ -59,8 +63,10 @@ export default function AudiotoolProjectPanel({ at }) {
           </Button>
           {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
           {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
-          <MidiCoProducerPanel nexus={project.nexus} onChanged={project.refresh} />
-          <InstrumentChainPanel at={at} nexus={project.nexus} onChanged={project.refresh} />
+          <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
+          <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
+          <InstrumentChainPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
+          <ProtectExportPanel projectUrl={openedUrl} telemetry={telemetry} />
         </>
       )}
     </section>

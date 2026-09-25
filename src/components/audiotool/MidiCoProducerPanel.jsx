@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2, RefreshCw } from 'lucide-react';
 import { listNoteRegions, readNotes, transformNotes, writeRegion } from '@/lib/audiotool/midiCoProducer';
+import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 
-export default function MidiCoProducerPanel({ nexus, onChanged }) {
+export default function MidiCoProducerPanel({ nexus, projectUrl, onChanged }) {
   const [regions, setRegions] = useState(() => listNoteRegions(nexus));
   const [regionId, setRegionId] = useState('');
   const [prompt, setPrompt] = useState('');
@@ -20,7 +21,8 @@ export default function MidiCoProducerPanel({ nexus, onChanged }) {
       const length = region.entity.fields.region.fields.loopDurationTicks.value;
       const next = await transformNotes(notes, prompt.trim(), length);
       if (!next.length) throw new Error('The co-producer returned no usable notes — try rephrasing.');
-      await writeRegion(nexus, region.entity, next, `Co-Pro: ${prompt.trim()}`);
+      const collectionId = await writeRegion(nexus, region.entity, next, `Co-Pro: ${prompt.trim()}`);
+      logInvocation(projectUrl, { tool: 'midi_coproducer', prompt: prompt.trim(), collectionIds: [collectionId] });
       setState({ loading: false, error: '', done: `Wrote ${next.length} notes right after "${region.name}".` });
       reload();
       onChanged?.();

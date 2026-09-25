@@ -4,8 +4,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Cable } from 'lucide-react';
 import { planChain, buildChain } from '@/lib/audiotool/instrumentChain';
+import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 
-export default function InstrumentChainPanel({ at, nexus, onChanged }) {
+export default function InstrumentChainPanel({ at, nexus, projectUrl, onChanged }) {
   const [prompt, setPrompt] = useState('');
   const [state, setState] = useState({ loading: false, error: '', result: null });
 
@@ -13,7 +14,8 @@ export default function InstrumentChainPanel({ at, nexus, onChanged }) {
     setState({ loading: true, error: '', result: null });
     try {
       const plan = await planChain(prompt.trim());
-      const devices = await buildChain(at, nexus, plan);
+      const { devices, deviceIds } = await buildChain(at, nexus, plan);
+      logInvocation(projectUrl, { tool: 'instrument_chain', prompt: prompt.trim(), deviceIds });
       setState({ loading: false, error: '', result: { name: plan.name, devices } });
       onChanged?.();
     } catch (e) {

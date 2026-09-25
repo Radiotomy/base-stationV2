@@ -78,8 +78,12 @@ export async function buildChain(at, nexus, plan) {
       orderAmongTracks: t.entities.ofTypes('noteTrack').get().length,
     });
 
-    return specs
-      .map((s, i) => ({ device: s.device, preset: presetLabel(presets[i]), kept: i === 0 || usable.includes(created[i]) }))
-      .filter((d) => d.kept);
+    const kept = [instrument, ...usable];
+    return {
+      deviceIds: kept.map((e) => e.id),
+      devices: specs
+        .map((s, i) => ({ device: s.device, preset: presetLabel(presets[i]), kept: kept.includes(created[i]) }))
+        .filter((d) => d.kept),
+    };
   });
 }
