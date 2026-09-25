@@ -2,24 +2,54 @@
 // bridge is logged per project, recording exactly which entities the AI wrote —
 // so human vs machine contribution is MEASURED from the live document rather
 // than inferred from prompts.
+//
+// Audiotool API User Data Policy: telemetry lives only in BASE Station's own
+// database (NexusTelemetryEvent, private to the creator). Nothing is kept in the
+// browser and nothing is sent to third parties.
+import { base44 } from '@/api/base44Client';
 import { CHAIN_INSTRUMENTS, CHAIN_EFFECTS } from '@/lib/audiotool/instrumentChain';
 
-export const TELEMETRY_EVENT = 'nexus-telemetry';
-const key = (project) => `nexus_cos_${project}`;
+const Events = base44.entities.NexusTelemetryEvent;
+const legacyKey = (project) => `nexus_cos_${project}`;
 
-export function readLog(project) {
-  try {
-    return JSON.parse(localStorage.getItem(key(project)) || '[]');
-  } catch {
-    return [];
+const toLog = (rows) => rows.map((r) => ({
+  tool: r.tool, prompt: r.prompt, at: r.at,
+  collectionIds: r.collection_ids || [], deviceIds: r.device_ids || [],
+}));
+
+// One-time move of any telemetry an older version kept in this browser.
+async function migrateLegacy(userId, project) {
+  const raw = localStorage.getItem(legacyKey(project));
+  if (!raw) return;
+  const old = JSON.parse(raw || '[]');
+  if (old.length) {
+    await Events.bulkCreate(old.map((e) => ({
+      user_id: userId, project_url: project, tool: e.tool, prompt: (e.prompt || '').slice(0, 500),
+      collection_ids: e.collectionIds || [], device_ids: e.deviceIds || [], at: e.at,
+    })));
   }
+  localStorage.removeItem(legacyKey(project));
 }
 
-export function logInvocation(project, entry) {
-  const log = [...readLog(project), { ...entry, prompt: (entry.prompt || '').slice(0, 500), at: new Date().toISOString() }];
-  localStorage.setItem(key(project), JSON.stringify(log.slice(-200)));
-  window.dispatchEvent(new Event(TELEMETRY_EVENT));
+export async function readLog(userId, project) {
+  await migrateLegacy(userId, project);
+  return toLog(await Events.filter({ user_id: userId, project_url: project }, 'created_date', 500));
 }
+
+export async function logInvocation(project, entry) {
+  const me = await base44.auth.me();
+  await Events.create({
+    user_id: me.id,
+    project_url: project,
+    tool: entry.tool,
+    prompt: (entry.prompt || '').slice(0, 500),
+    collection_ids: entry.collectionIds || [],
+    device_ids: entry.deviceIds || [],
+    at: new Date().toISOString(),
+  });
+}
+
+export const subscribeTelemetry = (cb) => Events.subscribe(cb);
 
 const ofTypes = (nexus, types) => types.flatMap((t) => nexus.queryEntities.ofTypes(t).get());
 

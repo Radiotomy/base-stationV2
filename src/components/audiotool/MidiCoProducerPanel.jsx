@@ -22,7 +22,7 @@ export default function MidiCoProducerPanel({ nexus, projectUrl, onChanged }) {
       const next = await transformNotes(notes, prompt.trim(), length);
       if (!next.length) throw new Error('The co-producer returned no usable notes — try rephrasing.');
       const collectionId = await writeRegion(nexus, region.entity, next, `Co-Pro: ${prompt.trim()}`);
-      logInvocation(projectUrl, { tool: 'midi_coproducer', prompt: prompt.trim(), collectionIds: [collectionId] });
+      await logInvocation(projectUrl, { tool: 'midi_coproducer', prompt: prompt.trim(), collectionIds: [collectionId] });
       setState({ loading: false, error: '', done: `Wrote ${next.length} notes right after "${region.name}".` });
       reload();
       onChanged?.();

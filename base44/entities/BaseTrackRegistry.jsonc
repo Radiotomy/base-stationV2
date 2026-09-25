@@ -72,6 +72,10 @@
       "type": "string",
       "description": "SHA-256 composition footprint (key, chord intervals, structural boundaries) from a SheetSage2 transcription of the asset, carried in the anchor calldata as `score:<hash>`. Absent when the track was never transcribed before anchoring \u2014 calldata is immutable, so a later transcription is not back-filled into an existing anchor."
     },
+    "c2pa_provenance_hash": {
+      "type": "string",
+      "description": "SHA-256 of the COS-derived C2PA-format manifest bound to the asset's audio bytes, carried in the anchor calldata as `c2pa:<hash>`. Absent when the asset had no manifest at anchor time."
+    },
     "registered_at": {
       "type": "string",
       "format": "date-time"

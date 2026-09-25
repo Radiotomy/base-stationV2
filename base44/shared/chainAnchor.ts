@@ -44,6 +44,10 @@ const audiusField = (audiusTrackId?: string | null) =>
 const scoreField = (compositionHash?: string | null) =>
   compositionHash && /^[0-9a-f]{64}$/.test(compositionHash) ? `|score:${compositionHash}` : '';
 
+/** C2PA manifest hash (COS-derived Content Credentials) as `c2pa:<sha256>`. */
+const c2paField = (c2paHash?: string | null) =>
+  c2paHash && /^[0-9a-f]{64}$/.test(c2paHash) ? `|c2pa:${c2paHash}` : '';
+
 export const isTxHash = (h: string) => /^0x[0-9a-fA-F]{64}$/.test(h || '');
 
 /** Normalize a pasted private key: trim whitespace/quotes, add 0x if missing. */
@@ -102,10 +106,13 @@ export async function prepareAnchorRecord(
   // Composition footprint from a completed SheetSage2 transcription, only when
   // the asset belongs to the artist being anchored.
   let compositionHash: string | null = null;
+  let c2paHash: string | null = null;
   if (t.asset_id) {
     const asset = await base44.asServiceRole.entities.UserAsset.get(t.asset_id).catch(() => null);
     const h = asset?.metadata?.composition?.footprint_hash;
     if (asset && asset.user_id === artist.id && /^[0-9a-f]{64}$/.test(h || '')) compositionHash = h;
+    const ch = asset?.c2pa_provenance_hash;
+    if (asset && asset.user_id === artist.id && /^[0-9a-f]{64}$/.test(ch || '')) c2paHash = ch;
   }
 
   let pin: any = null;
@@ -155,6 +162,7 @@ export async function prepareAnchorRecord(
     wallet_address: body.wallet_address || '',
     fingerprint_hash: fingerprint,
     composition_hash: compositionHash || undefined,
+    c2pa_provenance_hash: c2paHash || undefined,
     metadata_uri: pin?.metadata_uri || '',
     registration_status: 'pending',
     network: 'base-mainnet',
@@ -204,10 +212,11 @@ export async function broadcastAnchor(
   // site is how the two would eventually disagree about what got signed.
   const audius = audiusField(record.audius_track_id);
   const score = scoreField(record.composition_hash);
+  const c2pa = c2paField(record.c2pa_provenance_hash);
   const anchorData = toHex(
     supersedes
-      ? `${CORRECTION_PREFIX}|${fingerprint}|${metadataUri}|supersedes:${supersedes}${audius}${score}`
-      : `${ANCHOR_PREFIX}|${fingerprint}|${metadataUri}${audius}${score}`,
+      ? `${CORRECTION_PREFIX}|${fingerprint}|${metadataUri}|supersedes:${supersedes}${audius}${score}${c2pa}`
+      : `${ANCHOR_PREFIX}|${fingerprint}|${metadataUri}${audius}${score}${c2pa}`,
   );
   const tx = await wallet.sendTransaction({ to: wallet.address, value: 0n, data: anchorData });
 

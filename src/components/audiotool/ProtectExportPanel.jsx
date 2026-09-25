@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { protectExport } from '@/lib/audiotool/protectExport';
+import AutoAnchorToggle from '@/components/blockchain/AutoAnchorToggle';
 
 export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry }) {
   const { user } = useAuth();
@@ -21,8 +22,8 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry })
   const run = async () => {
     setState({ loading: true, error: '', asset: null });
     try {
-      const asset = await protectExport({ user, file, title, projectUrl, ...telemetry });
-      setState({ loading: false, error: '', asset });
+      const res = await protectExport({ file, title, projectUrl, contribution: telemetry.contribution });
+      setState({ loading: false, error: '', asset: res.asset, anchoring: res.anchoring });
     } catch (e) {
       setState({ loading: false, error: e?.response?.data?.error || e.message, asset: null });
     }
@@ -37,6 +38,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry })
           add the BASE Mark watermark, and anchor it on Base if you've turned on auto-anchoring.
         </p>
       </div>
+      {user && <AutoAnchorToggle user={user} />}
       <AudiotoolAudioPicker at={at} nexus={nexus} onPicked={onPicked} />
       {file && <p className="text-xs text-emerald-300">Ready: {file.name}</p>}
       <Input placeholder="Track title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -50,7 +52,11 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry })
       {state.asset && (
         <div className="text-sm space-y-1">
           <p className="text-emerald-300">
-            "{state.asset.title}" saved with an ownership score of {state.asset.human_participation_score}. Watermarking has started.
+            "{state.asset.title}" saved with an ownership score of {state.asset.human_participation_score}. BASE Mark watermarking has started.
+          </p>
+          <p className="text-xs text-muted-foreground break-all">Content Credentials hash: {state.asset.c2pa_provenance_hash}</p>
+          <p className="text-xs text-muted-foreground">
+            {state.anchoring ? 'Registering on Base mainnet now.' : 'Not registered on Base — turn on automatic registration above to anchor future exports.'}
           </p>
           <p className="text-muted-foreground">
             Download the protected file from your <Link to="/asset-gallery" className="underline">library</Link> once it's marked,

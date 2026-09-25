@@ -15,7 +15,7 @@ export default function InstrumentChainPanel({ at, nexus, projectUrl, onChanged 
     try {
       const plan = await planChain(prompt.trim());
       const { devices, deviceIds } = await buildChain(at, nexus, plan);
-      logInvocation(projectUrl, { tool: 'instrument_chain', prompt: prompt.trim(), deviceIds });
+      await logInvocation(projectUrl, { tool: 'instrument_chain', prompt: prompt.trim(), deviceIds });
       setState({ loading: false, error: '', result: { name: plan.name, devices } });
       onChanged?.();
     } catch (e) {
