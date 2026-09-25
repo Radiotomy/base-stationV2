@@ -1,0 +1,61 @@
+{
+  "name": "FoundryDeviceMap",
+  "type": "object",
+  "description": "Translation layer between one Foundry DSP patch and devices in one live Audiotool project. Stores which Foundry node drives which Audiotool device, and how each Foundry parameter is scaled onto a device field. Session-specific (device ids belong to that project), so it lives here rather than on the FoundryPlugin.",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "project_url": {
+      "type": "string",
+      "description": "Audiotool project the device ids belong to"
+    },
+    "plugin_id": {
+      "type": "string",
+      "description": "FoundryPlugin being used as the control surface"
+    },
+    "links": {
+      "type": "array",
+      "description": "[{ node_id, device_id, device_type, params: [{ param, field, kind: 'number'|'bool', min, max }] }] \u2014 field is a dotted path into the Nexus entity (e.g. 'filter.cutoff'); min/max is the Audiotool-side range the Foundry range is scaled onto.",
+      "items": {
+        "type": "object"
+      }
+    },
+    "bypassed": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Foundry node ids bypassed from the mirrored chain"
+    },
+    "mirror_cables": {
+      "type": "boolean",
+      "default": false,
+      "description": "When on, desktop audio cables between linked devices are rewired to follow the Foundry patch's signal flow"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional private note"
+    }
+  },
+  "required": [
+    "user_id",
+    "project_url",
+    "plugin_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}

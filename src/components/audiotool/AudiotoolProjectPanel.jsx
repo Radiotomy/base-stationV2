@@ -9,6 +9,7 @@ import MidiCoProducerPanel from '@/components/audiotool/MidiCoProducerPanel';
 import SongstarterModule from '@/components/audiotool/songstarter/SongstarterModule';
 import NexusContributionMeter from '@/components/audiotool/NexusContributionMeter';
 import ProtectExportPanel from '@/components/audiotool/ProtectExportPanel';
+import FoundryDeviceMapper from '@/components/audiotool/foundry/FoundryDeviceMapper';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -66,6 +67,7 @@ export default function AudiotoolProjectPanel({ at }) {
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
           <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
           <SongstarterModule at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
+          <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.counts} />
           <ProtectExportPanel at={at} nexus={project.nexus} projectUrl={openedUrl} telemetry={telemetry} />
         </>
       )}
