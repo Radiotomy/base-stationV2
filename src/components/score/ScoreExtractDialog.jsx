@@ -52,7 +52,9 @@ export default function ScoreExtractDialog({ asset, onClose }) {
               <Button variant="outline" onClick={run}><RefreshCw className="w-4 h-4 mr-2" /> Re-extract</Button>
             </div>
             {s.abc && !s.midi && <p className="text-xs text-muted-foreground">Showing your saved score. Re-extract to download the MIDI.</p>}
-            <p className="text-[11px] text-muted-foreground">Transcribed by SheetSage2 (CC-BY-NC-4.0) — free, for non-commercial use.</p>
+            <p className="text-[11px] text-muted-foreground">
+              Transcribed by Scribe, a BASE Engine. Section letters (A, B, C…) mark repeated material. The melody is most accurate on a vocal or lead stem.
+            </p>
           </div>
         )}
       </DialogContent>

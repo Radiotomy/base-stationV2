@@ -24,7 +24,7 @@ export default function ScoreExtractSection() {
         <h2 className="text-lg font-bold flex items-center gap-2"><FileMusic className="w-5 h-5" /> Extract MIDI & Score</h2>
         <p className="text-sm text-muted-foreground">
           Turn any generated or uploaded track into a lead sheet (melody, chords, key and sections) plus a MIDI file.
-          Free, for non-commercial use.
+          Free, and yours to use commercially.
         </p>
       </div>
       <AssetPicker selected={selected} onChange={setSelected} />
