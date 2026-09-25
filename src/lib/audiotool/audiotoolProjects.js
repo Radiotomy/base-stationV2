@@ -21,6 +21,14 @@ export async function listMyProjects(at) {
   return res.projects || [];
 }
 
+/** Metadata for the project behind a studio link. */
+export async function getProjectByUrl(at, url) {
+  const id = url.match(/[?&]project=([^&#]+)/)?.[1];
+  if (!id) throw new Error('Not an Audiotool project link.');
+  const res = ok(await at.projects.getProject({ name: `projects/${id}` }));
+  return res.project;
+}
+
 /** Blank project, or a copy of `templateName` ("projects/{id}") when given. */
 export async function createProject(at, displayName, templateName) {
   const project = templateName ? { displayName, copyOfProjectName: templateName } : { displayName };

@@ -12,6 +12,7 @@ import ProtectExportPanel from '@/components/audiotool/ProtectExportPanel';
 import FoundryDeviceMapper from '@/components/audiotool/foundry/FoundryDeviceMapper';
 import AudienceCoopPanel from '@/components/audiotool/coop/AudienceCoopPanel';
 import AudiotoolProjectList from '@/components/audiotool/AudiotoolProjectList';
+import ActiveProjectHeader from '@/components/audiotool/ActiveProjectHeader';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -53,10 +54,7 @@ export default function AudiotoolProjectPanel({ at }) {
 
       {project.status === 'synced' && (
         <>
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-emerald-300">● Live — synced with Audiotool</span>
-            <Button variant="ghost" size="sm" onClick={project.refresh}><RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh</Button>
-          </div>
+          <ActiveProjectHeader at={at} projectUrl={openedUrl} onRefresh={project.refresh} />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {NEXUS_KINDS.map(([t, label]) => (
               <div key={t} className="rounded-xl bg-secondary/60 px-3 py-2">
