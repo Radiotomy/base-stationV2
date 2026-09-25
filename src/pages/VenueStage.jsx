@@ -7,6 +7,7 @@ import { useVenueNowPlaying } from '@/hooks/useVenueNowPlaying';
 import VenueGateCard from '@/components/venue/VenueGateCard';
 import VenueNowPlayingStage from '@/components/venue/VenueNowPlayingStage';
 import VenueQueuePanel from '@/components/venue/VenueQueuePanel';
+import VenueCoopChat from '@/components/venue/VenueCoopChat';
 import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
 
 /**
@@ -122,8 +123,9 @@ export default function VenueStage() {
             )}
           </div>
 
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-5">
             <VenueQueuePanel channel={channel} nowPlaying={nowPlaying} />
+            <VenueCoopChat venueId={venueId} user={user} />
           </div>
         </div>
       </div>
