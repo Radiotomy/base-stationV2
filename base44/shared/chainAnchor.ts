@@ -35,6 +35,15 @@ const CORRECTION_PREFIX = 'BSTN1C';
 const audiusField = (audiusTrackId?: string | null) =>
   audiusTrackId ? `|audius:${audiusTrackId}` : '';
 
+/**
+ * Composition footprint (SheetSage2 key/chord/structure hash) carried in the
+ * calldata as `score:<sha256>` — an extra pipe field like `audius:`, so BSTN1
+ * readers keep parsing. The BASE Mark watermark itself carries only a short
+ * payload id; this anchor is what binds that id's asset to its composition.
+ */
+const scoreField = (compositionHash?: string | null) =>
+  compositionHash && /^[0-9a-f]{64}$/.test(compositionHash) ? `|score:${compositionHash}` : '';
+
 export const isTxHash = (h: string) => /^0x[0-9a-fA-F]{64}$/.test(h || '');
 
 /** Normalize a pasted private key: trim whitespace/quotes, add 0x if missing. */
@@ -90,6 +99,15 @@ export async function prepareAnchorRecord(
     genre: t.genre || '',
   });
 
+  // Composition footprint from a completed SheetSage2 transcription, only when
+  // the asset belongs to the artist being anchored.
+  let compositionHash: string | null = null;
+  if (t.asset_id) {
+    const asset = await base44.asServiceRole.entities.UserAsset.get(t.asset_id).catch(() => null);
+    const h = asset?.metadata?.composition?.footprint_hash;
+    if (asset && asset.user_id === artist.id && /^[0-9a-f]{64}$/.test(h || '')) compositionHash = h;
+  }
+
   let pin: any = null;
   let pinError: string | null = null;
   try {
@@ -106,6 +124,7 @@ export async function prepareAnchorRecord(
         ai_tools_used: t.ai_tools_used || '',
         description: t.description || '',
         fingerprint_hash: fingerprint,
+        composition_hash: compositionHash || undefined,
         blockchain: 'base',
       },
     });
@@ -135,6 +154,7 @@ export async function prepareAnchorRecord(
     audius_link_basis: t.audius_track_id ? 'in_calldata' : undefined,
     wallet_address: body.wallet_address || '',
     fingerprint_hash: fingerprint,
+    composition_hash: compositionHash || undefined,
     metadata_uri: pin?.metadata_uri || '',
     registration_status: 'pending',
     network: 'base-mainnet',
@@ -183,10 +203,11 @@ export async function broadcastAnchor(
   // resolved and stored by prepareAnchorRecord, and re-passing it at every call
   // site is how the two would eventually disagree about what got signed.
   const audius = audiusField(record.audius_track_id);
+  const score = scoreField(record.composition_hash);
   const anchorData = toHex(
     supersedes
-      ? `${CORRECTION_PREFIX}|${fingerprint}|${metadataUri}|supersedes:${supersedes}${audius}`
-      : `${ANCHOR_PREFIX}|${fingerprint}|${metadataUri}${audius}`,
+      ? `${CORRECTION_PREFIX}|${fingerprint}|${metadataUri}|supersedes:${supersedes}${audius}${score}`
+      : `${ANCHOR_PREFIX}|${fingerprint}|${metadataUri}${audius}${score}`,
   );
   const tx = await wallet.sendTransaction({ to: wallet.address, value: 0n, data: anchorData });
 

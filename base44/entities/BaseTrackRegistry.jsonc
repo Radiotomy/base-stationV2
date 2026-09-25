@@ -68,6 +68,10 @@
       "type": "string",
       "description": "SHA-256 of track metadata for provenance"
     },
+    "composition_hash": {
+      "type": "string",
+      "description": "SHA-256 composition footprint (key, chord intervals, structural boundaries) from a SheetSage2 transcription of the asset, carried in the anchor calldata as `score:<hash>`. Absent when the track was never transcribed before anchoring \u2014 calldata is immutable, so a later transcription is not back-filled into an existing anchor."
+    },
     "registered_at": {
       "type": "string",
       "format": "date-time"
