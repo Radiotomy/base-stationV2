@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Loader2, FolderOpen, RefreshCw, Cpu } from 'lucide-react';
 import useNexusProject, { NEXUS_KINDS } from '@/hooks/useNexusProject';
 import AudiotoolIngestSummary from '@/components/audiotool/AudiotoolIngestSummary';
+import MidiCoProducerPanel from '@/components/audiotool/MidiCoProducerPanel';
+import InstrumentChainPanel from '@/components/audiotool/InstrumentChainPanel';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -57,6 +59,8 @@ export default function AudiotoolProjectPanel({ at }) {
           </Button>
           {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
           {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
+          <MidiCoProducerPanel nexus={project.nexus} onChanged={project.refresh} />
+          <InstrumentChainPanel at={at} nexus={project.nexus} onChanged={project.refresh} />
         </>
       )}
     </section>
