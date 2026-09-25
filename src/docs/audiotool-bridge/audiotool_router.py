@@ -20,7 +20,9 @@ async def ingest(body: IngestBody):
     try:
         state = await ats.fetch_project_state(body.project, body.access_token)
     except RuntimeError as e:
-        raise HTTPException(status_code=502, detail=str(e))
+        # 424, not 502: the HF gateway replaces 5xx bodies with its own page,
+        # which would hide Audiotool's actual reason from the creator.
+        raise HTTPException(status_code=424, detail=str(e))
     return ats.summarize(state, body.limit)
 
 
