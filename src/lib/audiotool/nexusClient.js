@@ -8,8 +8,8 @@
 import { audiotool } from '@audiotool/nexus';
 import { base44 } from '@/api/base44Client';
 
-export const AUDIOTOOL_APP_ORIGIN = 'https://base-station.base44.app';
-export const AUDIOTOOL_REDIRECT_URL = 'https://base-station.base44.app/';
+export const AUDIOTOOL_APP_ORIGIN = 'https://basestation.live';
+export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/';
 export const AUDIOTOOL_SCOPE = 'project:write';
 const RETURN_KEY = 'audiotool_return_to';
 
