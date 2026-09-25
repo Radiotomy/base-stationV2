@@ -8,7 +8,7 @@ import LoopCard from './LoopCard';
 
 const CATEGORIES = ['loop', 'drum loop', 'bass loop', 'melodic loop', 'vocal chop', 'fx', 'one shot'];
 
-export default function LoopDiscoverTab() {
+export default function LoopDiscoverTab({ renderExtra }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [results, setResults] = useState([]);
@@ -91,7 +91,9 @@ export default function LoopDiscoverTab() {
             onAction={() => importSound(r)}
             actionLabel="Save to My Loops"
             actionLoading={importingId === r.id}
-          />
+          >
+            {renderExtra?.(r)}
+          </LoopCard>
         ))}
         {!searching && results.length === 0 && (
           <p className="text-sm text-muted-foreground col-span-full text-center py-8">

@@ -19,7 +19,7 @@ const SCOPES = [
   { key: 'mine', label: 'My loops only' },
 ];
 
-export default function SemanticLoopSearch() {
+export default function SemanticLoopSearch({ renderExtra }) {
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState('all');
   const [results, setResults] = useState(null);
@@ -118,7 +118,9 @@ export default function SemanticLoopSearch() {
             audioUrl={r.file_url}
             tags={r.tags}
             license={r.license}
-          />
+          >
+            {renderExtra?.(r)}
+          </LoopCard>
         ))}
       </div>
 

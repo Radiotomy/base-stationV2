@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Input } from '@/components/ui/input';
 import LoopCard from './LoopCard';
 
-export default function CommunityLoopsTab() {
+export default function CommunityLoopsTab({ renderExtra }) {
   const [loops, setLoops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -47,7 +47,9 @@ export default function CommunityLoopsTab() {
               tags={l.tags}
               license={l.license}
               attribution={l.attribution}
-            />
+            >
+              {renderExtra?.(l)}
+            </LoopCard>
           ))}
         </div>
       )}

@@ -6,7 +6,7 @@ import { Loader2, FolderOpen, RefreshCw, Cpu } from 'lucide-react';
 import useNexusProject, { NEXUS_KINDS } from '@/hooks/useNexusProject';
 import AudiotoolIngestSummary from '@/components/audiotool/AudiotoolIngestSummary';
 import MidiCoProducerPanel from '@/components/audiotool/MidiCoProducerPanel';
-import InstrumentChainPanel from '@/components/audiotool/InstrumentChainPanel';
+import SongstarterModule from '@/components/audiotool/songstarter/SongstarterModule';
 import NexusContributionMeter from '@/components/audiotool/NexusContributionMeter';
 import ProtectExportPanel from '@/components/audiotool/ProtectExportPanel';
 
@@ -65,7 +65,7 @@ export default function AudiotoolProjectPanel({ at }) {
           {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
           <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
-          <InstrumentChainPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
+          <SongstarterModule at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
           <ProtectExportPanel at={at} nexus={project.nexus} projectUrl={openedUrl} telemetry={telemetry} />
         </>
       )}

@@ -59,7 +59,8 @@ export function computeContribution(nexus, log) {
 
   const notes = nexus.queryEntities.ofTypes('note').get();
   const aiNotes = notes.filter((n) => aiCollections.has(n.fields.collection.value.entityId)).length;
-  const devices = ofTypes(nexus, [...CHAIN_INSTRUMENTS, ...CHAIN_EFFECTS]);
+  // audioDevice = sample players; Songstarter logs the ones it creates as AI.
+  const devices = ofTypes(nexus, [...CHAIN_INSTRUMENTS, ...CHAIN_EFFECTS, 'audioDevice']);
   const aiDevices = devices.filter((d) => aiDeviceIds.has(d.id)).length;
 
   const humanNotes = notes.length - aiNotes;

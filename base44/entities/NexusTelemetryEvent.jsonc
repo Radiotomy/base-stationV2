@@ -15,9 +15,12 @@
       "type": "string",
       "enum": [
         "midi_coproducer",
-        "instrument_chain"
+        "instrument_chain",
+        "songstarter_loop",
+        "songstarter_sfx",
+        "library_ai_sample"
       ],
-      "description": "Which bridge AI tool was invoked"
+      "description": "Which bridge AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library loop sent to the timeline."
     },
     "prompt": {
       "type": "string",
@@ -36,7 +39,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Nexus devices the AI created"
+      "description": "Nexus devices the AI created (including audio devices holding AI-generated samples)"
     },
     "at": {
       "type": "string",
