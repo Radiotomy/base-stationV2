@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import AudiotoolAudioPicker from '@/components/audiotool/AudiotoolAudioPicker';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -6,11 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { protectExport } from '@/lib/audiotool/protectExport';
 
-export default function ProtectExportPanel({ projectUrl, telemetry }) {
+export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry }) {
   const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [state, setState] = useState({ loading: false, error: '', asset: null });
+
+  const onPicked = useCallback((picked, name) => {
+    setFile(picked);
+    setTitle((t) => t || name);
+  }, []);
 
   const run = async () => {
     setState({ loading: true, error: '', asset: null });
@@ -31,7 +37,10 @@ export default function ProtectExportPanel({ projectUrl, telemetry }) {
           add the BASE Mark watermark, and anchor it on Base if you've turned on auto-anchoring.
         </p>
       </div>
+      <AudiotoolAudioPicker at={at} nexus={nexus} onPicked={onPicked} />
+      {file && <p className="text-xs text-emerald-300">Ready: {file.name}</p>}
       <Input placeholder="Track title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <p className="text-xs text-muted-foreground">Or upload a file from your computer:</p>
       <Input type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/flac" onChange={(e) => setFile(e.target.files?.[0] || null)} />
       <Button className="merc-button" onClick={run} disabled={!file || !title.trim() || !telemetry || state.loading}>
         {state.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}

@@ -9,7 +9,7 @@ import { audiotool } from '@audiotool/nexus';
 import { base44 } from '@/api/base44Client';
 
 export const AUDIOTOOL_APP_ORIGIN = 'https://basestation.live';
-export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/';
+export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/audiotool-callback';
 export const AUDIOTOOL_SCOPE = 'project:write';
 const RETURN_KEY = 'audiotool_return_to';
 
@@ -37,14 +37,8 @@ export async function loginToAudiotool(returnTo) {
   if (at.status === 'unauthenticated') at.login();
 }
 
-/** True when this page load is Audiotool sending the user back to "/" after consent. */
-export function isAudiotoolRedirect() {
-  const q = new URLSearchParams(window.location.search);
-  return window.location.pathname === '/' && (q.has('code') || q.has('error')) && !!sessionStorage.getItem(RETURN_KEY);
-}
-
 export function takeReturnPath() {
-  const path = sessionStorage.getItem(RETURN_KEY) || '/';
+  const path = sessionStorage.getItem(RETURN_KEY) || '/audiotool';
   sessionStorage.removeItem(RETURN_KEY);
   return path.startsWith('/') ? path : '/';
 }

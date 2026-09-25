@@ -26,7 +26,6 @@ import GlobalSearch from '@/components/search/GlobalSearch';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 import OfflineBanner from '@/components/layout/OfflineBanner';
 import ScrollToTop from '@/components/layout/ScrollToTop';
-import AudiotoolRedirectHandler from '@/components/audiotool/AudiotoolRedirectHandler';
 import MobileLayout from './components/layout/MobileLayout';
 import SuspendedScreen from '@/components/auth/SuspendedScreen';
 
@@ -71,6 +70,7 @@ const StemCreatorStudio = lazy(() => import('./pages/StemCreatorStudio'));
 const LeadSheetStudio = lazy(() => import('./pages/LeadSheetStudio'));
 const ScribeStudio = lazy(() => import('./pages/ScribeStudio'));
 const AudiotoolStudio = lazy(() => import('./pages/AudiotoolStudio'));
+const AudiotoolCallback = lazy(() => import('./pages/AudiotoolCallback'));
 const MashupStudio = lazy(() => import('./pages/MashupStudio'));
 const VocalHarmonizer = lazy(() => import('./pages/VocalHarmonizer'));
 const MasteringStudio = lazy(() => import('./pages/MasteringStudio'));
@@ -154,7 +154,7 @@ const PageLoader = () => (
 const AuthenticatedApp = () => {
   const { isLoadingPublicSettings, user } = useAuth();
   const location = useLocation();
-  const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password"].includes(location.pathname);
+  const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password", "/audiotool-callback"].includes(location.pathname);
 
   if (isLoadingPublicSettings) {
     return (
@@ -176,7 +176,6 @@ const AuthenticatedApp = () => {
   return (
     <>
       <ScrollToTop />
-      <AudiotoolRedirectHandler />
       <OfflineBanner />
       {!isAuthPage && <Header user={user} />}
       {!isAuthPage && <Breadcrumbs />}
@@ -194,6 +193,8 @@ const AuthenticatedApp = () => {
               guard and the app chrome: a login redirect in that popup would
               swallow the code and leave the parent's publish waiting forever. */}
           <Route path="/audius-oauth" element={<AudiusOAuthCallback />} />
+          {/* Audiotool sign-in return — outside the auth guard so a login redirect can't swallow the code */}
+          <Route path="/audiotool-callback" element={<AudiotoolCallback />} />
           {/* Public community forum — open to guests, no BASE Station account required */}
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/:id" element={<ForumThread />} />

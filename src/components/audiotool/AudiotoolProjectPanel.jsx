@@ -66,7 +66,7 @@ export default function AudiotoolProjectPanel({ at }) {
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
           <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
           <InstrumentChainPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
-          <ProtectExportPanel projectUrl={openedUrl} telemetry={telemetry} />
+          <ProtectExportPanel at={at} nexus={project.nexus} projectUrl={openedUrl} telemetry={telemetry} />
         </>
       )}
     </section>
