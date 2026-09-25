@@ -13,13 +13,17 @@ export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/audiotool-callba
 export const AUDIOTOOL_SCOPE = 'project:write';
 const RETURN_KEY = 'audiotool_return_to';
 
-let clientIdPromise = null;
+let configPromise = null;
 let clientPromise = null;
 
-const getClientId = () => {
-  clientIdPromise ??= base44.functions.invoke('audiotoolConfig', {}).then((r) => r.data.client_id);
-  return clientIdPromise;
+const getConfig = () => {
+  configPromise ??= base44.functions.invoke('audiotoolConfig', {}).then((r) => r.data);
+  return configPromise;
 };
+const getClientId = () => getConfig().then((c) => c.client_id);
+
+/** "projects/{id}" of the Songstarter template, or null if none is configured. */
+export const getTemplateProject = () => getConfig().then((c) => c.template_project || null);
 
 /** One shared audiotool() result per page load — calling it twice would try to redeem the same code twice. */
 export function getAudiotool() {

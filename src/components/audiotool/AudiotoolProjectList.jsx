@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, RefreshCw, Music2, Check } from 'lucide-react';
+import { Loader2, RefreshCw, Music2, Check } from 'lucide-react';
+import CreateProjectMenu from '@/components/audiotool/CreateProjectMenu';
 import { Button } from '@/components/ui/button';
 import { listMyProjects, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 
@@ -17,13 +18,14 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
   }, [at]);
   useEffect(load, [load]);
 
-  const create = async () => {
+  const create = async (templateName) => {
     // Opened synchronously inside the click so the browser doesn't block it.
     const tab = window.open('about:blank', '_blank');
     setCreating(true);
     setError('');
     try {
-      const p = await createProject(at, `BASE Station session ${new Date().toLocaleString()}`);
+      const label = templateName ? 'BASE Songstarter' : 'BASE Station session';
+      const p = await createProject(at, `${label} ${new Date().toLocaleString()}`, templateName);
       const url = studioUrl(p);
       if (tab) tab.location.href = url;
       window.focus();
@@ -42,9 +44,7 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
         <h3 className="font-bold">Your Audiotool projects</h3>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={load} disabled={!projects}><RefreshCw className="w-3.5 h-3.5" /> Refresh</Button>
-          <Button size="sm" className="merc-button" onClick={create} disabled={creating || busy}>
-            {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />} Create New Project
-          </Button>
+          <CreateProjectMenu creating={creating} disabled={busy} onCreate={create} />
         </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}

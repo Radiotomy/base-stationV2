@@ -21,7 +21,9 @@ export async function listMyProjects(at) {
   return res.projects || [];
 }
 
-export async function createProject(at, displayName) {
-  const res = ok(await at.projects.createProject({ project: { displayName } }));
+/** Blank project, or a copy of `templateName` ("projects/{id}") when given. */
+export async function createProject(at, displayName, templateName) {
+  const project = templateName ? { displayName, copyOfProjectName: templateName } : { displayName };
+  const res = ok(await at.projects.createProject({ project }));
   return res.project;
 }
