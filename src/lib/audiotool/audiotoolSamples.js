@@ -28,7 +28,8 @@ export async function listMyLibrary(at) {
     orderBy: 'sample.create_time desc',
     pageSize: 20,
   }));
-  return res.samples || [];
+  if (!res.samples?.length) throw new Error(`No uploads found for Audiotool account "${owner}".`);
+  return res.samples;
 }
 
 /** Lossless WAV of a sample, ready for the BASE Mark pipeline. */
