@@ -18,6 +18,7 @@ const CATEGORIES = [
       { to: "/lead-sheet-studio",  emoji: "🎼", label: "Lead Sheet Studio",  desc: "Compose a score — Cantor sings it, Cadence plays your chords" },
       { to: "/scribe-studio",      emoji: "📝", label: "Scribe Studio",      desc: "Turn any track into sheet music & MIDI" },
       { to: "/sub-station",        emoji: "🎛️", label: "SUB-Station",        desc: "Multi-track arrangement & mixdown workstation" },
+      { to: "/audiotool",          emoji: "🔗", label: "Audiotool Bridge",   desc: "Open Audiotool projects live & bring sessions into BASE Station", beta: true },
       { to: "/voice-creator",      emoji: "🗣️", label: "Voice Creator",      desc: "Custom AI voices & personas" },
       { to: "/sfx-studio",         emoji: "💥", label: "Sound FX Studio",    desc: "Text-to-SFX with ElevenLabs" },
       { to: "/loop-studio",        emoji: "🥁", label: "Loops & Samples",    desc: "Generate loops, discover free samples & build your library" },

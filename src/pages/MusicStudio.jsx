@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Zap, SlidersHorizontal, RotateCcw, Boxes, Link2 } from 'lucide-react';
-import AudiotoolTab from '@/components/audiotool/AudiotoolTab';
+import { Zap, SlidersHorizontal, RotateCcw, Boxes } from 'lucide-react';
 import QuickGenerateTab from '@/components/music/QuickGenerateTab';
 import AdvancedGenerateTab from '@/components/music/AdvancedGenerateTab';
 import BaseEnginesTab from '@/components/music/base/BaseEnginesTab';
@@ -11,7 +10,6 @@ const TABS = [
   { id: 'quick',    label: '⚡ Quick Generate', icon: Zap,              desc: 'AI picks everything from a simple prompt' },
   { id: 'advanced', label: '🎛️ Advanced',        icon: SlidersHorizontal, desc: 'Full control over every parameter' },
   { id: 'base',     label: '🏗️ BASE Engines',    icon: Boxes,             desc: 'In beta — our in-house, self-hosted engines (CODA, Siren Song, Skye & Aurora). Approved beta testers only.', beta: true },
-  { id: 'audiotool', label: '🔗 Audiotool',       icon: Link2,             desc: 'Connect Audiotool, open a project live, and hand its session state to BASE Engines.', beta: true },
 ];
 
 export default function MusicStudio() {
@@ -32,8 +30,7 @@ export default function MusicStudio() {
   const hasPrefill = !!(prefill.prompt || prefill.genre);
 
   useEffect(() => {
-    if (prefill.tab === 'audiotool') setActiveTab('audiotool');
-    else if (prefill.tab === 'advanced' || prefill.lyricsAssetId) setActiveTab('advanced');
+    if (prefill.tab === 'advanced' || prefill.lyricsAssetId) setActiveTab('advanced');
     else if (prefill.provider || hasPrefill) setActiveTab('quick');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -83,11 +80,6 @@ export default function MusicStudio() {
         {activeTab === 'base' && (
           <BetaGate feature="BASE Engines">
             <BaseEnginesTab />
-          </BetaGate>
-        )}
-        {activeTab === 'audiotool' && (
-          <BetaGate feature="Audiotool Bridge">
-            <AudiotoolTab />
           </BetaGate>
         )}
       </div>
