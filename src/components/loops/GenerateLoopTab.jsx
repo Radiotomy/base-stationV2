@@ -123,17 +123,26 @@ export default function GenerateLoopTab() {
           rows={3}
         />
         <div className="grid sm:grid-cols-3 gap-2">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-foreground"
-          >
-            {CATEGORY_OPTIONS.map((c) => (
-              <option key={c} value={c} className="bg-[#14100C] text-white">{c.replace('_', ' ')}</option>
-            ))}
-          </select>
-          <Input placeholder="BPM (optional)" type="number" value={bpm} onChange={(e) => setBpm(e.target.value)} />
-          <Input placeholder="Duration (sec)" type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 8)} />
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Sound type</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground capitalize"
+            >
+              {CATEGORY_OPTIONS.map((c) => (
+                <option key={c} value={c} className="bg-[#14100C] text-white">{c.replace('_', ' ')}</option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Tempo (BPM, optional)</span>
+            <Input placeholder="e.g. 120" type="number" value={bpm} onChange={(e) => setBpm(e.target.value)} />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Length (seconds, 1–30)</span>
+            <Input placeholder="8" type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 8)} />
+          </label>
         </div>
         <Button onClick={generate} disabled={generating} className="w-full">
           {generating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}

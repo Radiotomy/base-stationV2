@@ -34,12 +34,21 @@ export default function ForgeLoopGenerator() {
       <Textarea rows={2} value={prompt} onChange={(e) => setPrompt(e.target.value)}
         placeholder="Dusty boom-bap break with swung hats and a vinyl-warm snare" />
       <div className="grid grid-cols-3 gap-2">
-        <select value={category} onChange={(e) => setCategory(e.target.value)}
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm text-foreground">
-          {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-        </select>
-        <Input type="number" value={bpm} onChange={(e) => setBpm(e.target.value)} placeholder="BPM" />
-        <Input type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 8)} placeholder="Seconds" />
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">Sound type</span>
+          <select value={category} onChange={(e) => setCategory(e.target.value)}
+            className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm text-foreground capitalize">
+            {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">Tempo (BPM)</span>
+          <Input type="number" value={bpm} onChange={(e) => setBpm(e.target.value)} placeholder="120" />
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-muted-foreground">Length (seconds)</span>
+          <Input type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 8)} placeholder="8" />
+        </label>
       </div>
       <Button className="merc-button" onClick={generate} disabled={!prompt.trim() || !Number(bpm) || state.loading}>
         {state.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}

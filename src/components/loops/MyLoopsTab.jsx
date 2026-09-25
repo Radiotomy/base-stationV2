@@ -87,15 +87,21 @@ export default function MyLoopsTab() {
           Upload single files or select many at once for a batch (e.g. a whole CD collection).
         </p>
         <div className="grid sm:grid-cols-3 gap-2">
-          <Input placeholder="Collection name (e.g. CD Vol 1)" value={collectionName} onChange={(e) => setCollectionName(e.target.value)} />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
-          >
-            {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-          </select>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Collection name</span>
+            <Input placeholder="e.g. CD Vol 1" value={collectionName} onChange={(e) => setCollectionName(e.target.value)} />
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-medium text-muted-foreground">Sound type</span>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm capitalize"
+            >
+              {CATEGORY_OPTIONS.map((c) => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground sm:pt-5">
             <input type="checkbox" checked={makePublic} onChange={(e) => setMakePublic(e.target.checked)} />
             Share to community library
           </label>
