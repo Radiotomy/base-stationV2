@@ -26,6 +26,7 @@ import GlobalSearch from '@/components/search/GlobalSearch';
 import PWAInstallPrompt from '@/components/onboarding/PWAInstallPrompt';
 import OfflineBanner from '@/components/layout/OfflineBanner';
 import ScrollToTop from '@/components/layout/ScrollToTop';
+import AudiotoolRedirectHandler from '@/components/audiotool/AudiotoolRedirectHandler';
 import MobileLayout from './components/layout/MobileLayout';
 import SuspendedScreen from '@/components/auth/SuspendedScreen';
 
@@ -174,6 +175,7 @@ const AuthenticatedApp = () => {
   return (
     <>
       <ScrollToTop />
+      <AudiotoolRedirectHandler />
       <OfflineBanner />
       {!isAuthPage && <Header user={user} />}
       {!isAuthPage && <Breadcrumbs />}

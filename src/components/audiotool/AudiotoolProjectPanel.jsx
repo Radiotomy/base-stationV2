@@ -1,0 +1,64 @@
+import { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Loader2, FolderOpen, RefreshCw, Cpu } from 'lucide-react';
+import useNexusProject, { NEXUS_KINDS } from '@/hooks/useNexusProject';
+import AudiotoolIngestSummary from '@/components/audiotool/AudiotoolIngestSummary';
+
+export default function AudiotoolProjectPanel({ at }) {
+  const [url, setUrl] = useState('');
+  const project = useNexusProject(at);
+  const [ingest, setIngest] = useState({ loading: false, error: '', summary: null });
+
+  const sendToEngines = async () => {
+    setIngest({ loading: true, error: '', summary: null });
+    try {
+      const { accessToken } = at.exportTokens();
+      const { data } = await base44.functions.invoke('audiotoolIngestState', { project: url.trim(), access_token: accessToken });
+      setIngest({ loading: false, error: '', summary: data });
+    } catch (e) {
+      setIngest({ loading: false, error: e?.response?.data?.error || e.message, summary: null });
+    }
+  };
+
+  return (
+    <section className="merc-card rounded-2xl p-6 space-y-4">
+      <div>
+        <h3 className="font-bold">Open a project</h3>
+        <p className="text-sm text-muted-foreground">Paste a project link from beta.audiotool.com/studio.</p>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://beta.audiotool.com/studio?project=…" />
+        <Button className="merc-button" disabled={!url.trim() || project.status === 'opening'} onClick={() => project.open(url)}>
+          {project.status === 'opening' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
+          Open & sync
+        </Button>
+      </div>
+      {project.error && <p className="text-sm text-destructive">{project.error}</p>}
+
+      {project.status === 'synced' && (
+        <>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-emerald-300">● Live — synced with Audiotool</span>
+            <Button variant="ghost" size="sm" onClick={project.refresh}><RefreshCw className="w-3.5 h-3.5 mr-1" /> Refresh</Button>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {NEXUS_KINDS.map(([t, label]) => (
+              <div key={t} className="rounded-xl bg-secondary/60 px-3 py-2">
+                <div className="text-lg font-bold">{project.counts[t] ?? 0}</div>
+                <div className="text-[11px] text-muted-foreground">{label}</div>
+              </div>
+            ))}
+          </div>
+          <Button variant="outline" onClick={sendToEngines} disabled={ingest.loading}>
+            {ingest.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Cpu className="w-4 h-4 mr-2" />}
+            Send session state to BASE Engines
+          </Button>
+          {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
+          {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
+        </>
+      )}
+    </section>
+  );
+}
