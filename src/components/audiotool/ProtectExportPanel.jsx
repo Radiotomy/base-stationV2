@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, ShieldCheck } from 'lucide-react';
 import { protectExport } from '@/lib/audiotool/protectExport';
 import AutoAnchorToggle from '@/components/blockchain/AutoAnchorToggle';
+import ProvenancePipelineStatus from '@/components/audiotool/ProvenancePipelineStatus';
 
 export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry }) {
   const { user } = useAuth();
@@ -52,12 +53,9 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry })
       {state.asset && (
         <div className="text-sm space-y-1">
           <p className="text-emerald-300">
-            "{state.asset.title}" saved with an ownership score of {state.asset.human_participation_score}. BASE Mark watermarking has started.
+            "{state.asset.title}" saved with an ownership score of {state.asset.human_participation_score}.
           </p>
-          <p className="text-xs text-muted-foreground break-all">Content Credentials hash: {state.asset.c2pa_provenance_hash}</p>
-          <p className="text-xs text-muted-foreground">
-            {state.anchoring ? 'Registering on Base mainnet now.' : 'Not registered on Base — turn on automatic registration above to anchor future exports.'}
-          </p>
+          <ProvenancePipelineStatus assetId={state.asset.id} />
           <p className="text-muted-foreground">
             Download the protected file from your <Link to="/asset-gallery" className="underline">library</Link> once it's marked,
             and see its chain record in <Link to="/creator-dashboard?tab=proof" className="underline">Proof of Ownership</Link>.

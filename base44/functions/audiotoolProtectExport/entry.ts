@@ -1,18 +1,19 @@
 // Audiotool Bridge — Protect & Register an exported mixdown or stem.
 //
-// Runs the whole provenance chain server-side so nothing about the score can be
-// asserted by the browser:
+// Runs the scoring half of the provenance chain server-side so nothing about the
+// score can be asserted by the browser:
 //   1. AI-invocation telemetry is read from OUR database (NexusTelemetryEvent),
 //      never from the request — it never leaves BASE Station servers.
-//   2. COS is scored by the authoritative engine.
-//   3. A C2PA-format manifest is built from the COS result and bound to the
-//      exact audio bytes; its SHA-256 becomes c2pa_provenance_hash.
-//   4. The UserAsset is created, which fires the existing cascade: BASE Mark
-//      V1 spread-spectrum + V2 neural embedding, then (for opted-in creators)
-//      the Base mainnet anchor, whose calldata carries `c2pa:<hash>`.
+//   2. COS is scored by the authoritative engine and FROZEN into the asset's
+//      provenance_seal draft, so the manifest sealed later embeds exactly the
+//      score computed from this session's log.
+//   3. The UserAsset is created, which fires the BASE Mark V1 + V2 cascade.
 //
-// The manifest is an UNSIGNED claim (no C2PA signing certificate is held), so it
-// is stored privately and stated as such — never presented as validated.
+// ORDER MATTERS: the C2PA manifest and the Base anchor are NOT produced here.
+// Both must describe the delivered, watermarked audio — not this raw export —
+// so the asset is created with chain_status 'awaiting_mark' (which the
+// create-time anchor automation ignores) and sealProtectedExport seals + signs
+// the manifest and anchors only after the V2 finalizer has completed.
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { calculateHumanParticipationScore, COS_ENGINE_VERSION } from '../../shared/cosEngine.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
@@ -64,41 +65,29 @@ export default async function (req) {
       ? `${cos.basis} Audiotool session: ${c.humanShare ?? 0}% of notes/devices human-made, ${log.length} AI invocation(s) logged.`
       : 'No AI invocations were recorded through the Audiotool Bridge for this project.';
 
-    // 3. C2PA-format manifest bound to the audio bytes.
+    // Raw export hash — recorded as the manifest's parent ingredient, never anchored.
     const dl = await fetch(assertSafeUrl(file_url));
     if (!dl.ok) throw new Error(`Could not read the exported audio (${dl.status})`);
-    const audioHash = await sha256(await dl.arrayBuffer());
+    const rawHash = await sha256(await dl.arrayBuffer());
     const createdAt = new Date().toISOString();
-    const manifest = {
-      claim_generator: 'BASE Station Audiotool Bridge',
-      format: 'c2pa-json/unsigned',
-      title: title.trim(),
-      instance_id: `urn:sha256:${audioHash}`,
-      signature: null,
-      assertions: [
-        { label: 'c2pa.hash.data', data: { alg: 'sha256', hash: audioHash } },
-        {
-          label: 'c2pa.actions',
-          data: {
-            actions: [
-              { action: 'c2pa.created', when: createdAt, softwareAgent: 'Audiotool', digitalSourceType: log.length ? 'http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia' : 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture' },
-              ...log.map((e) => ({ action: 'c2pa.edited', when: e.at || e.created_date, softwareAgent: `BASE Station ${e.tool}`, digitalSourceType: 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia' })),
-            ],
-          },
-        },
-        {
-          label: 'basestation.cos',
-          data: { engine: COS_ENGINE_VERSION, score: cos.score, label, confidence: cos.confidence, dimensions: cos.dimensions, ddex: cos.ddex, contribution: c, ai_invocations: log.length },
-        },
-      ],
-    };
-    const manifestJson = JSON.stringify(manifest);
-    const c2paHash = await sha256(new TextEncoder().encode(manifestJson));
-    const { file_uri: manifestUri } = await base44.integrations.Core.UploadPrivateFile({
-      file: new File([manifestJson], `c2pa-${c2paHash.slice(0, 12)}.json`, { type: 'application/json' }),
-    });
 
-    // 4. Creating the asset starts BASE Mark + (opt-in) Base anchoring.
+    const provenanceSeal = {
+      status: 'awaiting_mark',
+      title: title.trim(),
+      raw_export_sha256: rawHash,
+      created_at: createdAt,
+      telemetry_event_ids: log.map((e) => e.id),
+      actions: [
+        { action: 'c2pa.created', when: createdAt, softwareAgent: 'Audiotool', digitalSourceType: log.length ? 'http://cv.iptc.org/newscodes/digitalsourcetype/compositeWithTrainedAlgorithmicMedia' : 'http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture' },
+        ...log.map((e) => ({ action: 'c2pa.edited', when: e.at || e.created_date, softwareAgent: `BASE Station ${e.tool}`, digitalSourceType: 'http://cv.iptc.org/newscodes/digitalsourcetype/trainedAlgorithmicMedia' })),
+      ],
+      cos: {
+        engine: COS_ENGINE_VERSION, score: cos.score, label, confidence: cos.confidence,
+        dimensions: cos.dimensions, ddex: cos.ddex, contribution: c, ai_invocations: log.length,
+      },
+    };
+
+    // 3. Creating the asset starts BASE Mark; sealing + anchoring follow it.
     const asset = await base44.entities.UserAsset.create({
       user_id: user.id,
       user_email: user.email,
@@ -112,20 +101,20 @@ export default async function (req) {
       human_participation_score: cos.score,
       participation_signals: cos.signals,
       ddex_ai_metadata: cos.ddex,
-      c2pa_provenance_hash: c2paHash,
+      chain_status: 'awaiting_mark',
       tags: ['audiotool'],
       metadata: {
         source: 'audiotool_bridge',
         audiotool_project: project_url,
         cos_engine: cos.engine,
         cos_confidence: cos.confidence,
-        audio_sha256: audioHash,
-        c2pa_manifest_uri: manifestUri,
+        raw_export_sha256: rawHash,
         nexus_telemetry: { contribution: c, invocations: log.length },
+        provenance_seal: provenanceSeal,
       },
     });
 
-    return Response.json({ asset, c2pa_provenance_hash: c2paHash, anchoring: !!user.auto_anchor_provenance });
+    return Response.json({ asset, anchoring: !!user.auto_anchor_provenance });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

@@ -14,7 +14,7 @@
 // "Register a Track" flow uses (shared/chainAnchor.ts).
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.43';
-import { prepareAnchorRecord, broadcastAnchor } from '../../shared/chainAnchor.ts';
+import { anchorAssetForOwner } from '../../shared/chainAnchor.ts';
 
 // Only whole works are anchored. A stem or a cover art is a component of a
 // release, and anchoring each one would spend real gas to make dozens of
@@ -62,7 +62,9 @@ Deno.serve(async (req) => {
 
     // Idempotency: an anchor already broadcast can never be taken back, so a
     // repeat run must never produce a second claim about the same work.
-    if (asset.chain_status === 'registered' || asset.chain_status === 'pending') {
+    // 'awaiting_mark' = a protected export whose anchor is deliberately held
+    // until its watermark cascade finalizes (sealProtectedExport owns it).
+    if (asset.chain_status === 'registered' || asset.chain_status === 'pending' || asset.chain_status === 'awaiting_mark') {
       return Response.json({ skipped: true, reason: `Already ${asset.chain_status}` });
     }
     if (!ANCHORABLE_TYPES.includes(asset.asset_type)) {
@@ -83,49 +85,8 @@ Deno.serve(async (req) => {
     // runs from broadcasting two anchors for one work.
     await base44.asServiceRole.entities.UserAsset.update(assetId, { chain_status: 'pending' });
 
-    const { record, txLog, fingerprint, pin } = await prepareAnchorRecord(
-      base44,
-      { id: owner.id, full_name: owner.full_name, email: owner.email },
-      {
-        track: {
-          title: asset.title,
-          track_url: asset.file_url,
-          cover_image_url: asset.thumbnail_url || '',
-          genre: asset.metadata?.genre || '',
-          ai_tools_used: asset.metadata?.provider || '',
-          ai_label: asset.ai_label || asset.ai_disclosure_label || undefined,
-          description: asset.ai_disclosure_basis || asset.description || '',
-          asset_id: asset.id,
-          // Audius ↔ chain bridge: when the track is ALREADY on Audius, the release
-          // id goes into the signed calldata, making the pairing provable on-chain.
-          // Absent here means this is an anchor-first release, and the link is
-          // written back off-chain at publish time instead.
-          audius_track_id: asset.metadata?.audius_track_id || undefined,
-          audius_permalink: asset.metadata?.audius_permalink || undefined,
-        },
-      },
-    );
-
-    try {
-      const { transaction_hash } = await broadcastAnchor(base44, {
-        record, txLog, fingerprint, metadataUri: pin?.metadata_uri || '',
-      });
-      await base44.asServiceRole.entities.UserAsset.update(assetId, {
-        chain_status: 'registered',
-        chain_registry_id: record.id,
-        chain_tx_hash: transaction_hash,
-      });
-      return Response.json({ ok: true, asset_id: assetId, registry_id: record.id, transaction_hash });
-    } catch (chainErr) {
-      // The IPFS bundle and the registry row survive, so an admin can retry the
-      // anchor without redoing the fingerprint — the same recovery path the
-      // manual flow has.
-      await base44.asServiceRole.entities.UserAsset.update(assetId, {
-        chain_status: 'failed',
-        chain_registry_id: record.id,
-      }).catch(() => {});
-      return Response.json({ ok: false, registry_id: record.id, chain_error: chainErr.message });
-    }
+    const result = await anchorAssetForOwner(base44, asset, owner, asset.file_url);
+    return Response.json({ asset_id: assetId, ...result });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

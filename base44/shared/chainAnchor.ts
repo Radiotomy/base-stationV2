@@ -248,3 +248,48 @@ export async function broadcastAnchor(
 
   return { transaction_hash: tx.hash, wallet_address: wallet.address };
 }
+
+/**
+ * Anchor one UserAsset for its (already opted-in) owner and write the result
+ * back onto the asset. Shared by the create-time automation (autoAnchorAsset)
+ * and the post-watermark seal (sealProtectedExport), so both make the exact
+ * same claim. `trackUrl` is the audio actually fingerprinted — for a protected
+ * export it MUST be the finalized watermarked file, never the raw export.
+ * The caller must already have claimed chain_status = 'pending'.
+ */
+export async function anchorAssetForOwner(base44: any, asset: any, owner: any, trackUrl: string) {
+  const { record, txLog, fingerprint, pin } = await prepareAnchorRecord(
+    base44,
+    { id: owner.id, full_name: owner.full_name, email: owner.email },
+    {
+      track: {
+        title: asset.title,
+        track_url: trackUrl,
+        cover_image_url: asset.thumbnail_url || '',
+        genre: asset.metadata?.genre || '',
+        ai_tools_used: asset.metadata?.provider || '',
+        ai_label: asset.ai_label || asset.ai_disclosure_label || undefined,
+        description: asset.ai_disclosure_basis || asset.description || '',
+        asset_id: asset.id,
+        audius_track_id: asset.metadata?.audius_track_id || undefined,
+        audius_permalink: asset.metadata?.audius_permalink || undefined,
+      },
+    },
+  );
+  try {
+    const { transaction_hash } = await broadcastAnchor(base44, {
+      record, txLog, fingerprint, metadataUri: pin?.metadata_uri || '',
+    });
+    await base44.asServiceRole.entities.UserAsset.update(asset.id, {
+      chain_status: 'registered', chain_registry_id: record.id, chain_tx_hash: transaction_hash,
+    });
+    return { ok: true, registry_id: record.id, transaction_hash, fingerprint };
+  } catch (chainErr: any) {
+    // The IPFS bundle and registry row survive, so an admin can retry the
+    // anchor without redoing the fingerprint.
+    await base44.asServiceRole.entities.UserAsset.update(asset.id, {
+      chain_status: 'failed', chain_registry_id: record.id,
+    }).catch(() => {});
+    return { ok: false, registry_id: record.id, chain_error: chainErr.message, fingerprint };
+  }
+}

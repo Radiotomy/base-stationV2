@@ -1,0 +1,40 @@
+{
+  "name": "Seal Protected Export After Watermark",
+  "description": "When an Audiotool Protect & Register export finishes its BASE Mark V1 + V2 watermark cascade, seals a signed C2PA manifest over the watermarked audio and, for creators who opted in, anchors it on Base mainnet. Holding the anchor until here is what guarantees the on-chain fingerprint and C2PA hash describe the delivered file, not the raw export.",
+  "trigger": {
+    "condition": "${ .trigger.data.metadata.provenance_seal.status == \"awaiting_mark\" and (.trigger.data.metadata.base_mark_v2.status == \"completed\" or .trigger.data.metadata.base_mark_v2.status == \"failed\") }",
+    "config": {
+      "trigger_type": "entity",
+      "entity_name": "UserAsset",
+      "events": [
+        "update"
+      ]
+    }
+  },
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "seal_protected_export_after_watermark",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "seal_and_anchor": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "sealProtectedExport",
+            "args": {
+              "assetId": "${ .trigger.entity_id }"
+            }
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Seal C2PA and anchor",
+            "description": "After V1 + V2 cascade"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -154,13 +154,14 @@
       "type": "string",
       "enum": [
         "unregistered",
+        "awaiting_mark",
         "pending",
         "registered",
         "failed",
         "skipped"
       ],
       "default": "unregistered",
-      "description": "On-chain provenance anchor state for this asset. 'skipped' records that automatic anchoring considered this asset and deliberately passed on it (owner has not opted in, or the type is not anchorable) \u2014 distinct from 'unregistered', which means nothing has looked yet."
+      "description": "On-chain provenance anchor state for this asset. 'awaiting_mark' holds the anchor until the BASE Mark V1+V2 cascade has finalized and the C2PA manifest has been sealed over the watermarked audio \u2014 so the anchored fingerprint is the delivered file, never the raw export. 'skipped' records that automatic anchoring considered this asset and deliberately passed on it (owner has not opted in, the type is not anchorable, or the watermark cascade could not complete) \u2014 distinct from 'unregistered', which means nothing has looked yet."
     },
     "chain_registry_id": {
       "type": "string",

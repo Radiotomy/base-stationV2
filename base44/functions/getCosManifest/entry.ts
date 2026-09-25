@@ -1,5 +1,31 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.38';
 import { deriveDimensions, COS_ENGINE_VERSION } from '../../shared/cosEngine.ts';
+import { verifySignedManifest, canonicalJson } from '../../shared/c2paSign.ts';
+
+// Signed Content Credentials, re-verified on every read. The hash check proves
+// this is the manifest the anchor names; the signature check proves the claim
+// (including the embedded COS) is unaltered since sealing.
+async function c2paSummary(asset) {
+  const seal = asset.metadata?.provenance_seal;
+  if (!seal) return null;
+  if (!seal.manifest) return { status: seal.status, signed: false };
+  const bytes = new TextEncoder().encode(canonicalJson(seal.manifest));
+  const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)))
+    .map((b) => b.toString(16).padStart(2, '0')).join('');
+  const cos = seal.manifest.claim?.assertions?.find((a) => a.label === 'basestation.cos')?.data;
+  return {
+    status: seal.manifest.status_label,
+    signed: true,
+    trust: seal.manifest.trust,
+    signer: seal.manifest.signer,
+    alg: seal.manifest.signature?.alg,
+    signature_valid: await verifySignedManifest(seal.manifest),
+    hash_matches: hash === asset.c2pa_provenance_hash,
+    audio_sha256: seal.final_audio_sha256,
+    sealed_at: seal.sealed_at,
+    cos: cos ? { score: cos.score, label: cos.label, human_share: cos.contribution?.humanShare ?? null, ai_invocations: cos.ai_invocations } : null,
+  };
+}
 
 /**
  * COS Public Verification Ledger — partner/B2B endpoint.
@@ -61,6 +87,7 @@ Deno.serve(async (req) => {
       ),
       ddex_ai_metadata: ddex,
       c2pa_provenance_hash: asset.c2pa_provenance_hash || null,
+      c2pa_manifest: await c2paSummary(asset),
       base_mark: asset.metadata?.base_mark ? {
         version: asset.metadata.base_mark.version || '1.0',
         payload_hex: asset.metadata.base_mark.payload_hex,
