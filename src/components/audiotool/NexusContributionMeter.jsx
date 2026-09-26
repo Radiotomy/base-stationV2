@@ -39,7 +39,7 @@ export default function NexusContributionMeter({ nexus, projectUrl, counts, onCh
             <div className="h-full bg-emerald-400 transition-all" style={{ width: `${c.humanShare ?? 0}%` }} />
           </div>
           <p className="text-sm">
-            {c.humanShare === null ? 'No notes or devices in this project yet.' : `${c.humanShare}% human-made · ${100 - c.humanShare}% AI-written`}
+            {c.humanShare === null ? 'Nothing in this project yet.' : `${c.humanShare}% human-made · ${100 - c.humanShare}% AI-written`}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             <Stat label="Your notes" value={c.humanNotes} />
@@ -47,6 +47,11 @@ export default function NexusContributionMeter({ nexus, projectUrl, counts, onCh
             <Stat label="Your devices" value={c.humanDevices} />
             <Stat label="AI devices" value={c.aiDevices} />
             <Stat label="AI invocations" value={c.invocations} />
+            <Stat label="Your automation points" value={c.humanAutomation} />
+            <Stat label="AI automation points" value={c.aiAutomation} />
+            <Stat label="Your step patterns" value={c.humanPatterns} />
+            <Stat label="AI step patterns" value={c.aiPatterns} />
+            <Stat label="Mixer channels" value={c.mixerChannels} />
           </div>
         </>
       )}

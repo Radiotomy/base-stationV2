@@ -81,9 +81,14 @@ export default async function (req) {
     const c = {
       humanNotes: n(contribution.humanNotes), aiNotes: n(contribution.aiNotes),
       humanDevices: n(contribution.humanDevices), aiDevices: n(contribution.aiDevices),
+      humanAutomation: n(contribution.humanAutomation), aiAutomation: n(contribution.aiAutomation),
+      humanPatterns: n(contribution.humanPatterns), aiPatterns: n(contribution.aiPatterns),
+      // Context only — never counted toward the share.
+      mixerChannels: n(contribution.mixerChannels),
     };
-    const total = c.humanNotes + c.aiNotes + c.humanDevices + c.aiDevices;
-    c.humanShare = total ? Math.round(((c.humanNotes + c.humanDevices) / total) * 100) : null;
+    const human = c.humanNotes + c.humanDevices + c.humanAutomation + c.humanPatterns;
+    const total = human + c.aiNotes + c.aiDevices + c.aiAutomation + c.aiPatterns;
+    c.humanShare = total ? Math.round((human / total) * 100) : null;
 
     // 1. Server-held telemetry, scoped to this creator.
     const log = await base44.entities.NexusTelemetryEvent.filter(
@@ -95,8 +100,10 @@ export default async function (req) {
     const cos = calculateHumanParticipationScore({
       prompt: longestPrompt,
       userProvidedContent: c.humanNotes > c.aiNotes,
-      humanInstrumentPerformance: c.humanNotes > 0,
-      humanDspDesign: c.humanDevices > 0,
+      // Hand-programmed step patterns are performance input just like played notes;
+      // hand-drawn automation is mix/sound-design work alongside device choices.
+      humanInstrumentPerformance: c.humanNotes > 0 || c.humanPatterns > 0,
+      humanDspDesign: c.humanDevices > 0 || c.humanAutomation > 0,
       isIteration: log.length > 1,
       styleOrTags: [],
       referenceFile: false,
@@ -108,7 +115,7 @@ export default async function (req) {
     const label = log.length ? cos.label : 'unverified';
     const remixOf = contestEntry(session.contest);
     const basis = (log.length
-      ? `${cos.basis} Audiotool session: ${c.humanShare ?? 0}% of notes/devices human-made, ${log.length} AI invocation(s) logged.`
+      ? `${cos.basis} Audiotool session: ${c.humanShare ?? 0}% of notes, devices, step patterns and automation points human-made, ${log.length} AI invocation(s) logged.`
       : 'No AI invocations were recorded through the Audiotool Bridge for this project.')
       + (remixOf ? ` Remix entry: includes contest stems by ${remixOf.parent_artist || 'the contest host'} (third-party material, not scored as the creator's own).` : '');
 
@@ -139,7 +146,9 @@ export default async function (req) {
     const sessionBpm = Number.isFinite(bpm) && bpm >= 20 && bpm <= 400 ? Math.round(bpm * 100) / 100 : undefined;
     const coverUrl = await rehostSnapshot(base44, session.cover_url);
     const projectTags = (Array.isArray(session.tags) ? session.tags : []).map((t) => String(t).slice(0, 40)).slice(0, 10);
-    const genre = normalizeAudiusGenre(projectTags.join(', '), '') || undefined;
+    // The creator's pick wins; otherwise it's derived from the project tags.
+    const genre = normalizeAudiusGenre(String(session.genre || '').slice(0, 40), '')
+      || normalizeAudiusGenre(projectTags.join(', '), '') || undefined;
     const license = AUDIUS_LICENSE[Number(session.license)];
 
     // 3. Creating the asset starts BASE Mark; sealing + anchoring follow it.

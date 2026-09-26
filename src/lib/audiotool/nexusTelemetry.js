@@ -54,6 +54,7 @@ export const deleteInvocation = (id) => Events.delete(id);
 
 export const subscribeTelemetry = (cb) => Events.subscribe(cb);
 
+const PATTERN_TYPES = ['beatbox8Pattern', 'basslinePattern', 'tonematrixPattern'];
 const ofTypes = (nexus, types) => types.flatMap((t) => nexus.queryEntities.ofTypes(t).get());
 
 export function computeContribution(nexus, log) {
@@ -66,12 +67,25 @@ export function computeContribution(nexus, log) {
   const devices = ofTypes(nexus, [...CHAIN_INSTRUMENTS, ...CHAIN_EFFECTS, 'audioDevice', 'beatbox8', 'bassline', 'tonematrix']);
   const aiDevices = devices.filter((d) => aiDeviceIds.has(d.id)).length;
 
+  // Automation points belong to the AI when their collection was AI-written.
+  const autoEvents = nexus.queryEntities.ofTypes('automationEvent').get();
+  const aiAutomation = autoEvents.filter((e) => aiCollections.has(e.fields.collection?.value?.entityId)).length;
+  // Step patterns belong to the AI when they sit on a device an AI tool created.
+  const patterns = ofTypes(nexus, PATTERN_TYPES);
+  const aiPatterns = patterns.filter((p) => aiDeviceIds.has(p.fields.slot?.value?.entityId)).length;
+  // Mixer channels are recorded as session context only: creating one isn't authorship.
+  const mixerChannels = nexus.queryEntities.ofTypes('mixerChannel').get().length;
+
   const humanNotes = notes.length - aiNotes;
   const humanDevices = devices.length - aiDevices;
-  const total = notes.length + devices.length;
+  const humanAutomation = autoEvents.length - aiAutomation;
+  const humanPatterns = patterns.length - aiPatterns;
+  const human = humanNotes + humanDevices + humanAutomation + humanPatterns;
+  const total = notes.length + devices.length + autoEvents.length + patterns.length;
   return {
     humanNotes, aiNotes, humanDevices, aiDevices,
+    humanAutomation, aiAutomation, humanPatterns, aiPatterns, mixerChannels,
     invocations: log.length,
-    humanShare: total ? Math.round(((humanNotes + humanDevices) / total) * 100) : null,
+    humanShare: total ? Math.round((human / total) * 100) : null,
   };
 }
