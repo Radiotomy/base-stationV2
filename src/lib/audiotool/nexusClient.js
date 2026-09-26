@@ -11,8 +11,9 @@ import { ensureBrowserWasmLoader } from '@/lib/audiotool/nexusWasm';
 
 export const AUDIOTOOL_APP_ORIGIN = 'https://basestation.live';
 export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/audiotool-callback';
-// sample:write is required by SampleService.createSample (sending loops to the timeline).
-export const AUDIOTOOL_SCOPE = 'project:write sample:write';
+// Only the scopes the Bridge uses: account name, project list/edit, sample
+// upload (loops → timeline) + library download (Protect & Register), presets.
+export const AUDIOTOOL_SCOPE = 'user:read project:read project:write sample:read sample:write preset:read';
 const RETURN_KEY = 'audiotool_return_to';
 
 let configPromise = null;
