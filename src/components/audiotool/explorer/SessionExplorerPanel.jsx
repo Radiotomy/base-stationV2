@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { ListTree } from 'lucide-react';
 import { readSession, setField } from '@/lib/audiotool/sessionExplorer';
 import ExplorerTrackRow from './ExplorerTrackRow';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import ExplorerDeviceRow from './ExplorerDeviceRow';
 
 export default function SessionExplorerPanel({ nexus, projectUrl, focus, version, connected, onChanged }) {
@@ -53,7 +55,7 @@ export default function SessionExplorerPanel({ nexus, projectUrl, focus, version
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><ListTree className="w-4 h-4" /> Session Explorer</h3>
+        <h3 className="font-bold flex items-center gap-2"><ListTree className="w-4 h-4" /> Session Explorer <InfoTip text={TIPS.explorer} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Everything in this project, updated live. Switch tracks and devices on or off without leaving BASE Station, or copy a link straight to any of them.</p>
       </div>
       <div className="grid md:grid-cols-2 gap-4">

@@ -5,6 +5,8 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import useVenueCoop from '@/hooks/useVenueCoop';
 import CoopLogRow from './CoopLogRow';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const KINDS = [['sfx', 'Sound FX (ElevenLabs)'], ['loop', 'Loops (BASE Forge)'], ['midi', 'MIDI patterns']];
 
@@ -25,7 +27,7 @@ export default function AudienceCoopPanel({ at, nexus, projectUrl, onChanged }) 
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Users className="w-4 h-4" /> Audience Co-Op</h3>
+        <h3 className="font-bold flex items-center gap-2"><Users className="w-4 h-4" /> Audience Co-Op <InfoTip text={TIPS.coop} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">
           Let your venue audience type <code>/generate sfx …</code>, <code>/generate loop …</code> or <code>/generate midi …</code> in the venue chat.
           Requests run one at a time on your credits and land after the end of your timeline, so playback keeps going.
@@ -41,7 +43,7 @@ export default function AudienceCoopPanel({ at, nexus, projectUrl, onChanged }) 
           </select>
         </label>
         <label className="space-y-1">
-          <span className="text-xs font-medium text-muted-foreground">Loop tempo (BPM)</span>
+          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1">Loop tempo (BPM) <InfoTip text={TIPS.coopBpm} /></span>
           <Input type="number" value={bpm} onChange={(e) => setBpm(e.target.value)} />
         </label>
       </div>
@@ -53,7 +55,7 @@ export default function AudienceCoopPanel({ at, nexus, projectUrl, onChanged }) 
         ))}
       </div>
       <label className="flex items-center gap-2 text-sm font-semibold">
-        <Switch checked={enabled} disabled={!venueId} onCheckedChange={setEnabled} /> Accept audience commands
+        <Switch checked={enabled} disabled={!venueId} onCheckedChange={setEnabled} /> Accept audience commands <InfoTip text={TIPS.coopAccept} />
       </label>
       {status === 'listening' && <p className="text-xs text-emerald-300">● Listening to venue chat</p>}
       {status === 'blocked' && <p className="text-xs text-destructive">Another Bridge tab is already handling this venue's commands.</p>}

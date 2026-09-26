@@ -14,6 +14,8 @@ import ContestEntryNotice from '@/components/audiotool/contests/ContestEntryNoti
 import { getContest } from '@/lib/audiotool/contestEntry';
 import GenrePicker from '@/components/audiotool/GenrePicker';
 import useAudiusGenres from '@/hooks/useAudiusGenres';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, project }) {
   const { user } = useAuth();
@@ -59,7 +61,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
   return (
     <section className="rounded-2xl border border-border p-5 space-y-3">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Protect & Register Export</h3>
+        <h3 className="font-bold flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Protect & Register Export <InfoTip text={TIPS.protect} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">
           Export your mix from Audiotool (WAV is best), then drop it here. We score it with this session's ownership data,
           add the BASE Mark watermark, and anchor it on Base if you've turned on auto-anchoring.
@@ -73,7 +75,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
         : <p className="text-xs text-emerald-300">Ready: {file.name}</p>)}
       <Input placeholder="Track title" value={title} onChange={(e) => setTitle(e.target.value)} />
       <GenrePicker value={genre} genres={genres} suggested={suggestedGenre} onChange={setGenre} />
-      <p className="text-xs text-muted-foreground">Or upload a file from your computer:</p>
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5">Or upload a file from your computer: <InfoTip text={TIPS.exportFile} /></p>
       <Input type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/flac" onChange={(e) => setFile(e.target.files?.[0] || null)} />
       <Button className="merc-button" onClick={run} disabled={!file || !!exportSizeProblem(file) || !title.trim() || !telemetry || state.loading}>
         {state.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}

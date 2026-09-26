@@ -9,6 +9,8 @@ import SendToAudiotoolButton from './SendToAudiotoolButton';
 import ForgeLoopGenerator from './ForgeLoopGenerator';
 import SfxGenerator from './SfxGenerator';
 import AudiusContestsTab from '@/components/audiotool/contests/AudiusContestsTab';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 // Library loops that were themselves AI-generated are logged as AI material,
 // so the Creative Ownership meter doesn't count them as human-made.
@@ -34,7 +36,7 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
     <BridgeSessionContext.Provider value={{ at, nexus, projectUrl, onChanged }}>
       <section className="rounded-2xl border border-border p-5 space-y-4">
         <div>
-          <h3 className="font-bold flex items-center gap-2"><Rocket className="w-4 h-4" /> Songstarter</h3>
+          <h3 className="font-bold flex items-center gap-2"><Rocket className="w-4 h-4" /> Songstarter <InfoTip text={TIPS.songstarter} size="sm" side="bottom" /></h3>
           <p className="text-sm text-muted-foreground">
             Generate or find sounds, audition them here, then send them straight onto your Audiotool timeline.
           </p>

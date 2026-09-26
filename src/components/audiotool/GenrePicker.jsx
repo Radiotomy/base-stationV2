@@ -1,9 +1,11 @@
 import { Label } from '@/components/ui/label';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 export default function GenrePicker({ value, genres, suggested, onChange }) {
   return (
     <div className="space-y-1">
-      <Label className="text-xs">Genre</Label>
+      <Label className="text-xs flex items-center gap-1.5">Genre <InfoTip text={TIPS.genre} /></Label>
       <select value={value} onChange={(e) => onChange(e.target.value)}
         className="w-full h-9 rounded-md border border-input bg-popover px-3 text-sm">
         <option value="">{suggested ? `From project tags (${suggested})` : genres.length ? 'Choose a genre…' : 'Loading genres…'}</option>

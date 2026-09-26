@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Trophy } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import ContestCard from './ContestCard';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 /** Active Audius remix contests; each stem can be dropped onto the live timeline. */
 export default function AudiusContestsTab() {
@@ -18,6 +20,7 @@ export default function AudiusContestsTab() {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
+        <InfoTip text={TIPS.contests} className="mr-1 align-middle" />
         Stems are provided by the contest host for remixing. Once you send a stem, your finished export is entered as a remix of the contest track when you distribute it to Audius from Protect & Register.
       </p>
       {contests.map((c) => <ContestCard key={c.event_id} contest={c} />)}

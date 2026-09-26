@@ -3,6 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Loader2, Headphones, CheckCircle2, ExternalLink } from 'lucide-react';
 import useAudiusBrowserPublish from '@/hooks/useAudiusBrowserPublish';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const PHASE_LABEL = { signin: 'Signing in to Audius…', preparing: 'Preparing release…', uploading: 'Uploading WAV…', registering: 'Registering on Audius…' };
 
@@ -40,7 +42,7 @@ export default function DistributeToAudiusPanel({ asset, stages }) {
 
   return (
     <div className="rounded-xl border border-border p-4 space-y-2">
-      <p className="font-medium flex items-center gap-2"><Headphones className="w-4 h-4 text-emerald-400" /> Distribute to Audius</p>
+      <p className="font-medium flex items-center gap-2"><Headphones className="w-4 h-4 text-emerald-400" /> Distribute to Audius <InfoTip text={TIPS.audius} size="sm" /></p>
       {existingId ? (
         <p className="text-sm text-emerald-300 flex items-center gap-2 flex-wrap">
           <CheckCircle2 className="w-4 h-4" /> Live on Audius

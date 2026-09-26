@@ -1,4 +1,6 @@
 import { Button } from '@/components/ui/button';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { Loader2, LogIn, LogOut, Link2, AlertTriangle } from 'lucide-react';
 import { AUDIOTOOL_APP_ORIGIN, AUDIOTOOL_REDIRECT_URL, isOnPublishedOrigin } from '@/lib/audiotool/nexusClient';
 
@@ -9,7 +11,7 @@ export default function AudiotoolConnectCard({ status, userName, error, login, l
     <section className="merc-card rounded-2xl p-6 space-y-3">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h2 className="text-lg font-bold flex items-center gap-2"><Link2 className="w-5 h-5" /> Audiotool</h2>
+          <h2 className="text-lg font-bold flex items-center gap-2"><Link2 className="w-5 h-5" /> Audiotool <InfoTip text={TIPS.connect} size="sm" side="bottom" /></h2>
           <p className="text-sm text-muted-foreground">
             Connect your Audiotool account to open your projects live in BASE Station (read & write access).
           </p>

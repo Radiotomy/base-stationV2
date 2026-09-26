@@ -9,6 +9,8 @@ import { SHAPES, planCurve, writeAutomation } from '@/lib/audiotool/automationLa
 import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 import { unwrap } from '@/lib/audiotool/nexusErrors';
 import CurvePreview from './CurvePreview';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const sel = 'w-full h-9 rounded-md border border-input bg-popover px-2 text-sm';
 
@@ -49,7 +51,7 @@ export default function AutomationLanePanel({ nexus, projectUrl, version, connec
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Automation Lanes</h3>
+        <h3 className="font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Automation Lanes <InfoTip text={TIPS.automation} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Pick a device knob, draw a movement, and it lands as an automation region on the timeline.</p>
       </div>
       {devices.length === 0 ? <p className="text-sm text-muted-foreground">No devices in this project yet.</p> : (
@@ -67,13 +69,13 @@ export default function AutomationLanePanel({ nexus, projectUrl, version, connec
                 {fields.map((f) => <option key={f.path} value={f.path}>{f.path}</option>)}
               </select>
             </div>
-            <div className="space-y-1"><Label>Shape</Label>
+            <div className="space-y-1"><Label className="flex items-center gap-1.5">Shape <InfoTip text={TIPS.shape} /></Label>
               <select className={sel} value={shape} onChange={(e) => setShape(e.target.value)}>
                 {SHAPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1"><Label>Start bar</Label><Input type="number" min="1" value={startBar} onChange={(e) => setStartBar(Math.max(1, Number(e.target.value) || 1))} /></div>
+              <div className="space-y-1"><Label className="flex items-center gap-1.5">Start bar <InfoTip text={TIPS.startBar} /></Label><Input type="number" min="1" value={startBar} onChange={(e) => setStartBar(Math.max(1, Number(e.target.value) || 1))} /></div>
               <div className="space-y-1"><Label>Length</Label>
                 <select className={sel} value={bars} onChange={(e) => setBars(Number(e.target.value))}>
                   {[1, 2, 4, 8].map((b) => <option key={b} value={b}>{b} bar{b > 1 ? 's' : ''}</option>)}

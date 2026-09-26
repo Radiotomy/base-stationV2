@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { Loader2, Cable } from 'lucide-react';
 import { planChain, buildChain } from '@/lib/audiotool/instrumentChain';
 import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
@@ -26,7 +28,7 @@ export default function InstrumentChainPanel({ at, nexus, projectUrl, onChanged 
   return (
     <section className="rounded-2xl border border-border p-5 space-y-3">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Cable className="w-4 h-4" /> Generate Instrument Chain</h3>
+        <h3 className="font-bold flex items-center gap-2"><Cable className="w-4 h-4" /> Generate Instrument Chain <InfoTip text={TIPS.instrumentChain} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">
           Describe a sound. We match community presets and wire synth → effects → a new mixer channel in your session.
         </p>

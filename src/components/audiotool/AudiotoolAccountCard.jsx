@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { LogOut, ExternalLink, ShieldCheck, Clock } from 'lucide-react';
 import { AUDIOTOOL_SCOPE } from '@/lib/audiotool/nexusClient';
 import { listMyProjects } from '@/lib/audiotool/audiotoolProjects';
@@ -29,7 +31,7 @@ export default function AudiotoolAccountCard({ at, userName, logout }) {
           {name.charAt(0).toUpperCase() || '?'}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs text-muted-foreground">Audiotool account</p>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">Audiotool account <InfoTip text={TIPS.account} side="bottom" /></p>
           <h2 className="text-lg font-bold truncate">{name}</h2>
           <p className="text-xs text-muted-foreground">
             {projects == null ? 'Loading projects…' : `${projects}${projects >= 30 ? '+' : ''} project${projects === 1 ? '' : 's'}`}

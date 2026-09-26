@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Loader2, RefreshCw, Music2, Check } from 'lucide-react';
 import CreateProjectMenu from '@/components/audiotool/CreateProjectMenu';
 import { Button } from '@/components/ui/button';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { listMyProjects, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 
 const when = (ts) => (ts?.seconds ? new Date(Number(ts.seconds) * 1000).toLocaleDateString() : '');
@@ -41,8 +43,9 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-bold">Your Audiotool projects</h3>
-        <div className="flex gap-2">
+        <h3 className="font-bold flex items-center gap-2">Your Audiotool projects <InfoTip text={TIPS.projects} size="sm" side="bottom" /></h3>
+        <div className="flex items-center gap-2">
+          <InfoTip text={TIPS.newProject} size="sm" side="bottom" />
           <Button variant="ghost" size="sm" onClick={load} disabled={!projects}><RefreshCw className="w-3.5 h-3.5" /> Refresh</Button>
           <CreateProjectMenu creating={creating} disabled={busy} onCreate={create} />
         </div>

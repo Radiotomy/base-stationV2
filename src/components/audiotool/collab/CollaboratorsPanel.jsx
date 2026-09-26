@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { Loader2, UserPlus, Users, RefreshCw } from 'lucide-react';
 import useProjectCollaborators from '@/hooks/useProjectCollaborators';
 import { ROLE_TYPES } from '@/lib/audiotool/projectRoles';
@@ -19,7 +21,7 @@ export default function CollaboratorsPanel({ at, projectName }) {
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-bold flex items-center gap-2"><Users className="w-4 h-4" /> Collaborators</h3>
+          <h3 className="font-bold flex items-center gap-2"><Users className="w-4 h-4" /> Collaborators <InfoTip text={TIPS.collaborators} size="sm" side="bottom" /></h3>
           <p className="text-sm text-muted-foreground">Invite Audiotool users to this project. Credited editors appear as contributors when it's published as a track.</p>
         </div>
         <Button size="icon" variant="ghost" onClick={c.reload} disabled={c.loading} aria-label="Refresh">
@@ -29,7 +31,7 @@ export default function CollaboratorsPanel({ at, projectName }) {
       <div className="grid sm:grid-cols-[1fr_auto_auto] gap-2 items-end">
         <div className="space-y-1"><Label>Audiotool username</Label><Input value={user} onChange={(e) => setUser(e.target.value)} placeholder="username" /></div>
         <div className="space-y-1">
-          <Label>Role</Label>
+          <Label className="flex items-center gap-1.5">Role <InfoTip text={TIPS.role} /></Label>
           <select value={roleType} onChange={(e) => setRoleType(Number(e.target.value))} className="h-9 rounded-md border border-input bg-popover px-3 text-sm">
             {ROLE_TYPES.map(([v, l, d]) => <option key={v} value={v} title={d}>{l}</option>)}
           </select>

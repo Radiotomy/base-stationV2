@@ -8,6 +8,8 @@ import useFoundryRemote from '@/hooks/useFoundryRemote';
 import FoundryPatchPicker from './FoundryPatchPicker';
 import NodeLinkRow from './NodeLinkRow';
 import ParamMappingEditor from './ParamMappingEditor';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 export default function FoundryDeviceMapper({ nexus, projectUrl, version }) {
   const [plugin, setPlugin] = useState(null);
@@ -22,7 +24,7 @@ export default function FoundryDeviceMapper({ nexus, projectUrl, version }) {
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Foundry Remote</h3>
+        <h3 className="font-bold flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Foundry Remote <InfoTip text={TIPS.foundryRemote} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">
           Link Foundry modules to Audiotool devices and map their parameters. Turning a knob here moves the matching knob in your live session.
         </p>
@@ -34,7 +36,7 @@ export default function FoundryDeviceMapper({ nexus, projectUrl, version }) {
         <>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm"><Switch checked={r.map.mirror_cables} onCheckedChange={r.setMirror} />
-              <Cable className="w-3.5 h-3.5" /> Mirror patch routing to cables</label>
+              <Cable className="w-3.5 h-3.5" /> Mirror patch routing to cables <InfoTip text={TIPS.mirrorCables} /></label>
             <Button size="sm" variant="ghost" onClick={r.refreshDevices}><RefreshCw className="w-3.5 h-3.5" /> Devices</Button>
             <Button size="sm" variant="outline" onClick={r.sendAll}><Send className="w-3.5 h-3.5" /> Send all values</Button>
             {plugin.user_id && <Button size="sm" variant="outline" onClick={save}><Save className="w-3.5 h-3.5" /> Save to patch</Button>}

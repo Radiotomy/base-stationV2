@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { Loader2, Save, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { updateProject } from '@/lib/audiotool/audiotoolProjects';
@@ -53,7 +55,7 @@ export default function ProjectPropertiesPanel({ at, meta, onSaved }) {
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Project Properties</h3>
+        <h3 className="font-bold flex items-center gap-2"><SlidersHorizontal className="w-4 h-4" /> Project Properties <InfoTip text={TIPS.properties} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Edits save straight to the Audiotool project. Cover art can only be changed inside Audiotool.</p>
       </div>
       <div className="grid sm:grid-cols-2 gap-3">
@@ -62,13 +64,13 @@ export default function ProjectPropertiesPanel({ at, meta, onSaved }) {
         <div className="space-y-1 sm:col-span-2"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={set('description')} /></div>
         <div className="space-y-1"><Label>Tags (comma separated)</Label><Input value={form.tags} onChange={set('tags')} placeholder="lofi, chill" /></div>
         <div className="space-y-1">
-          <Label>License</Label>
+          <Label className="flex items-center gap-1.5">License <InfoTip text={TIPS.license} /></Label>
           <select value={form.license} onChange={set('license')} className="w-full h-9 rounded-md border border-input bg-popover px-3 text-sm">
             {LICENSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
         </div>
-        <label className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-sm">Allow others to copy / remix<Switch checked={form.copyAllowed} onCheckedChange={set('copyAllowed')} /></label>
-        <label className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-sm">Allow download<Switch checked={form.downloadAllowed} onCheckedChange={set('downloadAllowed')} /></label>
+        <label className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-sm"><span className="flex items-center gap-1.5">Allow others to copy / remix <InfoTip text={TIPS.copyAllowed} /></span><Switch checked={form.copyAllowed} onCheckedChange={set('copyAllowed')} /></label>
+        <label className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2 text-sm"><span className="flex items-center gap-1.5">Allow download <InfoTip text={TIPS.downloadAllowed} /></span><Switch checked={form.downloadAllowed} onCheckedChange={set('downloadAllowed')} /></label>
       </div>
       <Button className="merc-button" onClick={save} disabled={saving}>
         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}

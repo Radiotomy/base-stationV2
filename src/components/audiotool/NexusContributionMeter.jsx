@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Activity, Lock } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { readLog, computeContribution, subscribeTelemetry } from '@/lib/audiotool/nexusTelemetry';
 
 const Stat = ({ label, value }) => (
@@ -28,7 +30,7 @@ export default function NexusContributionMeter({ nexus, projectUrl, counts, onCh
   return (
     <section className="rounded-2xl border border-border p-5 space-y-3">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Creative Ownership — live</h3>
+        <h3 className="font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Creative Ownership — live <InfoTip text={TIPS.ownership} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Every AI call made from this bridge is logged. Everything else in the project counts as yours.</p>
       </div>
       {!c ? (

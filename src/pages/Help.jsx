@@ -13,6 +13,7 @@ import PODCAST_HELP_SECTIONS from '@/components/help/podcastHelpSections';
 import FOUNDRY_HELP_SECTIONS from '@/components/help/foundryHelpSections';
 import VENUE_HELP_SECTIONS from '@/components/help/venueHelpSections';
 import ENGINE_HELP_SECTIONS from '@/components/help/engineHelpSections';
+import AUDIOTOOL_HELP_SECTIONS from '@/components/help/audiotoolHelpSections';
 
 const SECTIONS = [
   {
@@ -305,7 +306,7 @@ const SECTIONS = [
         <p>Three ways to publish:</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Submit Track</strong> — enter the public charts and playlists on BaseStation.</li>
-          <li><strong>Publish to Audius</strong> — push to the Audius decentralized network from any finished asset.</li>
+          <li><strong>Publish to Audius</strong> — push to the Audius decentralized network from any finished asset, or straight from an Audiotool export (see the Audiotool and Audius sections below).</li>
           <li><strong>Live Studio</strong> <span className="text-orange-300 font-semibold">(beta-locked — request access)</span> — go live with a co-listening session for your fans, with reactions, chat, tipping, and collectible drops.</li>
           <li><strong>3D Venues</strong> — open a permanent room that plays your music around the clock, with AI staff and a public stage page. See the venue sections below.</li>
         </ul>
@@ -339,6 +340,8 @@ const SECTIONS = [
   ...ENGINE_HELP_SECTIONS,
   // BASE Foundry — DSP tool module, content in its own file
   ...FOUNDRY_HELP_SECTIONS,
+  // Audiotool Bridge + Audius distribution
+  ...AUDIOTOOL_HELP_SECTIONS,
   // 3D venues, idle programming and AI staff
   ...VENUE_HELP_SECTIONS,
   {

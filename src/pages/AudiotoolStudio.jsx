@@ -1,6 +1,8 @@
 import AudiotoolTab from '@/components/audiotool/AudiotoolTab';
 import AudiotoolNextSteps from '@/components/audiotool/AudiotoolNextSteps';
 import BetaGate from '@/components/auth/BetaGate';
+import { Link } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
 
 export default function AudiotoolStudio() {
   return (
@@ -11,6 +13,9 @@ export default function AudiotoolStudio() {
           <p className="text-muted-foreground text-lg">
             Connect Audiotool, open your projects live, and bring their sessions into BASE Station.
           </p>
+          <Link to="/help#audiotool-bridge" className="inline-flex items-center gap-1.5 mt-3 text-sm text-accent hover:underline">
+            <BookOpen className="w-4 h-4" /> How the Bridge works — full guide
+          </Link>
         </div>
       </div>
       <div className="max-w-5xl mx-auto px-6 pb-16">

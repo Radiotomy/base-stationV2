@@ -8,6 +8,8 @@ import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 import { unwrap } from '@/lib/audiotool/nexusErrors';
 import BasslineGrid from './BasslineGrid';
 import TonematrixGrid from './TonematrixGrid';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const KINDS = { bassline: ['Bassline', 'e.g. squelchy acid line in A minor'], tonematrix: ['Tonematrix', 'e.g. twinkly arpeggio, slow rise'] };
 
@@ -40,7 +42,7 @@ export default function PatternSynthPanel({ nexus, projectUrl, connected, onChan
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Piano className="w-4 h-4" /> Pattern Synths</h3>
+        <h3 className="font-bold flex items-center gap-2"><Piano className="w-4 h-4" /> Pattern Synths <InfoTip text={TIPS.synths} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Write a bassline or a Tonematrix melody, edit the grid, then drop it onto a new device in your project.</p>
       </div>
       <div className="flex gap-2">

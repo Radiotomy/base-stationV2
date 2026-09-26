@@ -7,6 +7,8 @@ import { planDrums, buildDrums, emptyPattern } from '@/lib/audiotool/drumPattern
 import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 import { unwrap } from '@/lib/audiotool/nexusErrors';
 import DrumStepGrid from './DrumStepGrid';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 export default function DrumMachinePanel({ nexus, projectUrl, connected, onChanged }) {
   const [prompt, setPrompt] = useState('');
@@ -40,7 +42,7 @@ export default function DrumMachinePanel({ nexus, projectUrl, connected, onChang
   return (
     <section className="rounded-2xl border border-border p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Drum className="w-4 h-4" /> Drum Machine</h3>
+        <h3 className="font-bold flex items-center gap-2"><Drum className="w-4 h-4" /> Drum Machine <InfoTip text={TIPS.drums} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Describe a beat or tap it in, tweak the steps, then drop it onto a Beatbox 8 in your project.</p>
       </div>
       <div className="flex flex-col sm:flex-row gap-2">
@@ -49,6 +51,7 @@ export default function DrumMachinePanel({ nexus, projectUrl, connected, onChang
           className="h-9 rounded-md border border-input bg-popover px-2 text-sm" aria-label="Pattern length">
           <option value={16}>1 bar</option><option value={32}>2 bars</option>
         </select>
+        <InfoTip text={TIPS.drumLength} size="sm" className="self-center" />
         <Button className="merc-button" disabled={!prompt.trim() || !!busy} onClick={generate}>
           {busy === 'gen' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Drum className="w-4 h-4" />} Write beat
         </Button>

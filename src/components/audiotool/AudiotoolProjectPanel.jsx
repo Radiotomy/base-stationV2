@@ -3,6 +3,8 @@ import { freshAccessToken } from '@/lib/audiotool/audiotoolTokens';
 import { readDeepLink, syncAddressBar } from '@/lib/audiotool/deepLinks';
 import { base44 } from '@/api/base44Client';
 import { templateProjectName, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, FolderOpen, RefreshCw, Cpu } from 'lucide-react';
@@ -82,7 +84,7 @@ export default function AudiotoolProjectPanel({ at }) {
   return (
     <section className="merc-card rounded-2xl p-6 space-y-4">
       <AudiotoolProjectList at={at} activeUrl={project.status === 'synced' ? openedUrl : ''} busy={project.status === 'opening'} onOpen={openProject} />
-      <p className="text-xs text-muted-foreground">Or paste a project link from beta.audiotool.com/studio, or a template link from audiotool.com/template (we'll make you a private copy):</p>
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5">Or paste a project link from beta.audiotool.com/studio: <InfoTip text={TIPS.pasteLink} /></p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://beta.audiotool.com/studio?project=…" />
         <Button className="merc-button" disabled={!url.trim() || copying || project.status === 'opening'} onClick={() => openLink(url)}>
@@ -103,6 +105,7 @@ export default function AudiotoolProjectPanel({ at }) {
           )}
           <ProjectPropertiesPanel at={at} meta={projectMeta.meta} onSaved={projectMeta.setMeta} />
           <CollaboratorsPanel at={at} projectName={projectMeta.meta?.name} />
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">Live project counts <InfoTip text={TIPS.counts} /></p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {NEXUS_KINDS.map(([t, label]) => (
               <div key={t} className="rounded-xl bg-secondary/60 px-3 py-2">
@@ -116,6 +119,7 @@ export default function AudiotoolProjectPanel({ at }) {
             {ingest.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Cpu className="w-4 h-4 mr-2" />}
             Send session state to BASE Engines
           </Button>
+          <InfoTip text={TIPS.ingest} size="sm" className="ml-2" />
           {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
           {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />

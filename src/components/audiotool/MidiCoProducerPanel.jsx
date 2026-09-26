@@ -7,6 +7,8 @@ import { listNoteRegions, readNotes, transformNotes, writeRegion, undoRegion, PR
 import { logInvocation, deleteInvocation } from '@/lib/audiotool/nexusTelemetry';
 import { unwrap } from '@/lib/audiotool/nexusErrors';
 import CoProducerHistory from '@/components/audiotool/coproducer/CoProducerHistory';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const sel = 'w-full h-9 rounded-md border border-input bg-popover px-3 text-sm';
 
@@ -60,7 +62,7 @@ export default function MidiCoProducerPanel({ nexus, projectUrl, version, onChan
     <section className="rounded-2xl border border-border p-5 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="font-bold flex items-center gap-2"><Wand2 className="w-4 h-4" /> Nexus Co-Producer</h3>
+          <h3 className="font-bold flex items-center gap-2"><Wand2 className="w-4 h-4" /> Nexus Co-Producer <InfoTip text={TIPS.coProducer} size="sm" side="bottom" /></h3>
           <p className="text-sm text-muted-foreground">Pick a MIDI region, describe the change, and a new version lands on the timeline — undo it any time.</p>
         </div>
         <Button variant="ghost" size="sm" onClick={reload}><RefreshCw className="w-3.5 h-3.5" /></Button>
@@ -80,9 +82,12 @@ export default function MidiCoProducerPanel({ nexus, projectUrl, version, onChan
             ))}
           </div>
           <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={2} placeholder="Make it a syncopated arpeggio up an octave" />
-          <select value={placement} onChange={(e) => setPlacement(e.target.value)} className={sel} aria-label="Where the result goes">
-            {PLACEMENTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+          <div className="flex items-center gap-2">
+            <select value={placement} onChange={(e) => setPlacement(e.target.value)} className={sel} aria-label="Where the result goes">
+              {PLACEMENTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            <InfoTip text={TIPS.placement} size="sm" />
+          </div>
           <Button className="merc-button" onClick={run} disabled={!region || !prompt.trim() || state.loading}>
             {state.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Wand2 className="w-4 h-4 mr-2" />}
             Rework & write to timeline
