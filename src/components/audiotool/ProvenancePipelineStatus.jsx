@@ -21,8 +21,10 @@ function Step({ state, title, detail }) {
   );
 }
 
-export default function ProvenancePipelineStatus({ assetId }) {
-  const { asset, stages } = useProvenancePipeline(assetId);
+// Pass `pipeline` when the parent already polls this asset, to avoid a second poll loop.
+export default function ProvenancePipelineStatus({ assetId, pipeline }) {
+  const own = useProvenancePipeline(pipeline ? null : assetId);
+  const { asset, stages } = pipeline || own;
   const { watermark, sealed, anchor, seal, v2Error } = stages;
   const tx = asset?.chain_tx_hash;
 

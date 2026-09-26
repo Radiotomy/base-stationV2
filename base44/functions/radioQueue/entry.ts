@@ -158,11 +158,40 @@ Deno.serve(async (req) => {
       console.warn('Community tracks:', e.message);
     }
 
-    // ── Interleave Audius + community ───────────────────────────────────────
+    // ── Protected BASE Station exports (watermarked + C2PA-sealed + anchored) ──
+    let protectedTracks = [];
+    try {
+      const wantGenre = genre ? (COMMUNITY_GENRE_MAP[genre] || genre.toLowerCase()) : null;
+      const regs = await base44.asServiceRole.entities.BaseTrackRegistry.filter(
+        { registration_status: 'registered' }, '-registered_at', 60,
+      );
+      const eligible = regs.filter((r) =>
+        r.c2pa_provenance_hash && r.track_url && !r.superseded_by_tx_hash
+        && (!aiOnly || ['ai_generated', 'ai_assisted'].includes(r.ai_label))
+        && (!wantGenre || (r.genre || '').toLowerCase() === wantGenre));
+      protectedTracks = sampleShuffled(eligible, Math.ceil(limit * 0.3)).map((r, i) => ({
+        track_title: r.track_title,
+        artist_name: r.artist_name || 'BASE Station Artist',
+        cover_image_url: r.cover_image_url || '',
+        audio_url: r.track_url,
+        duration_seconds: 0,
+        genre: r.genre || '',
+        ai_label: r.ai_label || null,
+        source: 'community',
+        base_protected: true,
+        transaction_hash: r.transaction_hash,
+        position: i,
+      }));
+    } catch (e) {
+      console.warn('Protected tracks:', e.message);
+    }
+
+    // ── Interleave Audius + community + protected ───────────────────────────
     const queue = [];
-    const maxLen = Math.max(audiusTracks.length, communityTracks.length);
+    const maxLen = Math.max(audiusTracks.length, communityTracks.length, protectedTracks.length);
     for (let i = 0; i < maxLen; i++) {
       if (i < audiusTracks.length) queue.push(audiusTracks[i]);
+      if (i < protectedTracks.length) queue.push(protectedTracks[i]);
       if (i < communityTracks.length) queue.push(communityTracks[i]);
     }
 
@@ -170,6 +199,7 @@ Deno.serve(async (req) => {
       queue: queue.slice(0, limit * 2),
       audius_count: audiusTracks.length,
       community_count: communityTracks.length,
+      protected_count: protectedTracks.length,
     });
   } catch (error) {
     return Response.json({ error: error.message, queue: [] }, { status: 500 });

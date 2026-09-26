@@ -16,6 +16,7 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { signClaim, canonicalJson } from '../../shared/c2paSign.ts';
 import { anchorAssetForOwner } from '../../shared/chainAnchor.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
+import { routeAnchoredExport } from '../../shared/discoveryRouting.ts';
 
 const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 const sha256 = async (data) => hex(await crypto.subtle.digest('SHA-256', data));
@@ -129,7 +130,13 @@ export default async function (req) {
     // 4. Anchor the watermarked file.
     const fresh = await svc.entities.UserAsset.get(assetId);
     const result = await anchorAssetForOwner(base44, fresh, owner, finalUrl);
+    // Anchored → publish into BASE Station's own charts, playlists and radio.
+    // Never fatal: the anchor is already permanent.
+    const discovery = result.ok
+      ? await routeAnchoredExport(svc, fresh, result).catch((e) => ({ routed: false, error: e.message }))
+      : null;
     return Response.json({
+      discovery,
       status: result.ok ? 'anchored' : 'anchor_failed',
       c2pa_provenance_hash: c2paHash,
       fingerprint_matches_watermarked_audio: result.fingerprint === finalHash,

@@ -1,4 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import useProvenancePipeline from '@/hooks/useProvenancePipeline';
+import DistributeToAudiusPanel from '@/components/audiotool/DistributeToAudiusPanel';
 import AudiotoolAudioPicker from '@/components/audiotool/AudiotoolAudioPicker';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
@@ -9,11 +11,17 @@ import { protectExport } from '@/lib/audiotool/protectExport';
 import AutoAnchorToggle from '@/components/blockchain/AutoAnchorToggle';
 import ProvenancePipelineStatus from '@/components/audiotool/ProvenancePipelineStatus';
 
-export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry }) {
+export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, project }) {
   const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [state, setState] = useState({ loading: false, error: '', asset: null });
+  const pipeline = useProvenancePipeline(state.asset?.id);
+
+  // Default the release title to the Audiotool project's name.
+  useEffect(() => {
+    if (project?.title) setTitle((t) => t || project.title);
+  }, [project?.title]);
 
   const onPicked = useCallback((picked, name) => {
     setFile(picked);
@@ -23,7 +31,10 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry })
   const run = async () => {
     setState({ loading: true, error: '', asset: null });
     try {
-      const res = await protectExport({ file, title, projectUrl, contribution: telemetry.contribution });
+      const res = await protectExport({
+        file, title, projectUrl, contribution: telemetry.contribution,
+        session: { project_title: project?.title, cover_url: project?.image, bpm: project?.bpm },
+      });
       setState({ loading: false, error: '', asset: res.asset, anchoring: res.anchoring });
     } catch (e) {
       setState({ loading: false, error: e?.response?.data?.error || e.message, asset: null });
@@ -55,7 +66,8 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry })
           <p className="text-emerald-300">
             "{state.asset.title}" saved with an ownership score of {state.asset.human_participation_score}.
           </p>
-          <ProvenancePipelineStatus assetId={state.asset.id} />
+          <ProvenancePipelineStatus pipeline={pipeline} />
+          {pipeline.asset && <DistributeToAudiusPanel asset={pipeline.asset} stages={pipeline.stages} />}
           <p className="text-muted-foreground">
             Download the protected file from your <Link to="/asset-gallery" className="underline">library</Link> once it's marked,
             and see its chain record in <Link to="/creator-dashboard?tab=proof" className="underline">Proof of Ownership</Link>.

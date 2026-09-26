@@ -13,6 +13,7 @@ import FoundryDeviceMapper from '@/components/audiotool/foundry/FoundryDeviceMap
 import AudienceCoopPanel from '@/components/audiotool/coop/AudienceCoopPanel';
 import AudiotoolProjectList from '@/components/audiotool/AudiotoolProjectList';
 import ActiveProjectHeader from '@/components/audiotool/ActiveProjectHeader';
+import useAudiotoolProjectMeta from '@/hooks/useAudiotoolProjectMeta';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -20,6 +21,7 @@ export default function AudiotoolProjectPanel({ at }) {
   const [ingest, setIngest] = useState({ loading: false, error: '', summary: null });
   const [openedUrl, setOpenedUrl] = useState('');
   const [telemetry, setTelemetry] = useState(null);
+  const projectMeta = useAudiotoolProjectMeta(at, project.status === 'synced' ? openedUrl : '');
 
   const openProject = (link) => {
     setUrl(link.trim());
@@ -54,7 +56,7 @@ export default function AudiotoolProjectPanel({ at }) {
 
       {project.status === 'synced' && (
         <>
-          <ActiveProjectHeader at={at} projectUrl={openedUrl} onRefresh={project.refresh} />
+          <ActiveProjectHeader projectUrl={openedUrl} project={projectMeta} onRefresh={project.refresh} />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {NEXUS_KINDS.map(([t, label]) => (
               <div key={t} className="rounded-xl bg-secondary/60 px-3 py-2">
@@ -74,7 +76,7 @@ export default function AudiotoolProjectPanel({ at }) {
           <SongstarterModule at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
           <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.counts} />
           <AudienceCoopPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
-          <ProtectExportPanel at={at} nexus={project.nexus} projectUrl={openedUrl} telemetry={telemetry} />
+          <ProtectExportPanel at={at} nexus={project.nexus} projectUrl={openedUrl} telemetry={telemetry} project={projectMeta} />
         </>
       )}
     </section>

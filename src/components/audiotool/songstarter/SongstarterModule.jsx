@@ -8,6 +8,7 @@ import { BridgeSessionContext } from './BridgeSessionContext';
 import SendToAudiotoolButton from './SendToAudiotoolButton';
 import ForgeLoopGenerator from './ForgeLoopGenerator';
 import SfxGenerator from './SfxGenerator';
+import AudiusContestsTab from '@/components/audiotool/contests/AudiusContestsTab';
 
 // Library loops that were themselves AI-generated are logged as AI material,
 // so the Creative Ownership meter doesn't count them as human-made.
@@ -25,6 +26,7 @@ const freesoundSend = (r) => (
 const TABS = [
   ['chain', 'Instrument Chain'], ['forge', 'BASE Forge Loops'], ['sfx', 'Sound FX'],
   ['search', 'Search by Sound'], ['free', 'Discover Free Loops'], ['community', 'Community Library'],
+  ['contests', 'Audius Contests'],
 ];
 
 export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) {
@@ -47,6 +49,7 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
           <TabsContent value="search"><SemanticLoopSearch renderExtra={librarySend} /></TabsContent>
           <TabsContent value="free"><LoopDiscoverTab renderExtra={freesoundSend} /></TabsContent>
           <TabsContent value="community"><CommunityLoopsTab renderExtra={librarySend} /></TabsContent>
+          <TabsContent value="contests"><AudiusContestsTab /></TabsContent>
         </Tabs>
       </section>
     </BridgeSessionContext.Provider>

@@ -22,13 +22,39 @@ const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).p
 const sha256 = async (data) => hex(await crypto.subtle.digest('SHA-256', data));
 const n = (v) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.floor(Number(v)) : 0);
 
+// The Audiotool project snapshot becomes the track artwork (Audius requires
+// cover art, and charts/radio/playlists display it). Rehosted so it outlives
+// the Audiotool CDN link; every redirect hop is re-validated against SSRF.
+async function rehostSnapshot(base44, raw) {
+  if (!raw) return '';
+  try {
+    let url = assertSafeUrl(raw);
+    let r = await fetch(url, { redirect: 'manual' });
+    for (let hops = 0; r.status >= 300 && r.status < 400 && hops < 3; hops++) {
+      url = assertSafeUrl(new URL(r.headers.get('location') || '', url).toString());
+      r = await fetch(url, { redirect: 'manual' });
+    }
+    const type = r.headers.get('content-type') || '';
+    if (!r.ok || !type.startsWith('image/')) return '';
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > 8_000_000) return '';
+    const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg';
+    const { file_url } = await base44.integrations.Core.UploadFile({
+      file: new File([buf], `audiotool-snapshot.${ext}`, { type }),
+    });
+    return file_url || '';
+  } catch {
+    return '';
+  }
+}
+
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { file_url, title, project_url, contribution = {} } = await req.json();
+    const { file_url, title, project_url, contribution = {}, session = {} } = await req.json();
     if (!file_url || !title?.trim() || !project_url) {
       return Response.json({ error: 'file_url, title and project_url are required' }, { status: 400 });
     }
@@ -87,8 +113,14 @@ export default async function (req) {
       },
     };
 
+    // Session metadata (display only — never part of the score).
+    const bpm = Number(session.bpm);
+    const sessionBpm = Number.isFinite(bpm) && bpm >= 20 && bpm <= 400 ? Math.round(bpm * 100) / 100 : undefined;
+    const coverUrl = await rehostSnapshot(base44, session.cover_url);
+
     // 3. Creating the asset starts BASE Mark; sealing + anchoring follow it.
     const asset = await base44.entities.UserAsset.create({
+      ...(coverUrl ? { thumbnail_url: coverUrl } : {}),
       user_id: user.id,
       user_email: user.email,
       asset_type: 'track',
@@ -106,6 +138,8 @@ export default async function (req) {
       metadata: {
         source: 'audiotool_bridge',
         audiotool_project: project_url,
+        audiotool_project_title: String(session.project_title || '').slice(0, 120) || undefined,
+        bpm: sessionBpm,
         cos_engine: cos.engine,
         cos_confidence: cos.confidence,
         raw_export_sha256: rawHash,

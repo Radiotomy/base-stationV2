@@ -117,6 +117,45 @@ Deno.serve(async (req) => {
           }
         });
       }
+      // Active Audius remix contests with their downloadable stems. Stems are
+      // themselves Audius tracks; /tracks/{stemId}/download resolves to the
+      // original (lossless) upload.
+      case 'getRemixContests': {
+        const ev = await audiusGet('/events/all', { event_type: 'remix_contest', limit: Math.min(Number(payload.limit) || 12, 25) });
+        const now = Date.now();
+        const entryCounts = ev?.related?.entry_counts || {};
+        const active = (ev?.data || []).filter((e) =>
+          !e.is_deleted && e.entity_type === 'track' && e.entity_id
+          && (!e.end_date || new Date(e.end_date).getTime() > now));
+        const contests = await Promise.all(active.map(async (e) => {
+          const [track, stems] = await Promise.all([
+            audiusGet(`/tracks/${e.entity_id}`).then((r) => r?.data || null).catch(() => null),
+            audiusGet(`/tracks/${e.entity_id}/stems`).then((r) => r?.data || []).catch(() => []),
+          ]);
+          return {
+            event_id: e.event_id,
+            title: e.event_data?.title || track?.title || 'Remix contest',
+            description: e.event_data?.description || '',
+            prize_info: e.event_data?.prize_info || '',
+            cover_url: e.event_data?.cover_photo_url || track?.artwork?.['480x480'] || '',
+            end_date: e.end_date,
+            entry_count: entryCounts[e.entity_id] || 0,
+            track: track ? {
+              id: track.id, title: track.title, bpm: track.bpm || null, musical_key: track.musical_key || null,
+              artist: track.user?.name || track.user?.handle || 'Audius artist',
+              permalink: track.permalink ? `https://audius.co${track.permalink}` : null,
+            } : null,
+            stems: stems.map((s) => ({
+              id: s.id,
+              name: (s.orig_filename || `Stem ${s.id}`).replace(/\.[a-z0-9]{2,4}$/i, ''),
+              filename: s.orig_filename || '',
+              category: s.category || 'OTHER',
+              download_url: `${MANAGED_GATEWAY}/tracks/${s.id}/download?app_name=${APP_NAME}`,
+            })),
+          };
+        }));
+        return Response.json({ data: contests.filter((c) => c.stems.length > 0) });
+      }
       case 'getCreatorGraph': {
         if (!payload.userId) throw new Error('userId required');
         const [tracks, profile] = await Promise.all([
