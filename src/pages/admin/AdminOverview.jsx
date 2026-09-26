@@ -26,31 +26,13 @@ export default function AdminOverview() {
   const [recentTracks, setRecentTracks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Counts are sampled up to PAGE rows. Anything that fills the page is shown
-  // as "N+" rather than silently reporting a wrong total.
-  const PAGE = 1000;
-  const count = (rows) => (rows.length >= PAGE ? `${PAGE}+` : rows.length);
-
+  // Exact totals are counted server-side across every record — no sampling.
   useEffect(() => {
     Promise.all([
-      base44.entities.TrackSubmission.list("-created_date", PAGE),
-      base44.entities.ArtistProfile.list("-created_date", PAGE),
-      base44.entities.Challenge.list("-created_date", PAGE),
-      base44.entities.FeaturedArtistApplication.filter({ status: "pending" }),
-      base44.entities.SolanaTrackRegistry.list("-created_date", PAGE),
+      base44.functions.invoke("adminPlatformStats", {}),
       base44.entities.TrackSubmission.list("-created_date", 5),
-      base44.entities.OrvoReport.filter({ status: "open" }).catch(() => []),
-    ]).then(([tracks, artists, challenges, pendingApps, solana, recent, openReports]) => {
-      setStats({
-        totalTracks: count(tracks),
-        pendingTracks: tracks.filter(t => t.status === "pending").length,
-        approvedTracks: tracks.filter(t => t.status === "approved").length,
-        totalArtists: count(artists),
-        activeChallenges: challenges.filter(c => c.status === "active").length,
-        pendingApps: pendingApps.length,
-        solanaRegistrations: count(solana),
-        openReports: openReports.length,
-      });
+    ]).then(([res, recent]) => {
+      setStats(res.data);
       setRecentTracks(recent);
       setLoading(false);
     });

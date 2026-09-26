@@ -111,6 +111,16 @@ export default function HarmonixMastersPanel({ onApply, fallbackTopic = '' }) {
         {running ? 'Masters are writing…' : 'Write with 243 Masters'}
         {!running && <CostBadge cost={3} />}
       </Button>
+      {running && (
+        <p className="text-[11px] text-amber-300/80">
+          Writing a full song takes about 30–60 seconds — keep this page open.
+        </p>
+      )}
+      {!running && brief && (
+        <p className="text-[11px] text-emerald-300">
+          Applied: lyrics, track description{brief.bpm ? ', BPM' : ''}{brief.title ? ' and title' : ''} were filled in below.
+        </p>
+      )}
       {!effectiveTopic && (
         <p className="text-[11px] text-amber-300/80">
           Add a topic above — or describe your track in "Describe Your Track" — to unlock the Masters engine.

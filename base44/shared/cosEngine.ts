@@ -19,6 +19,10 @@ export const SIGNAL_REGISTRY = {
   // Designing a DSP chain by hand is production work the creator actually did,
   // so a baked Foundry patch RAISES the score rather than being ignored.
   human_dsp_design:    { points: 10, dimension: 'craft_refinement',   label: 'Own DSP chain designed in BASE Foundry' },
+  // A recording a person performed end to end (a hosted podcast, a live take)
+  // has no generation prompt to score. Without this signal such work capped out
+  // around 50–65 and read as "low humanity" even though no AI touched it.
+  human_recording:     { points: 65, dimension: 'content_authorship', label: 'Whole recording performed by a person (no generative AI)' },
 };
 
 export const DIMENSION_LABELS = {
@@ -37,7 +41,7 @@ const MUSICAL_TERMS = /\b(bpm|tempo|key of|major|minor|verse|chorus|bridge|hook|
 const TELEMETRY_FIELDS = [
   'prompt', 'userProvidedContent', 'styleOrTags', 'referenceFile',
   'personaOrTemplate', 'isIteration', 'humanInstrumentPerformance', 'humanDspDesign',
-  'hasSyntheticVocals', 'isAutomatedMaster',
+  'hasSyntheticVocals', 'isAutomatedMaster', 'fullyHumanRecording',
 ];
 
 export function calculateHumanParticipationScore(inputs = {}) {
@@ -70,6 +74,13 @@ export function calculateHumanParticipationScore(inputs = {}) {
   if (inputs.humanInstrumentPerformance) grant('human_performance');
   if (inputs.humanDspDesign) grant('human_dsp_design');
 
+  // Only a recording with no synthetic voice anywhere in it qualifies.
+  const wholeHuman = !!inputs.fullyHumanRecording && !inputs.hasSyntheticVocals;
+  if (wholeHuman) {
+    grant('user_content');
+    grant('human_recording');
+  }
+
   const raw = Object.values(signals).reduce((a, b) => a + b, 0);
   const score = Math.min(100, raw);
 
@@ -83,7 +94,7 @@ export function calculateHumanParticipationScore(inputs = {}) {
     signals,
     dimensions,
     confidence, // % of creative-process telemetry actually observed
-    label: score >= 40 ? 'ai_assisted' : 'ai_generated',
+    label: wholeHuman ? 'human' : score >= 40 ? 'ai_assisted' : 'ai_generated',
     basis: buildBasisText(signals, confidence),
     ddex: mapTelemetryToDdex(inputs, score),
   };

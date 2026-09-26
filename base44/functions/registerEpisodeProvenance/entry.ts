@@ -156,6 +156,8 @@ export default async function (req) {
       hasSyntheticVocals: aiVoiceUsed,
       isIteration: (recordings || []).length > 1,
       isAutomatedMaster: false,
+      // A human-hosted show with no synthetic voice is a fully human recording.
+      fullyHumanRecording: humanAuthored && !aiVoiceUsed,
     });
 
     // Label resolution — never infer AI authorship from missing telemetry.
