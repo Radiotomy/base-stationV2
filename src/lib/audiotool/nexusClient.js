@@ -11,7 +11,8 @@ import { ensureBrowserWasmLoader } from '@/lib/audiotool/nexusWasm';
 
 export const AUDIOTOOL_APP_ORIGIN = 'https://basestation.live';
 export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/audiotool-callback';
-export const AUDIOTOOL_SCOPE = 'project:write';
+// sample:write is required by SampleService.createSample (sending loops to the timeline).
+export const AUDIOTOOL_SCOPE = 'project:write sample:write';
 const RETURN_KEY = 'audiotool_return_to';
 
 let configPromise = null;
