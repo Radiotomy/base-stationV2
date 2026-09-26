@@ -39,7 +39,7 @@ async function rehostSnapshot(base44, raw) {
     const buf = await r.arrayBuffer();
     if (buf.byteLength > 8_000_000) return '';
     const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg';
-    const { file_url } = await base44.integrations.Core.UploadFile({
+    const { file_url } = await base44.integrations.Core.UploadPublicFile({
       file: new File([buf], `audiotool-snapshot.${ext}`, { type }),
     });
     return file_url || '';

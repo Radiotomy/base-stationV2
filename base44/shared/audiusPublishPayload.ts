@@ -61,6 +61,10 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
   // track does not need.
   const isrc = normalizeIsrc(asset.metadata?.isrc);
 
+  // Tempo carried from the source session (e.g. the Audiotool project BPM).
+  const rawBpm = Number(asset.metadata?.bpm);
+  const bpm = Number.isFinite(rawBpm) && rawBpm >= 20 && rawBpm <= 400 ? Math.round(rawBpm * 100) / 100 : undefined;
+
   return {
     fileUrl: publishFileUrl,
     coverUrl: cover.url,
@@ -77,6 +81,7 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
       mood: normalizeAudiusMood(asset.metadata?.mood),
       tags,
       isrc,
+      ...(bpm ? { bpm, isCustomBpm: true } : {}),
     },
   };
 }
