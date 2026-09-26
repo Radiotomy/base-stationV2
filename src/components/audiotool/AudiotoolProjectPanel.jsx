@@ -15,6 +15,7 @@ import AudiotoolProjectList from '@/components/audiotool/AudiotoolProjectList';
 import ActiveProjectHeader from '@/components/audiotool/ActiveProjectHeader';
 import useAudiotoolProjectMeta from '@/hooks/useAudiotoolProjectMeta';
 import ProjectPropertiesPanel from '@/components/audiotool/ProjectPropertiesPanel';
+import CollaboratorsPanel from '@/components/audiotool/collab/CollaboratorsPanel';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -59,6 +60,7 @@ export default function AudiotoolProjectPanel({ at }) {
         <>
           <ActiveProjectHeader projectUrl={openedUrl} project={projectMeta} onRefresh={project.refresh} />
           <ProjectPropertiesPanel at={at} meta={projectMeta.meta} onSaved={projectMeta.setMeta} />
+          <CollaboratorsPanel at={at} projectName={projectMeta.meta?.name} />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {NEXUS_KINDS.map(([t, label]) => (
               <div key={t} className="rounded-xl bg-secondary/60 px-3 py-2">
