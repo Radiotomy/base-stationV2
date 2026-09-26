@@ -3,7 +3,7 @@
 // range that the Foundry parameter range is scaled onto.
 import { CHAIN_INSTRUMENTS, CHAIN_EFFECTS } from '@/lib/audiotool/instrumentChain';
 
-const DEVICE_TYPES = [...CHAIN_INSTRUMENTS, 'beatbox8', ...CHAIN_EFFECTS];
+const DEVICE_TYPES = [...CHAIN_INSTRUMENTS, 'beatbox8', 'bassline', 'tonematrix', ...CHAIN_EFFECTS];
 const SKIP = /^(positionX|positionY)$/;
 
 export function listDevices(nexus) {

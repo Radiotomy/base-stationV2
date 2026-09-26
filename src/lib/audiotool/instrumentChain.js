@@ -8,6 +8,8 @@ export const CHAIN_EFFECTS = [
   'stompboxChorus', 'stompboxCompressor', 'stompboxCrusher', 'stompboxDelay', 'stompboxFlanger',
   'stompboxPhaser', 'stompboxReverb', 'stompboxTube', 'stompboxStereoDetune', 'autoFilter',
   'curve', 'quasar', 'pulsar', 'exciter', 'stereoEnhancer', 'gravity',
+  'stompboxGate', 'stompboxParametricEqualizer', 'stompboxPitchDelay', 'stompboxSlope',
+  'graphicalEQ', 'helmholtz', 'panorama', 'ringModulator', 'tinyGain', 'waveshaper', 'quantum',
 ];
 
 const spec = (devices) => ({
