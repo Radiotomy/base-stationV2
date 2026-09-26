@@ -1,13 +1,15 @@
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import CopyLinkButton from './CopyLinkButton';
 
-export default function ExplorerTrackRow({ track, disabled, onToggle }) {
+export default function ExplorerTrackRow({ track, disabled, onToggle, highlighted, onCopyLink }) {
   const enabled = track.entity.fields.isEnabled;
   return (
-    <div className="rounded-xl bg-secondary/60 px-3 py-2 space-y-1.5">
+    <div id={`nexus-${track.id}`} className={`rounded-xl bg-secondary/60 px-3 py-2 space-y-1.5 ${highlighted ? 'ring-1 ring-accent' : ''}`}>
       <div className="flex items-center gap-2">
         <Badge variant="outline" className="text-[10px]">{track.kind}</Badge>
         <span className="text-sm font-medium truncate flex-1">{track.name}</span>
+        <CopyLinkButton onClick={onCopyLink} />
         {enabled && (
           <Switch checked={enabled.value} disabled={disabled} onCheckedChange={(v) => onToggle(enabled, v)}
             aria-label={enabled.value ? 'Disable track' : 'Enable track'} />

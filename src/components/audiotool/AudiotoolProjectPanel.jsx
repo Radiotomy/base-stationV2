@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { freshAccessToken } from '@/lib/audiotool/audiotoolTokens';
+import { readDeepLink, syncAddressBar } from '@/lib/audiotool/deepLinks';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,17 +31,27 @@ export default function AudiotoolProjectPanel({ at }) {
   const [telemetry, setTelemetry] = useState(null);
   const projectMeta = useAudiotoolProjectMeta(at, project.status === 'synced' ? openedUrl : '');
 
+  const [focus] = useState(() => readDeepLink().focus);
+
   const openProject = (link) => {
     setUrl(link.trim());
     setOpenedUrl(link.trim());
     setIngest({ loading: false, error: '', summary: null });
+    syncAddressBar(link.trim());
     project.open(link);
   };
+
+  // A deep link (?open=…) opens its project as soon as the Bridge loads.
+  useEffect(() => {
+    const { open } = readDeepLink();
+    if (open) openProject(open);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendToEngines = async () => {
     setIngest({ loading: true, error: '', summary: null });
     try {
-      const { accessToken } = at.exportTokens();
+      // The bridge job can outlive a nearly-expired key, so renew it first.
+      const accessToken = await freshAccessToken(at);
       const { data } = await base44.functions.invoke('audiotoolIngestState', { project: url.trim(), access_token: accessToken });
       setIngest({ loading: false, error: '', summary: data });
     } catch (e) {
@@ -78,7 +90,7 @@ export default function AudiotoolProjectPanel({ at }) {
               </div>
             ))}
           </div>
-          <SessionExplorerPanel nexus={project.nexus} version={project.version} connected={project.connected} onChanged={project.refresh} />
+          <SessionExplorerPanel nexus={project.nexus} projectUrl={openedUrl} focus={focus} version={project.version} connected={project.connected} onChanged={project.refresh} />
           <Button variant="outline" onClick={sendToEngines} disabled={ingest.loading}>
             {ingest.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Cpu className="w-4 h-4 mr-2" />}
             Send session state to BASE Engines
