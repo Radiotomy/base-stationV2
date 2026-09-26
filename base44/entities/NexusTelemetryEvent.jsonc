@@ -18,9 +18,10 @@
         "instrument_chain",
         "songstarter_loop",
         "songstarter_sfx",
-        "library_ai_sample"
+        "library_ai_sample",
+        "drum_generator"
       ],
-      "description": "Which bridge AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library loop sent to the timeline."
+      "description": "Which bridge AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library loop sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern. A pattern the creator tapped in by hand is never logged here, so it counts as human."
     },
     "prompt": {
       "type": "string",
