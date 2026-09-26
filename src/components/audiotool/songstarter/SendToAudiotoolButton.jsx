@@ -7,7 +7,7 @@ import { loadAsWavFile } from '@/lib/audiotool/localAudio';
 import { sendToAudiotool } from '@/lib/audiotool/sendToAudiotool';
 
 /** Pass `getFile` when a local WAV is already loaded; otherwise `url` is fetched and converted. */
-export default function SendToAudiotoolButton({ url, getFile, name, bpm, aiTool, prompt, label = 'Send to Audiotool', className = '' }) {
+export default function SendToAudiotoolButton({ url, getFile, name, bpm, aiTool, prompt, onSent, label = 'Send to Audiotool', className = '' }) {
   const session = useBridgeSession();
   const [state, setState] = useState('idle');
   if (!session?.nexus) return null;
@@ -19,6 +19,7 @@ export default function SendToAudiotoolButton({ url, getFile, name, bpm, aiTool,
       const { bar } = await sendToAudiotool({ ...session, file, name, bpm, aiTool, prompt });
       toast.success(`"${name}" placed on your Audiotool timeline at bar ${bar}.`);
       setState('sent');
+      onSent?.(session);
       session.onChanged?.();
     } catch (e) {
       toast.error(`Couldn't send to Audiotool: ${e.message}`);

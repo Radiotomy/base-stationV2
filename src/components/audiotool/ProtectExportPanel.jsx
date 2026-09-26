@@ -10,6 +10,8 @@ import { Loader2, ShieldCheck } from 'lucide-react';
 import { protectExport } from '@/lib/audiotool/protectExport';
 import AutoAnchorToggle from '@/components/blockchain/AutoAnchorToggle';
 import ProvenancePipelineStatus from '@/components/audiotool/ProvenancePipelineStatus';
+import ContestEntryNotice from '@/components/audiotool/contests/ContestEntryNotice';
+import { getContest } from '@/lib/audiotool/contestEntry';
 
 export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, project }) {
   const { user } = useAuth();
@@ -17,6 +19,9 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
   const [title, setTitle] = useState('');
   const [state, setState] = useState({ loading: false, error: '', asset: null });
   const pipeline = useProvenancePipeline(state.asset?.id);
+  const [contest, setContest] = useState(null);
+  const [enterContest, setEnterContest] = useState(true);
+  useEffect(() => { setContest(getContest(projectUrl)); }, [projectUrl, state.loading]);
 
   // Default the release title to the Audiotool project's name.
   useEffect(() => {
@@ -33,7 +38,12 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
     try {
       const res = await protectExport({
         file, title, projectUrl, contribution: telemetry.contribution,
-        session: { project_title: project?.title, cover_url: project?.image, bpm: project?.bpm },
+        session: {
+          project_title: project?.title, cover_url: project?.image, bpm: project?.bpm,
+          tags: project?.meta?.tags || [], license: project?.meta?.license,
+          download_allowed: !!project?.meta?.downloadAllowed,
+          contest: contest && enterContest ? contest : undefined,
+        },
       });
       setState({ loading: false, error: '', asset: res.asset, anchoring: res.anchoring });
     } catch (e) {
@@ -51,6 +61,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
         </p>
       </div>
       {user && <AutoAnchorToggle user={user} />}
+      <ContestEntryNotice contest={contest} enabled={enterContest} onToggle={setEnterContest} />
       <AudiotoolAudioPicker at={at} nexus={nexus} onPicked={onPicked} />
       {file && <p className="text-xs text-emerald-300">Ready: {file.name}</p>}
       <Input placeholder="Track title" value={title} onChange={(e) => setTitle(e.target.value)} />

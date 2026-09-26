@@ -11,6 +11,13 @@
 // asset — guarded by metadata.discovery_routing.
 
 const CHART_GENRES = ['hip-hop', 'edm', 'pop', 'r&b', 'rock', 'lo-fi', 'jazz', 'classical', 'trap', 'other'];
+// Audius genre names (what Bridge exports store) → our chart genres.
+const AUDIUS_TO_CHART = {
+  'hip-hop/rap': 'hip-hop', 'r&b/soul': 'r&b', electronic: 'edm', house: 'edm', techno: 'edm',
+  'tech house': 'edm', 'deep house': 'edm', dubstep: 'edm', trance: 'edm', 'drum & bass': 'edm',
+  'future bass': 'edm', 'progressive house': 'edm', hardstyle: 'edm', electro: 'edm',
+  metal: 'rock', alternative: 'rock', punk: 'rock',
+};
 const CHART_LABELS = ['ai_generated', 'ai_assisted', 'human'];
 const PERIODS = ['weekly', 'monthly', 'all-time'];
 export const BRIDGE_PLAYLIST_TITLE = 'Fresh from the Audiotool Bridge';
@@ -24,7 +31,7 @@ export async function routeAnchoredExport(svc, asset, { registry_id, transaction
   }
 
   const g = String(asset.metadata?.genre || '').toLowerCase();
-  const genre = CHART_GENRES.includes(g) ? g : 'other';
+  const genre = CHART_GENRES.includes(g) ? g : (AUDIUS_TO_CHART[g] || 'other');
   const label = CHART_LABELS.includes(asset.ai_label) ? asset.ai_label : undefined;
   const profile = (await svc.entities.ArtistProfile.filter({ user_id: asset.user_id }, '-created_date', 1).catch(() => []))[0];
   const verify = `Protected on BASE Station · anchored on Base: https://basescan.org/tx/${transaction_hash}`;

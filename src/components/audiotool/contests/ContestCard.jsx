@@ -2,10 +2,20 @@ import { useState } from 'react';
 import { ChevronDown, ExternalLink, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SendToAudiotoolButton from '@/components/audiotool/songstarter/SendToAudiotoolButton';
+import { rememberContest } from '@/lib/audiotool/contestEntry';
 
 export default function ContestCard({ contest }) {
   const [open, setOpen] = useState(false);
   const { track } = contest;
+  // Sending a stem ties this project to the contest, so the finished export is
+  // entered as a remix of the contest track when it's distributed to Audius.
+  const linkContest = (session) => track?.id && rememberContest(session.projectUrl, {
+    parent_track_id: track.id,
+    event_id: contest.event_id,
+    contest_title: contest.title,
+    parent_artist: track.artist,
+    end_date: contest.end_date,
+  });
   const ends = contest.end_date ? new Date(contest.end_date).toLocaleDateString() : null;
 
   return (
@@ -39,7 +49,7 @@ export default function ContestCard({ contest }) {
           {contest.stems.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-2 rounded-lg bg-secondary/50 px-3 py-2">
               <span className="text-sm truncate">{s.name}</span>
-              <SendToAudiotoolButton url={s.download_url} name={`${s.name} (${contest.title})`} label="Remix in Audiotool" />
+              <SendToAudiotoolButton url={s.download_url} name={`${s.name} (${contest.title})`} label="Remix in Audiotool" onSent={linkContest} />
             </li>
           ))}
         </ul>

@@ -17,6 +17,25 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { calculateHumanParticipationScore, COS_ENGINE_VERSION } from '../../shared/cosEngine.ts';
 import { assertSafeUrl } from '../../shared/safeUrl.ts';
+import { normalizeAudiusGenre } from '../../shared/audiusMetadata.ts';
+
+// Audiotool TrackLicense enum → Audius license string. Unmapped values are
+// omitted rather than guessed, so a release never claims a looser license.
+const AUDIUS_LICENSE = { 4: 'All rights reserved', 2: 'Attribution CC BY', 3: 'Attribution-NonCommercial CC BY-NC' };
+
+// The Audius remix contest this export is entered in, if any. Only ids are
+// kept; the contest track is re-read on Audius when the remix is registered.
+function contestEntry(c) {
+  const id = String(c?.parent_track_id || '');
+  if (!/^[A-Za-z0-9]{1,24}$/.test(id)) return undefined;
+  const s = (v, max) => String(v || '').slice(0, max) || undefined;
+  return {
+    parent_track_id: id,
+    event_id: s(c.event_id, 40),
+    contest_title: s(c.contest_title, 160),
+    parent_artist: s(c.parent_artist, 120),
+  };
+}
 
 const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
 const sha256 = async (data) => hex(await crypto.subtle.digest('SHA-256', data));
@@ -87,9 +106,11 @@ export default async function (req) {
     });
     // No AI observed through the bridge is not proof of a human-only recording.
     const label = log.length ? cos.label : 'unverified';
-    const basis = log.length
+    const remixOf = contestEntry(session.contest);
+    const basis = (log.length
       ? `${cos.basis} Audiotool session: ${c.humanShare ?? 0}% of notes/devices human-made, ${log.length} AI invocation(s) logged.`
-      : 'No AI invocations were recorded through the Audiotool Bridge for this project.';
+      : 'No AI invocations were recorded through the Audiotool Bridge for this project.')
+      + (remixOf ? ` Remix entry: includes contest stems by ${remixOf.parent_artist || 'the contest host'} (third-party material, not scored as the creator's own).` : '');
 
     // Raw export hash — recorded as the manifest's parent ingredient, never anchored.
     const dl = await fetch(assertSafeUrl(file_url));
@@ -117,6 +138,9 @@ export default async function (req) {
     const bpm = Number(session.bpm);
     const sessionBpm = Number.isFinite(bpm) && bpm >= 20 && bpm <= 400 ? Math.round(bpm * 100) / 100 : undefined;
     const coverUrl = await rehostSnapshot(base44, session.cover_url);
+    const projectTags = (Array.isArray(session.tags) ? session.tags : []).map((t) => String(t).slice(0, 40)).slice(0, 10);
+    const genre = normalizeAudiusGenre(projectTags.join(', '), '') || undefined;
+    const license = AUDIUS_LICENSE[Number(session.license)];
 
     // 3. Creating the asset starts BASE Mark; sealing + anchoring follow it.
     const asset = await base44.entities.UserAsset.create({
@@ -134,9 +158,14 @@ export default async function (req) {
       participation_signals: cos.signals,
       ddex_ai_metadata: cos.ddex,
       chain_status: 'awaiting_mark',
-      tags: ['audiotool'],
+      tags: ['audiotool', ...(remixOf ? ['remix', 'remix-contest'] : [])],
       metadata: {
         source: 'audiotool_bridge',
+        genre,
+        license,
+        downloadable: !!session.download_allowed,
+        audiotool_tags: projectTags,
+        audius_remix_of: remixOf,
         audiotool_project: project_url,
         audiotool_project_title: String(session.project_title || '').slice(0, 120) || undefined,
         bpm: sessionBpm,

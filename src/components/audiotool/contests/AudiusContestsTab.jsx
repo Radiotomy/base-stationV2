@@ -18,7 +18,7 @@ export default function AudiusContestsTab() {
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        Stems are provided by the contest host for remixing. Enter your finished remix on Audius before the deadline.
+        Stems are provided by the contest host for remixing. Once you send a stem, your finished export is entered as a remix of the contest track when you distribute it to Audius from Protect & Register.
       </p>
       {contests.map((c) => <ContestCard key={c.event_id} contest={c} />)}
     </div>

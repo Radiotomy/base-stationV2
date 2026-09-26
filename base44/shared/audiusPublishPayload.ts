@@ -82,6 +82,13 @@ export async function buildAudiusPublishPayload(base44, user, asset, coverArtId)
       tags,
       isrc,
       ...(bpm ? { bpm, isCustomBpm: true } : {}),
+      ...(asset.metadata?.license ? { license: asset.metadata.license } : {}),
+      ...(asset.metadata?.downloadable ? { isDownloadable: true } : {}),
+      // A remix-contest entry is a remix OF the contest track — that link is
+      // what makes Audius list it as a contest submission.
+      ...(asset.metadata?.audius_remix_of?.parent_track_id
+        ? { remixOf: { tracks: [{ parentTrackId: asset.metadata.audius_remix_of.parent_track_id }] } }
+        : {}),
     },
   };
 }

@@ -57,6 +57,11 @@ export default function DistributeToAudiusPanel({ asset, stages }) {
               ? 'Uploads the watermarked WAV to your Audius account with your project name, snapshot and BPM. The description includes your ownership score and the Base anchor link. You\'ll sign in to Audius in a popup.'
               : 'Unlocks once watermarking and C2PA sealing finish.'}
           </p>
+          {asset?.metadata?.audius_remix_of && (
+            <p className="text-xs text-accent">
+              Will be entered as a remix in "{asset.metadata.audius_remix_of.contest_title || 'the Audius remix contest'}".
+            </p>
+          )}
           <Button onClick={distribute} disabled={!ready || busy} className="gap-2 bg-emerald-600 hover:bg-emerald-500">
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Headphones className="w-4 h-4" />}
             {busy ? PHASE_LABEL[phase] : 'Distribute to Audius'}

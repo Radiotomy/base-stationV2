@@ -205,11 +205,13 @@ Deno.serve(async (req) => {
             mood: payload.mood,
             tags: payload.tags,
             isrc: payload.isrc,
-            // Audius flags an AI release by attributing it to the account it was
-            // made under, so this is only set when our own disclosure says the
-            // recording is AI-generated.
-            aiAttributionUserId:
-              payload.ai_disclosure_label === 'ai_generated' ? audiusUserId : undefined,
+            bpm: payload.bpm,
+            license: payload.license,
+            isDownloadable: payload.isDownloadable,
+            remixOf: payload.remixOf,
+            // aiAttributionUserId is deliberately not set — on Audius it credits the
+            // (opted-in) artist an AI was trained on, not "this track is AI". The
+            // disclosure travels in the description + tags instead.
           },
         });
         return Response.json({

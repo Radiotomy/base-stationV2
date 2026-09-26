@@ -53,7 +53,10 @@ Deno.serve(async (req) => {
         // Normalized by the shared payload builder — Audius' mood vocabulary is
         // closed, so a raw free-text mood is rejected after the upload completes.
         mood: prepared.metadata.mood,
-        bpm: asset.metadata?.bpm,
+        bpm: prepared.metadata.bpm,
+        license: prepared.metadata.license,
+        isDownloadable: prepared.metadata.isDownloadable,
+        remixOf: prepared.metadata.remixOf,
         tags: complianceTags,
         // Whose Audius account the upload is filed under. Without it the client
         // reports SIMULATED rather than guessing an account. The OAuth grant wins over
@@ -73,6 +76,15 @@ Deno.serve(async (req) => {
 
     const audiusTrackId = publishRes?.data?.audius_track_id || publishRes?.audius_track_id;
     const status = publishRes?.data?.status || publishRes?.status || 'pending';
+
+    // A simulated or failed publish never gets a track id stored: an asset with
+    // audius_track_id renders as live, which would claim a release that never happened.
+    if (status !== 'success' || !audiusTrackId || String(audiusTrackId).startsWith('sim_')) {
+      return Response.json({
+        error: publishRes?.data?.note || 'Audius did not publish this track.',
+        status,
+      }, { status: 400 });
+    }
 
     // Persist Audius track ID into asset metadata
     await base44.entities.UserAsset.update(assetId, {

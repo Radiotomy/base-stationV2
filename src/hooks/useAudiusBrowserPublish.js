@@ -79,10 +79,10 @@ export default function useAudiusBrowserPublish() {
           ...audioResult,
           trackCid: audioResult.trackCid,
           coverArtSizes,
-          // Audius flags an AI release by attributing it to the uploading account,
-          // so this is set only when our own disclosure says the recording is
-          // AI-generated — stamping it on a human recording would misdeclare it.
-          aiAttributionUserId: prep.ai_disclosure_label === 'ai_generated' ? userId : undefined,
+          // aiAttributionUserId is deliberately NOT set: on Audius it names the
+          // artist whose catalogue an AI was trained on (and who must have opted
+          // in), not "this track is AI". Our disclosure travels in the description
+          // and tags built server-side instead.
         },
       });
 

@@ -92,7 +92,11 @@ export async function uploadTrackToAudius({
       // aiAttributionUserId is Audius' AI-disclosure flag — setting it on a
       // human recording would misdeclare the release on their platform.
       isrc: metadata.isrc || undefined,
-      aiAttributionUserId: metadata.aiAttributionUserId || undefined,
+      // Same optional fields the browser path sends (see audiusPublishPayload.ts).
+      ...(metadata.bpm ? { bpm: metadata.bpm, isCustomBpm: true } : {}),
+      ...(metadata.license ? { license: metadata.license } : {}),
+      ...(metadata.isDownloadable ? { isDownloadable: true } : {}),
+      ...(metadata.remixOf ? { remixOf: metadata.remixOf } : {}),
     },
   };
   if (coverArtFile) uploadArgs.coverArtFile = coverArtFile;
