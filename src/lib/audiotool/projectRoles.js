@@ -1,9 +1,5 @@
 // Project collaborators via the Nexus SDK's ProjectRoleService.
-// The SDK returns Error values instead of throwing — unwrap them here.
-const ok = (v) => {
-  if (v instanceof Error) throw v;
-  return v;
-};
+import { unwrap as ok } from '@/lib/audiotool/nexusErrors';
 
 // Audiotool ProjectRoleType values (owner is never listed as a collaborator).
 export const ROLE_TYPES = [

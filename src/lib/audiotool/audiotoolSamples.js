@@ -1,10 +1,6 @@
 // Pull audio out of Audiotool through its Samples API, so an exported/bounced mix
 // can be protected without the creator downloading and re-uploading it by hand.
-// The SDK returns Error values instead of throwing — unwrap them here.
-const ok = (v) => {
-  if (v instanceof Error) throw v;
-  return v;
-};
+import { unwrap as ok } from '@/lib/audiotool/nexusErrors';
 
 /** Sample metadata for every audio sample placed in the open project. */
 export async function listProjectSamples(at, nexus) {

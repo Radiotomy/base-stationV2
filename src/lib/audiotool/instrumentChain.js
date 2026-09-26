@@ -1,6 +1,7 @@
 // "Generate Instrument Chain": prompt → device plan → community preset lookup →
 // devices + cables + mixer channel + note track created live in the session.
 import { base44 } from '@/api/base44Client';
+import { nextTrackOrder, nextStripOrder } from '@/lib/audiotool/nexusOrdering';
 
 export const CHAIN_INSTRUMENTS = ['heisenberg', 'space', 'pulverisateur', 'gakki'];
 export const CHAIN_EFFECTS = [
@@ -65,7 +66,7 @@ export async function buildChain(at, nexus, plan) {
     const usable = fx.filter((e) => e.fields.audioInput && e.fields.audioOutput);
     fx.filter((e) => !usable.includes(e)).forEach((e) => t.remove(e));
 
-    const channel = t.create('mixerChannel', {});
+    const channel = t.create('mixerChannel', { displayParameters: { orderAmongStrips: nextStripOrder(t) } });
     const chain = [instrument, ...usable, channel];
     for (let i = 0; i < chain.length - 1; i++) {
       t.create('desktopAudioCable', {
@@ -75,7 +76,7 @@ export async function buildChain(at, nexus, plan) {
     }
     t.create('noteTrack', {
       player: instrument.location,
-      orderAmongTracks: t.entities.ofTypes('noteTrack').get().length,
+      orderAmongTracks: nextTrackOrder(t),
     });
 
     const kept = [instrument, ...usable];

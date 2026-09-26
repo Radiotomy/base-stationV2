@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Wand2, RefreshCw } from 'lucide-react';
 import { listNoteRegions, readNotes, transformNotes, writeRegion } from '@/lib/audiotool/midiCoProducer';
 import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 
-export default function MidiCoProducerPanel({ nexus, projectUrl, onChanged }) {
+export default function MidiCoProducerPanel({ nexus, projectUrl, version, onChanged }) {
   const [regions, setRegions] = useState(() => listNoteRegions(nexus));
   const [regionId, setRegionId] = useState('');
   const [prompt, setPrompt] = useState('');
   const [state, setState] = useState({ loading: false, error: '', done: '' });
 
   const reload = () => setRegions(listNoteRegions(nexus));
+  // Regions added or removed in the DAW appear here as they sync.
+  useEffect(() => { reload(); }, [nexus, version]); // eslint-disable-line react-hooks/exhaustive-deps
   const region = regions.find((r) => r.id === regionId);
 
   const run = async () => {
@@ -41,7 +43,7 @@ export default function MidiCoProducerPanel({ nexus, projectUrl, onChanged }) {
         <Button variant="ghost" size="sm" onClick={reload}><RefreshCw className="w-3.5 h-3.5" /></Button>
       </div>
       {regions.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No MIDI regions in this project yet — add one in Audiotool, then refresh.</p>
+        <p className="text-sm text-muted-foreground">No MIDI regions in this project yet — add one in Audiotool and it appears here automatically.</p>
       ) : (
         <>
           <select value={regionId} onChange={(e) => setRegionId(e.target.value)}

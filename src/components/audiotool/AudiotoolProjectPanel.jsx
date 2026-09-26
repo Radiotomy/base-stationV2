@@ -59,6 +59,11 @@ export default function AudiotoolProjectPanel({ at }) {
       {project.status === 'synced' && (
         <>
           <ActiveProjectHeader projectUrl={openedUrl} project={projectMeta} onRefresh={project.refresh} />
+          {!project.connected && (
+            <p className="text-sm text-destructive rounded-xl border border-destructive/40 px-3 py-2">
+              Connection to Audiotool lost — hold off on changes until it reconnects, or they may not be saved.
+            </p>
+          )}
           <ProjectPropertiesPanel at={at} meta={projectMeta.meta} onSaved={projectMeta.setMeta} />
           <CollaboratorsPanel at={at} projectName={projectMeta.meta?.name} />
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -76,9 +81,9 @@ export default function AudiotoolProjectPanel({ at }) {
           {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
           {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
-          <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
+          <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} version={project.version} onChanged={project.refresh} />
           <SongstarterModule at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
-          <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.counts} />
+          <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.version} />
           <AudienceCoopPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
           <ProtectExportPanel at={at} nexus={project.nexus} projectUrl={openedUrl} telemetry={telemetry} project={projectMeta} />
         </>

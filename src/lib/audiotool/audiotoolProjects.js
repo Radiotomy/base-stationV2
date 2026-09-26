@@ -1,9 +1,5 @@
 // The creator's Audiotool projects via the Nexus SDK's ProjectService.
-// The SDK returns Error values instead of throwing — unwrap them here.
-const ok = (v) => {
-  if (v instanceof Error) throw v;
-  return v;
-};
+import { unwrap as ok } from '@/lib/audiotool/nexusErrors';
 
 const owner = (at) => (at.userName.startsWith('users/') ? at.userName : `users/${at.userName}`);
 
