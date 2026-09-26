@@ -8,7 +8,21 @@ import ExplorerDeviceRow from './ExplorerDeviceRow';
 
 export default function SessionExplorerPanel({ nexus, projectUrl, focus, version, connected, onChanged }) {
   const [busy, setBusy] = useState(false);
-  const { tracks, devices } = useMemo(() => readSession(nexus), [nexus, version]);
+  const [tick, setTick] = useState(0);
+  const { tracks, devices } = useMemo(() => readSession(nexus), [nexus, version, tick]);
+
+  // Watch every on/off switch directly, so a mute or bypass made inside
+  // Audiotool (or by a collaborator) shows up here right away.
+  useEffect(() => {
+    const fields = [
+      ...tracks.map((t) => t.entity.fields.isEnabled),
+      ...devices.map((d) => d.entity.fields.isActive),
+    ].filter(Boolean);
+    const subs = fields.map((f) => {
+      try { return nexus.events.onUpdate(f, () => setTick((n) => n + 1)); } catch { return null; }
+    });
+    return () => subs.forEach((s) => (typeof s === 'function' ? s() : s?.terminate?.()));
+  }, [nexus, version]); // eslint-disable-line react-hooks/exhaustive-deps
   const scrolled = useRef(false);
 
   // Bring a deep-linked track or device into view once it has synced in.

@@ -7,13 +7,13 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, ShieldCheck } from 'lucide-react';
-import { protectExport } from '@/lib/audiotool/protectExport';
+import { protectExport, exportSizeProblem } from '@/lib/audiotool/protectExport';
 import AutoAnchorToggle from '@/components/blockchain/AutoAnchorToggle';
 import ProvenancePipelineStatus from '@/components/audiotool/ProvenancePipelineStatus';
 import ContestEntryNotice from '@/components/audiotool/contests/ContestEntryNotice';
 import { getContest } from '@/lib/audiotool/contestEntry';
 import GenrePicker from '@/components/audiotool/GenrePicker';
-import { guessGenre } from '@/lib/audiotool/audiusGenres';
+import useAudiusGenres from '@/hooks/useAudiusGenres';
 
 export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, project }) {
   const { user } = useAuth();
@@ -24,7 +24,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
   const [contest, setContest] = useState(null);
   const [enterContest, setEnterContest] = useState(true);
   const [genre, setGenre] = useState('');
-  const suggestedGenre = guessGenre(project?.meta?.tags || []);
+  const { genres, suggested: suggestedGenre } = useAudiusGenres(project?.meta?.tags || []);
   useEffect(() => { setContest(getContest(projectUrl)); }, [projectUrl, state.loading]);
 
   // Default the release title to the Audiotool project's name.
@@ -68,12 +68,14 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
       {user && <AutoAnchorToggle user={user} />}
       <ContestEntryNotice contest={contest} enabled={enterContest} onToggle={setEnterContest} />
       <AudiotoolAudioPicker at={at} nexus={nexus} onPicked={onPicked} />
-      {file && <p className="text-xs text-emerald-300">Ready: {file.name}</p>}
+      {file && (exportSizeProblem(file)
+        ? <p className="text-xs text-destructive">{exportSizeProblem(file)}</p>
+        : <p className="text-xs text-emerald-300">Ready: {file.name}</p>)}
       <Input placeholder="Track title" value={title} onChange={(e) => setTitle(e.target.value)} />
-      <GenrePicker value={genre} suggested={suggestedGenre} onChange={setGenre} />
+      <GenrePicker value={genre} genres={genres} suggested={suggestedGenre} onChange={setGenre} />
       <p className="text-xs text-muted-foreground">Or upload a file from your computer:</p>
       <Input type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/flac" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-      <Button className="merc-button" onClick={run} disabled={!file || !title.trim() || !telemetry || state.loading}>
+      <Button className="merc-button" onClick={run} disabled={!file || !!exportSizeProblem(file) || !title.trim() || !telemetry || state.loading}>
         {state.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ShieldCheck className="w-4 h-4 mr-2" />}
         Protect & register
       </Button>

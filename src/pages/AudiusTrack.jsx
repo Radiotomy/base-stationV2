@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import AudiusLicenseBadge from '@/components/audius/AudiusLicenseBadge';
 import AudiusStreamPlayer from '@/components/audius/AudiusStreamPlayer';
 import AudiusAIBadge from '@/components/audius/AudiusAIBadge';
+import BaseStationPlacements from '@/components/audius/BaseStationPlacements';
 
 export default function AudiusTrack() {
   const { id } = useParams();
@@ -114,6 +115,8 @@ export default function AudiusTrack() {
             </div>
           </div>
         </div>
+
+        <BaseStationPlacements audiusTrackId={id} />
 
         {track.description && (
           <div className="bg-card rounded-2xl border border-border p-5">
