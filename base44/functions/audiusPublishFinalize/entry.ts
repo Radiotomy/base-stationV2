@@ -1,5 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.44';
 import { linkAudiusReleaseToAnchor } from '../../shared/audiusChainBridge.ts';
+import { crossLinkAudiusRelease } from '../../shared/discoveryRouting.ts';
 
 /**
  * Phase 3 of a browser-side Audius publish: record the release.
@@ -58,6 +59,12 @@ Deno.serve(async (req) => {
       audiusTrackId,
       audiusPermalink: normalizedPermalink,
     });
+
+    // Charts and playlists that already carry this track now link to the release.
+    // Non-fatal like the anchor link: the release has already succeeded.
+    await crossLinkAudiusRelease(base44.asServiceRole, assetId, {
+      audiusTrackId, audiusPermalink: normalizedPermalink,
+    }).catch((e) => console.warn('Chart/playlist cross-link failed:', e.message));
 
     return Response.json({
       data: {

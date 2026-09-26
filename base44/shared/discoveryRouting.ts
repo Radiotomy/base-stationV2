@@ -23,6 +23,16 @@ const PERIODS = ['weekly', 'monthly', 'all-time'];
 export const BRIDGE_PLAYLIST_TITLE = 'Fresh from the Audiotool Bridge';
 const PLAYLIST_OWNER = 'BASE Station';
 
+/**
+ * Released on Audius after routing: point the asset's chart and playlist rows at
+ * the release. Called with a service-role client (those rows are admin-write).
+ */
+export async function crossLinkAudiusRelease(svc, assetId, { audiusTrackId, audiusPermalink }) {
+  const set = { $set: { audius_track_id: String(audiusTrackId), audius_permalink: audiusPermalink || null } };
+  await svc.entities.TrackChart.updateMany({ source_asset_id: assetId }, set);
+  await svc.entities.PlaylistTrack.updateMany({ source_id: assetId }, set);
+}
+
 export async function routeAnchoredExport(svc, asset, { registry_id, transaction_hash }) {
   if (asset.metadata?.discovery_routing?.routed_at) return { skipped: true, reason: 'Already routed' };
   const reg = await svc.entities.BaseTrackRegistry.get(registry_id).catch(() => null);
@@ -44,10 +54,14 @@ export async function routeAnchoredExport(svc, asset, { registry_id, transaction
     audio_url: reg.track_url,
     genre,
     ai_label: label,
+    // Already released on Audius before routing ran? Cross-link straight away.
+    audius_track_id: asset.metadata?.audius_track_id || undefined,
+    audius_permalink: asset.metadata?.audius_permalink || undefined,
   };
 
   await svc.entities.TrackChart.bulkCreate(PERIODS.map((period) => ({
     ...common,
+    source_asset_id: asset.id,
     period,
     total_votes: 0, total_plays: 0, weekly_votes: 0, monthly_votes: 0,
     tags: ['audiotool-bridge', 'c2pa-sealed', 'base-anchored'],
@@ -79,6 +93,8 @@ export async function routeAnchoredExport(svc, asset, { registry_id, transaction
     position: existing.length,
     source_type: 'upload',
     source_id: asset.id,
+    audius_track_id: common.audius_track_id,
+    audius_permalink: common.audius_permalink,
     description: verify,
   });
   await svc.entities.Playlist.update(playlist.id, {

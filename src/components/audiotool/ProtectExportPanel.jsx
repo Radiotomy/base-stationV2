@@ -12,6 +12,8 @@ import AutoAnchorToggle from '@/components/blockchain/AutoAnchorToggle';
 import ProvenancePipelineStatus from '@/components/audiotool/ProvenancePipelineStatus';
 import ContestEntryNotice from '@/components/audiotool/contests/ContestEntryNotice';
 import { getContest } from '@/lib/audiotool/contestEntry';
+import GenrePicker from '@/components/audiotool/GenrePicker';
+import { guessGenre } from '@/lib/audiotool/audiusGenres';
 
 export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, project }) {
   const { user } = useAuth();
@@ -21,6 +23,8 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
   const pipeline = useProvenancePipeline(state.asset?.id);
   const [contest, setContest] = useState(null);
   const [enterContest, setEnterContest] = useState(true);
+  const [genre, setGenre] = useState('');
+  const suggestedGenre = guessGenre(project?.meta?.tags || []);
   useEffect(() => { setContest(getContest(projectUrl)); }, [projectUrl, state.loading]);
 
   // Default the release title to the Audiotool project's name.
@@ -41,6 +45,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
         session: {
           project_title: project?.title, cover_url: project?.image, bpm: project?.bpm,
           tags: project?.meta?.tags || [], license: project?.meta?.license,
+          genre: genre || suggestedGenre || undefined,
           download_allowed: !!project?.meta?.downloadAllowed,
           contest: contest && enterContest ? contest : undefined,
         },
@@ -65,6 +70,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
       <AudiotoolAudioPicker at={at} nexus={nexus} onPicked={onPicked} />
       {file && <p className="text-xs text-emerald-300">Ready: {file.name}</p>}
       <Input placeholder="Track title" value={title} onChange={(e) => setTitle(e.target.value)} />
+      <GenrePicker value={genre} suggested={suggestedGenre} onChange={setGenre} />
       <p className="text-xs text-muted-foreground">Or upload a file from your computer:</p>
       <Input type="file" accept="audio/wav,audio/x-wav,audio/mpeg,audio/flac" onChange={(e) => setFile(e.target.files?.[0] || null)} />
       <Button className="merc-button" onClick={run} disabled={!file || !title.trim() || !telemetry || state.loading}>

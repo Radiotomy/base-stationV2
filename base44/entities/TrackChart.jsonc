@@ -83,6 +83,18 @@
     "source_session_id": {
       "type": "string"
     },
+    "source_asset_id": {
+      "type": "string",
+      "description": "UserAsset this chart row was routed from (Audiotool Bridge exports). Lets a later Audius release find and cross-link its chart rows."
+    },
+    "audius_track_id": {
+      "type": "string",
+      "description": "The track's Audius release, when it has one. Only ever written from a release Audius actually confirmed."
+    },
+    "audius_permalink": {
+      "type": "string",
+      "description": "Public audius.co URL for the release. Convenience cache \u2014 audius_track_id stays the record."
+    },
     "duration_seconds": {
       "type": "number"
     },

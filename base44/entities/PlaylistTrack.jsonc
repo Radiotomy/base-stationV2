@@ -52,6 +52,14 @@
       "type": "string",
       "description": "Reference to original session/submission ID"
     },
+    "audius_track_id": {
+      "type": "string",
+      "description": "The track's Audius release, when it has one. Only ever written from a release Audius actually confirmed."
+    },
+    "audius_permalink": {
+      "type": "string",
+      "description": "Public audius.co URL for the release. Convenience cache \u2014 audius_track_id stays the record."
+    },
     "description": {
       "type": "string",
       "maxLength": 1000,

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import ProvenanceBadge from "@/components/common/ProvenanceBadge";
 import AILabelBadge from "@/components/common/AILabelBadge";
+import AudiusCrossLink from "@/components/audius/AudiusCrossLink";
 
 const PERIODS = [
   { key: "weekly", label: "This Week", icon: Flame },
@@ -186,6 +187,7 @@ export default function Charts() {
                       <AILabelBadge label={track.ai_label} size="xs" />
                       <ProvenanceBadge origin={track.source || track.origin || 'community'} size="xs" />
                       {track.genre && <Badge variant="outline" className="text-xs px-1.5 py-0 capitalize border-border">{track.genre}</Badge>}
+                      <AudiusCrossLink trackId={track.audius_track_id} permalink={track.audius_permalink} />
                     </div>
                   </div>
 

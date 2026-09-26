@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import ProvenanceBadge from "@/components/common/ProvenanceBadge";
 import AILabelBadge from "@/components/common/AILabelBadge";
+import AudiusCrossLink from "@/components/audius/AudiusCrossLink";
 
 export default function PlaylistDetail() {
   const { id } = useParams();
@@ -214,6 +215,7 @@ export default function PlaylistDetail() {
                         <p className="text-xs text-muted-foreground truncate md:hidden">{track.artist_name}</p>
                         <AILabelBadge label={track.ai_label} size="xs" />
                         <ProvenanceBadge origin={track.source || track.origin || "community"} size="xs" />
+                        <AudiusCrossLink trackId={track.audius_track_id} permalink={track.audius_permalink} />
                       </div>
                     </div>
                   </div>
