@@ -49,6 +49,22 @@ export const NODE_DEFS = {
       level: { type: 'number', min: 0, max: 1, step: 0.01, default: 0.8, mod: true },
     },
   },
+  drone: {
+    label: 'Drone Texture',
+    kind: 'generator',
+    audioIn: false,
+    audioOut: true,
+    hint: 'Slow-evolving generative pad: detuned voices that drift on their own. Same seed = same texture.',
+    params: {
+      root: { type: 'number', min: 30, max: 1000, step: 1, default: 110, unit: 'Hz' },
+      voices: { type: 'number', min: 1, max: 8, step: 1, default: 5 },
+      spread: { type: 'number', min: 0, max: 60, step: 1, default: 18, unit: 'ct' },
+      drift: { type: 'number', min: 0, max: 1, step: 0.01, default: 0.5 },
+      brightness: { type: 'number', min: 150, max: 8000, step: 10, default: 1400, unit: 'Hz', mod: true },
+      seed: { type: 'number', min: 1, max: 999, step: 1, default: 7 },
+      level: { type: 'number', min: 0, max: 1, step: 0.01, default: 0.4, mod: true },
+    },
+  },
   filter: {
     label: 'State Variable Filter',
     kind: 'processor',

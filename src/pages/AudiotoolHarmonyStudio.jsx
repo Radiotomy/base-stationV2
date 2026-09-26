@@ -4,6 +4,7 @@ import EngineRenderPicker from '@/components/audiotool/workspace/EngineRenderPic
 import ChordProgressionPanel from '@/components/audiotool/harmony/ChordProgressionPanel';
 import MidiCoProducerPanel from '@/components/audiotool/MidiCoProducerPanel';
 import NexusContributionMeter from '@/components/audiotool/NexusContributionMeter';
+import NotesCompanionCard from '@/components/audiotool/harmony/NotesCompanionCard';
 import { WORKSPACES } from '@/lib/audiotool/workspaces';
 
 export default function AudiotoolHarmonyStudio() {
@@ -20,6 +21,7 @@ export default function AudiotoolHarmonyStudio() {
                 <MidiCoProducerPanel {...live} />
               </div>
               <aside className="space-y-5 min-w-0">
+                <NotesCompanionCard projectUrl={projectUrl} />
                 <NexusContributionMeter nexus={project.nexus} projectUrl={projectUrl} counts={project.counts} onChange={() => {}} />
                 <EngineRenderPicker provider="musicgenchord" aiTool="cadence_bed" title="Cadence beds"
                   hint="Instrumental beds Cadence rendered from your Lead Sheet chords."

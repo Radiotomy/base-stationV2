@@ -8,6 +8,8 @@ import { BridgeSessionContext } from './BridgeSessionContext';
 import SendToAudiotoolButton from './SendToAudiotoolButton';
 import ForgeLoopGenerator from './ForgeLoopGenerator';
 import SfxGenerator from './SfxGenerator';
+import VibeSessionStarter from './VibeSessionStarter';
+import AudiusRemixTab from './AudiusRemixTab';
 import AudiusContestsTab from '@/components/audiotool/contests/AudiusContestsTab';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
@@ -26,9 +28,9 @@ const freesoundSend = (r) => (
 );
 
 const TABS = [
-  ['chain', 'Instrument Chain'], ['forge', 'BASE Forge Loops'], ['sfx', 'Sound FX'],
+  ['vibe', 'Vibe → Session'], ['chain', 'Instrument Chain'], ['forge', 'BASE Forge Loops'], ['sfx', 'Sound FX'],
   ['search', 'Search by Sound'], ['free', 'Discover Free Loops'], ['community', 'Community Library'],
-  ['contests', 'Audius Contests'],
+  ['contests', 'Audius Contests'], ['audius', 'Remix from Audius'],
 ];
 
 export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) {
@@ -41,7 +43,7 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
             Generate or find sounds, audition them here, then send them straight onto your Audiotool timeline.
           </p>
         </div>
-        <Tabs defaultValue="forge">
+        <Tabs defaultValue="vibe">
           <TabsList className="flex flex-wrap h-auto justify-start">
             {TABS.map(([v, l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}
           </TabsList>
@@ -52,6 +54,8 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
           <TabsContent value="free"><LoopDiscoverTab renderExtra={freesoundSend} /></TabsContent>
           <TabsContent value="community"><CommunityLoopsTab renderExtra={librarySend} /></TabsContent>
           <TabsContent value="contests"><AudiusContestsTab /></TabsContent>
+          <TabsContent value="vibe"><VibeSessionStarter /></TabsContent>
+          <TabsContent value="audius"><AudiusRemixTab /></TabsContent>
         </Tabs>
       </section>
     </BridgeSessionContext.Provider>

@@ -172,6 +172,63 @@ export default class FoundryEngine {
           dispose: () => { try { src.stop(); } catch {} src.disconnect(); g.disconnect(); },
         };
       }
+      case 'drone': {
+        // Seeded so a patch always reproduces the same texture.
+        let s = (p.seed ?? 7) >>> 0;
+        const rand = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+        const count = Math.max(1, Math.round(p.voices ?? 5));
+        const spread = p.spread ?? 18;
+        const drift = p.drift ?? 0.5;
+        const RATIOS = [1, 0.5, 1.5, 2, 1, 0.75, 3, 1];
+        const filt = ctx.createBiquadFilter();
+        filt.type = 'lowpass';
+        filt.frequency.value = p.brightness ?? 1400;
+        filt.Q.value = 0.7;
+        const g = ctx.createGain();
+        g.gain.value = p.level ?? 0.4;
+        filt.connect(g);
+        const nodes = [];
+        const oscs = [];
+        for (let i = 0; i < count; i++) {
+          const osc = ctx.createOscillator();
+          osc.type = i % 2 ? 'triangle' : 'sawtooth';
+          osc.frequency.value = (p.root ?? 110) * RATIOS[i % RATIOS.length];
+          osc.detune.value = (rand() * 2 - 1) * spread;
+          // Each voice wanders in pitch and loudness on its own slow cycle.
+          const lfo = ctx.createOscillator();
+          lfo.frequency.value = 0.02 + rand() * 0.15;
+          const lfoDepth = ctx.createGain();
+          lfoDepth.gain.value = drift * (spread + 8);
+          lfo.connect(lfoDepth).connect(osc.detune);
+          const vg = ctx.createGain();
+          vg.gain.value = 0.6 / count;
+          const amp = ctx.createOscillator();
+          amp.frequency.value = 0.01 + rand() * 0.08;
+          const ampDepth = ctx.createGain();
+          ampDepth.gain.value = (0.5 / count) * drift;
+          amp.connect(ampDepth).connect(vg.gain);
+          const pan = ctx.createStereoPanner();
+          pan.pan.value = count > 1 ? (i / (count - 1)) * 1.6 - 0.8 : 0;
+          osc.connect(vg).connect(pan).connect(filt);
+          [osc, lfo, amp].forEach((o) => o.start());
+          oscs.push({ osc, ratio: RATIOS[i % RATIOS.length] });
+          nodes.push(osc, lfo, amp, lfoDepth, vg, ampDepth, pan);
+        }
+        return {
+          out: g,
+          params: { brightness: filt.frequency, level: g.gain },
+          set: (k, v) => {
+            if (k === 'brightness') ramp(filt.frequency, v, ctx);
+            else if (k === 'level') ramp(g.gain, v, ctx);
+            else if (k === 'root') oscs.forEach(({ osc, ratio }) => ramp(osc.frequency, v * ratio, ctx));
+          },
+          rebuildOn: ['voices', 'spread', 'drift', 'seed'],
+          dispose: () => {
+            nodes.forEach((n) => { try { n.stop?.(); } catch {} n.disconnect(); });
+            filt.disconnect(); g.disconnect();
+          },
+        };
+      }
       case 'sampler': {
         const g = ctx.createGain();
         g.gain.value = p.level ?? 0.8;
