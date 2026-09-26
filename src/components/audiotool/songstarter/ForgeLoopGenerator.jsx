@@ -7,18 +7,21 @@ import { runForgeLoop, errorText } from '@/lib/audiotool/songstarterGen';
 import AssetPreviewPlayer from './AssetPreviewPlayer';
 
 const CATEGORIES = ['loop', 'drum_loop', 'bass_loop', 'melodic_loop', 'vocal_chop', 'one_shot'];
+// Length is edited as free text and only clamped to 1–30s on blur/generate,
+// so clearing the field to type a new value doesn't snap it back mid-keystroke.
+const clampLength = (v) => Math.min(30, Math.max(1, Math.round(Number(v)) || 8));
 
 export default function ForgeLoopGenerator() {
   const [prompt, setPrompt] = useState('');
   const [category, setCategory] = useState('drum_loop');
   const [bpm, setBpm] = useState('120');
-  const [duration, setDuration] = useState(8);
+  const [duration, setDuration] = useState('8');
   const [state, setState] = useState({ loading: false, error: '', result: null });
 
   const generate = async () => {
     setState({ loading: true, error: '', result: null });
     try {
-      const out = await runForgeLoop({ prompt: prompt.trim(), category, bpm, duration });
+      const out = await runForgeLoop({ prompt: prompt.trim(), category, bpm, duration: clampLength(duration) });
       setState({ loading: false, error: '', result: { ...out, prompt: prompt.trim(), category } });
     } catch (e) {
       setState({ loading: false, error: errorText(e), result: null });
@@ -47,7 +50,9 @@ export default function ForgeLoopGenerator() {
         </label>
         <label className="space-y-1">
           <span className="text-xs font-medium text-muted-foreground">Length (seconds)</span>
-          <Input type="number" min={1} max={30} value={duration} onChange={(e) => setDuration(Number(e.target.value) || 8)} placeholder="8" />
+          <Input type="number" inputMode="numeric" min={1} max={30} step={1} value={duration}
+            onChange={(e) => setDuration(e.target.value)}
+            onBlur={() => setDuration(String(clampLength(duration)))} placeholder="8" />
         </label>
       </div>
       <Button className="merc-button" onClick={generate} disabled={!prompt.trim() || !Number(bpm) || state.loading}>
