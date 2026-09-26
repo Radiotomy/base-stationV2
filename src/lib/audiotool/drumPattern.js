@@ -3,7 +3,7 @@
 // fresh mixer channel. The pattern is Beatbox 8 native, so it stays editable
 // on the device's own step sequencer.
 import { base44 } from '@/api/base44Client';
-import { nextStripOrder } from '@/lib/audiotool/nexusOrdering';
+import { createPatternDevice } from '@/lib/audiotool/patternDevice';
 
 export const DRUM_VOICES = [
   ['bassdrum', 'Kick'], ['snaredrum', 'Snare'], ['clapMaracas', 'Clap'], ['rimClaves', 'Rim'],
@@ -41,18 +41,12 @@ export const emptyPattern = (steps) => ({
 /** Creates the Beatbox 8 + mixer channel and writes the pattern. Returns the device id. */
 export function buildDrums(nexus, pattern) {
   return nexus.modify((t) => {
-    const row = t.entities.ofTypes('mixerChannel').get().length;
-    const box = t.create('beatbox8', {});
-    t.update(box.fields.positionX, 200);
-    t.update(box.fields.positionY, 300 + row * 420);
-    t.update(box.fields.displayName, pattern.name.slice(0, 40));
-
-    const channel = t.create('mixerChannel', { displayParameters: { orderAmongStrips: nextStripOrder(t) } });
-    t.create('desktopAudioCable', { fromSocket: box.fields.audioOutput.location, toSocket: channel.fields.audioInput.location });
-
-    const pat = t.create('beatbox8Pattern', { slot: box.fields.patternSlots.array[0].location, length: pattern.steps, stepScaleIndex: 3 });
+    const { device: box, steps } = createPatternDevice(t, {
+      type: 'beatbox8', patternType: 'beatbox8Pattern', name: pattern.name,
+      pattern: { length: pattern.steps, stepScaleIndex: 3 },
+    });
     for (let i = 0; i < pattern.steps; i++) {
-      const step = pat.fields.steps.array[i].fields;
+      const step = steps[i].fields;
       if (pattern.accents[i]) t.update(step.isAccented, true);
       DRUM_VOICES.forEach(([v]) => { if (pattern.rows[v][i]) t.update(step[`${v}IsActive`], true); });
     }

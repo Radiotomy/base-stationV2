@@ -18,6 +18,7 @@ import ProjectPropertiesPanel from '@/components/audiotool/ProjectPropertiesPane
 import CollaboratorsPanel from '@/components/audiotool/collab/CollaboratorsPanel';
 import SessionExplorerPanel from '@/components/audiotool/explorer/SessionExplorerPanel';
 import DrumMachinePanel from '@/components/audiotool/drums/DrumMachinePanel';
+import PatternSynthPanel from '@/components/audiotool/synths/PatternSynthPanel';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -86,6 +87,7 @@ export default function AudiotoolProjectPanel({ at }) {
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
           <MidiCoProducerPanel nexus={project.nexus} projectUrl={openedUrl} version={project.version} onChanged={project.refresh} />
           <DrumMachinePanel nexus={project.nexus} projectUrl={openedUrl} connected={project.connected} onChanged={project.refresh} />
+          <PatternSynthPanel nexus={project.nexus} projectUrl={openedUrl} connected={project.connected} onChanged={project.refresh} />
           <SongstarterModule at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
           <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.version} />
           <AudienceCoopPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
