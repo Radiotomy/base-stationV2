@@ -27,7 +27,11 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
   const [enterContest, setEnterContest] = useState(true);
   const [genre, setGenre] = useState('');
   const { genres, suggested: suggestedGenre } = useAudiusGenres(project?.meta?.tags || []);
-  useEffect(() => { setContest(getContest(projectUrl)); }, [projectUrl, state.loading]);
+  useEffect(() => {
+    let live = true;
+    getContest(projectUrl).then((c) => { if (live) setContest(c); });
+    return () => { live = false; };
+  }, [projectUrl, state.loading]);
 
   // Default the release title to the Audiotool project's name.
   useEffect(() => {

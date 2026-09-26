@@ -1,0 +1,55 @@
+{
+  "name": "AudiotoolContestLink",
+  "type": "object",
+  "description": "Which Audius remix contest an Audiotool project is remixing, so the finished export can be entered as a remix of the contest track on Audius. One row per creator + project, stored server-side so the link survives across devices and browsers. Set when a contest stem is sent to the timeline.",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Creator who linked the project"
+    },
+    "project_url": {
+      "type": "string",
+      "description": "Audiotool project link"
+    },
+    "parent_track_id": {
+      "type": "string",
+      "description": "Audius contest track id"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "contest_title": {
+      "type": "string"
+    },
+    "parent_artist": {
+      "type": "string"
+    },
+    "end_date": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Optional private note"
+    }
+  },
+  "required": [
+    "user_id",
+    "project_url",
+    "parent_track_id"
+  ],
+  "rls": {
+    "create": {
+      "data.user_id": "{{user.id}}"
+    },
+    "read": {
+      "data.user_id": "{{user.id}}"
+    },
+    "update": {
+      "data.user_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.user_id": "{{user.id}}"
+    }
+  }
+}
