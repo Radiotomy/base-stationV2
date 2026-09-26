@@ -29,6 +29,17 @@ export async function getProjectByUrl(at, url) {
   return res.project;
 }
 
+const snake = (k) => k.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+
+/** Update only the given Project fields (camelCase) of "projects/{id}". */
+export async function updateProject(at, name, fields) {
+  const res = ok(await at.projects.updateProject({
+    project: { name, ...fields },
+    updateMask: { paths: Object.keys(fields).map(snake) },
+  }));
+  return res.project;
+}
+
 /** Blank project, or a copy of `templateName` ("projects/{id}") when given. */
 export async function createProject(at, displayName, templateName) {
   const project = templateName ? { displayName, copyOfProjectName: templateName } : { displayName };

@@ -16,6 +16,7 @@ export default function useAudiotoolProjectMeta(at, projectUrl) {
   return {
     meta,
     error,
+    setMeta,
     title: meta?.displayName || '',
     image: meta?.snapshotUrl || meta?.coverUrl || '',
     bpm: meta?.bpm ? Math.round(meta.bpm) : null,
