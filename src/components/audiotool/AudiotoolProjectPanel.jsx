@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { freshAccessToken } from '@/lib/audiotool/audiotoolTokens';
 import { readDeepLink, syncAddressBar } from '@/lib/audiotool/deepLinks';
 import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 import { templateProjectName, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
@@ -71,9 +72,12 @@ export default function AudiotoolProjectPanel({ at }) {
       // The bridge job can outlive a nearly-expired key, so renew it first.
       const accessToken = await freshAccessToken(at);
       const { data } = await base44.functions.invoke('audiotoolIngestState', { project: url.trim(), access_token: accessToken });
-      setIngest({ loading: false, error: '', summary: data });
+      setIngest({ loading: false, error: '', summary: data, at: new Date() });
+      toast.success(`Session sent — BASE Engines parsed ${data?.entity_count ?? 0} project parts`);
     } catch (e) {
-      setIngest({ loading: false, error: e?.response?.data?.error || e.message, summary: null });
+      const msg = e?.response?.data?.error || e.message;
+      setIngest({ loading: false, error: msg, summary: null });
+      toast.error('BASE Engines could not read the session');
     }
   };
 
@@ -118,7 +122,7 @@ export default function AudiotoolProjectPanel({ at }) {
           </Button>
           <InfoTip text={TIPS.ingest} size="sm" className="ml-2" />
           {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
-          {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} />}
+          {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} at={ingest.at} />}
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
           <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.version} />
           <AudienceCoopPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
