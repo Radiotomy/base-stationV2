@@ -7,6 +7,7 @@
 // redirect URL must be the exact page that calls audiotool() — here, "/".
 import { audiotool } from '@audiotool/nexus';
 import { base44 } from '@/api/base44Client';
+import { ensureBrowserWasmLoader } from '@/lib/audiotool/nexusWasm';
 
 export const AUDIOTOOL_APP_ORIGIN = 'https://basestation.live';
 export const AUDIOTOOL_REDIRECT_URL = 'https://basestation.live/audiotool-callback';
@@ -27,7 +28,7 @@ export const getTemplateProject = () => getConfig().then((c) => c.template_proje
 
 /** One shared audiotool() result per page load — calling it twice would try to redeem the same code twice. */
 export function getAudiotool() {
-  clientPromise ??= getClientId().then((clientId) =>
+  clientPromise ??= Promise.all([getClientId(), ensureBrowserWasmLoader()]).then(([clientId]) =>
     audiotool({ clientId, redirectUrl: AUDIOTOOL_REDIRECT_URL, scope: AUDIOTOOL_SCOPE })
   );
   return clientPromise;
