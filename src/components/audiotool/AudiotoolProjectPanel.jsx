@@ -16,6 +16,7 @@ import ActiveProjectHeader from '@/components/audiotool/ActiveProjectHeader';
 import useAudiotoolProjectMeta from '@/hooks/useAudiotoolProjectMeta';
 import ProjectPropertiesPanel from '@/components/audiotool/ProjectPropertiesPanel';
 import CollaboratorsPanel from '@/components/audiotool/collab/CollaboratorsPanel';
+import SessionExplorerPanel from '@/components/audiotool/explorer/SessionExplorerPanel';
 
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
@@ -74,6 +75,7 @@ export default function AudiotoolProjectPanel({ at }) {
               </div>
             ))}
           </div>
+          <SessionExplorerPanel nexus={project.nexus} version={project.version} connected={project.connected} onChanged={project.refresh} />
           <Button variant="outline" onClick={sendToEngines} disabled={ingest.loading}>
             {ingest.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Cpu className="w-4 h-4 mr-2" />}
             Send session state to BASE Engines
