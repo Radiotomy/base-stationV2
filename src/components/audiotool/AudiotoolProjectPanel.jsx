@@ -1,16 +1,13 @@
 import { useEffect, useState } from 'react';
-import { freshAccessToken } from '@/lib/audiotool/audiotoolTokens';
 import { readDeepLink, syncAddressBar } from '@/lib/audiotool/deepLinks';
-import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
 import { templateProjectName, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, FolderOpen, RefreshCw, Cpu } from 'lucide-react';
+import { Loader2, FolderOpen } from 'lucide-react';
 import useNexusProject, { NEXUS_KINDS } from '@/hooks/useNexusProject';
-import AudiotoolIngestSummary from '@/components/audiotool/AudiotoolIngestSummary';
+import EngineIngestDebug from '@/components/audiotool/EngineIngestDebug';
 import WorkspaceLauncher from '@/components/audiotool/workspace/WorkspaceLauncher';
 import NexusContributionMeter from '@/components/audiotool/NexusContributionMeter';
 import ProtectExportPanel from '@/components/audiotool/ProtectExportPanel';
@@ -26,7 +23,6 @@ import SessionExplorerPanel from '@/components/audiotool/explorer/SessionExplore
 export default function AudiotoolProjectPanel({ at }) {
   const [url, setUrl] = useState('');
   const project = useNexusProject(at);
-  const [ingest, setIngest] = useState({ loading: false, error: '', summary: null });
   const [openedUrl, setOpenedUrl] = useState('');
   const [telemetry, setTelemetry] = useState(null);
   const projectMeta = useAudiotoolProjectMeta(at, project.status === 'synced' ? openedUrl : '');
@@ -55,7 +51,6 @@ export default function AudiotoolProjectPanel({ at }) {
   const openProject = (link) => {
     setUrl(link.trim());
     setOpenedUrl(link.trim());
-    setIngest({ loading: false, error: '', summary: null });
     syncAddressBar(link.trim());
     project.open(link);
   };
@@ -65,21 +60,6 @@ export default function AudiotoolProjectPanel({ at }) {
     const { open } = readDeepLink();
     if (open) openProject(open);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const sendToEngines = async () => {
-    setIngest({ loading: true, error: '', summary: null });
-    try {
-      // The bridge job can outlive a nearly-expired key, so renew it first.
-      const accessToken = await freshAccessToken(at);
-      const { data } = await base44.functions.invoke('audiotoolIngestState', { project: url.trim(), access_token: accessToken });
-      setIngest({ loading: false, error: '', summary: data, at: new Date() });
-      toast.success(`Session sent — BASE Engines parsed ${data?.entity_count ?? 0} project parts`);
-    } catch (e) {
-      const msg = e?.response?.data?.error || e.message;
-      setIngest({ loading: false, error: msg, summary: null });
-      toast.error('BASE Engines could not read the session');
-    }
-  };
 
   return (
     <section className="merc-card rounded-2xl p-6 space-y-4">
@@ -116,13 +96,7 @@ export default function AudiotoolProjectPanel({ at }) {
             ))}
           </div>
           <SessionExplorerPanel nexus={project.nexus} projectUrl={openedUrl} focus={focus} version={project.version} connected={project.connected} onChanged={project.refresh} />
-          <Button variant="outline" onClick={sendToEngines} disabled={ingest.loading}>
-            {ingest.loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Cpu className="w-4 h-4 mr-2" />}
-            Send session state to BASE Engines
-          </Button>
-          <InfoTip text={TIPS.ingest} size="sm" className="ml-2" />
-          {ingest.error && <p className="text-sm text-destructive">{ingest.error}</p>}
-          {ingest.summary && <AudiotoolIngestSummary summary={ingest.summary} at={ingest.at} />}
+          <EngineIngestDebug at={at} projectUrl={url} />
           <NexusContributionMeter nexus={project.nexus} projectUrl={openedUrl} counts={project.counts} onChange={setTelemetry} />
           <FoundryDeviceMapper nexus={project.nexus} projectUrl={openedUrl} version={project.version} />
           <AudienceCoopPanel at={at} nexus={project.nexus} projectUrl={openedUrl} onChanged={project.refresh} />
