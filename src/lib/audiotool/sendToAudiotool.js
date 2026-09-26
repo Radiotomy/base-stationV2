@@ -20,7 +20,8 @@ const audioDeviceIds = (nexus) => new Set(nexus.queryEntities.ofTypes('audioDevi
 // The SDK wraps API failures as "…threw error"; the server's actual reason is on .cause.
 const withReason = (v) => {
   if (!(v instanceof Error)) return v;
-  const reason = v.cause?.rawMessage || v.cause?.message;
+  console.error('[Audiotool]', v, v.cause);
+  const reason = v.cause?.rawMessage || v.cause?.message || (v.cause ? String(v.cause) : '');
   throw new Error(reason ? `${v.message} — ${reason}` : v.message);
 };
 
