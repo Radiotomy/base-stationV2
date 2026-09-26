@@ -1,6 +1,12 @@
 // Nexus Co-Producer (MIDI): read a note region from the live session, rework
 // it from a text prompt, and write the result back as a new region.
 import { base44 } from '@/api/base44Client';
+import { nextTrackOrder } from '@/lib/audiotool/nexusOrdering';
+
+export const PRESETS = [
+  'Add a harmony a third above', 'Make it a syncopated arpeggio', 'Humanize timing and velocity',
+  'Simplify to the strongest notes', 'Double it an octave down', 'Write a call-and-response answer',
+];
 
 const TICKS_PER_QUARTER = 3840;
 
@@ -65,17 +71,34 @@ Input notes (JSON): ${JSON.stringify(notes.slice(0, 400))}`,
     .filter((n) => n.positionTicks >= 0 && n.positionTicks < lengthTicks);
 }
 
-/** Writes notes as a new region on the same track, right after the source region. */
-export async function writeRegion(nexus, region, notes, label) {
+export const PLACEMENTS = [
+  ['after', 'Right after it, same track'],
+  ['layer', 'Layered on a new track (plays together)'],
+];
+
+/**
+ * Writes notes as a new region. 'after' appends on the same track; 'layer'
+ * creates a new note track driving the same instrument, at the same position —
+ * for harmonies, doubles and counter-lines. Returns the ids needed to undo.
+ */
+export async function writeRegion(nexus, region, notes, label, placement = 'after') {
   const src = region.fields.region.fields;
   const duration = src.durationTicks.value;
   return nexus.modify((t) => {
+    let track = region.fields.track.value;
+    let trackId = null;
+    if (placement === 'layer') {
+      const source = t.entities.ofTypes('noteTrack').get().find((tr) => tr.id === track.entityId);
+      const created = t.create('noteTrack', { player: source.fields.player.value, orderAmongTracks: nextTrackOrder(t) });
+      track = created.location;
+      trackId = created.id;
+    }
     const collection = t.create('noteCollection', {});
-    t.create('noteRegion', {
-      track: region.fields.track.value,
+    const newRegion = t.create('noteRegion', {
+      track,
       collection: collection.location,
       region: {
-        positionTicks: src.positionTicks.value + duration,
+        positionTicks: src.positionTicks.value + (placement === 'layer' ? 0 : duration),
         durationTicks: duration,
         loopDurationTicks: src.loopDurationTicks.value,
         loopOffsetTicks: 0,
@@ -85,6 +108,16 @@ export async function writeRegion(nexus, region, notes, label) {
       },
     });
     notes.forEach((n) => t.create('note', { ...n, doesSlide: false, collection: collection.location }));
-    return collection.id;
+    return { collectionId: collection.id, regionId: newRegion.id, trackId };
+  });
+}
+
+/** Removes everything a writeRegion call created (notes → region → collection → track). */
+export function undoRegion(nexus, { collectionId, regionId, trackId }) {
+  return nexus.modify((t) => {
+    const find = (type, id) => t.entities.ofTypes(type).get().find((e) => e.id === id);
+    t.entities.ofTypes('note').get().filter((n) => n.fields.collection.value.entityId === collectionId).forEach((n) => t.remove(n));
+    [find('noteRegion', regionId), find('noteCollection', collectionId), trackId && find('noteTrack', trackId)]
+      .filter(Boolean).forEach((e) => t.remove(e));
   });
 }

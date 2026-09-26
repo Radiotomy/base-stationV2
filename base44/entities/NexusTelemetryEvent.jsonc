@@ -21,9 +21,10 @@
         "library_ai_sample",
         "drum_generator",
         "bassline_generator",
-        "tonematrix_generator"
+        "tonematrix_generator",
+        "automation_generator"
       ],
-      "description": "Which bridge AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library loop sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern; bassline_generator = an AI-written Bassline pattern; tonematrix_generator = an AI-written Tonematrix pattern. A pattern the creator tapped in by hand is never logged here, so it counts as human."
+      "description": "Which bridge AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library loop sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern; bassline_generator = an AI-written Bassline pattern; tonematrix_generator = an AI-written Tonematrix pattern; automation_generator = an AI-described automation curve (collection_ids holds the automation collection). A pattern or curve the creator drew by hand or picked from a preset shape is never logged here, so it counts as human. An invocation whose output the creator undid is deleted, so undone AI work never counts against them."
     },
     "prompt": {
       "type": "string",
@@ -35,7 +36,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Nexus note collections the AI wrote"
+      "description": "Nexus note or automation collections the AI wrote"
     },
     "device_ids": {
       "type": "array",

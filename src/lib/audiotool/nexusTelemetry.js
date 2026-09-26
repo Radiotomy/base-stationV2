@@ -38,7 +38,7 @@ export async function readLog(userId, project) {
 
 export async function logInvocation(project, entry) {
   const me = await base44.auth.me();
-  await Events.create({
+  return Events.create({
     user_id: me.id,
     project_url: project,
     tool: entry.tool,
@@ -48,6 +48,9 @@ export async function logInvocation(project, entry) {
     at: new Date().toISOString(),
   });
 }
+
+/** Removes a logged invocation once the AI output it describes has been undone. */
+export const deleteInvocation = (id) => Events.delete(id);
 
 export const subscribeTelemetry = (cb) => Events.subscribe(cb);
 
