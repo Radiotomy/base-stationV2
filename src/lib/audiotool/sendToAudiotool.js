@@ -3,10 +3,6 @@
 import { logInvocation } from '@/lib/audiotool/nexusTelemetry';
 
 const TICKS_PER_BAR = 3840 * 4;
-const ok = (v) => {
-  if (v instanceof Error) throw v;
-  return v;
-};
 
 // Drop new material after the last audio region so nothing is overwritten.
 const endOfAudioTimeline = (nexus) =>
@@ -21,9 +17,24 @@ const audioDeviceIds = (nexus) => new Set(nexus.queryEntities.ofTypes('audioDevi
  * @param aiTool telemetry tool name when the asset is AI-generated — logged so
  *   the Creative Ownership meter counts the new audio device as machine-made.
  */
+// The SDK wraps API failures as "…threw error"; the server's actual reason is on .cause.
+const withReason = (v) => {
+  if (!(v instanceof Error)) return v;
+  const reason = v.cause?.rawMessage || v.cause?.message;
+  throw new Error(reason ? `${v.message} — ${reason}` : v.message);
+};
+
 export async function sendToAudiotool({ at, nexus, projectUrl, file, name, bpm, aiTool, prompt }) {
-  const upload = ok(await at.samples.upload({ file, displayName: name.slice(0, 60) }));
-  const sample = ok(await upload.ready);
+  // Audiotool rejects a sample without a positive tempo (bpm is a REQUIRED field),
+  // so one-shots with no known tempo get a neutral 120.
+  const tempo = Number(bpm) > 0 ? Number(bpm) : 120;
+  const upload = withReason(await at.samples.upload({
+    file,
+    displayName: name.slice(0, 60),
+    bpm: tempo,
+    kind: Number(bpm) > 0 ? 'loop' : 'one-shot',
+  }));
+  const sample = withReason(await upload.ready);
 
   const before = audioDeviceIds(nexus);
   const positionTicks = endOfAudioTimeline(nexus);
