@@ -36,6 +36,12 @@ export async function updateProject(at, name, fields) {
   return res.project;
 }
 
+/** "audiotool.com/template/{id}" → "projects/{id}", else null. */
+export const templateProjectName = (url) => {
+  const id = url.match(/audiotool\.com\/template\/([0-9a-f-]{36})/i)?.[1];
+  return id ? `projects/${id}` : null;
+};
+
 /** Blank project, or a copy of `templateName` ("projects/{id}") when given. */
 export async function createProject(at, displayName, templateName) {
   const project = templateName ? { displayName, copyOfProjectName: templateName } : { displayName };

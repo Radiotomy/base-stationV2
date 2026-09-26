@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { freshAccessToken } from '@/lib/audiotool/audiotoolTokens';
 import { readDeepLink, syncAddressBar } from '@/lib/audiotool/deepLinks';
 import { base44 } from '@/api/base44Client';
+import { templateProjectName, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, FolderOpen, RefreshCw, Cpu } from 'lucide-react';
@@ -33,6 +34,25 @@ export default function AudiotoolProjectPanel({ at }) {
 
   const [focus] = useState(() => readDeepLink().focus);
 
+  const [copying, setCopying] = useState(false);
+  const [copyError, setCopyError] = useState('');
+
+  // Templates belong to Audiotool, so they can't be opened live — copy one into
+  // the creator's own projects first, then open that copy.
+  const openLink = async (link) => {
+    const template = templateProjectName(link.trim());
+    setCopyError('');
+    if (!template) return openProject(link);
+    setCopying(true);
+    try {
+      const copy = await createProject(at, `BASE Template ${new Date().toLocaleString()}`, template);
+      openProject(studioUrl(copy));
+    } catch (e) {
+      setCopyError(`Audiotool didn't allow copying this template (${e.message}). Open it on audiotool.com, save it to your own projects, then pick it from the list above.`);
+    }
+    setCopying(false);
+  };
+
   const openProject = (link) => {
     setUrl(link.trim());
     setOpenedUrl(link.trim());
@@ -62,14 +82,15 @@ export default function AudiotoolProjectPanel({ at }) {
   return (
     <section className="merc-card rounded-2xl p-6 space-y-4">
       <AudiotoolProjectList at={at} activeUrl={project.status === 'synced' ? openedUrl : ''} busy={project.status === 'opening'} onOpen={openProject} />
-      <p className="text-xs text-muted-foreground">Or paste a project link from beta.audiotool.com/studio:</p>
+      <p className="text-xs text-muted-foreground">Or paste a project link from beta.audiotool.com/studio, or a template link from audiotool.com/template (we'll make you a private copy):</p>
       <div className="flex flex-col sm:flex-row gap-2">
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://beta.audiotool.com/studio?project=…" />
-        <Button className="merc-button" disabled={!url.trim() || project.status === 'opening'} onClick={() => openProject(url)}>
-          {project.status === 'opening' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
-          Open & sync
+        <Button className="merc-button" disabled={!url.trim() || copying || project.status === 'opening'} onClick={() => openLink(url)}>
+          {copying || project.status === 'opening' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
+          {copying ? 'Copying template…' : 'Open & sync'}
         </Button>
       </div>
+      {copyError && <p className="text-sm text-destructive">{copyError}</p>}
       {project.error && <p className="text-sm text-destructive">{project.error}</p>}
 
       {project.status === 'synced' && (
