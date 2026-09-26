@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { WORKSPACE_LIST, withProject } from '@/lib/audiotool/workspaces';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 /** Bridge → workspace hand-off. Each card reopens the same live project in its instrument. */
 export default function WorkspaceLauncher({ projectUrl }) {
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-accent">Create in a workspace</p>
+      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-accent flex items-center gap-1.5">Create in a workspace <InfoTip text={TIPS.workspaces} /></p>
       <div className="grid sm:grid-cols-3 gap-3">
         {WORKSPACE_LIST.map(({ key, to, icon: Icon, label, desc }) => (
           <Link key={key} to={withProject(to, projectUrl)}

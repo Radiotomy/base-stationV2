@@ -42,7 +42,7 @@ const AUDIOTOOL_HELP_SECTIONS = [
         <p><strong className="text-foreground">Opening a project.</strong> Click any project in "Your Audiotool projects", or paste a <code>beta.audiotool.com/studio?project=…</code> link and press <strong>Open & sync</strong>. Press Refresh if a project you just made isn't listed yet.</p>
         <p><strong className="text-foreground">New Project</strong> creates a blank project, or one from the <strong>BASE Songstarter template</strong> (mixer, drums and an audio track ready for loops). It opens in a new Audiotool tab and syncs in the Bridge at the same time.</p>
         <Box title="📄 Audiotool's public templates">
-          <p>Audiotool doesn't let outside apps copy its public templates (audiotool.com/template/…). Open the template on Audiotool, save it into your own projects, then pick it from your list here.</p>
+          <p>Templates belong to Audiotool, so they can't be opened live directly. When you paste a template link, the Bridge first copies it into your own projects and opens that copy. If Audiotool refuses the copy, open the template on audiotool.com, save it to your projects, then pick it from your list here.</p>
         </Box>
         <p><strong className="text-foreground">Once a project is open:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
@@ -50,9 +50,28 @@ const AUDIOTOOL_HELP_SECTIONS = [
           <li><strong>Collaborators</strong> — invite Audiotool users by username and pick a role. Editors work on the session with you live.</li>
           <li><strong>Live counts</strong> — notes, tracks, automation points and cables, updated as the project changes.</li>
           <li><strong>Session Explorer</strong> — every track and device. Mute tracks or bypass devices without leaving BASE Station. The link icon copies a URL that reopens the Bridge focused on that exact item.</li>
-          <li><strong>Send session state to BASE Engines</strong> — sends a read-only snapshot of the session for analysis. Your project isn't changed.</li>
+          <li><strong>Create in a workspace</strong> — opens the same live project in one of the full-screen workspaces (see below).</li>
         </ul>
         <p>If you see "Connection to Audiotool lost", hold off on edits until it reconnects.</p>
+      </>
+    ),
+  },
+  {
+    id: 'audiotool-workspaces',
+    title: 'Audiotool workspaces — Beat & Pattern, Harmony & Arrangement, Vocal Lab',
+    icon: Wand2,
+    keywords: 'audiotool workspace full screen beat pattern studio harmony arrangement vocal lab chord pads progression notes harmonyeditor companion cadence bed cantor vocal take record harmony layer song structure sections',
+    body: (
+      <>
+        <p>Once a project is open in the Bridge, the <strong>Create in a workspace</strong> cards reopen it in a full-screen BASE Station instrument. Each workspace edits the same live project, so changes sync both ways with Audiotool and with the Bridge. You can switch between workspaces without closing the session.</p>
+        <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Beat & Pattern Studio</strong> — step-sequence drums (Beatbox 8), basslines and Tonematrix melodies, by hand or from a description.</li>
+          <li><strong>Harmony & Arrangement</strong> — write chord progressions on the chord pads or import them from a Lead Sheet, rework MIDI with the Co-Producer, and see your song sections. Audiotool's own <strong>NOTES</strong> editor sits alongside as a companion. <strong>Cadence beds</strong> (instrumentals rendered from your Lead Sheet chords) can be placed on the timeline.</li>
+          <li><strong>Vocal Lab</strong> — record vocal takes, add harmony layers, and place <strong>Cantor</strong> vocals (your Lead Sheet melodies, sung) on the vocal timeline.</li>
+        </ul>
+        <Box tone="emerald" title="💚 What counts as yours">
+          <p>Chord progressions you write, takes you record and patterns you tap count as human. Cadence beds, Cantor vocals, AI harmony layers and AI-written patterns are logged as AI in the ownership meter shown in each workspace.</p>
+        </Box>
       </>
     ),
   },
@@ -85,6 +104,7 @@ const AUDIOTOOL_HELP_SECTIONS = [
       <>
         <p>Songstarter gathers sounds in one place. Preview anything here, then press <strong>Send to Audiotool</strong> to drop it on a new audio track at the end of your timeline.</p>
         <ul className="list-disc pl-5 space-y-1">
+          <li><strong>Vibe → Session</strong> — pick a mood and it writes your first bars: a tempo-locked Forge loop plus a transition riser, both placed on the timeline in one click (5 credits).</li>
           <li><strong>Instrument Chain</strong> — describe a sound; we match community presets and wire synth → effects → a new mixer channel.</li>
           <li><strong>BASE Forge Loops</strong> — generate a tempo-matched loop.</li>
           <li><strong>Sound FX</strong> — generate a sound effect from text.</li>
@@ -92,8 +112,9 @@ const AUDIOTOOL_HELP_SECTIONS = [
           <li><strong>Discover Free Loops</strong> — Freesound loops. The Creative Commons credit travels with the region name.</li>
           <li><strong>Community Library</strong> — loops other creators have shared.</li>
           <li><strong>Audius Contests</strong> — see the Audius section below.</li>
+          <li><strong>Remix from Audius</strong> — search Audius and drop a Creative Commons or open-remix release onto your timeline. All Rights Reserved tracks stay locked, and every import is licence-checked and saved to your library first.</li>
         </ul>
-        <p className="text-xs">Generated loops, SFX and AI library samples are logged as AI material. Freesound and human-made community loops are not.</p>
+        <p className="text-xs">Generated loops, SFX and AI library samples are logged as AI material. Freesound and human-made community loops are not. Audius material is third-party and is never counted as your own work.</p>
       </>
     ),
   },
@@ -133,8 +154,9 @@ const AUDIOTOOL_HELP_SECTIONS = [
           <li>Press <strong>Protect & register</strong>.</li>
         </ol>
         <p>A status tracker shows each step: ownership scoring from this session's telemetry → <strong>BASE Mark</strong> watermark → <strong>C2PA</strong> manifest sealed over the watermarked audio → on-chain anchor on Base (if <strong>auto-anchoring</strong> is on). The anchor always covers the file you actually deliver, never the raw export.</p>
+        <p><strong className="text-foreground">After anchoring</strong>, the track is added to BASE Station <Link to="/charts" className="text-orange-400 hover:underline">Charts</Link>, the featured "Fresh from the Audiotool Bridge" playlist, and <Link to="/radio" className="text-orange-400 hover:underline">Radio</Link> automatically. If auto-anchoring is off, the export is still watermarked and sealed, but isn't placed there.</p>
         <Box title="📦 File limits">
-          <p>Exports must be under <strong className="text-foreground">40 MB</strong>. For long songs, export 16-bit or split the track. MP3s are accepted, but only lossless audio gets the strongest watermark.</p>
+          <p>Exports must be under <strong className="text-foreground">40 MB</strong>. For long songs, export as <strong>FLAC</strong> (same quality, about half the size) or register shorter sections. MP3s are accepted, but only lossless audio gets the strongest watermark.</p>
         </Box>
         <p>Download the protected file from your <Link to="/asset-gallery" className="text-purple-400 hover:underline">library</Link> and view its chain record in <Link to="/creator-dashboard?tab=proof" className="text-blue-400 hover:underline">Proof of Ownership</Link>.</p>
       </>
@@ -148,7 +170,8 @@ const AUDIOTOOL_HELP_SECTIONS = [
     body: (
       <>
         <p><strong className="text-foreground">Distribute from the Bridge.</strong> Once a protected export is watermarked and sealed, <strong>Distribute to Audius</strong> unlocks. It uploads the watermarked WAV to <em>your own</em> Audius account with the project name, cover and BPM. The description includes your ownership score and the Base anchor link. You sign in to Audius in a popup, so your live Audiotool session stays open.</p>
-        <p><strong className="text-foreground">Remix contests.</strong> The Songstarter's Audius Contests tab lists active Audius remix contests that come with stems from the contest host. Send a stem to your timeline, and when you distribute this project's protected export to Audius, it goes in as a remix of the contest track. A notice above the export panel confirms the entry, and you can switch it off.</p>
+        <p><strong className="text-foreground">Remix contests.</strong> The Songstarter's Audius Contests tab lists active Audius remix contests that come with stems from the contest host. Send a stem to your timeline, and when you distribute this project's protected export to Audius, it goes in as a remix of the contest track. The contest link is saved to your account, so it's still there if you finish the project on another device or browser. A notice above the export panel confirms the entry, and you can switch it off. The host's stems are credited as third-party material and don't count toward your ownership score.</p>
+        <p><strong className="text-foreground">Order of steps.</strong> Protect & Register → watermark → C2PA seal → Base anchor (if on) → Distribute to Audius. Because the release is created last, its description carries your ownership score and anchor link, and chart and playlist entries are linked to the Audius release once Audius confirms it.</p>
         <p><strong className="text-foreground">Publishing from anywhere else.</strong> Any finished audio asset can be published with <strong>Publish to Audius</strong>. Placeholder or unfinished tracks are blocked, and the genre is mapped to Audius's official genre list.</p>
         <p><strong className="text-foreground">Browsing Audius.</strong> <Link to="/audius-trending" className="text-emerald-400 hover:underline">Trending</Link>, <Link to="/audius-search" className="text-emerald-400 hover:underline">Search</Link>, artist and track pages stream straight from the Audius network, and Audius tracks mix into <Link to="/radio" className="text-emerald-400 hover:underline">Radio</Link>.</p>
         <p><strong className="text-foreground">Cross-links.</strong> Chart rows and playlist tracks with a confirmed Audius release show an <strong>On Audius</strong> link. Audius track pages show where the track sits on BASE Station. A release is linked only after Audius confirms it.</p>
@@ -168,7 +191,9 @@ const AUDIOTOOL_HELP_SECTIONS = [
         <li><strong>"ERR_BLOCKED_BY_RESPONSE" in the console</strong> — Audiotool blocking a cover thumbnail from loading on another site. It's harmless.</li>
         <li><strong>"Audiotool rejected…"</strong> — a value was out of range, or the connection dropped. Check the connection banner and try again.</li>
         <li><strong>A new project or export isn't listed</strong> — press Refresh; syncing can take a few seconds.</li>
-        <li><strong>Export too large</strong> — stay under 40 MB (export 16-bit or shorter).</li>
+        <li><strong>Export too large</strong> — stay under 40 MB (export as FLAC, or register shorter sections).</li>
+        <li><strong>Contest entry notice missing</strong> — send one of the contest's stems to this project's timeline again while signed in to the same BASE Station account.</li>
+        <li><strong>Template link won't open</strong> — Audiotool refused the automatic copy. Save the template to your own projects on audiotool.com, then pick it from your list.</li>
         <li><strong>Audius popup didn't open</strong> — allow popups for BASE Station and press Distribute again.</li>
         <li><strong>Distribute to Audius stays locked</strong> — it waits for watermarking and C2PA sealing to finish. Watch the status tracker.</li>
       </ul>

@@ -69,6 +69,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
         <p className="text-sm text-muted-foreground">
           Export your mix from Audiotool (WAV is best), then drop it here. We score it with this session's ownership data,
           add the BASE Mark watermark, and anchor it on Base if you've turned on auto-anchoring.
+          <InfoTip text={TIPS.protectRouting} className="ml-1 align-middle" />
         </p>
       </div>
       {user && <AutoAnchorToggle user={user} />}

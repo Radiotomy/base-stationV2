@@ -5,7 +5,8 @@ const TIPS = {
   account: 'The Audiotool account the Bridge is acting as. Your session key renews by itself — disconnect any time to revoke access.',
   projects: 'Your 30 most recently edited Audiotool projects. Click one to open it live — every change syncs both ways in real time.',
   newProject: 'Create a blank project, or start from the BASE Songstarter template (mixer, drums and an audio track ready for loops).',
-  pasteLink: 'Paste a beta.audiotool.com/studio?project=… link. Audiotool template links can\'t be opened directly — save the template to your own projects first.',
+  pasteLink: 'Paste a beta.audiotool.com/studio?project=… link. Template links are copied into your own projects first, then the copy opens. If Audiotool refuses the copy, save the template yourself on audiotool.com.',
+  workspaces: 'Full-screen BASE Station instruments that open this same live project. Changes sync both ways, just like the Bridge — switch between them any time.',
   properties: 'Title, BPM, tags, license and sharing switches write straight to the Audiotool project. Tags also suggest the Audius genre when you publish.',
   license: 'The license shown on Audiotool. It is carried into the protected export and your Audius release.',
   copyAllowed: 'Lets other Audiotool users open a copy of this project to remix it.',
@@ -14,7 +15,7 @@ const TIPS = {
   role: 'Hover each option for what it allows. Only editors can change the session.',
   counts: 'Live totals from the synced project. They update whenever you, a collaborator or a Bridge tool adds or removes something.',
   explorer: 'Every track and device in the project. Toggles mute a track or bypass a device inside Audiotool; the link icon copies a URL that reopens the Bridge focused on that item.',
-  ingest: 'Sends a snapshot of the session (tracks, notes, devices) to BASE Engines for analysis. Nothing in your project is changed.',
+  ingest: 'Admin diagnostic: checks that the BASE Engines server can read this session (tracks, notes, devices). Nothing in the project is changed, and it plays no part in scoring or ownership.',
   ownership: 'Everything made by a Bridge AI tool is logged; everything else in the project counts as yours. Undone AI work is removed from the log. This split feeds your Creative Ownership Score.',
   coProducer: 'Rewrites the notes of one MIDI region from your direction. The original is never overwritten — the new version is placed after it or on a layered track, and can be undone.',
   placement: '"After" puts the rewrite right after the source region on the same track. "Layer" puts it on a new track stacked under the original.',
@@ -32,10 +33,11 @@ const TIPS = {
   coopAccept: 'Only one Bridge tab can handle a venue at a time. Turn this off to stop accepting requests immediately.',
   coopBpm: 'Tempo used for audience-requested loops so they fit your session.',
   protect: 'Scores your exported mix with this session\'s ownership data, adds the BASE Mark watermark, seals a C2PA manifest and (if enabled) anchors it on Base.',
-  exportFile: 'WAV is best — watermarking needs lossless audio. Files over 40 MB can\'t be stored reliably; export a shorter or lower-bit-depth mix.',
+  exportFile: 'WAV or FLAC is best — watermarking needs lossless audio. Files over 40 MB can\'t be stored reliably; export as FLAC (same quality, about half the size) or register shorter sections.',
   genre: 'Used for your Audius release and to place the track on the right BASE Station chart. Leave empty to use the genre suggested by your project tags.',
   audius: 'Uploads the watermarked WAV to your own Audius account. Unlocks after watermarking and sealing finish. You sign in to Audius in a popup.',
-  contests: 'Active Audius remix contests with host-provided stems. Send a stem to your timeline, and your protected export from this project is entered as a remix when you distribute it to Audius.',
+  contests: 'Active Audius remix contests with host-provided stems. Send a stem to your timeline and the project is linked to the contest on your account (on any device), so its protected export is entered as a remix when you distribute it to Audius.',
+  protectRouting: 'Once anchored on Base, the track is added to BASE Station Charts, the "Fresh from the Audiotool Bridge" playlist and Radio automatically.',
 };
 
 export default TIPS;
