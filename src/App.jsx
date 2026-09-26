@@ -71,6 +71,9 @@ const LeadSheetStudio = lazy(() => import('./pages/LeadSheetStudio'));
 const ScribeStudio = lazy(() => import('./pages/ScribeStudio'));
 const AudiotoolStudio = lazy(() => import('./pages/AudiotoolStudio'));
 const AudiotoolCallback = lazy(() => import('./pages/AudiotoolCallback'));
+const AudiotoolBeatStudio = lazy(() => import('./pages/AudiotoolBeatStudio'));
+const AudiotoolHarmonyStudio = lazy(() => import('./pages/AudiotoolHarmonyStudio'));
+const AudiotoolVocalLab = lazy(() => import('./pages/AudiotoolVocalLab'));
 const MashupStudio = lazy(() => import('./pages/MashupStudio'));
 const VocalHarmonizer = lazy(() => import('./pages/VocalHarmonizer'));
 const MasteringStudio = lazy(() => import('./pages/MasteringStudio'));
@@ -255,6 +258,9 @@ const AuthenticatedApp = () => {
               <Route path="/lead-sheet-studio" element={<LeadSheetStudio />} />
               <Route path="/scribe-studio" element={<ScribeStudio />} />
               <Route path="/audiotool" element={<AudiotoolStudio />} />
+              <Route path="/studios/audiotool/beat" element={<AudiotoolBeatStudio />} />
+              <Route path="/studios/audiotool/harmony" element={<AudiotoolHarmonyStudio />} />
+              <Route path="/studios/audiotool/vocal" element={<AudiotoolVocalLab />} />
               <Route path="/mashup-studio" element={<MashupStudio />} />
               <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
               <Route path="/mastering-studio" element={<MasteringStudio />} />

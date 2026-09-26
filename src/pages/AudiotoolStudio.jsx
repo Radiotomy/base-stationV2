@@ -11,7 +11,7 @@ export default function AudiotoolStudio() {
         <div className="max-w-5xl mx-auto">
           <h1 className="text-5xl font-black text-foreground mb-2 tracking-tight">🔗 Audiotool Bridge</h1>
           <p className="text-muted-foreground text-lg">
-            Connect Audiotool, open your projects live, and bring their sessions into BASE Station.
+            Connect Audiotool, pick a project, create in a dedicated workspace — then come back here to protect and publish.
           </p>
           <Link to="/help#audiotool-bridge" className="inline-flex items-center gap-1.5 mt-3 text-sm text-accent hover:underline">
             <BookOpen className="w-4 h-4" /> How the Bridge works — full guide

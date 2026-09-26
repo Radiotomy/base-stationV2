@@ -12,7 +12,10 @@ const CATEGORIES = [
     icon: Music,
     accent: "bg-gradient-to-br from-violet-600 to-fuchsia-600",
     studios: [
-      { to: "/audiotool",          emoji: "🔗", label: "Audiotool Bridge",   desc: "Open Audiotool projects live & bring sessions into BASE Station", beta: true },
+      { to: "/audiotool",          emoji: "🔗", label: "Audiotool Bridge",   desc: "Connect Audiotool, pick a project, protect & publish", beta: true },
+      { to: "/studios/audiotool/beat",    emoji: "🥁", label: "Beat & Pattern Studio", desc: "Drums, basslines & Tonematrix — live on Audiotool", beta: true },
+      { to: "/studios/audiotool/harmony", emoji: "🎹", label: "Harmony & Arrangement", desc: "Chord progressions, MIDI co-producer & song sections", beta: true },
+      { to: "/studios/audiotool/vocal",   emoji: "🎙️", label: "Vocal Lab",            desc: "Record takes, harmonies & Cantor vocals on the timeline", beta: true },
       { to: "/music-studio",       emoji: "🎵", label: "Music Studio",       desc: "Generate full tracks with AI" },
       { to: "/lyrics-studio",      emoji: "🎤", label: "Lyrics Studio",      desc: "Write song lyrics with AI" },
       { to: "/lead-sheet-studio",  emoji: "🎼", label: "Lead Sheet Studio",  desc: "Compose a score — Cantor sings it, Cadence plays your chords" },

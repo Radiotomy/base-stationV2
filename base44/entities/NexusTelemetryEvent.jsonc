@@ -1,7 +1,7 @@
 {
   "name": "NexusTelemetryEvent",
   "type": "object",
-  "description": "One AI invocation made through the Audiotool Bridge inside a live Nexus session. Stored ONLY in BASE Station's own database (never in the browser, never forwarded to any third party or data broker) to comply with Audiotool's API User Data Policy. Private to the creator; read by the COS engine to split human vs machine contribution.",
+  "description": "One AI invocation made through the Audiotool Bridge or its creative workspaces inside a live Nexus session. Stored ONLY in BASE Station's own database (never in the browser, never forwarded to any third party or data broker) to comply with Audiotool's API User Data Policy. Private to the creator; read by the COS engine to split human vs machine contribution.",
   "properties": {
     "user_id": {
       "type": "string",
@@ -22,9 +22,12 @@
         "drum_generator",
         "bassline_generator",
         "tonematrix_generator",
-        "automation_generator"
+        "automation_generator",
+        "cadence_bed",
+        "cantor_vocal",
+        "vocal_harmony"
       ],
-      "description": "Which bridge AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library loop sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern; bassline_generator = an AI-written Bassline pattern; tonematrix_generator = an AI-written Tonematrix pattern; automation_generator = an AI-described automation curve (collection_ids holds the automation collection). A pattern or curve the creator drew by hand or picked from a preset shape is never logged here, so it counts as human. An invocation whose output the creator undid is deleted, so undone AI work never counts against them."
+      "description": "Which AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library asset sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern; bassline_generator = an AI-written Bassline pattern; tonematrix_generator = an AI-written Tonematrix pattern; automation_generator = an AI-described automation curve (collection_ids holds the automation collection); cadence_bed = a Cadence (MusicGen-Chord) instrumental bed placed from the Harmony workspace; cantor_vocal = a Cantor (DiffSinger) vocal render placed from the Vocal Lab; vocal_harmony = an AI harmony layer placed from the Vocal Lab. Chord progressions, vocal takes and patterns the creator wrote, recorded or drew by hand are never logged here, so they count as human. An invocation whose output the creator undid is deleted, so undone AI work never counts against them."
     },
     "prompt": {
       "type": "string",
