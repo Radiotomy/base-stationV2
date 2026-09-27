@@ -2,6 +2,7 @@
 // the chain itself confirms the artist's wallet received value — the client's
 // claim that it sent a tip is never trusted.
 import { ethers } from 'npm:ethers@6.13.4';
+import { solanaRpcUrl } from './audiusTipWallet.ts';
 
 export const isBaseAddress = (a: string) => /^0x[0-9a-fA-F]{40}$/.test(a || '');
 export const isSolanaAddress = (a: string) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a || '');
@@ -17,9 +18,36 @@ export async function verifyBaseTip(txHash: string, toWallet: string) {
   return { amount: Number(ethers.formatEther(tx.value)), symbol: 'ETH', from: tx.from };
 }
 
+// $AUDIO (SPL) tip to an Audius artist's user bank. Credits are matched either
+// on the token account itself or on its owner, so both user banks and plain
+// wallets are accepted.
+export async function verifyAudiusTip(signature: string, toWallet: string, mint: string) {
+  if (!/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(signature)) throw new Error('Invalid Solana signature');
+  const res = await fetch(solanaRpcUrl(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0', id: 1, method: 'getTransaction',
+      params: [signature, { encoding: 'jsonParsed', commitment: 'confirmed', maxSupportedTransactionVersion: 0 }],
+    }),
+  });
+  const tx = (await res.json())?.result;
+  if (!tx) throw new Error('Transaction not found yet — wait a few seconds and retry');
+  if (tx.meta?.err) throw new Error('Transaction failed on-chain');
+  const keys = tx.transaction.message.accountKeys.map((k: any) => k.pubkey || k);
+  const pre = tx.meta.preTokenBalances || [];
+  const post = (tx.meta.postTokenBalances || []).find((b: any) =>
+    b.mint === mint && (keys[b.accountIndex] === toWallet || b.owner === toWallet));
+  if (!post) throw new Error("Transaction did not credit the artist's $AUDIO wallet");
+  const before = pre.find((b: any) => b.accountIndex === post.accountIndex);
+  const delta = Number(post.uiTokenAmount.uiAmountString) - Number(before?.uiTokenAmount?.uiAmountString || 0);
+  if (!(delta > 0)) throw new Error("Artist's wallet received no $AUDIO");
+  return { amount: delta, symbol: 'AUDIO', from: keys[0] };
+}
+
 export async function verifySolanaTip(signature: string, toWallet: string) {
   if (!/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(signature)) throw new Error('Invalid Solana signature');
-  const res = await fetch('https://api.mainnet-beta.solana.com', {
+  const res = await fetch(solanaRpcUrl(), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

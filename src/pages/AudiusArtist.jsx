@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { ArrowLeft, Headphones, CheckCircle2, Users } from 'lucide-react';
 import AudiusTrackCard from '@/components/audius/AudiusTrackCard';
+import AudiusTipButton from '@/components/tipping/AudiusTipButton';
 
 export default function AudiusArtist() {
   const { id } = useParams();
@@ -69,6 +70,7 @@ export default function AudiusArtist() {
               <span>{tracks.length} tracks</span>
             </div>
           </div>
+          <div className="pb-2"><AudiusTipButton audiusUserId={profile.id} artistName={profile.name || profile.handle} /></div>
         </div>
 
         {profile.bio && <p className="text-sm text-muted-foreground mb-6 max-w-2xl">{profile.bio}</p>}

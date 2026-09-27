@@ -9,6 +9,7 @@ import AudiusLicenseBadge from '@/components/audius/AudiusLicenseBadge';
 import AudiusStreamPlayer from '@/components/audius/AudiusStreamPlayer';
 import AudiusAIBadge from '@/components/audius/AudiusAIBadge';
 import BaseStationPlacements from '@/components/audius/BaseStationPlacements';
+import AudiusTipButton from '@/components/tipping/AudiusTipButton';
 
 export default function AudiusTrack() {
   const { id } = useParams();
@@ -104,6 +105,9 @@ export default function AudiusTrack() {
                     All Rights Reserved — import, sampling and stems are disabled. Only Creative Commons or artist-approved open-remix tracks can be pulled into the studio.
                   </p>
                 </div>
+              )}
+              {track.user?.id && (
+                <AudiusTipButton audiusUserId={track.user.id} artistName={track.user.name || track.user.handle} trackTitle={track.title} />
               )}
               {track.permalink && (
                 <a href={`https://audius.co${track.permalink}`} target="_blank" rel="noopener noreferrer">
