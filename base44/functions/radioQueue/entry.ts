@@ -73,6 +73,7 @@ function normalizeAudiusTrack(t, i = 0) {
     ai_label: t.ai_attribution_user_id ? 'ai_generated' : null,
     source: 'audius',
     audius_id: t.id,
+    audius_user_id: t.user?.id || '',
     permalink: t.permalink || '',
     position: i,
   };

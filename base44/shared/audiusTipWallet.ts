@@ -4,7 +4,7 @@
 export const AUDIO_MINT = '9LzCMqDgTKYz9Drzqnpgee3SGa89up3a247ypMj2xrqM';
 export const AUDIO_DECIMALS = 8;
 // Public mainnet RPC rejects cloud IPs — use a dedicated provider (Helius, QuickNode…).
-export const solanaRpcUrl = () => Deno.env.get('SOLANA_RPC_URL') || 'https://api.mainnet-beta.solana.com';
+export const solanaRpcUrl = () => Deno.env.get('SOLANA_RPC_URL') || 'https://solana-rpc.publicnode.com';
 
 export async function getAudiusTipWallet(audiusUserId: string) {
   const url = new URL(`https://api.audius.co/v1/users/${encodeURIComponent(audiusUserId)}`);

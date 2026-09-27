@@ -19,6 +19,7 @@ import TransportKnob from "@/components/radio/TransportKnob";
 import RadioTip from "@/components/radio/RadioTip";
 import useAudioProcessor from "@/hooks/useAudioProcessor";
 import AILabelBadge from "@/components/common/AILabelBadge";
+import AudiusTrackActions from "@/components/audius/AudiusTrackActions";
 
 // Channel genres map to Audius trending genres + community submission genres
 const DEFAULT_CHANNELS = [
@@ -326,6 +327,7 @@ export default function Radio() {
                         {nowPlaying.genre && (
                           <p className="text-[#A8C97E]/50 text-sm truncate" style={MONO_LCD}>{nowPlaying.genre}</p>
                         )}
+                        <AudiusTrackActions track={nowPlaying} className="mt-1.5" />
                       </div>
                     </motion.div>
                   ) : (

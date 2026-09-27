@@ -1,5 +1,6 @@
 import { Play, Pause, SkipBack, SkipForward, Music, Loader2, Volume2, VolumeX } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
+import AudiusTrackActions from "@/components/audius/AudiusTrackActions";
 
 export default function PlaylistPlayerBar({ track, isPlaying, isLoading, onToggle, onNext, onPrev, volume, muted, onVolumeChange, onMuteToggle }) {
   if (!track) return null;
@@ -15,6 +16,7 @@ export default function PlaylistPlayerBar({ track, isPlaying, isLoading, onToggl
           <p className="text-sm font-semibold text-foreground truncate">{track.track_title}</p>
           <p className="text-xs text-muted-foreground truncate">{track.artist_name}</p>
         </div>
+        <AudiusTrackActions track={track} className="hidden md:flex flex-nowrap" />
         <div className="flex items-center gap-1.5">
           <button onClick={onPrev} aria-label="Previous track"
             className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors">

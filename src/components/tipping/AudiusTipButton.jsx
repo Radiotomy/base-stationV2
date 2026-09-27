@@ -10,7 +10,7 @@ const getProvider = () => window.phantom?.solana || window.solflare || window.so
 
 // $AUDIO tip straight from the fan's Solana wallet to an Audius artist's wallet.
 // Works for any Audius artist — no Audius account needed on the fan's side.
-export default function AudiusTipButton({ audiusUserId, artistName, trackTitle }) {
+export default function AudiusTipButton({ audiusUserId, artistName, trackTitle, compact = false }) {
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("25");
   const [status, setStatus] = useState("");
@@ -47,8 +47,9 @@ export default function AudiusTipButton({ audiusUserId, artistName, trackTitle }
 
   return (
     <>
-      <Button variant="outline" onClick={() => { setOpen(true); setDone(null); }} className="rounded-xl gap-2">
-        <Coins className="w-4 h-4" /> Tip $AUDIO
+      <Button variant="outline" size={compact ? "sm" : "default"} onClick={() => { setOpen(true); setDone(null); }}
+        className={compact ? "rounded-full gap-1 h-7 px-2.5 text-xs" : "rounded-xl gap-2"} title={`Tip ${artistName} in $AUDIO`}>
+        <Coins className="w-4 h-4" /> {compact ? "Tip" : "Tip $AUDIO"}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-sm rounded-3xl">
