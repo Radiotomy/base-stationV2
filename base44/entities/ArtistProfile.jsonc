@@ -73,6 +73,24 @@
     "tipping_enabled": {
       "type": "boolean",
       "default": true
+    },
+    "tip_wallets": {
+      "type": "object",
+      "description": "Artist-owned receiving addresses for non-custodial tips. Public by design \u2014 fans send directly to these.",
+      "properties": {
+        "base": {
+          "type": "string",
+          "description": "Base (EVM) address, 0x\u2026"
+        },
+        "solana": {
+          "type": "string",
+          "description": "Solana address (base58)"
+        },
+        "audius_handle": {
+          "type": "string",
+          "description": "Audius handle for native $AUDIO tipping"
+        }
+      }
     }
   },
   "required": [

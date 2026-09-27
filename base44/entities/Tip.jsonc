@@ -1,6 +1,7 @@
 {
   "name": "Tip",
   "type": "object",
+  "description": "A fan-to-artist tip. Non-custodial: crypto tips move wallet-to-wallet and are only recorded after the transaction is verified on-chain; the platform never holds the funds.",
   "properties": {
     "from_user_id": {
       "type": "string"
@@ -21,11 +22,30 @@
       "type": "string"
     },
     "amount_cents": {
-      "type": "number"
+      "type": "number",
+      "description": "USD amount for fiat tips only"
     },
     "currency": {
       "type": "string",
       "default": "usd"
+    },
+    "token_symbol": {
+      "type": "string",
+      "description": "ETH or SOL for on-chain tips"
+    },
+    "token_amount": {
+      "type": "number",
+      "description": "Verified on-chain amount received by the artist"
+    },
+    "tx_hash": {
+      "type": "string",
+      "description": "Verified transaction hash / signature. Unique per tip to prevent replay."
+    },
+    "from_wallet": {
+      "type": "string"
+    },
+    "to_wallet": {
+      "type": "string"
     },
     "message": {
       "type": "string"
@@ -51,21 +71,20 @@
       "enum": [
         "base",
         "solana",
+        "audius",
         "fiat"
       ],
       "default": "base",
-      "description": "Blockchain used for the tip"
+      "description": "Rail used for the tip"
     },
     "description": {
       "type": "string",
-      "maxLength": 1000,
-      "description": "Optional description for SEO and discoverability"
+      "maxLength": 1000
     }
   },
   "required": [
     "to_artist_id",
-    "to_artist_name",
-    "amount_cents"
+    "to_artist_name"
   ],
   "rls": {
     "create": {

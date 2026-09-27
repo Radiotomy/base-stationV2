@@ -1,50 +1,67 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
+import { verifyBaseTip, verifySolanaTip } from '../../shared/tipVerify.ts';
 
-Deno.serve(async (req) => {
+// Records a NON-CUSTODIAL tip only after verifying it on-chain. The fan's own
+// wallet paid the artist's own wallet directly; the platform never holds funds.
+export default async function (req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
+    if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    const { artist_id, blockchain, tx_hash, message, track_title } = await req.json();
+    if (!artist_id || !tx_hash || !['base', 'solana'].includes(blockchain)) {
+      return Response.json({ error: 'artist_id, blockchain (base|solana) and tx_hash are required' }, { status: 400 });
     }
 
-    const { artist_id, artist_name, artist_email, amount_cents, message, track_title, blockchain } = await req.json();
+    const sr = base44.asServiceRole.entities;
+    const profile = (await sr.ArtistProfile.filter({ user_id: artist_id }))[0]
+      || await sr.ArtistProfile.get(artist_id).catch(() => null);
+    if (!profile || profile.tipping_enabled === false) {
+      return Response.json({ error: 'This artist is not accepting tips' }, { status: 400 });
+    }
+    const toWallet = profile.tip_wallets?.[blockchain];
+    if (!toWallet) return Response.json({ error: `Artist has no ${blockchain} wallet set` }, { status: 400 });
 
-    if (!artist_id || !amount_cents || !blockchain) {
-      return Response.json({ error: 'Missing required fields' }, { status: 400 });
+    const existing = await sr.Tip.filter({ tx_hash });
+    if (existing.length) return Response.json({ error: 'This transaction was already recorded' }, { status: 409 });
+
+    let verified;
+    try {
+      verified = blockchain === 'base' ? await verifyBaseTip(tx_hash, toWallet) : await verifySolanaTip(tx_hash, toWallet);
+    } catch (e) {
+      return Response.json({ error: e.message }, { status: 400 });
     }
 
-    // Create tip record
-    const tip = await base44.entities.Tip.create({
+    const tip = await sr.Tip.create({
       from_user_id: user.id,
       from_user_name: user.full_name,
       from_user_email: user.email,
-      to_artist_id: artist_id,
-      to_artist_name: artist_name,
-      to_artist_email: artist_email,
-      amount_cents,
+      to_artist_id: profile.user_id,
+      to_artist_name: profile.display_name,
+      to_artist_email: profile.user_email,
+      blockchain,
+      tx_hash,
+      token_symbol: verified.symbol,
+      token_amount: verified.amount,
+      from_wallet: verified.from,
+      to_wallet: toWallet,
+      currency: verified.symbol.toLowerCase(),
       message: message || '',
       track_title: track_title || '',
-      blockchain,
-      status: 'completed', // In MVP, immediately mark as completed
+      status: 'completed',
     });
 
-    // Log activity
-    await base44.asServiceRole.entities.ActivityFeedItem.create({
-      type: 'track_submitted', // Reusing type for activity feed
+    await sr.ActivityFeedItem.create({
+      type: 'track_submitted',
       actor_name: user.full_name,
       actor_id: user.id,
-      title: `sent a ${(amount_cents / 100).toFixed(2)} tip to ${artist_name}`,
-      description: `via ${blockchain === 'base' ? 'Base blockchain' : blockchain === 'solana' ? 'Solana blockchain' : 'Stripe'}`,
+      title: `sent ${verified.amount} ${verified.symbol} to ${profile.display_name}`,
+      description: `Verified on ${blockchain === 'base' ? 'Base' : 'Solana'}`,
     }).catch(() => {});
 
-    return Response.json({ 
-      success: true, 
-      tip_id: tip.id,
-      message: `Tip sent! Thanks for supporting ${artist_name}.`
-    });
+    return Response.json({ success: true, tip_id: tip.id, amount: verified.amount, symbol: verified.symbol });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
-});
+}

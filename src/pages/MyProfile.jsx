@@ -15,6 +15,7 @@ import MyCreatorActions from "@/components/fan/MyCreatorActions";
 import ProfileModeChooser from "@/components/profile/ProfileModeChooser";
 import FanProfileView from "@/components/profile/FanProfileView";
 import { useAuth } from "@/lib/AuthContext";
+import TipWalletsCard from "@/components/tipping/TipWalletsCard";
 
 const BASE_GENRES = [
   "hip-hop", "trap", "drill", "afrobeats", "afro-trap",
@@ -101,6 +102,7 @@ export default function MyProfile() {
     social_links: {},
     tipping_enabled: true,
     is_public: true,
+    tip_wallets: {},
   });
 
   useEffect(() => {
@@ -124,6 +126,7 @@ export default function MyProfile() {
           social_links: p.social_links || {},
           tipping_enabled: p.tipping_enabled !== false,
           is_public: p.is_public !== false,
+          tip_wallets: p.tip_wallets || {},
         });
         setSelectedTools(p.ai_tools || []);
         setMode("view");
@@ -520,6 +523,10 @@ export default function MyProfile() {
                 </button>
               </div>
             </div>
+
+            {form.tipping_enabled && (
+              <TipWalletsCard value={form.tip_wallets} onChange={(tip_wallets) => setForm(f => ({ ...f, tip_wallets }))} />
+            )}
 
             {/* Save */}
             <Button
