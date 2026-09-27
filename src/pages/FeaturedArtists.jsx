@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { useAuth } from "@/lib/AuthContext";
 import { motion } from "framer-motion";
 import { Star, Music, Users, Check, Send, ArrowRight, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+
+const SELECT_CLS = "flex h-9 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm capitalize shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
 
 const GENRES = ["hip-hop", "edm", "pop", "r&b", "rock", "lo-fi", "jazz", "trap", "other"];
 const AI_TOOLS = ["Suno", "Udio", "ElevenLabs", "Riffusion", "Mureka", "Multiple tools"];
@@ -24,6 +26,20 @@ export default function FeaturedArtists() {
     social_links: "", why_featured: "", monthly_listeners: "", ai_tools_used: ""
   });
 
+  const { user } = useAuth();
+  const formRef = useRef(null);
+
+  // Applications are tied to the signed-in account's email.
+  useEffect(() => {
+    if (user?.email) setForm(f => ({ ...f, email: user.email, artist_name: f.artist_name || user.full_name || "" }));
+  }, [user?.email]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openForm = () => {
+    if (!user) { base44.auth.redirectToLogin(window.location.href); return; }
+    setShowForm(true);
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  };
+
   useEffect(() => {
     base44.entities.FeaturedArtistApplication.filter({ status: "approved" }, "-featured_since", 20)
       .then(data => { setFeatured(data); setLoading(false); })
@@ -37,10 +53,15 @@ export default function FeaturedArtists() {
       return;
     }
     setSubmitting(true);
-    await base44.entities.FeaturedArtistApplication.create({ ...form, status: "pending" });
-    setSubmitted(true);
-    setSubmitting(false);
-    toast.success("Application submitted! We'll be in touch.");
+    try {
+      await base44.entities.FeaturedArtistApplication.create({ ...form, email: user?.email || form.email, status: "pending" });
+      setSubmitted(true);
+      toast.success("Application submitted! We'll be in touch.");
+    } catch (err) {
+      toast.error(`Couldn't submit your application — ${err?.message || "please try again"}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const update = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -61,7 +82,7 @@ export default function FeaturedArtists() {
             <p className="text-yellow-200/70 text-lg max-w-xl mx-auto mb-8">
               AIVTV's Featured Artist program puts exceptional AI music creators front and center on the platform.
             </p>
-            <Button onClick={() => setShowForm(!showForm)}
+            <Button onClick={openForm}
               className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold px-8 py-3 rounded-full text-sm">
               <Star className="w-4 h-4 mr-2" /> Apply Now
             </Button>
@@ -118,7 +139,7 @@ export default function FeaturedArtists() {
 
         {/* Application Form */}
         {showForm && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-12 p-8 rounded-3xl bg-card border border-border">
+          <motion.div ref={formRef} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-12 p-8 rounded-3xl bg-card border border-border scroll-mt-24">
             <h2 className="text-2xl font-black text-foreground mb-2">Apply to Be Featured</h2>
             <p className="text-muted-foreground mb-8">Tell us about your music and why you'd be a great fit for the AIVTV spotlight.</p>
 
@@ -138,7 +159,8 @@ export default function FeaturedArtists() {
                 </div>
                 <div className="space-y-2">
                   <Label>Email *</Label>
-                  <Input type="email" value={form.email} onChange={e => update("email", e.target.value)} placeholder="your@email.com" className="rounded-xl" />
+                  <Input type="email" value={form.email} readOnly disabled placeholder="your@email.com" className="rounded-xl" />
+                  <p className="text-[11px] text-muted-foreground">Uses your account email so we can reach you.</p>
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Bio *</Label>
@@ -146,17 +168,17 @@ export default function FeaturedArtists() {
                 </div>
                 <div className="space-y-2">
                   <Label>Primary Genre</Label>
-                  <Select onValueChange={v => update("genre", v)}>
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Select genre" /></SelectTrigger>
-                    <SelectContent>{GENRES.map(g => <SelectItem key={g} value={g} className="capitalize">{g}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <select value={form.genre} onChange={e => update("genre", e.target.value)} className={SELECT_CLS}>
+                    <option value="">Select genre</option>
+                    {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label>AI Tools You Use</Label>
-                  <Select onValueChange={v => update("ai_tools_used", v)}>
-                    <SelectTrigger className="rounded-xl"><SelectValue placeholder="Primary tool" /></SelectTrigger>
-                    <SelectContent>{AI_TOOLS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <select value={form.ai_tools_used} onChange={e => update("ai_tools_used", e.target.value)} className={SELECT_CLS}>
+                    <option value="">Primary tool</option>
+                    {AI_TOOLS.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label>Best Track URL</Label>
