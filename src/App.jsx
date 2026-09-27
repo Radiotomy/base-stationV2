@@ -128,6 +128,8 @@ const Forum = lazy(() => import('./pages/Forum'));
 const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
 const VerifyMark = lazy(() => import('./pages/VerifyMark'));
+const Hackathon = lazy(() => import('./pages/Hackathon'));
+const HackathonDeck = lazy(() => import('./pages/HackathonDeck'));
 // BASE Foundry — isolated DSP plugin studio module
 const Foundry = lazy(() => import('./pages/Foundry'));
 const FoundryWorkspace = lazy(() => import('./pages/FoundryWorkspace'));
@@ -201,6 +203,8 @@ const AuthenticatedApp = () => {
           {/* Public community forum — open to guests, no BASE Station account required */}
           <Route path="/forum" element={<Forum />} />
           <Route path="/forum/:id" element={<ForumThread />} />
+          {/* Full-screen hackathon deck — public, no app chrome */}
+          <Route path="/hackathon/deck" element={<HackathonDeck />} />
           <Route element={<MobileLayout />}>
             {/* ── Public pages — browsable without an account ── */}
             <Route path="/" element={<Home />} />
@@ -223,6 +227,7 @@ const AuthenticatedApp = () => {
             <Route path="/venues" element={<Venues />} />
             <Route path="/venue/:venueId" element={<VenueStage />} />
             <Route path="/verify" element={<VerifyMark />} />
+            <Route path="/hackathon" element={<Hackathon />} />
             <Route path="/trust" element={<TrustCenter />} />
             <Route path="/why-base-station" element={<Navigate to="/trust" replace />} />
             <Route path="/news-hub" element={<AIMusicLegalNews />} />

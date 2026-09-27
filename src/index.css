@@ -657,6 +657,29 @@ html .hover\:text-indigo-400:hover {
   flex: none;
 }
 
+/* ===== Hackathon deck — approved dark tinted direction ===== */
+.hk-deck {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #f8f3ed;
+  background: #211b2b;
+  background-image: radial-gradient(ellipse at 85% 6%, rgba(192,137,121,.19), transparent 34%), radial-gradient(ellipse at 3% 52%, rgba(113,91,147,.23), transparent 35%), linear-gradient(160deg, #241e2f, #211a27 58%, #17151e);
+  z-index: 60;
+}
+.hk-deck::before { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, rgba(255,255,255,.025), transparent 38%, rgba(255,255,255,.018)); pointer-events: none; }
+.hk-slides { position: relative; display: grid; gap: 28px; }
+.hk-slide { position: relative; min-height: 790px; border: 1px solid rgba(255,255,255,.17); border-radius: 20px; overflow: hidden; background: #292232; box-shadow: 0 24px 60px rgba(0,0,0,.32), inset 0 1px rgba(255,255,255,.16); animation: hk-arrive .85s cubic-bezier(.2,.72,.24,1) both; }
+.hk-slide:nth-child(2) { animation-delay: .13s; }
+.hk-slide:nth-child(3) { animation-delay: .26s; }
+.hk-hero { display: flex; align-items: flex-end; padding: 76px; background: #211a28; }
+.hk-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(.77); }
+.hk-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(22,18,29,.85), rgba(24,19,31,.5) 54%, rgba(24,19,31,.12)), linear-gradient(0deg, rgba(21,16,26,.82), transparent 70%); }
+.hk-hero h1 { z-index: 1; position: relative; max-width: 1110px; margin: 0; font-size: 58px; line-height: 1.13; letter-spacing: -2px; font-weight: 700; text-wrap: balance; text-shadow: 0 4px 25px rgba(0,0,0,.32); }
+.hk-visual { padding: 24px; background: rgba(255,255,255,.035); backdrop-filter: blur(14px); }
+.hk-visual > img { display: block; width: 100%; height: 740px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,.18); box-shadow: 0 16px 40px rgba(0,0,0,.3); }
+.hk-visual:last-child { background: rgba(255,255,255,.025); }
+@keyframes hk-arrive { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+@media print { .hk-deck { width: 1439px; } .hk-slide { break-after: page; box-shadow: none; } }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
