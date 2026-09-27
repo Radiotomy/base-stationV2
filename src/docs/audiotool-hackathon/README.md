@@ -2,7 +2,9 @@
 
 **A provenance-first AI music studio that works as a live peer inside Audiotool Nexus sessions — across all six Let's Build categories.**
 
-[Submission kit](https://base-station.base44.app/hackathon) · [Interactive deck](https://base-station.base44.app/hackathon/deck) · [Audiotool Bridge](https://base-station.base44.app/audiotool) · [Watermark verifier](https://base-station.base44.app/verify)
+**▶ Try it live: [basestation.live/audiotool](https://basestation.live/audiotool)** — launches the Audiotool Bridge.
+
+[Submission kit](https://basestation.live/hackathon) · [Interactive deck](https://basestation.live/hackathon/deck) · [Watermark verifier](https://basestation.live/verify)
 
 BASE Station opens the same live Nexus document your Audiotool desktop has open and writes to it in real time — devices, note regions, automation, patterns — while a parallel provenance pipeline scores who did the creative work (human vs AI) and forensically watermarks the exported master.
 

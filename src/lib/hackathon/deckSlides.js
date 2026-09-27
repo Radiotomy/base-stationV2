@@ -11,5 +11,5 @@ export const DECK_SLIDES = [
     title: c.short, body: c.blurb, bullets: c.features,
   })),
   { kind: 'visual', image: IMAGES.stage, eyebrow: 'The differentiator', title: 'Provenance that travels with the export', bullets: HIGHLIGHTS },
-  { kind: 'hero', image: IMAGES.hero, title: 'Try it live — base-station.base44.app/hackathon' },
+  { kind: 'hero', image: IMAGES.hero, title: 'Try it live — basestation.live/audiotool' },
 ];

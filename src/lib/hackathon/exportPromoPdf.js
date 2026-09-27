@@ -49,7 +49,8 @@ export async function exportPromoPdf() {
 
   // CTA
   y += 26;
-  write('See it live', 18, [30, 25, 35], true);
-  write(`${APP_URL}/hackathon  ·  ${APP_URL}/audiotool  ·  ${APP_URL}/verify`, 11, [200, 100, 60], false);
+  write('Try it live — launch the Audiotool Bridge', 18, [30, 25, 35], true);
+  write(`${APP_URL}/audiotool`, 13, [200, 100, 60], true);
+  write(`Submission kit: ${APP_URL}/hackathon  ·  Verifier: ${APP_URL}/verify`, 10, [130, 120, 135], false);
   doc.save('BASE-Station-Audiotool-Submission.pdf');
 }

@@ -4,7 +4,8 @@ export const IMAGES = {
   stage: 'https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/1e619d1ad_generated_ab0ffd6e.jpg',
 };
 
-export const APP_URL = 'https://base-station.base44.app';
+export const APP_URL = 'https://basestation.live';
+export const TRY_URL = 'https://basestation.live/audiotool';
 
 export const TAGLINE =
   "BASE Station × Audiotool — a provenance-first AI music studio that works as a live peer inside Audiotool Nexus sessions, across all six Let's Build categories.";
