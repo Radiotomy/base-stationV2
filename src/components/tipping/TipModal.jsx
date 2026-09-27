@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import BaseTipSender from "@/components/tipping/BaseTipSender";
 import SolanaTipSender from "@/components/tipping/SolanaTipSender";
+import CardTipSender from "@/components/tipping/CardTipSender";
+import { CreditCard } from "lucide-react";
 
 const RAILS = [
   { key: "audius_handle", label: "Audius · $AUDIO", desc: "Native Audius tipping from your Audius wallet", icon: Music2 },
@@ -24,11 +26,14 @@ export default function TipModal({ artist, onClose }) {
     (async () => {
       const byUser = await base44.entities.ArtistProfile.filter({ user_id: artist.id });
       const p = byUser[0] || (await base44.entities.ArtistProfile.get(artist.id).catch(() => null));
-      setWallets(p?.tipping_enabled === false ? {} : p?.tip_wallets || {});
+      setWallets(p?.tipping_enabled === false || !p ? { enabled: false } : p.tip_wallets || {});
     })();
   }, [artist.id]);
 
-  const available = RAILS.filter((r) => wallets?.[r.key]);
+  const available = wallets?.enabled === false ? [] : [
+    ...RAILS.filter((r) => wallets?.[r.key]),
+    { key: "card", label: "Card · USD", desc: "Pay with any card via Stripe", icon: CreditCard },
+  ];
 
   const record = async (tx_hash) => {
     const res = await base44.functions.invoke("processTip", { artist_id: artist.id, blockchain: rail, tx_hash, message });
@@ -45,7 +50,7 @@ export default function TipModal({ artist, onClose }) {
         {!wallets && <div className="py-8 flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>}
 
         {wallets && !available.length && (
-          <p className="text-sm text-muted-foreground py-4">This artist hasn't added a tip wallet yet.</p>
+          <p className="text-sm text-muted-foreground py-4">This artist isn't accepting tips right now.</p>
         )}
 
         {done && (
@@ -76,6 +81,7 @@ export default function TipModal({ artist, onClose }) {
             )}
             {rail === "base" && <BaseTipSender toWallet={wallets.base} onSent={record} />}
             {rail === "solana" && <SolanaTipSender toWallet={wallets.solana} onSent={record} />}
+            {rail === "card" && <CardTipSender artistId={artist.id} message={message} />}
             {rail === "audius" && (
               <a href={`https://audius.co/${wallets.audius_handle}`} target="_blank" rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full rounded-xl merc-button py-2.5 text-sm font-semibold">
