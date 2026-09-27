@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { BAR_PX } from '@/lib/audiotool/arrangement';
+import { FAMILIES, regionFamily } from '@/lib/audiotool/familyColors';
 
 /** One region on the timeline. Drag sideways to move (snaps to bars); tap to edit. */
 export default function ArrangementRegionBlock({ region, selected, onSelect, onMove }) {
@@ -16,13 +17,16 @@ export default function ArrangementRegionBlock({ region, selected, onSelect, onM
     else onSelect();
   };
 
-  const audio = region.type === 'audioRegion';
+  const fam = FAMILIES[regionFamily(region.type)];
   return (
     <div
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel}
-      style={{ left: region.start * BAR_PX, width: Math.max(14, region.length * BAR_PX - 2), transform: `translateX(${dx}px)`, touchAction: 'none' }}
-      className={`absolute top-1.5 bottom-1.5 rounded-lg px-2 flex items-center text-[11px] font-semibold select-none cursor-grab active:cursor-grabbing border transition-shadow
-        ${audio ? 'bg-accent/25 border-accent/50' : 'bg-white/10 border-white/20'}
+      style={{
+        left: region.start * BAR_PX, width: Math.max(14, region.length * BAR_PX - 2), transform: `translateX(${dx}px)`, touchAction: 'none',
+        background: `linear-gradient(90deg, ${fam.wash.replace(/[\d.]+\)$/, '.22)')}, #241c14 100%)`,
+        borderLeft: `2px solid ${fam.color}`,
+      }}
+      className={`absolute top-1.5 bottom-1.5 rounded-lg px-2 flex items-center text-[11px] font-semibold text-[#f1ece5] select-none cursor-grab active:cursor-grabbing border border-[#30271f] transition-shadow
         ${selected ? 'ring-2 ring-accent' : ''} ${dx ? 'z-10 shadow-2xl' : ''}`}
     >
       <span className="truncate">{region.name}</span>

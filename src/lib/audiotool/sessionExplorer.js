@@ -39,6 +39,7 @@ export function readSession(nexus) {
       kind,
       entity: tr,
       order: tr.fields.orderAmongTracks?.value ?? 0,
+      playerId: tr.fields.player?.value?.entityId,
       name: names.get(tr.fields.player?.value?.entityId) || `${kind} track`,
       regions: regions.filter((r) => r.trackId === tr.id).sort((a, b) => a.bar - b.bar),
     }));

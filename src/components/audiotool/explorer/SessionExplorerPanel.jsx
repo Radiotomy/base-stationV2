@@ -7,10 +7,12 @@ import ExplorerTrackRow from './ExplorerTrackRow';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
 import ExplorerDeviceRow from './ExplorerDeviceRow';
+import useAiDeviceIds from '@/hooks/useAiDeviceIds';
 
 export default function SessionExplorerPanel({ nexus, projectUrl, focus, version, connected, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [tick, setTick] = useState(0);
+  const aiIds = useAiDeviceIds(projectUrl);
   const { tracks, devices } = useMemo(() => readSession(nexus), [nexus, version, tick]);
 
   // Watch every on/off switch directly, so a mute or bypass made inside
@@ -63,14 +65,14 @@ export default function SessionExplorerPanel({ nexus, projectUrl, focus, version
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tracks ({tracks.length})</h4>
           <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
             {tracks.length === 0 && <p className="text-sm text-muted-foreground">No tracks yet.</p>}
-            {tracks.map((t) => <ExplorerTrackRow key={t.id} track={t} disabled={disabled} onToggle={toggle} {...rowProps(t.id)} />)}
+            {tracks.map((t) => <ExplorerTrackRow key={t.id} track={t} ai={aiIds.has(t.playerId)} disabled={disabled} onToggle={toggle} {...rowProps(t.id)} />)}
           </div>
         </div>
         <div className="space-y-2">
           <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Instruments & effects ({devices.length})</h4>
           <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
             {devices.length === 0 && <p className="text-sm text-muted-foreground">No synths or effects on the desktop yet.</p>}
-            {devices.map((d) => <ExplorerDeviceRow key={d.id} device={d} disabled={disabled} onToggle={toggle} {...rowProps(d.id)} />)}
+            {devices.map((d) => <ExplorerDeviceRow key={d.id} device={d} ai={aiIds.has(d.id)} disabled={disabled} onToggle={toggle} {...rowProps(d.id)} />)}
           </div>
         </div>
       </div>

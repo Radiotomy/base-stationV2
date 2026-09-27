@@ -13,6 +13,7 @@ import AudiusRemixTab from './AudiusRemixTab';
 import AudiusContestsTab from '@/components/audiotool/contests/AudiusContestsTab';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
+import { FAMILIES, AI_ORIGIN_COLOR } from '@/lib/audiotool/familyColors';
 
 // Library loops that were themselves AI-generated are logged as AI material,
 // so the Creative Ownership meter doesn't count them as human-made.
@@ -27,10 +28,12 @@ const freesoundSend = (r) => (
   <SendToAudiotoolButton url={r.preview_url} name={`${r.name} by ${r.username}`} className="w-full" />
 );
 
+// Tab dot = where the sound comes from: AI generation, sound libraries, or Audius.
+const SOURCE = { ai: AI_ORIGIN_COLOR, library: FAMILIES.effect.color, audius: FAMILIES.eq.color };
 const TABS = [
-  ['vibe', 'Vibe → Session'], ['chain', 'Instrument Chain'], ['forge', 'BASE Forge Loops'], ['sfx', 'Sound FX'],
-  ['search', 'Search by Sound'], ['free', 'Discover Free Loops'], ['community', 'Community Library'],
-  ['contests', 'Audius Contests'], ['audius', 'Remix from Audius'],
+  ['vibe', 'Vibe → Session', 'ai'], ['chain', 'Instrument Chain', 'ai'], ['forge', 'BASE Forge Loops', 'ai'], ['sfx', 'Sound FX', 'ai'],
+  ['search', 'Search by Sound', 'library'], ['free', 'Discover Free Loops', 'library'], ['community', 'Community Library', 'library'],
+  ['contests', 'Audius Contests', 'audius'], ['audius', 'Remix from Audius', 'audius'],
 ];
 
 export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) {
@@ -45,7 +48,11 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
         </div>
         <Tabs defaultValue="vibe">
           <TabsList className="flex flex-wrap h-auto justify-start">
-            {TABS.map(([v, l]) => <TabsTrigger key={v} value={v}>{l}</TabsTrigger>)}
+            {TABS.map(([v, l, src]) => (
+              <TabsTrigger key={v} value={v} className="gap-1.5">
+                <span className="at-family-dot" style={{ '--family': SOURCE[src] }} />{l}
+              </TabsTrigger>
+            ))}
           </TabsList>
           <TabsContent value="chain"><InstrumentChainPanel at={at} nexus={nexus} projectUrl={projectUrl} onChanged={onChanged} /></TabsContent>
           <TabsContent value="forge"><ForgeLoopGenerator /></TabsContent>

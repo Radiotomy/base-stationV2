@@ -585,6 +585,78 @@ html .hover\:text-indigo-400:hover {
   }
 }
 
+/* =====================================================
+   AUDIOTOOL FAMILY ACCENTS — faint edge hint, scoped to
+   Audiotool surfaces only (explorer rows, regions, tabs).
+   ===================================================== */
+.at-family-row {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #30271f;
+  border-radius: 9px;
+  background: linear-gradient(90deg, var(--wash), rgba(36, 28, 20, 0.92) 42%, #241c14 100%);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+  transition: border-color .18s ease, background-color .18s ease;
+}
+.at-family-row::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--family);
+  opacity: .7;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--family) 40%, transparent);
+  transition: opacity .18s ease, box-shadow .18s ease;
+  z-index: -1;
+}
+.at-family-row:focus-within::before {
+  opacity: 1;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--family) 65%, transparent);
+}
+.at-copy-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #44382c;
+  border-radius: 7px;
+  background: #1b1712;
+  color: #a9a097;
+  cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease, transform .15s ease;
+}
+.at-copy-btn:hover { color: #f5eee5; border-color: #766652; background: #30261c; }
+.at-copy-btn:active { transform: scale(.94); }
+.at-copy-btn:focus-visible { outline: 2px solid #c9a0ff; outline-offset: 2px; }
+.at-toggle {
+  height: 17px !important;
+  width: 30px !important;
+  border: 1px solid #5a5045 !important;
+  background: #342b22 !important;
+  transition: background-color .16s ease, border-color .16s ease;
+}
+.at-toggle[data-state="checked"] { background: #375b56 !important; border-color: #6fd3c7 !important; }
+.at-toggle:focus-visible { outline: 2px solid #c9a0ff; outline-offset: 3px; }
+.at-toggle > span {
+  width: 11px !important;
+  height: 11px !important;
+  background: #aca195 !important;
+  transition: transform .16s ease, background-color .16s ease;
+}
+.at-toggle[data-state="checked"] > span { transform: translateX(13px) !important; background: #a0eee3 !important; }
+.at-toggle[data-state="unchecked"] > span { transform: translateX(1px) !important; }
+.at-toggle:active > span { background: #fff !important; }
+.at-family-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--family);
+  opacity: .8;
+  flex: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
