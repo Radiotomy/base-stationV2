@@ -1,110 +1,47 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
-import { cosForDerived } from '../../shared/cosStamp.ts';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.52';
+import { enqueueKits, loadSourceAndVoice, queueInfo } from '../../shared/kitsQueue.ts';
 
 /**
- * Phase 3 — AI Vocal Harmonizer
+ * Vocal Harmonizer — real harmonies via Kits.ai voice conversion.
+ * The source take is pitch-shifted by the harmony interval and re-sung by the
+ * chosen Kits voice (same or different from the lead), so the harmony layer is
+ * genuinely new audio rather than a copy of the source.
  *
- * Provider-agnostic harmony generation (ElevenLabs, Azure, custom DSP).
- *
- * Payload: { assetId, harmonyType: '3rd' | '5th' | 'octave' | 'custom', custom? }
+ * Payload: { assetId, harmonyType: '3rd'|'5th'|'octave'|'unison'|'custom', custom?: semitones, voiceModelId, below?: boolean }
+ * Returns: { job_id, status, queue } — poll with pollKitsJob.
  */
+const INTERVALS: Record<string, number> = { '3rd': 4, '5th': 7, octave: 12, unison: 0 };
 
-const CREDITS_PER_HARMONY = 4;
-const VALID_TYPES = ['3rd', '5th', 'octave', 'unison', 'custom'];
-
-Deno.serve(async (req) => {
+export default async function (req: Request): Promise<Response> {
   try {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { assetId, harmonyType = '3rd', custom } = await req.json();
-    if (!assetId) return Response.json({ error: 'assetId required' }, { status: 400 });
-    if (!VALID_TYPES.includes(harmonyType)) {
-      return Response.json({ error: `harmonyType must be one of: ${VALID_TYPES.join(', ')}` }, { status: 400 });
+    const { assetId, harmonyType = '3rd', custom, voiceModelId, below } = await req.json();
+    if (!assetId || !voiceModelId) return Response.json({ error: 'assetId and voiceModelId required' }, { status: 400 });
+    if (!(harmonyType in INTERVALS) && harmonyType !== 'custom') {
+      return Response.json({ error: 'harmonyType must be 3rd, 5th, octave, unison or custom' }, { status: 400 });
     }
+    let shift = harmonyType === 'custom' ? Math.round(Number(custom) || 0) : INTERVALS[harmonyType];
+    if (below) shift = -shift;
+    shift = Math.max(-24, Math.min(24, shift));
 
-    const arr = await base44.entities.UserAsset.filter({ id: assetId });
-    const source = arr[0];
-    if (!source) return Response.json({ error: 'Source asset not found' }, { status: 404 });
-
-    // Provider pick
-    const balances = await base44.asServiceRole.entities.ProviderBalance.list().catch(() => []);
-    const balanceMap = Object.fromEntries(balances.map(b => [b.provider, b]));
-    const candidates = ['nuro', 'sonic', 'producer'];
-    const ranked = candidates.map(p => ({ name: p, score: balanceMap[p]?.score ?? 50 })).sort((a, b) => b.score - a.score);
-    const primary = ranked[0]?.name || 'nuro';
-
-    const job = await base44.entities.GenerationJob.create({
-      user_id: user.id,
-      user_email: user.email,
-      job_type: 'music',
-      provider: primary,
-      status: 'completed',
-      // RIAA GenAI label — inherits most AI-intensive label in chain:
-      // AI-generated source stays ai_generated; human source + AI harmony layer = ai_assisted
-      ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
-      input_data: { assetId, harmonyType, custom, action: 'harmonize' },
-      output_url: source.file_url,
-      output_metadata: { harmonyType, source_provider: source.metadata?.provider },
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
+    const { input } = await loadSourceAndVoice(base44, assetId, voiceModelId);
+    const job = await enqueueKits(base44, user, 'harmony', {
+      ...input,
+      assetId,
+      harmony_type: harmonyType,
+      pitch_shift: shift,
+      // Harmony layers keep the lead's phrasing: moderate strength, source dynamics.
+      conversion_strength: 0.5,
+      model_volume_mix: 0.3,
+      context: 'vocal_harmonizer',
     });
-
-    try {
-      await base44.functions.invoke('deductCredits', {
-        amount: CREDITS_PER_HARMONY,
-        job_id: job.id,
-        provider: primary,
-        description: `Harmony (${harmonyType}) for ${source.title}`,
-      });
-    } catch { /* non-blocking */ }
-
-    const { fields: cos } = cosForDerived({
-      prompt: custom ? `${harmonyType} harmony: ${custom}` : `${harmonyType} harmony`,
-      sourceCount: 1,
-      styleOrTags: [harmonyType],
-    });
-
-    const harmony = await base44.entities.UserAsset.create({
-      user_id: user.id,
-      user_email: user.email,
-      asset_type: 'harmony',
-      title: `${source.title} — ${harmonyType} harmony`,
-      description: `${harmonyType} harmony layer generated from ${source.title}`,
-      file_url: source.file_url,
-      thumbnail_url: source.thumbnail_url,
-      origin: 'creator',
-      ai_label: source.ai_label === 'ai_generated' ? 'ai_generated' : 'ai_assisted',
-      ...cos,
-      parent_asset_id: source.id,
-      tags: ['harmony', harmonyType, 'creator'],
-      metadata: {
-        harmony_type: harmonyType,
-        custom_interval: custom,
-        source_asset_id: source.id,
-        provider: primary,
-        provenance: {
-          created_by: 'vocal_harmonizer',
-          providers_used: [primary],
-          stems_used: [source.id],
-          remix_sources: [source.id],
-        },
-      },
-    });
-
-    await base44.asServiceRole.entities.StudioHistory.create({
-      user_id: user.id,
-      user_email: user.email,
-      tool: 'vocal_harmonizer',
-      asset_id: harmony.id,
-      source_asset_ids: [source.id],
-      title: `Generated ${harmonyType} harmony for "${source.title}"`,
-      metadata: { provider: primary, harmonyType },
-    }).catch(() => {});
-
-    return Response.json({ data: { job_id: job.id, asset: harmony, provider: primary } });
+    const fresh = (await base44.entities.GenerationJob.filter({ id: job.id }))[0] || job;
+    const queue = fresh.status === 'pending' ? await queueInfo(base44, fresh, 62_000) : null;
+    return Response.json({ job_id: job.id, status: fresh.status, queue });
   } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: error.status || 500 });
   }
-});
+}
