@@ -6,12 +6,12 @@ import { Cpu, Music4, Layers3 } from 'lucide-react';
 const ENGINE_HELP_SECTIONS = [
   {
     id: 'engines',
-    title: 'BASE Engines — CODA, Siren Song, Skye & Aurora',
+    title: 'BASE Engines — CODA, Siren Song, Skye, Aurora & Inspire',
     icon: Cpu,
-    keywords: 'base engines tab coda harmonix siren song skye aurora minimax music3 in-house self-hosted fork seed instrumental lyrics long-form engine cards',
+    keywords: 'base engines tab coda harmonix siren song skye aurora inspire continuation minimax music3 in-house self-hosted fork seed instrumental lyrics long-form engine cards',
     body: (
       <>
-        <p>The <strong className="text-foreground">🏗️ BASE Engines</strong> tab in <Link to="/music-studio" className="text-purple-400 hover:underline">Music Studio</Link> holds all four of our own engines in one place — pick an engine card at the top and its full control panel opens below. Each engine was originally forked from an open-source base and is then developed, tuned and maintained by our team on our own self-hosted infrastructure. Your prompts and audio never train a third-party provider, and every render is saved to your library as a WAV, BASE Marked automatically and given cover art.</p>
+        <p>The <strong className="text-foreground">🏗️ BASE Engines</strong> tab in <Link to="/music-studio" className="text-purple-400 hover:underline">Music Studio</Link> holds all five of our own engines in one place — pick an engine card at the top and its full control panel opens below. Each engine was originally forked from an open-source base and is then developed, tuned and maintained by our team on our own self-hosted infrastructure. Your prompts and audio never train a third-party provider, and every render is saved to your library as a WAV, BASE Marked automatically and given cover art.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>🧬 BASE CODA</strong> — fast and tag-driven: describe genre, instruments and mood as comma tags; add BPM, key and time signature for a tighter groove. Lyrics use lowercase <code>[verse]</code> / <code>[chorus]</code> section tags (the studio converts them for you). CODA also powers the <strong>Cover / Repaint / Extract</strong> edit tasks in Audio Remix Studio.</li>
           <li><strong>🌊 BASE Siren Song</strong> — tag + lyric conditioned, up to 6 minutes, 12 credits. Leave lyrics empty for a pure instrumental.</li>
@@ -58,7 +58,7 @@ const ENGINE_HELP_SECTIONS = [
           <li><strong>On-device</strong> — the same model runs inside your browser. Free, and your audio never leaves your machine; it is slower and works best on a laptop or desktop.</li>
         </ul>
         <p>Stems inherit the source track's AI label and link back to it in your library.</p>
-        <p><strong className="text-foreground">Loops &amp; Samples:</strong> generated loops are finished (trimmed to the bar, normalized, seamless) and registered for provenance. The <em>Sounds like…</em> search finds loops by what they sound like rather than their tags — it is a similarity tool only and says nothing about who owns a sound.</p>
+        <p><strong className="text-foreground"><Link to="/loop-studio" className="text-emerald-400 hover:underline">Loop Studio</Link>:</strong> generated loops are finished (trimmed to the bar, normalized, seamless) and registered for provenance. The <em>Sounds like…</em> search finds loops by what they sound like rather than their tags — it is a similarity tool only and says nothing about who owns a sound.</p>
       </>
     ),
   },

@@ -21,7 +21,7 @@ const AUDIOTOOL_HELP_SECTIONS = [
         <p>The <Link to="/audiotool" className="text-orange-400 hover:underline">Audiotool Bridge</Link> opens your <strong className="text-foreground">Audiotool</strong> projects live inside BASE Station. Everything syncs both ways in real time: change something in Audiotool and it shows up here; send something from a Bridge tool and it appears on your Audiotool desktop or timeline.</p>
         <p><strong className="text-foreground">Getting connected:</strong></p>
         <ol className="list-decimal pl-5 space-y-1">
-          <li>Open the Bridge (Studios hub → Audiotool Bridge). It's a beta feature, so request access if you see the gate.</li>
+          <li>Open the Bridge (Studios hub → Audiotool Bridge) while signed in to BASE Station.</li>
           <li>Press <strong>Connect Audiotool</strong> and approve access in the Audiotool window.</li>
           <li>Your account card shows your name, project count, and the access you granted (read/edit projects, samples, presets).</li>
         </ol>
@@ -153,6 +153,9 @@ const AUDIOTOOL_HELP_SECTIONS = [
           <li>Check the title (defaults to the project name) and genre (suggested from project tags).</li>
           <li>Press <strong>Protect & register</strong>.</li>
         </ol>
+        <Box tone="emerald" title="🕰️ Bringing in older Audiotool tracks">
+          <p>Work made before you connected the Bridge can be protected too: open the old project from your list and export a fresh mixdown, or pick an earlier bounce from the <strong>My library</strong> tab of the picker. Audiotool doesn't let apps read its published-track catalog or a-radio, so a track only comes over if its project or a saved bounce still exists in your account.</p>
+        </Box>
         <p>A status tracker shows each step: ownership scoring from this session's telemetry → <strong>BASE Mark</strong> watermark → <strong>C2PA</strong> manifest sealed over the watermarked audio → on-chain anchor on Base (if <strong>auto-anchoring</strong> is on). The anchor always covers the file you actually deliver, never the raw export.</p>
         <p><strong className="text-foreground">After anchoring</strong>, the track is added to BASE Station <Link to="/charts" className="text-orange-400 hover:underline">Charts</Link>, the featured "Fresh from the Audiotool Bridge" playlist, and <Link to="/radio" className="text-orange-400 hover:underline">Radio</Link> automatically. If auto-anchoring is off, the export is still watermarked and sealed, but isn't placed there.</p>
         <Box title="📦 File limits">

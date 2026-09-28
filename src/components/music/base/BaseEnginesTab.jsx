@@ -6,7 +6,7 @@ import SkyeGenerateTab from '@/components/music/SkyeGenerateTab';
 import AuroraGenerateTab from '@/components/music/AuroraGenerateTab';
 import InspireGenerateTab from '@/components/music/InspireGenerateTab';
 
-// The four in-house BASE Engines live behind one primary tab. Presented as
+// The five in-house BASE Engines live behind one primary tab. Presented as
 // engine cards rather than a long tab strip: each engine is a different model
 // with its own strengths, and the choice needs its own moment.
 const ENGINES = [

@@ -87,7 +87,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>⚡ Quick Generate</strong> — type a sound prompt, pick mood/genre, and we route to the best cloud model (Sonic, TemPolor, Mureka, MiniMax or Lyria). Turn on <strong>Maestro</strong> to have a songwriting agent craft the brief, enhance lyrics and recommend a model.</li>
           <li><strong>🎛️ Advanced</strong> — pick the model family and version yourself, set BPM, name the track, attach a voice persona and your own lyrics.</li>
-          <li><strong>🏗️ BASE Engines</strong> — one tab holding all four of our in-house, self-hosted engines: <strong>🧬 CODA</strong>, <strong>🌊 Siren Song</strong>, <strong>🪶 Skye</strong> and <strong>🌅 Aurora</strong>. Pick an engine card and its full control panel opens below; see "BASE Engines" further down.</li>
+          <li><strong>🏗️ BASE Engines</strong> — one tab holding all five of our in-house, self-hosted engines: <strong>🧬 CODA</strong>, <strong>🌊 Siren Song</strong>, <strong>🪶 Skye</strong>, <strong>🌅 Aurora</strong> and <strong>💡 Inspire</strong>. Pick an engine card and its full control panel opens below; see "BASE Engines" further down.</li>
         </ul>
         <p><strong className="text-foreground">Eleven Music &amp; My Sound now has its own page.</strong> It moved out of Music Studio and lives under <em>Enhance &amp; Edit</em> in the Studio Hub — <Link to="/eleven-music" className="text-cyan-400 hover:underline">open Eleven Music &amp; My Sound →</Link>. Train a fine-tune on your own tracks (with your consent) and generate in your signature style.</p>
         <p className="text-xs text-muted-foreground">ElevenLabs is not a default music generator — it stays in service for voice cloning, text-to-speech, and podcast voiceover. Stem separation no longer runs on Tempolor; see the Stems section.</p>
@@ -260,7 +260,7 @@ const SECTIONS = [
         <ul className="list-disc pl-5 space-y-1">
           <li>Lyrics: 2 credits</li>
           <li>Music (cloud models): 10 credits per track</li>
-          <li>BASE Engines — Siren Song: 12 · Skye: 14 · Aurora: shown on the button · CODA: priced by tier (Micro / Pro / Vault) · CODA edit tasks (cover / repaint / extract): 10</li>
+          <li>BASE Engines — Siren Song: 12 · Skye: 14 · Inspire: 13 · Aurora: shown on the button · CODA: priced by tier (Micro / Pro / Vault) · CODA edit tasks (cover / repaint / extract): 10</li>
           <li>Cover art: 1 (Cheap) / 3 (Modest)</li>
           <li>Video — Text to Video on our own engine: 6 credits flat · LTX cloud: 1–7 credits per second depending on model and resolution</li>
           <li>Music Video / Timeline render: 5 base + 1 per scene or clip (+3 audio, +4 captions)</li>
@@ -389,7 +389,7 @@ const SECTIONS = [
       <>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong><Link to="/charts" className="text-purple-400 hover:underline">Charts</Link></strong> — weekly, monthly, and all-time rankings of community tracks. Plays and votes move the needle.</li>
-          <li><strong><Link to="/radio" className="text-purple-400 hover:underline">Radio</Link></strong> — 24/7 curated channels mixing community submissions with Audius catalog tracks.</li>
+          <li><strong><Link to="/radio" className="text-purple-400 hover:underline">Radio</Link></strong> — 24/7 genre channels (plus an AI-only channel) mixing approved community submissions, protected BASE Station exports and Audius catalog tracks. The Now Playing card and player bar have <strong>Artist</strong>, <strong>Like</strong> and <strong>Tip</strong> buttons for Audius tracks. Admins can bulk-import creators' library tracks into rotation. <span className="text-xs text-muted-foreground">Audius streams don't allow live audio analysis, so the VU meters show a simulated signal for those tracks.</span></li>
           <li><strong><Link to="/challenges" className="text-purple-400 hover:underline">Challenges</Link></strong> — themed competitions with badge rewards, in two categories: <strong>Music</strong> (a track is the entry) and <strong>Patch Design</strong> (a BASE Foundry patch is the entry, judged on the graph you designed rather than on audio). Forked entries are allowed and shown with their lineage — credit is displayed, not hidden.</li>
           <li><strong><Link to="/leaderboard" className="text-purple-400 hover:underline">Leaderboard &amp; Badges</Link></strong> — earn XP and badges for creating, submitting, and supporting other artists.</li>
           <li><strong><Link to="/forum" className="text-purple-400 hover:underline">Community Forum</Link></strong> — open to everyone (no account required) with dedicated boards for legal &amp; terms, COS methodology, and AI music policy.</li>
@@ -409,8 +409,9 @@ const SECTIONS = [
           <li><strong>Fan Hub</strong> — follow artists, track your memberships and collectibles in <Link to="/fan-hub" className="text-pink-400 hover:underline">Fan Hub</Link>.</li>
           <li><strong>Fan Clubs</strong> — creators can launch tiered fan clubs; fans join for exclusive access.</li>
           <li><strong>Collectibles</strong> — creators mint limited-edition drops that fans claim; syncs with Audius.</li>
-          <li><strong>Tipping</strong> — support artists directly from their profile or during live sessions.</li>
+          <li><strong>Tipping</strong> — support artists directly from their profile, Audius pages, Radio or live sessions. Tips are <strong className="text-foreground">non-custodial</strong>: ETH on Base or SOL on Solana go wallet-to-wallet, $AUDIO goes straight to the artist's Audius wallet, and card tips run through Stripe. BASE Station never holds the funds, and crypto tips are only recorded after they're verified on-chain.</li>
         </ul>
+        <p>Artists: add your receiving addresses (Base, Solana, Audius handle) under <Link to="/my-profile" className="text-pink-400 hover:underline">My Profile → Tip wallets</Link> to switch each rail on.</p>
         <p>Creators manage all of this from <Link to="/creator-dashboard" className="text-purple-400 hover:underline">My Workspace</Link>.</p>
       </>
     ),
@@ -429,6 +430,19 @@ const SECTIONS = [
         </ul>
         <p>Opening either page shows a <strong className="text-foreground">Request Access</strong> screen — submit it once and an admin will review your request. Everything else on the platform is fully open.</p>
       </>
+    ),
+  },
+  {
+    id: 'more-tools',
+    title: 'More tools — Scribe, SUB-Station & Hackathon kit',
+    icon: Cpu,
+    keywords: 'scribe melody extraction transcription score sub-station multitrack workstation hackathon deck readme pdf audiotool submission',
+    body: (
+      <ul className="list-disc pl-5 space-y-1">
+        <li><strong><Link to="/scribe-studio" className="text-amber-400 hover:underline">Scribe Studio</Link></strong> — transcribe a track into a score (melody, chords, key). Melody extraction works best on clean vocals; busy mixes can leak accompaniment into the result.</li>
+        <li><strong><Link to="/sub-station" className="text-amber-400 hover:underline">SUB-Station</Link></strong> — multi-track arrangement workstation for combining, arranging and mixing down your assets. <Link to="/sub-station/help" className="text-amber-400 hover:underline">SUB-Station help →</Link></li>
+        <li><strong><Link to="/hackathon" className="text-amber-400 hover:underline">Hackathon</Link></strong> — our Audiotool hackathon submission: README, an in-app slide deck with PDF export, and a downloadable promo PDF.</li>
+      </ul>
     ),
   },
   {
