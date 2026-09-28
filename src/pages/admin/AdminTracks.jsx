@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import RadioImportPanel from "@/components/admin/RadioImportPanel";
 
 const STATUS_STYLE = {
   pending: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
@@ -53,6 +54,8 @@ export default function AdminTracks() {
         </div>
         <Badge variant="outline" className="text-xs">{tracks.filter(t => t.status === "pending").length} pending</Badge>
       </div>
+
+      <RadioImportPanel onChanged={load} />
 
       {/* Filters */}
       <div className="flex gap-3 mb-6 flex-wrap">
