@@ -10,7 +10,8 @@ work is yours.
 
 [Live app](https://base-station.base44.app) ·
 [Public watermark verifier](https://base-station.base44.app/verify) ·
-[In-app docs](https://base-station.base44.app/docs)
+[In-app docs](https://base-station.base44.app/docs) ·
+[Audiotool Bridge](https://base-station.base44.app/audiotool)
 
 </div>
 
@@ -22,6 +23,7 @@ work is yours.
 - [Why it exists](#why-it-exists)
 - [Feature overview](#feature-overview)
 - [The provenance stack](#the-provenance-stack)
+- [Audiotool Bridge](#audiotool-bridge--live-daw-peer)
 - [Live Studio](#live-studio--realtime-performance-beta)
 - [Video Studio](#video-studio--music-video-composition-beta)
 - [Roadmap](#roadmap)
@@ -64,13 +66,16 @@ certificate, and an inaudible forensic watermark embedded in the audio itself.
 
 | Area | What's in it |
 | --- | --- |
-| **Studios** | Music, Lyrics (+Pro), Cover Art, Stems, Mashup, Vocal Harmonizer, Mastering, Cover Song, Audio Remix, Loops, SFX, Visualizer, Video, Promo, Voice Creator, ID3 Tags, BASE Mark |
-| **Provenance** | BASE Mark watermarking (3 layers), Creative Ownership Score, DDEX export, C2PA hash, on-chain registration, certificates |
+| **Studios** | Music, Lyrics (+Pro), Cover Art, Stems (server or in-browser), Mashup, Vocal Harmonizer, Mastering, Cover Song, Audio Remix, Loops, SFX, Visualizer, Video, Promo, Voice Creator, Lead Sheet, Scribe, ID3 Tags, BASE Mark |
+| **Audiotool Bridge** | Live Nexus peer client, Beat & Pattern / Harmony & Arrangement / Vocal Lab workspaces, Songstarter + 60s Pre-Starter, Session Explorer, MIDI Co-Producer, Contribution Meter — see [below](#audiotool-bridge--live-daw-peer) |
+| **Creation tools** | SUB-Station multitrack workstation (split sheets, ownership hand-off), BASE Foundry DSP plugin studio, ORVO podcast studio |
+| **Provenance** | BASE Mark watermarking (V1 spectral + V2 neural), BASE Print fingerprinting, Creative Ownership Score, hashed lead sheets, DDEX export, C2PA seal, on-chain registration, certificates |
 | **Community** | Radio rack, charts, playlists, challenges, leaderboard, badges, featured artists, guest-accessible forum |
 | **Live** *(beta)* | Streamr-transported realtime sessions, sub-second synchronized playback, portal stage visuals, chat + moderation, reactions, quests, recordable session bundles |
 | **Video** *(beta)* | Self-hosted BASE Station LTX Engine for text-to-video (public LTX API fallback), image/audio-to-video, storyboarding, onset-timed cuts, scene templates & transitions, b-roll search, Shotstack composition & timeline editor |
-| **Fan economy** | Fan clubs with tiers, collectibles, tipping, creator storefront, revenue dashboard |
-| **Integrations** | Audius (publish/import/identity), Freesound, ElevenLabs, Replicate, IPFS/Pinata, Base & Solana, Streamr |
+| **Venues** | Portals 3D venues with idle playlists, schedules, staff and audience co-op |
+| **Fan economy** | Fan clubs with tiers, collectibles, non-custodial tipping (Base, Solana, Audius, card), creator storefront, revenue dashboard |
+| **Integrations** | Audiotool, Audius (publish/import/identity/contests), Kits.ai, Freesound, ElevenLabs, Replicate, IPFS/Pinata, Base & Solana, Streamr |
 | **Workspace** | Library with lineage, projects, workspaces, generation history, credits, usage analytics |
 | **Governance** | Public transparency registry of downstream DSP flags; community proposals & votes on the COS weights |
 
@@ -86,7 +91,7 @@ browser.**
 | --- | --- | --- | --- |
 | **V1 — Spectral** | In-house DSP | 32-bit registry payload | Metadata stripping, transcodes, noise, quantization, most crops |
 | **V2 — Neural** | SilentCipher-class model on private GPU | 32-bit payload + magic byte | Crop-robust recovery via phase-shift decoding |
-| **V3 — Drift** | WavMark, band-split delta embed | 16-bit slot pointer | Pitch-preserved time stretch, close-range physical re-recording |
+
 
 Supporting machinery:
 
@@ -104,10 +109,13 @@ Supporting machinery:
   detection outcome and a public registry match, never a threshold or a
   correlation strength.
 
-> V3 preserves master fidelity by never resampling the master: the watermark is
-> extracted as a low-band delta and added back to the untouched original, and
-> promotion to canonical is blocked unless sample rate and channel count match
-> the source exactly.
+- **BASE Print** — a re-timing-tolerant fingerprint that proposes alignments
+  for spectral recovery. A Print match on its own is advisory and never counts
+  as ownership.
+
+> The earlier V3 Drift layer (WavMark) was retired after it measured 0%
+> robustness to re-timing. Its archive lives in `src/docs/BASE_MARK_V3_ARCHIVE.md`.
+> Pitch-preserved tempo stretch is still an open, stated limitation.
 
 ### 2. COS — Creative Ownership Score
 
@@ -125,6 +133,21 @@ themselves are community-governed via `CosProposal` / `CosProposalVote`.
 Content hash registered to Base (Solana supported), provenance metadata pinned
 to IPFS, a generated certificate PDF, and scheduled reconciliation audits.
 Platform-sponsored — creators need no wallet and pay no gas.
+
+## Audiotool Bridge — live DAW peer
+
+BASE Station joins an Audiotool Nexus session as a real peer. It writes devices,
+note regions, automation, patterns, samples and cables into the same live
+document the Audiotool desktop has open. Three workspaces (Beat & Pattern,
+Harmony & Arrangement, Vocal Lab) and a Songstarter hub feed that session.
+Every AI action is logged privately in `NexusTelemetryEvent`, so the Creative
+Ownership Score can split human work from machine work. Exports then run
+through Protect & Register: watermark, COS, C2PA seal, Base anchor and Audius
+release.
+
+- Code map: [`src/docs/audiotool-hackathon/CODE_INDEX.md`](src/docs/audiotool-hackathon/CODE_INDEX.md)
+- Submission README and stated limits: [`src/docs/audiotool-hackathon/README.md`](src/docs/audiotool-hackathon/README.md)
+- Protobuf bridge service: [`src/docs/audiotool-bridge/`](src/docs/audiotool-bridge/)
 
 ## Live Studio — realtime performance *(beta)*
 
@@ -198,7 +221,7 @@ running in production.
 
 Partner or DSP interest: reach out through the app's support channel.
 
-Also in progress: expanded Drift Layer coverage, published cross-layer benchmark
+Also in progress: tempo-stretch forensic coverage, 48 kHz watermarking, published cross-layer benchmark
 results, and creator-facing appeal tooling backed by the transparency registry.
 
 ## Tech stack
@@ -209,11 +232,14 @@ results, and creator-facing appeal tooling backed by the transparency registry.
   client-side WAV encoding and FLAC decoding
 - **Backend:** Base44 — entities + RLS, Deno backend functions, workflows,
   in-app agents, realtime subscriptions, file storage
-- **Self-hosted engines (Hugging Face Spaces):** BASE Station LTX Engine
-  (video), Coda, Siren Song, Skye (music), Cadence, Cantor (lead-sheet renders),
-  Sever (stems)
-- **External:** LTX API (video fallback), Replicate, ElevenLabs, Audius,
-  Freesound, Pinata/IPFS, Streamr, Shotstack, Pexels, Base/Solana RPC
+- **Self-hosted engines (Hugging Face Spaces):** BASE Station LTX Engine and
+  Nova (MiniMax-H3) for video; Coda, Siren Song, Skye, Aurora (MiniMax-Music3),
+  Inspire (InspireMusic) and Harmonix for music; Cadence (chord beds) and Cantor
+  (DiffSinger vocals) for lead-sheet renders; Sever (stems, plus an in-browser
+  ONNX version)
+- **External:** Audiotool Nexus SDK, Kits.ai, LTX API (video fallback),
+  Replicate, ElevenLabs, Audius, Freesound, Pinata/IPFS, Streamr, Shotstack,
+  Pexels, Portals, Base/Solana RPC
 
 ## Repository layout
 
@@ -280,7 +306,8 @@ repository, and are readable only from backend functions via `Deno.env.get`.
 
 | Group | Secrets |
 | --- | --- |
-| Watermarking | `BASE_MARK_SEED`, `BASE_MARK_V2_MODEL`, `BASE_MARK_V2_VERSION`, `BASE_MARK_V2_DEPLOYMENT`, `BASE_MARK_V3_MODEL`, `BASE_MARK_V3_VERSION` |
+| Watermarking | `BASE_MARK_SEED`, `BASE_MARK_PAYLOAD_KEY`, `BASE_MARK_V2_MODEL`, `BASE_MARK_V2_VERSION`, `BASE_MARK_V2_DEPLOYMENT`, `BASE_MARK_V4_MODEL`, `BASE_MARK_V4_VERSION`, `BASE_MARK_V4_KEY`, `BASE_PRINT_MODEL`, `BASE_PRINT_VERSION` |
+| Audiotool / Kits | `AUDIOTOOL_CLIENT_ID`, `AUDIOTOOL_API`, `AUDIOTOOL_BRIDGE_URL`, `AUDIOTOOL_TEMPLATE_PROJECT`, `KITS_API_KEY` |
 | Inference | `REPLICATE_API_TOKEN`, `REPLICATE_WEBHOOK_URL`, `REPLICATE_WEBHOOK_SECRET` |
 | Chain / storage | `BASE_RPC_URL`, `PLATFORM_WALLET_PRIVATE_KEY`, `BASE_PLATFORM_WALLET_ADDRESS`, `SOLANA_PLATFORM_WALLET_ADDRESS`, `PINATA_JWT` |
 | Providers | `ELEVENLABS_API`, `SONIC_API_KEY`, `TEMPCOLOR_API_KEY`, `LTX_API_KEY` (public LTX fallback — required even though text-to-video renders on our own engine first), `SHOTSTACK_API`, `AUDIUS_API_KEY`, `FREESOUND_API_KEY`, `PEXELS_API_KEY` |
@@ -295,10 +322,9 @@ the second controls the sponsoring wallet.
 Open the app in [Base44](https://app.base44.com) and click **Publish**. Backend
 functions, workflows and entity schemas deploy from `base44/` automatically.
 
-The V3 Drift Layer model is deployed separately — see
-[`src/docs/basemark-v3-drift/`](src/docs/basemark-v3-drift/) for the Cog build
-definition and push instructions, then pin the resulting digest in
-`BASE_MARK_V3_VERSION`.
+Model containers (BASE Mark V2/V4, BASE Print) and the self-hosted engine
+Spaces are deployed separately. Each has its build files and instructions in
+its own folder under `src/docs/`.
 
 ## Documentation
 
@@ -336,7 +362,8 @@ methods are maintained as trade secrets.
 
 Third-party research this project builds on:
 
-- WavMark — Chen et al., 2023 (V3 Drift Layer)
+- WavMark — Chen et al., 2023 (retired V3 Drift Layer)
+- [@audiotool/nexus](https://www.npmjs.com/package/@audiotool/nexus) (Audiotool Bridge)
 - *SoK: How Robust is Audio Watermarking in Generative AI Models?* —
   arXiv:2503.19176 (robustness benchmarking methodology)
 
