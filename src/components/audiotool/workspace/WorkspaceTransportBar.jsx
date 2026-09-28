@@ -35,8 +35,8 @@ export default function WorkspaceTransportBar({ workspace, projectUrl, meta, con
             {connected ? 'Live' : 'Reconnecting…'}
           </span>
           <Button variant="ghost" size="icon" onClick={onRefresh} aria-label="Refresh session"><RefreshCw className="w-4 h-4" /></Button>
-          <Button variant={splitOpen ? 'secondary' : 'outline'} size="sm" className="rounded-full" onClick={onToggleSplit}
-            title="Opens your live Audiotool studio next to BASE Station so you can hear playback while you edit here">
+          <Button variant="outline" size="sm" className="rounded-full" onClick={onToggleSplit}
+            title="Opens your live Audiotool studio in a window docked right next to BASE Station, so you hear playback while you edit here">
             <Columns2 className="w-3.5 h-3.5" /> Side-by-side
           </Button>
           <Button size="sm" className="merc-button rounded-full" asChild>

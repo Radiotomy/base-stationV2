@@ -1,21 +1,28 @@
-// Per-workspace side-by-side preference + the shared Audiotool pop-out window.
-const key = (ws) => `at_split_${ws}`;
+// The shared Audiotool pop-out window, docked flush against the BASE Station window.
+const NAME = 'basestation_audiotool';
+const MIN_W = 640;
 
-export function readSplit(ws) {
-  try { return { open: false, size: 50, ...JSON.parse(localStorage.getItem(key(ws)) || '{}') }; }
-  catch { return { open: false, size: 50 }; }
+/** Where the pop-out goes: tight against our window's right edge, or the right half of the screen if there's no room. */
+function dockRect() {
+  const sx = window.screen.availLeft ?? 0;
+  const sy = window.screen.availTop ?? 0;
+  const sw = window.screen.availWidth;
+  const sh = window.screen.availHeight;
+  const right = window.screenX + window.outerWidth;
+  const room = sx + sw - right;
+  if (room >= MIN_W) {
+    return { left: right, top: window.screenY, width: room, height: window.outerHeight };
+  }
+  const half = Math.round(sw / 2);
+  return { left: sx + half, top: sy, width: sw - half, height: sh };
 }
 
-export const writeSplit = (ws, state) => localStorage.setItem(key(ws), JSON.stringify(state));
-
-export const isSmallScreen = () => window.innerWidth < 1024;
-
-/** Opens (or refocuses) one named Audiotool window docked to the right half of the screen. Returns false if blocked. */
+/** Opens (or re-docks and refocuses) the Audiotool window. Returns false if the pop-up was blocked. */
 export function openAudiotoolWindow(url) {
-  const w = Math.round(window.screen.availWidth / 2);
-  const h = window.screen.availHeight;
-  const win = window.open(url, 'basestation_audiotool', `width=${w},height=${h},left=${w},top=0`);
+  const r = dockRect();
+  const win = window.open(url, NAME, `popup=yes,width=${r.width},height=${r.height},left=${r.left},top=${r.top}`);
   if (!win) return false;
+  try { win.moveTo(r.left, r.top); win.resizeTo(r.width, r.height); } catch { /* browser may refuse; open position still applies */ }
   win.focus();
   return true;
 }
