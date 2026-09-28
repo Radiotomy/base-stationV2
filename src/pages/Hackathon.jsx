@@ -4,6 +4,9 @@ import { Presentation, Download, Link2, Loader2, Check } from 'lucide-react';
 import CategoryCard from '@/components/hackathon/CategoryCard';
 import { CATEGORIES, HIGHLIGHTS, BEYOND, STEPS, IMAGES, INTRO, TAGLINE, LINKS, APP_URL } from '@/lib/hackathon/content';
 import { exportPromoPdf } from '@/lib/hackathon/exportPromoPdf';
+import readme from '@/docs/audiotool-hackathon/README.md?raw';
+
+const README_HREF = URL.createObjectURL(new Blob([readme], { type: 'text/markdown' }));
 
 export default function Hackathon() {
   const [busy, setBusy] = useState(false);
@@ -34,6 +37,9 @@ export default function Hackathon() {
             <button onClick={download} disabled={busy} className="merc-button-dark inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold">
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} Download promotional PDF
             </button>
+            <a href={README_HREF} download="BASE-Station-Audiotool-README.md" className="merc-button-dark inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold">
+              <Download className="h-4 w-4" /> Download README
+            </a>
             <button onClick={copy} className="merc-button-dark inline-flex items-center gap-2 rounded-full px-6 py-3 font-semibold">
               {copied ? <Check className="h-4 w-4" /> : <Link2 className="h-4 w-4" />} {copied ? 'Copied' : 'Copy share link'}
             </button>
