@@ -6,7 +6,7 @@ import { unwrap as withReason } from '@/lib/audiotool/nexusErrors';
 const TICKS_PER_BAR = 3840 * 4;
 
 // Drop new material after the last audio region so nothing is overwritten.
-const endOfAudioTimeline = (nexus) =>
+export const endOfAudioTimeline = (nexus) =>
   nexus.queryEntities.ofTypes('audioRegion').get().reduce((end, r) => {
     const f = r.fields.region.fields;
     return Math.max(end, f.positionTicks.value + f.durationTicks.value);
@@ -19,7 +19,8 @@ const audioDeviceIds = (nexus) => new Set(nexus.queryEntities.ofTypes('audioDevi
  *   the Creative Ownership meter counts the new audio device as machine-made.
  */
 
-export async function sendToAudiotool({ at, nexus, projectUrl, file, name, bpm, aiTool, prompt }) {
+/** @param atTicks optional fixed timeline position (stems sent together share one). */
+export async function sendToAudiotool({ at, nexus, projectUrl, file, name, bpm, aiTool, prompt, atTicks }) {
   // Audiotool rejects a sample without a positive tempo (bpm is a REQUIRED field),
   // so one-shots with no known tempo get a neutral 120.
   const tempo = Number(bpm) > 0 ? Number(bpm) : 120;
@@ -32,7 +33,7 @@ export async function sendToAudiotool({ at, nexus, projectUrl, file, name, bpm, 
   const sample = withReason(await upload.ready);
 
   const before = audioDeviceIds(nexus);
-  const positionTicks = endOfAudioTimeline(nexus);
+  const positionTicks = atTicks ?? endOfAudioTimeline(nexus);
   await nexus.modify((t) => {
     t.insertSample(sample, {
       displayName: name.slice(0, 40),
