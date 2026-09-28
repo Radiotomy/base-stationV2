@@ -11,6 +11,7 @@ import SfxGenerator from './SfxGenerator';
 import VibeSessionStarter from './VibeSessionStarter';
 import PreStarterPanel from '@/components/audiotool/prestarter/PreStarterPanel';
 import AudiusRemixTab from './AudiusRemixTab';
+import DemoSongPanel from './DemoSongPanel';
 import AudiusContestsTab from '@/components/audiotool/contests/AudiusContestsTab';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
@@ -32,7 +33,7 @@ const freesoundSend = (r) => (
 // Tab dot = where the sound comes from: AI generation, sound libraries, or Audius.
 const SOURCE = { ai: AI_ORIGIN_COLOR, library: FAMILIES.effect.color, audius: FAMILIES.eq.color };
 const TABS = [
-  ['vibe', 'Vibe → Session', 'ai'], ['prestarter', '60s Pre-Starter', 'ai'], ['chain', 'Instrument Chain', 'ai'], ['forge', 'BASE Forge Loops', 'ai'], ['sfx', 'Sound FX', 'ai'],
+  ['demo', 'Demo Song', 'library'], ['vibe', 'Vibe → Session', 'ai'], ['prestarter', '60s Pre-Starter', 'ai'], ['chain', 'Instrument Chain', 'ai'], ['forge', 'BASE Forge Loops', 'ai'], ['sfx', 'Sound FX', 'ai'],
   ['search', 'Search by Sound', 'library'], ['free', 'Discover Free Loops', 'library'], ['community', 'Community Library', 'library'],
   ['contests', 'Audius Contests', 'audius'], ['audius', 'Remix from Audius', 'audius'],
 ];
@@ -47,7 +48,7 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
             Generate or find sounds, audition them here, then send them straight onto your Audiotool timeline.
           </p>
         </div>
-        <Tabs defaultValue="vibe">
+        <Tabs defaultValue="demo">
           <TabsList className="flex flex-wrap h-auto justify-start">
             {TABS.map(([v, l, src]) => (
               <TabsTrigger key={v} value={v} className="gap-1.5">
@@ -62,6 +63,7 @@ export default function SongstarterModule({ at, nexus, projectUrl, onChanged }) 
           <TabsContent value="free"><LoopDiscoverTab renderExtra={freesoundSend} /></TabsContent>
           <TabsContent value="community"><CommunityLoopsTab renderExtra={librarySend} /></TabsContent>
           <TabsContent value="contests"><AudiusContestsTab /></TabsContent>
+          <TabsContent value="demo"><DemoSongPanel /></TabsContent>
           <TabsContent value="vibe"><VibeSessionStarter /></TabsContent>
           <TabsContent value="prestarter"><PreStarterPanel /></TabsContent>
           <TabsContent value="audius"><AudiusRemixTab /></TabsContent>
