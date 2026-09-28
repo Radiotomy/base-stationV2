@@ -434,14 +434,13 @@ const SECTIONS = [
   },
   {
     id: 'more-tools',
-    title: 'More tools — Scribe, SUB-Station & Hackathon kit',
+    title: 'More tools — Scribe & SUB-Station',
     icon: Cpu,
-    keywords: 'scribe melody extraction transcription score sub-station multitrack workstation hackathon deck readme pdf audiotool submission',
+    keywords: 'scribe melody extraction transcription score sub-station multitrack workstation',
     body: (
       <ul className="list-disc pl-5 space-y-1">
         <li><strong><Link to="/scribe-studio" className="text-amber-400 hover:underline">Scribe Studio</Link></strong> — transcribe a track into a score (melody, chords, key). Melody extraction works best on clean vocals; busy mixes can leak accompaniment into the result.</li>
         <li><strong><Link to="/sub-station" className="text-amber-400 hover:underline">SUB-Station</Link></strong> — multi-track arrangement workstation for combining, arranging and mixing down your assets. <Link to="/sub-station/help" className="text-amber-400 hover:underline">SUB-Station help →</Link></li>
-        <li><strong><Link to="/hackathon" className="text-amber-400 hover:underline">Hackathon</Link></strong> — our Audiotool hackathon submission: README, an in-app slide deck with PDF export, and a downloadable promo PDF.</li>
       </ul>
     ),
   },
