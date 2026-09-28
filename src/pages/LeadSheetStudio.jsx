@@ -51,7 +51,7 @@ export default function LeadSheetStudio() {
     setLoadingBanks(true);
     try {
       const r = await base44.functions.invoke('listDiffSingerVoicebanks', {});
-      const list = r.data?.voicebanks || [];
+      const list = r.data?.data?.voicebanks || r.data?.voicebanks || [];
       setBanks(list);
       const firstUsable = list.find(b => b.renderable !== false);
       if (firstUsable) setVoicebank(v => v || firstUsable.id);
