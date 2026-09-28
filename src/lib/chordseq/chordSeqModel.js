@@ -11,7 +11,16 @@ export const DECADES = [1950, 1960, 1970, 1980, 1990, 2000, 2010, 2020];
 // Only chord shapes our chord writer can voice are offered.
 const SIMPLE = /^[A-G]#?(maj7|m7b5|m7|dim|aug|sus2|sus4|7|m)?$/;
 const FLAT = { Db: 'C#', Eb: 'D#', Gb: 'F#', Ab: 'G#', Bb: 'A#' };
-let vocabP, sessionP;
+let vocabP, sessionP, transP;
+
+// Upstream: tokens that are transpositions of each other (12 per row). Used
+// for the first chord, which has no key context, so every key is equally likely.
+function loadTranspositions() {
+  transP ||= fetch(`${REPO}src/data/transposition_map.ts`).then((r) => r.text())
+    .then((t) => JSON.parse(t.slice(t.indexOf('= [') + 2).trim().replace(/;\s*$/, '').replace(/,(\s*\])/g, '$1')))
+    .catch((e) => { transP = null; throw e; });
+  return transP;
+}
 
 function loadVocab() {
   vocabP ||= fetch(`${REPO}src/data/token_to_chord.ts`).then((r) => r.text()).then((t) => {
@@ -51,9 +60,11 @@ export async function suggestNext(chords, { genre, decade }, limit = 8) {
     if (tok === undefined || tok === last || n >= 255) continue;
     data[n++] = BigInt(tok); last = tok;
   }
+  // Upstream normalizes each group to sum 1; an empty group stays all-zero
+  // (the model was trained to tolerate missing style).
   const style = new Float32Array(28);
-  style[GENRES.indexOf(genre)] = 1;
-  style[20 + DECADES.indexOf(decade)] = 1;
+  if (GENRES.includes(genre)) style[GENRES.indexOf(genre)] = 1;
+  if (DECADES.includes(decade)) style[20 + DECADES.indexOf(decade)] = 1;
   const out = Object.values(await session.run({
     'input.1': new ort.Tensor('int64', data, [1, 256]),
     'onnx::Gemm_1': new ort.Tensor('float32', style, [1, 28]),
@@ -63,8 +74,13 @@ export async function suggestNext(chords, { genre, decade }, limit = 8) {
   const max = Math.max(...row);
   const exps = Array.from(row, (x, i) => (i === last ? 0 : Math.exp(x - max)));
   const sum = exps.reduce((a, b) => a + b, 0);
+  let probs = exps.map((e) => e / sum);
+  if (n === 1) {
+    const trans = await loadTranspositions();
+    probs = probs.map((_, i) => trans[i].reduce((a, t) => a + probs[t], 0) / 12);
+  }
   const seen = new Set();
-  return exps.map((e, i) => ({ chord: names[i], prob: e / sum }))
+  return probs.map((p, i) => ({ chord: names[i], prob: p }))
     .filter((s) => s.chord && !seen.has(s.chord) && seen.add(s.chord))
     .sort((a, b) => b.prob - a.prob).slice(0, limit);
 }

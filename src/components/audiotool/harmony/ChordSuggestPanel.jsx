@@ -22,8 +22,8 @@ export default function ChordSuggestPanel({ chords, onPick }) {
   return (
     <div className="rounded-2xl border border-border p-3 space-y-2">
       <div className="flex flex-wrap items-center gap-2">
-        <select value={genre} onChange={(e) => setGenre(e.target.value)} className={sel}>{GENRES.map((g) => <option key={g}>{g}</option>)}</select>
-        <select value={decade} onChange={(e) => setDecade(Number(e.target.value))} className={sel}>{DECADES.map((d) => <option key={d} value={d}>{d}s</option>)}</select>
+        <select value={genre} onChange={(e) => setGenre(e.target.value)} className={sel}><option value="">Any genre</option>{GENRES.map((g) => <option key={g}>{g}</option>)}</select>
+        <select value={decade} onChange={(e) => setDecade(Number(e.target.value))} className={sel}><option value={0}>Any decade</option>{DECADES.map((d) => <option key={d} value={d}>{d}s</option>)}</select>
         <Button size="sm" variant="outline" disabled={busy} onClick={run}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Suggest next chord
         </Button>
