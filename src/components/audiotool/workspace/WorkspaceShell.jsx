@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import WorkspaceSplit from './WorkspaceSplit';
+import { readSplit, writeSplit, isSmallScreen, openAudiotoolWindow } from '@/lib/audiotool/sideBySide';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import BetaGate from '@/components/auth/BetaGate';
 import AudiotoolConnectCard from '@/components/audiotool/AudiotoolConnectCard';
@@ -11,6 +14,11 @@ import WorkspaceTransportBar from './WorkspaceTransportBar';
 export default function WorkspaceShell({ workspace, children }) {
   const s = useWorkspaceSession();
   const { audiotool, project } = s;
+  const [split, setSplit] = useState(() => readSplit(workspace.key));
+  const updateSplit = (patch) => setSplit((prev) => { const next = { ...prev, ...patch }; writeSplit(workspace.key, next); return next; });
+  const showSplit = s.synced && split.open && !isSmallScreen();
+  // Small screens get the pop-out window instead of a cramped split.
+  const toggleSplit = () => (isSmallScreen() ? openAudiotoolWindow(s.projectUrl) : updateSplit({ open: !split.open }));
 
   let body;
   if (audiotool.status === 'loading') {
@@ -31,7 +39,8 @@ export default function WorkspaceShell({ workspace, children }) {
     <div className="min-h-screen bg-background">
       <BetaGate feature="Audiotool Bridge">
         {s.synced ? (
-          <WorkspaceTransportBar workspace={workspace} projectUrl={s.projectUrl} meta={s.meta} connected={project.connected} onRefresh={project.refresh} />
+          <WorkspaceTransportBar workspace={workspace} projectUrl={s.projectUrl} meta={s.meta} connected={project.connected} onRefresh={project.refresh}
+            splitOpen={showSplit} onToggleSplit={toggleSplit} />
         ) : (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-2">
             <Link to="/audiotool" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
@@ -41,7 +50,12 @@ export default function WorkspaceShell({ workspace, children }) {
             <p className="text-muted-foreground mt-2 max-w-2xl">{workspace.desc}</p>
           </div>
         )}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">{body}</div>
+        {showSplit ? (
+          <WorkspaceSplit session={s} split={split} onClose={() => updateSplit({ open: false })}
+            onResize={(size) => updateSplit({ size })}>{body}</WorkspaceSplit>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">{body}</div>
+        )}
       </BetaGate>
     </div>
   );
