@@ -10,7 +10,7 @@ import useWorkspaceSession from '@/hooks/useWorkspaceSession';
 export default function PreStarterStudio() {
   const s = useWorkspaceSession();
   const authed = s.audiotool.status === 'authenticated';
-  const session = s.synced ? { at: s.at, nexus: s.project.nexus, projectUrl: s.projectUrl } : null;
+  const session = s.synced ? { at: s.at, nexus: s.project.nexus, projectUrl: s.projectUrl, onChanged: s.project.refresh } : null;
 
   return (
     <BetaGate feature="Audiotool">
