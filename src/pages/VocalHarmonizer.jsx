@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import useKitsJob from '@/hooks/useKitsJob';
+import KitsVoicePicker from '@/components/kits/KitsVoicePicker';
+import KitsQueueStatus from '@/components/kits/KitsQueueStatus';
 import { Mic2, Loader2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -23,24 +25,15 @@ export default function VocalHarmonizer() {
 
   const [selected, setSelected] = useState(preselected ? [preselected] : []);
   const [harmonyType, setHarmonyType] = useState('3rd');
-  const [running, setRunning] = useState(false);
-  const [result, setResult] = useState(null);
+  const [voice, setVoice] = useState(null);
+  const job = useKitsJob();
+  const running = job.busy;
+  const result = job.status === 'completed' ? job.asset : null;
 
-  const generate = async () => {
+  const generate = () => {
     if (selected.length === 0) { toast.error('Pick a vocal track first'); return; }
-    setRunning(true);
-    try {
-      const r = await base44.functions.invoke('generateHarmonies', {
-        assetId: selected[0],
-        harmonyType,
-      });
-      setResult(r.data?.asset);
-      toast.success('Harmony layer generated!', { icon: '🎶' });
-    } catch (e) {
-      toast.error(e?.response?.data?.error || 'Harmony generation failed');
-    } finally {
-      setRunning(false);
-    }
+    if (!voice) { toast.error('Pick a harmony voice'); return; }
+    job.start('generateHarmonies', { assetId: selected[0], harmonyType, voiceModelId: voice.model_id });
   };
 
   return (
@@ -72,6 +65,12 @@ export default function VocalHarmonizer() {
             </div>
           </div>
 
+          <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
+            <h3 className="text-sm font-black">3. Harmony Voice</h3>
+            <KitsVoicePicker value={voice} onChange={setVoice} />
+          </div>
+
+          <KitsQueueStatus job={job} />
           <Button onClick={generate} disabled={running || selected.length === 0}
             className="w-full rounded-xl bg-pink-600 hover:bg-pink-500 gap-2 font-bold">
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import useKitsJob from '@/hooks/useKitsJob';
+import KitsVoicePicker from '@/components/kits/KitsVoicePicker';
+import KitsQueueStatus from '@/components/kits/KitsQueueStatus';
 import { Loader2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -16,8 +18,11 @@ export default function VocalHarmonyPanel() {
   const [assets, setAssets] = useState(null);
   const [sourceId, setSourceId] = useState('');
   const [type, setType] = useState('3rd');
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState(null);
+  const [voice, setVoice] = useState(null);
+  const job = useKitsJob();
+  const busy = job.busy;
+  const result = job.status === 'completed' ? job.asset : null;
+  const setResult = () => job.reset();
 
   useEffect(() => {
     if (!user) return;
@@ -25,15 +30,7 @@ export default function VocalHarmonyPanel() {
   }, [user]);
   const source = assets?.find((a) => a.id === sourceId);
 
-  const generate = async () => {
-    setBusy(true);
-    try {
-      const { data } = await base44.functions.invoke('generateHarmonies', { assetId: sourceId, harmonyType: type });
-      setResult(data.data.asset);
-      toast.success('Harmony layer ready');
-    } catch (e) { toast.error(e?.response?.data?.error || e.message); }
-    setBusy(false);
-  };
+  const generate = () => job.start('generateHarmonies', { assetId: sourceId, harmonyType: type, voiceModelId: voice?.model_id });
 
   return (
     <section className="merc-card rounded-3xl p-5 space-y-4">
@@ -58,6 +55,10 @@ export default function VocalHarmonyPanel() {
               </select>
             </label>
           </div>
+          <div className={lbl}>Harmony voice (Kits.ai)
+            <KitsVoicePicker value={voice} onChange={setVoice} />
+          </div>
+          <KitsQueueStatus job={job} />
           <div className="flex flex-wrap gap-2">
             {source && <SendToAudiotoolButton url={source.file_url} name={source.title} aiTool={source.ai_label === 'ai_generated' ? 'library_ai_sample' : undefined} label="Place original" />}
             <Button size="sm" variant="outline" disabled={!source || busy} onClick={generate}>
