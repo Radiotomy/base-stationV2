@@ -1,0 +1,43 @@
+{
+  "name": "KitsDispatch",
+  "type": "object",
+  "description": "Single-row lock for the shared Kits.ai platform key. Kits allows 1 POST per minute per account, so every conversion/blend POST in the app claims this slot first.",
+  "properties": {
+    "key": {
+      "type": "string",
+      "default": "global"
+    },
+    "last_post_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "last_job_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "key"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
