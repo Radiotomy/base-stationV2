@@ -59,6 +59,15 @@ export async function generateLane(key, prompts, bpm) {
 }
 
 const barSeconds = (bpm) => (60 / bpm) * 4;
+export const dropSeconds = (bpm) => INTRO_BARS * barSeconds(bpm);
+
+/** Where each lane sounds on the song timeline, for the lane bars. */
+export const laneSpan = (key, raw, bpm) => {
+  const total = songSeconds(bpm);
+  const drop = dropSeconds(bpm);
+  if (key === 'riser') return [Math.max(0, drop - raw.duration), drop];
+  return [key === 'drums' ? drop : 0, total];
+};
 
 /** Song length snapped to whole bars nearest 60s. */
 export const songSeconds = (bpm) => Math.round(TARGET_SECONDS / barSeconds(bpm)) * barSeconds(bpm);

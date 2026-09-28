@@ -74,6 +74,7 @@ const AudiotoolCallback = lazy(() => import('./pages/AudiotoolCallback'));
 const AudiotoolBeatStudio = lazy(() => import('./pages/AudiotoolBeatStudio'));
 const AudiotoolHarmonyStudio = lazy(() => import('./pages/AudiotoolHarmonyStudio'));
 const AudiotoolVocalLab = lazy(() => import('./pages/AudiotoolVocalLab'));
+const PreStarterStudio = lazy(() => import('./pages/PreStarterStudio'));
 const MashupStudio = lazy(() => import('./pages/MashupStudio'));
 const VocalHarmonizer = lazy(() => import('./pages/VocalHarmonizer'));
 const MasteringStudio = lazy(() => import('./pages/MasteringStudio'));
@@ -266,6 +267,7 @@ const AuthenticatedApp = () => {
               <Route path="/studios/audiotool/beat" element={<AudiotoolBeatStudio />} />
               <Route path="/studios/audiotool/harmony" element={<AudiotoolHarmonyStudio />} />
               <Route path="/studios/audiotool/vocal" element={<AudiotoolVocalLab />} />
+              <Route path="/pre-starter" element={<PreStarterStudio />} />
               <Route path="/mashup-studio" element={<MashupStudio />} />
               <Route path="/vocal-harmonizer" element={<VocalHarmonizer />} />
               <Route path="/mastering-studio" element={<MasteringStudio />} />

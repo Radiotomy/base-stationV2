@@ -22,6 +22,7 @@ const CATEGORIES = [
       { to: "/scribe-studio",      emoji: "📝", label: "Scribe Studio",      desc: "Turn any track into sheet music & MIDI" },
       { to: "/sub-station",        emoji: "🎛️", label: "SUB-Station",        desc: "Multi-track arrangement & mixdown workstation" },
       { to: "/sfx-studio",         emoji: "💥", label: "Sound FX Studio",    desc: "Text-to-SFX with ElevenLabs" },
+      { to: "/pre-starter",        emoji: "⏱️", label: "60s Pre-Starter",    desc: "Build a 60s song sketch, preview it, send it to Audiotool" },
       { to: "/loop-studio",        emoji: "🥁", label: "Loops & Samples",    desc: "Generate loops, discover free samples & build your library" },
       { to: "/foundry",            emoji: "🧰", label: "BASE Foundry",       desc: "Build your own DSP plugins & synths" },
     ],
