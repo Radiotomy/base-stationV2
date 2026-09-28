@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // COS Engine 2.0 — AUTHORITATIVE server-side scoring engine.
 // This is the single source of truth for Creative Ownership Score calculation.
 // The frontend (src/utils/participationScore.js) calls the `calculateCos`

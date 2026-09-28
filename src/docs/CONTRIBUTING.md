@@ -89,6 +89,19 @@ Keep them scoped to one change. In the description, state:
 - which surfaces you actually clicked through (desktop and mobile);
 - for provenance changes, the benchmark rows or test output that back it.
 
+## Trade secrets and third-party licences
+
+- Files headed `TRADE SECRET` (BASE Mark, BASE Print, COS engine and stamping)
+  stay in `base44/shared/`. Never import them into `src/`, and never copy their
+  coefficients, thresholds, weights or key handling into docs, issues, PRs,
+  screenshots or logs.
+- Public docs may describe the protocol, payload format, measured results and
+  limits. They must not describe the embed/detect maths or the COS weights.
+- Before adding any open-source package or open-weight model, add it to
+  [`NOTICES.md`](./NOTICES.md) with its licence and the obligations it brings.
+  Non-commercial weights must never be reachable from a production release
+  path.
+
 ## Reporting security issues
 
 Do **not** open a public issue for anything touching watermark recovery, the

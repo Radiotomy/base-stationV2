@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark v1 — BASE Station's own spread-spectrum audio watermark engine.
 // Inspired by Meta's AudioSeal (localized, sample-level marking) but implemented
 // as a pure-DSP pseudo-noise watermark that needs no ML runtime.

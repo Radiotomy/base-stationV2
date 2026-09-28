@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Print -> spectral seeded recovery.
 //
 // This is the ONLY path by which a Print match may contribute to an attribution,

@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE-Harmonix — forensic-native generation path.
 //
 // REALITY CHECK, so nobody plans against a fiction: Harmonix runs on the public

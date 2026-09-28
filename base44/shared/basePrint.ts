@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark — Print Layer (extraction).
 //
 // The Print Layer is the ONLY part of BASE Mark that embeds nothing. Every Mark

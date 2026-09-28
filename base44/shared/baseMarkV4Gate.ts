@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark V4 (Speed Layer) — centralized acceptance gate and registry resolve.
 //
 // WHY THIS FILE EXISTS

@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark — unified two-layer verification funnel (Phase 4).
 //
 // Until now each layer had its own detector and each caller wired them up by

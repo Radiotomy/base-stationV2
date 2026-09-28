@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark — payload resolution and attribution gate. PHASE 2.
 //
 // WHAT THIS REPLACES

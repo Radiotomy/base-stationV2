@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // Creative Ownership Score stamping — the single place a GENERATED asset's COS
 // is derived and written.
 //

@@ -357,8 +357,19 @@ Standing rules enforced in this codebase:
 
 ## Licence & attribution
 
-Proprietary — all rights reserved. The BASE Mark embedding and detection
-methods are maintained as trade secrets.
+**Proprietary — all rights reserved.** Publishing this repository does not
+grant any licence to its code, models or methods.
+
+- **Trade secrets:** BASE Mark embedding and detection, BASE Print, and the COS
+  engine and weights. These files are marked `TRADE SECRET`, run server-side
+  only and never ship to the browser.
+- **Third-party components:** every open-source package, open-weight model and
+  hosted service we use, with its licence and how we meet it, is listed in
+  [`src/docs/NOTICES.md`](src/docs/NOTICES.md).
+- **MiniMax attribution:** Aurora (MiniMax-Music3) and Nova (MiniMax-H3) credit
+  their models in the app UI, as their community licences require.
+- **Cadence:** its CC-BY-NC 4.0 weights are used for internal testing only and
+  are not shipped to users. BASE Forge is the commercial chord-bed engine.
 
 Third-party research this project builds on:
 

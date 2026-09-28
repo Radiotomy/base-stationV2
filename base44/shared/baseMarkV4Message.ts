@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark V4 message format — PHASE 6. Per-copy payloads.
 //
 // WHAT THIS CLOSES

@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark V2 — neural watermark layer (SilentCipher engine on Replicate).
 // The 40-bit neural message carries: 1 validity byte + the same 32-bit payload
 // used by BASE Mark V1, so both marks resolve to the same registry record on

@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark — refuse to neural-mark audio that is ALREADY one of our marked outputs.
 //
 // WHY THIS EXISTS (measured, 2026-08-20)

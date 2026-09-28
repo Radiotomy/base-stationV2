@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // BASE Mark — Print Layer (matching and warp estimation).
 //
 // Separated from extraction because the two stages fail for different reasons

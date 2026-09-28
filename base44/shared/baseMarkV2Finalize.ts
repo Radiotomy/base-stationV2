@@ -1,3 +1,5 @@
+// TRADE SECRET — BASE Station proprietary and confidential. Server-side only.
+// Do not copy, publish, redistribute or import into client code.
 // Shared finalization for BASE Mark V2 predictions — used by both:
 //   • pollBaseMarkV2  (user-scoped client called from the frontend)
 //   • replicateV2Webhook (service-role client called from Replicate)
