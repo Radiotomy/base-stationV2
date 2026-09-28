@@ -8,10 +8,13 @@ import { undoRegion } from '@/lib/audiotool/midiCoProducer';
 import { unwrap } from '@/lib/audiotool/nexusErrors';
 import ChordPadGrid from './ChordPadGrid';
 import LeadSheetChordImport from './LeadSheetChordImport';
+import ChordSuggestPanel from './ChordSuggestPanel';
+import { logInvocation, deleteInvocation } from '@/lib/audiotool/nexusTelemetry';
 
 const lbl = 'flex flex-col gap-1 text-[10px] uppercase tracking-widest text-muted-foreground';
 
-export default function ChordProgressionPanel({ nexus, connected, onChanged }) {
+export default function ChordProgressionPanel({ nexus, projectUrl, connected, onChanged }) {
+  const [aiPicks, setAiPicks] = useState([]);
   const [chart, setChart] = useState('C | Am | F | G');
   const [barsPerChord, setBarsPerChord] = useState(1);
   const [trackId, setTrackId] = useState('');
@@ -24,7 +27,12 @@ export default function ChordProgressionPanel({ nexus, connected, onChanged }) {
     try {
       const r = unwrap(await writeProgression(nexus, { chords, barsPerChord, trackId, label: chords.join(' ') }));
       setTrackId(r.trackId);
-      setLast(r);
+      const picked = aiPicks.filter((c) => chords.includes(c));
+      const ev = picked.length ? await logInvocation(projectUrl, {
+        tool: 'chord_suggest', prompt: `ChordSeqAI suggested: ${picked.join(', ')}`, collectionIds: [r.collectionId],
+      }) : null;
+      setAiPicks([]);
+      setLast({ ...r, eventId: ev?.id });
       toast.success(`${chords.length} chords written at bar ${r.bar}`);
       onChanged?.();
     } catch (e) { toast.error(`Audiotool rejected the progression — ${e.message}`); }
@@ -33,7 +41,11 @@ export default function ChordProgressionPanel({ nexus, connected, onChanged }) {
 
   const undo = async () => {
     setBusy('undo');
-    try { unwrap(await undoRegion(nexus, { ...last, trackId: null })); setLast(null); onChanged?.(); }
+    try {
+      unwrap(await undoRegion(nexus, { ...last, trackId: null }));
+      if (last.eventId) await deleteInvocation(last.eventId);
+      setLast(null); onChanged?.();
+    }
     catch (e) { toast.error(`Couldn't undo — ${e.message}`); }
     setBusy('');
   };
@@ -52,6 +64,7 @@ export default function ChordProgressionPanel({ nexus, connected, onChanged }) {
         {chords.map((c, i) => <span key={i} className="rounded-full border border-border px-2.5 py-0.5 text-xs font-mono">{c}</span>)}
         {!chords.length && <span className="text-xs text-muted-foreground">No recognisable chords yet.</span>}
       </div>
+      <ChordSuggestPanel chords={chords} onPick={(c) => { setAiPicks((p) => [...p, c]); setChart((v) => (v.trim() ? `${v} | ${c}` : c)); }} />
       <div className="grid sm:grid-cols-2 gap-3">
         <label className={lbl}>Length per chord
           <select value={barsPerChord} onChange={(e) => setBarsPerChord(Number(e.target.value))}
@@ -66,7 +79,7 @@ export default function ChordProgressionPanel({ nexus, connected, onChanged }) {
           {busy === 'write' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Music2 className="w-4 h-4" />} Write to timeline
         </Button>
         <Button variant="outline" disabled={!last || !!busy} onClick={undo}><Undo2 className="w-4 h-4" /> Undo last</Button>
-        <Button variant="ghost" disabled={!!busy} onClick={() => setChart('')}><Eraser className="w-4 h-4" /> Clear</Button>
+        <Button variant="ghost" disabled={!!busy} onClick={() => { setChart(''); setAiPicks([]); }}><Eraser className="w-4 h-4" /> Clear</Button>
       </div>
     </section>
   );

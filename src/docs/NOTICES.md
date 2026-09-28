@@ -35,6 +35,7 @@ from disclosing the method.
 | Cantor | DiffSinger + community voicebanks | Apache-2.0 engine. Each bank has its own licence. | Show each bank's licence before rendering. | `Voicebank.license_text` is shown before every render. |
 | BASE Forge | Stable Audio 2.5 (tuned) | MIT | Keep the copyright and licence notice. | Credited here. |
 | **Cadence** | MusicGen-Chord / MusicGen weights | **CC-BY-NC 4.0 (non-commercial)** | No commercial use of outputs. | **Internal testing and evaluation only. Not shipped to users.** Will be replaced by BASE Forge or our own weights. No Cadence output may be released commercially. |
+| **ChordSeqAI** | Conditional Transformer S next-chord model + chord vocabulary (github.com/PetrIvan/chord-seq-ai-app, commit cae8240) | **MIT** — Copyright (c) 2023 Student Trainee Center | Keep copyright + permission notice. | Runs in the creator's browser for "Suggest next chord" in the Audiotool Harmony workspace. Loaded unmodified from the pinned upstream commit; notice kept here and in the UI. |
 
 ## 3. SDKs and libraries
 

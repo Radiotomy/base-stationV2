@@ -25,9 +25,10 @@
         "automation_generator",
         "cadence_bed",
         "cantor_vocal",
-        "vocal_harmony"
+        "vocal_harmony",
+        "chord_suggest"
       ],
-      "description": "Which AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library asset sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern; bassline_generator = an AI-written Bassline pattern; tonematrix_generator = an AI-written Tonematrix pattern; automation_generator = an AI-described automation curve (collection_ids holds the automation collection); cadence_bed = a Cadence (MusicGen-Chord) instrumental bed placed from the Harmony workspace; cantor_vocal = a Cantor (DiffSinger) vocal render placed from the Vocal Lab; vocal_harmony = an AI harmony layer placed from the Vocal Lab. Chord progressions, vocal takes and patterns the creator wrote, recorded or drew by hand are never logged here, so they count as human. An invocation whose output the creator undid is deleted, so undone AI work never counts against them."
+      "description": "Which AI tool was invoked. songstarter_loop = BASE Forge loop sent to the timeline; songstarter_sfx = ElevenLabs sound effect sent to the timeline; library_ai_sample = an AI-generated library asset sent to the timeline; drum_generator = an AI-written Beatbox 8 pattern; bassline_generator = an AI-written Bassline pattern; tonematrix_generator = an AI-written Tonematrix pattern; automation_generator = an AI-described automation curve (collection_ids holds the automation collection); cadence_bed = a Cadence (MusicGen-Chord) instrumental bed placed from the Harmony workspace; cantor_vocal = a Cantor (DiffSinger) vocal render placed from the Vocal Lab; vocal_harmony = an AI harmony layer placed from the Vocal Lab; chord_suggest = a progression that includes at least one next-chord suggestion (ChordSeqAI, on-device) the creator accepted \u2014 the prompt lists exactly which chords were suggested. Chord progressions, vocal takes and patterns the creator wrote, recorded or drew by hand are never logged here, so they count as human. An invocation whose output the creator undid is deleted, so undone AI work never counts against them."
     },
     "prompt": {
       "type": "string",
