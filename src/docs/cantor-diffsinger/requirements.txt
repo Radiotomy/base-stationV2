@@ -1,4 +1,4 @@
-onnxruntime==1.19.2
+onnxruntime==1.17.3
 numpy<2
 soundfile==0.12.1
 PyYAML==6.0.2

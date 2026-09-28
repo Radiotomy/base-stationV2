@@ -356,6 +356,10 @@ def get_bank(bank_id: str, fresh: bool = False) -> dict:
 
     opts = ort.SessionOptions()
     opts.intra_op_num_threads = 2
+    # ORT's graph optimizer segfaults (exit 139, NodeArg index assertion) while
+    # fusing DiffSinger acoustic graphs. Load them un-optimized — the models are
+    # already exported optimized, so the cost is negligible.
+    opts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
     bank = {
         "acoustic": ort.InferenceSession(str(parts["acoustic"]), opts, providers=["CPUExecutionProvider"]),
         "vocoder": ort.InferenceSession(str(parts["vocoder"]), opts, providers=["CPUExecutionProvider"]),
@@ -683,7 +687,9 @@ def _install(job_id: str, req: InstallRequest, token: str):
 
         JOBS[job_id]["stage"] = "validating"
         if req.kind == "vocoder":
-            sess = ort.InferenceSession(str(target / "vocoder.onnx"), providers=["CPUExecutionProvider"])
+            _vopts = ort.SessionOptions()
+            _vopts.graph_optimization_level = ort.GraphOptimizationLevel.ORT_DISABLE_ALL
+            sess = ort.InferenceSession(str(target / "vocoder.onnx"), _vopts, providers=["CPUExecutionProvider"])
             names = [i.name for i in sess.get_inputs()]
             report = {"kind": "vocoder", "inputs": names}
             if not any(n in ALIASES["mel"] for n in names):
