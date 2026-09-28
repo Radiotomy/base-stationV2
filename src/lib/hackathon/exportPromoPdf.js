@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf';
-import { CATEGORIES, HIGHLIGHTS, IMAGES, INTRO, TAGLINE, APP_URL } from './content';
+import { CATEGORIES, HIGHLIGHTS, BEYOND, IMAGES, INTRO, TAGLINE, APP_URL } from './content';
 import { loadImageDataUrl } from './loadImage';
 
 const M = 50;
@@ -34,6 +34,9 @@ export async function exportPromoPdf() {
   write('Provenance that travels with every export', 20, [30, 25, 35], true);
   y += 6;
   HIGHLIGHTS.forEach((h) => write(`•  ${h}`, 11, [60, 55, 65], false));
+  y += 14;
+  write('BEYOND AUDIOTOOL', 11, [200, 100, 60], true);
+  BEYOND.forEach((h) => write(`•  ${h}`, 11, [60, 55, 65], false));
 
   // Six equal sections
   CATEGORIES.forEach((c) => {

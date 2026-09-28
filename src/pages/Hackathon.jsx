@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Presentation, Download, Link2, Loader2, Check } from 'lucide-react';
 import CategoryCard from '@/components/hackathon/CategoryCard';
-import { CATEGORIES, HIGHLIGHTS, IMAGES, INTRO, TAGLINE, LINKS, APP_URL } from '@/lib/hackathon/content';
+import { CATEGORIES, HIGHLIGHTS, BEYOND, STEPS, IMAGES, INTRO, TAGLINE, LINKS, APP_URL } from '@/lib/hackathon/content';
 import { exportPromoPdf } from '@/lib/hackathon/exportPromoPdf';
 
 export default function Hackathon() {
@@ -52,11 +52,7 @@ export default function Hackathon() {
         <div className="merc-card rounded-2xl p-8">
           <h2 className="text-2xl font-display">How it works</h2>
           <ol className="mt-4 space-y-3 text-sm text-foreground/85 list-decimal pl-5">
-            <li>Sign into Audiotool from the Bridge hub.</li>
-            <li>Open a project or start a Vibe → Session starter.</li>
-            <li>Open Beat & Pattern, Harmony & Arrangement or Vocal Lab.</li>
-            <li>Generate or find a sound — Send to Audiotool lands it live.</li>
-            <li>Protect & Register the export: watermark, score, anchor, distribute.</li>
+            {STEPS.map((s) => <li key={s}>{s}</li>)}
           </ol>
         </div>
         <div className="merc-card rounded-2xl p-8">
@@ -65,6 +61,14 @@ export default function Hackathon() {
             {HIGHLIGHTS.map((h) => <li key={h} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" />{h}</li>)}
           </ul>
         </div>
+      </section>
+
+      <section className="mt-6 merc-card rounded-2xl p-8">
+        <h2 className="text-2xl font-display">Beyond Audiotool</h2>
+        <p className="mt-2 text-sm text-muted-foreground">Capabilities BASE Station adds that Audiotool doesn't offer on its own.</p>
+        <ul className="mt-4 grid gap-3 md:grid-cols-2 text-sm text-foreground/85">
+          {BEYOND.map((h) => <li key={h} className="flex gap-2"><span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-accent" />{h}</li>)}
+        </ul>
       </section>
 
       <section className="mt-16 flex flex-wrap gap-3">
