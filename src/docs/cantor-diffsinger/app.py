@@ -179,7 +179,15 @@ def _resolve_vocoder(path: Path, cfg: dict) -> Tuple[Optional[Path], str]:
     candidates: List[Path] = []
     if named:
         candidates += [path / named, path / named / "vocoder.onnx", VOCODER_DIR / named / "vocoder.onnx"]
+    # A bank's own dsvocoder/vocoder.yaml names the vocoder it was trained against.
+    # Using a different, shared vocoder is the main source of static/buzz.
+    vyaml = path / "dsvocoder" / "vocoder.yaml"
+    if vyaml.is_file():
+        model = str(_read_yaml(vyaml).get("model") or "").strip()
+        if model:
+            candidates.append(path / "dsvocoder" / model)
     candidates += [path / "dsvocoder" / "vocoder.onnx", path / "vocoder.onnx"]
+    candidates += sorted((path / "dsvocoder").glob("*.onnx")) if (path / "dsvocoder").is_dir() else []
     for c in candidates:
         if c.is_file():
             return c, "bundled" if str(c).startswith(str(path)) else "global"
@@ -471,7 +479,12 @@ def build_frames(notes: List[dict], bpm: float, bank: dict):
 
         # Split the note's frames across its phonemes, remainder on the vowel-ish
         # tail so the sustained part of the syllable carries the length.
-        each = max(1, frames // len(phones))
+        # Consonants are short in real singing; the vowel carries the note. An even
+        # split stretches consonants across the note and smears the words.
+        vowel_i = next((i for i, p in enumerate(phones) if p.split("/")[-1][:1] in "aeiou"), len(phones) - 1)
+        cons = max(1, min(6, frames // (len(phones) + 1)))
+        split = [cons] * len(phones)
+        split[vowel_i] = max(1, frames - cons * (len(phones) - 1))
         for i, ph in enumerate(phones):
             token, lang_id = resolve_token(ph, bank)
             if token is None:
@@ -480,7 +493,7 @@ def build_frames(notes: List[dict], bpm: float, bank: dict):
                     unknown.append(ph)
             tokens.append(token)
             lang_ids.append(lang_id)
-            durations.append(frames - each * (len(phones) - 1) if i == len(phones) - 1 else each)
+            durations.append(split[i])
 
     return (
         np.array([tokens], dtype=np.int64),
@@ -501,7 +514,7 @@ ALIASES = {
 }
 
 
-def feed(session, candidates: dict, n_frames: int) -> Tuple[dict, List[str]]:
+def feed(session, candidates: dict, n_frames: int, max_depth: float = 1.0) -> Tuple[dict, List[str]]:
     """
     Match our arrays to whatever the bank's model actually named its inputs.
 
@@ -522,9 +535,12 @@ def feed(session, candidates: dict, n_frames: int) -> Tuple[dict, List[str]]:
         elif name == "speedup":
             bound[name] = np.array(10, dtype=np.int64)  # 100 diffusion steps
         elif name == "steps":
-            bound[name] = np.array(20, dtype=np.int64)
+            bound[name] = np.array(50, dtype=np.int64)  # more steps = cleaner mel
         elif name == "depth":
-            bound[name] = np.array(1.0, dtype=np.float32) if is_float else np.array(1000, dtype=np.int64)
+            # Never exceed the depth the bank was trained to (dsconfig max_depth):
+            # going past it asks the model to denoise from noise it never learned.
+            bound[name] = (np.array(max_depth, dtype=np.float32) if is_float
+                           else np.array(int(max_depth * 1000), dtype=np.int64))
         elif name == "gender":
             bound[name] = np.zeros((1, n_frames), dtype=np.float32)
         elif name == "velocity":
@@ -553,7 +569,8 @@ def synthesize(bank: dict, notes: List[dict], bpm: float, speaker: Optional[str]
     if spk is not None:
         candidates["spk_embed"] = spk
 
-    bound, missing = feed(bank["acoustic"], candidates, n_frames)
+    max_depth = float(bank["cfg"].get("max_depth") or 1.0)
+    bound, missing = feed(bank["acoustic"], candidates, n_frames, max_depth)
     if missing:
         curves = [m for m in missing if m in UNSUPPORTED_CURVES]
         if curves:
