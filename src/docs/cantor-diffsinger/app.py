@@ -390,7 +390,31 @@ def phonemize(syllable: str, bank: dict) -> List[str]:
     word = syllable.strip().lower()
     if not word or word == "-":
         return []
-    return bank["dictionary"].get(word, [word])
+    if word in bank["dictionary"]:
+        return bank["dictionary"][word]
+    # English banks ship phoneme-level dictionaries: OpenUtau's phonemizer does the
+    # word -> ARPAbet step itself, so Cantor has to as well. Only used when every
+    # resulting phoneme exists in the bank, otherwise the old fallback stands.
+    arpa = _cmu().get(word.strip(".,!?'\""))
+    if arpa:
+        phones = ["".join(c for c in p if not c.isdigit()).lower() for p in arpa[0]]
+        if all(resolve_token(p, bank)[0] is not None for p in phones):
+            return phones
+    return [word]
+
+
+_CMU = None
+
+
+def _cmu():
+    global _CMU
+    if _CMU is None:
+        try:
+            import cmudict
+            _CMU = cmudict.dict()
+        except Exception:
+            _CMU = {}
+    return _CMU
 
 
 def resolve_token(ph: str, bank: dict) -> Tuple[Optional[int], int]:
