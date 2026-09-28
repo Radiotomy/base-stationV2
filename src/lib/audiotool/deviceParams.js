@@ -2,14 +2,21 @@
 // runtime but not their ranges, so each mapping carries an editable Audiotool
 // range that the Foundry parameter range is scaled onto.
 import { CHAIN_INSTRUMENTS, CHAIN_EFFECTS } from '@/lib/audiotool/instrumentChain';
+import { MANUAL_DEVICE_TYPES, manualFor } from '@/lib/audiotool/audiotoolManual';
 
-const DEVICE_TYPES = [...CHAIN_INSTRUMENTS, 'beatbox8', 'bassline', 'tonematrix', ...CHAIN_EFFECTS];
+// Every device in Audiotool's manual, not just the ones our tools create.
+const DEVICE_TYPES = [...new Set([...CHAIN_INSTRUMENTS, 'beatbox8', 'bassline', 'tonematrix', ...CHAIN_EFFECTS, ...MANUAL_DEVICE_TYPES])];
 const SKIP = /^(positionX|positionY)$/;
+
+// A type name this SDK version doesn't know must not break the whole list.
+const query = (nexus, type) => {
+  try { return nexus.queryEntities.ofTypes(type).get(); } catch { return []; }
+};
 
 export function listDevices(nexus) {
   return DEVICE_TYPES.flatMap((type) =>
-    nexus.queryEntities.ofTypes(type).get().map((entity) => ({
-      id: entity.id, type, entity, name: entity.fields.displayName?.value || type,
+    query(nexus, type).map((entity) => ({
+      id: entity.id, type, entity, name: entity.fields.displayName?.value || manualFor(type)?.name || type,
     })));
 }
 

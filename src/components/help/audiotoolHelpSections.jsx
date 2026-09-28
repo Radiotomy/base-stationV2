@@ -1,6 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Link2, FolderOpen, Wand2, Rocket, SlidersHorizontal, ShieldCheck, Headphones, Wrench } from 'lucide-react';
+import { Link2, FolderOpen, Wand2, Rocket, SlidersHorizontal, ShieldCheck, Headphones, Wrench, BookOpen } from 'lucide-react';
+import AudiotoolManualSection from '@/components/help/AudiotoolManualSection';
+import { MANUAL_DEVICES } from '@/lib/audiotool/audiotoolManual';
+
+const MANUAL_KEYWORDS = Object.values(MANUAL_DEVICES).map((d) => d.name.toLowerCase()).join(' ');
 
 const Box = ({ tone = 'amber', title, children }) => (
   <div className={`p-3 rounded-xl border ${tone === 'emerald' ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
@@ -181,6 +185,13 @@ const AUDIOTOOL_HELP_SECTIONS = [
         <p className="text-xs">Audius releases also link to the on-chain anchor where one exists. An anchor made before the release is labelled as an off-chain back-link, the weaker of the two kinds of proof.</p>
       </>
     ),
+  },
+  {
+    id: 'audiotool-manual',
+    title: 'Audiotool device manual — every synth, drum, effect, tool & VST Bridge',
+    icon: BookOpen,
+    keywords: `audiotool manual reference device plugin vst bridge vst3 booster record audio midi automate mixer design sound ${MANUAL_KEYWORDS}`,
+    body: <AudiotoolManualSection />,
   },
   {
     id: 'audiotool-troubleshooting',
