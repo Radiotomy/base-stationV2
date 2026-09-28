@@ -53,8 +53,9 @@ What BASE Station adds that Audiotool doesn't offer on its own:
 
 ## Honest limits
 
-- Cadence beds use non-commercial (CC-BY-NC 4.0) model weights — drafting and personal use only.
+- Cadence beds currently use non-commercial (CC-BY-NC 4.0) model weights — drafting, testing and personal use only. We're working on licensing, or on training our own weights as the engine's open license allows. A commercial-ready alternative is already in place: BASE Forge, running our own altered/tuned version of Stable Audio 2.5, alongside other engines.
 - Audiotool can't be embedded in an iframe, so it runs in a managed pop-out window.
+- The Audiotool SDK/API doesn't allow importing or exporting a project's cover artwork, templates, or community tracks — users import those manually, and push manually for distribution outside Audiotool.
 - VST Bridge plugin hosting isn't exposed through Audiotool's API, so we don't control it.
 
 ## Why this wins
