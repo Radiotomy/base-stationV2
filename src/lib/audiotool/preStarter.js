@@ -4,6 +4,7 @@ import { runForgeLoop, runSfx } from '@/lib/audiotool/songstarterGen';
 import { loadAsWavFile } from '@/lib/audiotool/localAudio';
 import { audioBufferToWav } from '@/utils/wavEncoder';
 import { VIBES } from '@/lib/audiotool/vibes';
+import { renderCadenceBed } from '@/lib/cadence/renderCadenceBed';
 
 export const TARGET_SECONDS = 60;
 const RATE = 44100;
@@ -23,8 +24,19 @@ const DRUM_PROMPT = {
   cinematic: 'Driving cinematic percussion loop, taiko and toms, epic',
 };
 
+// Bed chords per vibe — Cadence plays these literally (one chord per bar).
+const BED_CHORDS = {
+  lofi: 'Dm7 | G7 | Cmaj7 | Am7',
+  trap: 'Am | F | Dm | E',
+  house: 'Am7 | Dm7 | Gm7 | Cm7',
+  ambient: 'Cmaj7 | Em7 | Fmaj7 | G',
+  dnb: 'Fm7 | Dbmaj7 | Ebm7 | Cm7',
+  cinematic: 'Dm | Bb | F | C',
+};
+export const bedChordsFor = (vibe) => BED_CHORDS[vibe.id] || 'C | Am | F | G';
+
 export const LANES = [
-  { key: 'bed', label: 'Bed', aiTool: 'songstarter_loop' },
+  { key: 'bed', label: 'Bed (Cadence)', aiTool: 'cadence_bed' },
   { key: 'drums', label: 'Drums', aiTool: 'songstarter_loop' },
   { key: 'riser', label: 'Riser', aiTool: 'songstarter_sfx' },
 ];
@@ -47,7 +59,13 @@ async function decodeUrl(url) {
 }
 
 /** Generates one element and returns its raw AudioBuffer. */
-export async function generateLane(key, prompts, bpm) {
+export async function generateLane(key, prompts, bpm, chords) {
+  if (key === 'bed') {
+    // 4 bars of the progression; the arranger loops it on whole bars.
+    const seconds = Math.max(8, Math.ceil(4 * barSeconds(bpm)));
+    const asset = await renderCadenceBed({ title: 'Pre-Starter bed', chords, bpm, style: prompts.bed, duration: seconds });
+    return { buffer: await decodeUrl(asset.file_url), url: asset.file_url };
+  }
   if (key === 'riser') {
     const { audioUrl } = await runSfx({ text: prompts.riser, duration: 6, loop: false });
     return { buffer: await decodeUrl(audioUrl), url: audioUrl };

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useBridgeSession } from '@/components/audiotool/songstarter/BridgeSessionContext';
 import { VIBES } from '@/lib/audiotool/vibes';
 import { errorText } from '@/lib/audiotool/songstarterGen';
-import { LANES, vibeById, promptsFor, generateLane, arrangeLane, laneSpan, songSeconds } from '@/lib/audiotool/preStarter';
+import { LANES, bedChordsFor, vibeById, promptsFor, generateLane, arrangeLane, laneSpan, songSeconds } from '@/lib/audiotool/preStarter';
 import usePreStarterPlayer from '@/hooks/usePreStarterPlayer';
 import PreStarterLane from './PreStarterLane';
 import PreStarterSendBar from './PreStarterSendBar';
@@ -24,13 +24,15 @@ export default function PreStarterPanel() {
   const player = usePreStarterPlayer(lanes);
   const vibe = vibeById(vibeId);
   const prompts = promptsFor(vibe, extra);
+  const [chordEdit, setChordEdit] = useState(null);
+  const chords = chordEdit ?? bedChordsFor(vibe);
   const total = songSeconds(bpm);
   const anyBusy = Object.values(busy).some(Boolean);
 
   const build = async (key) => {
     setBusy((b) => ({ ...b, [key]: true }));
     try {
-      const { buffer: raw } = await generateLane(key, prompts, bpm);
+      const { buffer: raw } = await generateLane(key, prompts, bpm, chords);
       const buffer = await arrangeLane(key, raw, bpm);
       setLanes((ls) => ls.map((l) => (l.key === key ? { ...l, buffer, span: laneSpan(key, raw, bpm) } : l)));
     } catch (e) {
@@ -47,11 +49,11 @@ export default function PreStarterPanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Builds a ~60s song sketch — chord bed, drums that drop in after a 4-bar intro, and a riser into the drop. Preview it here, then send it to Audiotool. Uses credits for 2 Forge loops + 1 sound effect.
+        Builds a ~60s song sketch — chord bed, drums that drop in after a 4-bar intro, and a riser into the drop. Preview it here, then send it to Audiotool. The bed is played by Cadence from the chords below (free, non-commercial drafting only); drums and riser use credits for 1 Forge loop + 1 sound effect.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {VIBES.map((v) => (
-          <button key={v.id} disabled={anyBusy} onClick={() => { setVibeId(v.id); setBpm(v.bpm); }}
+          <button key={v.id} disabled={anyBusy} onClick={() => { setVibeId(v.id); setBpm(v.bpm); setChordEdit(null); }}
             className={`rounded-xl border px-3 py-2 text-left transition-colors ${v.id === vibeId ? 'border-accent bg-accent/10' : 'border-border hover:border-foreground/30'}`}>
             <p className="text-sm font-semibold">{v.label}</p>
             <p className="text-[11px] text-muted-foreground">{v.bpm} BPM</p>
@@ -67,6 +69,10 @@ export default function PreStarterPanel() {
           <label className="text-xs text-muted-foreground">BPM</label>
           <Input type="number" min={60} max={190} value={bpm} onChange={(e) => setBpm(Number(e.target.value) || vibe.bpm)} disabled={anyBusy} />
         </div>
+      </div>
+      <div>
+        <label className="text-xs text-muted-foreground">Bed chords (one per bar — Cadence plays these)</label>
+        <Input value={chords} onChange={(e) => setChordEdit(e.target.value)} disabled={anyBusy} />
       </div>
       <Button className="merc-button" onClick={buildAll} disabled={anyBusy}>
         {anyBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
