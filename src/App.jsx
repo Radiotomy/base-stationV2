@@ -129,6 +129,7 @@ const Forum = lazy(() => import('./pages/Forum'));
 const ForumThread = lazy(() => import('./pages/ForumThread'));
 const LiveMulticlient = lazy(() => import('./pages/dev/LiveMulticlient'));
 const VerifyMark = lazy(() => import('./pages/VerifyMark'));
+const AudiotoolGuide = lazy(() => import('./pages/AudiotoolGuide'));
 const Hackathon = lazy(() => import('./pages/Hackathon'));
 const HackathonDeck = lazy(() => import('./pages/HackathonDeck'));
 // BASE Foundry — isolated DSP plugin studio module
@@ -236,6 +237,7 @@ const AuthenticatedApp = () => {
             <Route path="/developers" element={<Navigate to="/docs" replace />} />
             <Route path="/about" element={<About />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/audiotool/guide" element={<AudiotoolGuide />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/transparency" element={<AITransparency />} />
             <Route path="/creative-ownership" element={<CreativeOwnership />} />

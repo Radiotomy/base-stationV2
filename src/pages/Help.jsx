@@ -1,19 +1,16 @@
-import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search, ArrowLeft, BookOpen, Music, Mic2, Palette, Film, Sparkles,
   Wand2, Coins, Zap, Globe, Volume2, Shield, Fingerprint, Radio, Scale,
   Layers, FileCheck, ScanLine, Users, Heart, Lock, Cpu
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import HelpSection from '@/components/help/HelpSection';
 import TutorialWalkthrough from '@/components/help/TutorialWalkthrough';
 import ProTips from '@/components/help/ProTips';
 import PODCAST_HELP_SECTIONS from '@/components/help/podcastHelpSections';
 import FOUNDRY_HELP_SECTIONS from '@/components/help/foundryHelpSections';
 import VENUE_HELP_SECTIONS from '@/components/help/venueHelpSections';
 import ENGINE_HELP_SECTIONS from '@/components/help/engineHelpSections';
-import AUDIOTOOL_HELP_SECTIONS from '@/components/help/audiotoolHelpSections';
+import HelpSectionList from '@/components/help/HelpSectionList';
 
 const SECTIONS = [
   {
@@ -341,7 +338,6 @@ const SECTIONS = [
   // BASE Foundry — DSP tool module, content in its own file
   ...FOUNDRY_HELP_SECTIONS,
   // Audiotool Bridge + Audius distribution
-  ...AUDIOTOOL_HELP_SECTIONS,
   // 3D venues, idle programming and AI staff
   ...VENUE_HELP_SECTIONS,
   {
@@ -462,16 +458,6 @@ const SECTIONS = [
 ];
 
 export default function Help() {
-  const [q, setQ] = useState('');
-
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return SECTIONS;
-    return SECTIONS.filter((s) =>
-      s.title.toLowerCase().includes(term) ||
-      s.keywords.toLowerCase().includes(term)
-    );
-  }, [q]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -494,15 +480,6 @@ export default function Help() {
           <p className="text-white/60 text-base md:text-lg max-w-2xl">
             Everything you need to go from a blank screen to a published track — step-by-step.
           </p>
-          <div className="relative mt-6 max-w-xl">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search help (e.g. lyrics, LUFS, video, credits)…"
-              className="pl-9 h-11 rounded-xl bg-card/60 border-white/10"
-            />
-          </div>
         </div>
       </div>
 
@@ -521,16 +498,11 @@ export default function Help() {
       {/* Searchable sections */}
       <div className="max-w-4xl mx-auto px-6 pb-16">
         <h2 className="text-xl font-black text-foreground mb-4">Full reference</h2>
-        <div className="space-y-2">
-          {filtered.length === 0 && (
-            <p className="text-sm text-muted-foreground py-8 text-center">No sections match "{q}".</p>
-          )}
-          {filtered.map((s, i) => (
-            <HelpSection key={s.id} id={s.id} title={s.title} icon={s.icon} defaultOpen={i === 0 && !q}>
-              {s.body}
-            </HelpSection>
-          ))}
-        </div>
+        <Link to="/audiotool/guide" className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-card px-5 py-4 hover:border-accent/50 transition-colors">
+          <BookOpen className="w-5 h-5 text-accent" />
+          <span className="flex-1"><strong className="text-foreground">Audiotool Bridge guide</strong><span className="block text-xs text-muted-foreground">Everything Audiotool now lives in its own dedicated guide.</span></span>
+        </Link>
+        <HelpSectionList sections={SECTIONS} placeholder="Search help (e.g. lyrics, LUFS, video, credits)…" />
       </div>
     </div>
   );
