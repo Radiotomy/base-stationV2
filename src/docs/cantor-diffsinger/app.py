@@ -443,6 +443,27 @@ def resolve_token(ph: str, bank: dict) -> Tuple[Optional[int], int]:
     return None, 0
 
 
+def _natural_f0(hz: float, frames: int, prev_hz: float, fps: float) -> List[float]:
+    """
+    A flat f0 with hard steps sounds robotic. Add what singers do WITHOUT changing
+    the authored note: a short glide in from the previous pitch (~60 ms), then —
+    only on held notes — a gentle delayed vibrato (5.5 Hz, ±12 cents). The note
+    still sits on the written pitch for its whole body.
+    """
+    t = np.arange(frames) / fps
+    cents = np.zeros(frames)
+    glide = min(frames // 3, int(0.06 * fps))
+    if glide > 0 and prev_hz > 0 and prev_hz != hz:
+        start = 1200.0 * np.log2(prev_hz / hz)
+        ramp = np.linspace(0.0, 1.0, glide)
+        cents[:glide] = start * (1 - (3 * ramp ** 2 - 2 * ramp ** 3))
+    onset = 0.25
+    if frames / fps > 0.45:
+        fade = np.clip((t - onset) / 0.2, 0.0, 1.0)
+        cents += 12.0 * fade * np.sin(2 * np.pi * 5.5 * (t - onset))
+    return list(hz * 2.0 ** (cents / 1200.0))
+
+
 def build_frames(notes: List[dict], bpm: float, bank: dict):
     """
     Turn the authored score into token / duration / f0 arrays.
@@ -467,7 +488,7 @@ def build_frames(notes: List[dict], bpm: float, bank: dict):
     for note in notes:
         frames = max(1, int(round(float(note["beats"]) * frames_per_beat)))
         hz = 440.0 * (2.0 ** ((float(note["midi"]) - 69.0) / 12.0))
-        f0_frames.extend([hz] * frames)
+        f0_frames.extend(_natural_f0(hz, frames, f0_frames[-1] if f0_frames else hz, sr / hop))
 
         phones = phonemize(note.get("syllable", ""), bank)
         if not phones:
