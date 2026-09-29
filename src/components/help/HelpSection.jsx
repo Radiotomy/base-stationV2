@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -7,6 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
  */
 export default function HelpSection({ id, title, icon: Icon, children, defaultOpen = false }) {
   const [open, setOpen] = useState(defaultOpen);
+  // Deep links (/help#foundry) land on the section, not the top of the page.
+  useEffect(() => {
+    if (id && window.location.hash === `#${id}`) {
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+    }
+  }, [id]);
   return (
     <div id={id} className="bg-card border border-border rounded-2xl overflow-hidden scroll-mt-20">
       <button

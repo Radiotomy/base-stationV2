@@ -76,7 +76,7 @@ export default function Foundry() {
               favourites into collections, or enter a Patch Design challenge — all below.
             </p>
             <Link
-              to="/help"
+              to="/help#foundry"
               className="inline-flex items-center gap-1.5 mt-2 text-[11px] text-[#FFC98A] hover:text-white transition-colors"
             >
               <BookOpen className="w-3 h-3" />

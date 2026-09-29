@@ -19,7 +19,16 @@ const FOUNDRY_HELP_SECTIONS = [
         <p><strong className="text-foreground">How a patch works:</strong></p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Prompt it</strong> — describe the sound you're after and the architect lays out a starting signal chain.</li>
-          <li><strong>Rewire it</strong> — drag modules (oscillator, noise, sampler, filter, delay, reverb, saturation, 3-band EQ, gain, LFO, envelope, insert input, output) and patch cables between them, including cables into a parameter for modulation.</li>
+          <li><strong>Start from a template</strong> — the Starter Templates shelf (when curated patches exist) forks a reference patch into your workspace so you can learn from a working chain.</li>
+          <li><strong>Rewire it</strong> — drag modules from the palette and patch cables between them, including cables into a parameter for modulation:
+            <ul className="list-[circle] pl-5 mt-1 space-y-0.5">
+              <li><em>Generators</em> — Oscillator, Noise, Sample Player, Drone Texture</li>
+              <li><em>Processors</em> — State Variable Filter, Stereo Delay, Reverb, Saturation, 3-Band EQ, Gain</li>
+              <li><em>Modulators</em> — LFO (BPM sync), ADSR Envelope</li>
+              <li><em>I/O</em> — Insert Input, Output</li>
+            </ul>
+          </li>
+          <li><strong>Ask the assistant</strong> — the assistant pane in the workspace can suggest or rebuild parts of the graph from a description.</li>
           <li><strong>Audition it</strong> — an internal test pulse, your microphone, or a track from your library runs through the chain in real time; meters show level as you tweak.</li>
           <li><strong>Save presets</strong> — a preset stores parameter <em>values</em> only, never topology, so loading one can't quietly turn your patch into a different plugin.</li>
         </ul>
@@ -39,6 +48,7 @@ const FOUNDRY_HELP_SECTIONS = [
           <li><strong>Live Studio</strong> — the live patch rack applies patches to a running set.</li>
           <li><strong>Visualizer Studio</strong> — tap a patch's LFO/envelope as a modulation source so visuals move with the processing (see the Visualizer Studio section).</li>
           <li><strong>ORVO Studio</strong> — utility patches as non-destructive Voice Chains.</li>
+          <li><strong>Audiotool Bridge</strong> — map a patch's modules onto devices in a live Audiotool project so the Foundry acts as a control surface (the Foundry audio itself never plays inside Audiotool).</li>
         </ul>
       </>
     ),
