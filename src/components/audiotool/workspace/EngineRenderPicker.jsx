@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import SendToAudiotoolButton from '@/components/audiotool/songstarter/SendToAudiotoolButton';
 
 /** The creator's finished renders from one BASE engine, each placeable on the live timeline. */
@@ -19,7 +21,7 @@ export default function EngineRenderPicker({ provider, aiTool, title, hint, link
   return (
     <section className="merc-card rounded-3xl p-5 space-y-3">
       <div>
-        <h3 className="font-bold">{title}</h3>
+        <h3 className="font-bold flex items-center gap-1.5">{title} <InfoTip text={TIPS.engineRender} /></h3>
         <p className="text-xs text-muted-foreground">{hint}</p>
       </div>
       {!jobs ? (

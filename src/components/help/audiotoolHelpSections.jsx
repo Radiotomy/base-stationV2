@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Link2, FolderOpen, Wand2, Rocket, SlidersHorizontal, ShieldCheck, Headphones, Wrench, BookOpen } from 'lucide-react';
+import { Link2, FolderOpen, Wand2, Rocket, SlidersHorizontal, ShieldCheck, Headphones, Wrench, BookOpen, Compass } from 'lucide-react';
 import AudiotoolManualSection from '@/components/help/AudiotoolManualSection';
 import { MANUAL_DEVICES } from '@/lib/audiotool/audiotoolManual';
 
@@ -70,12 +70,34 @@ const AUDIOTOOL_HELP_SECTIONS = [
         <p>Once a project is open in the Bridge, the <strong>Create in a workspace</strong> cards reopen it in a full-screen BASE Station instrument. Each workspace edits the same live project, so changes sync both ways with Audiotool and with the Bridge. You can switch between workspaces without closing the session.</p>
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Beat & Pattern Studio</strong> — step-sequence drums (Beatbox 8), basslines and Tonematrix melodies, by hand or from a description.</li>
-          <li><strong>Harmony & Arrangement</strong> — write chord progressions on the chord pads or import them from a Lead Sheet, rework MIDI with the Co-Producer, and see your song sections. Audiotool's own <strong>NOTES</strong> editor sits alongside as a companion. <strong>Cadence beds</strong> (instrumentals rendered from your Lead Sheet chords) can be placed on the timeline.</li>
+          <li><strong>Harmony & Arrangement</strong> — write chord progressions on the chord pads or import them from a Lead Sheet, get next-chord ideas from <strong>Chord Compass</strong> (runs on your device), rework MIDI with the Co-Producer, and see your song sections. Audiotool's own <strong>NOTES</strong> editor sits alongside as a companion. <strong>Cadence beds</strong> (instrumentals rendered from your Lead Sheet chords) can be placed on the timeline.</li>
           <li><strong>Vocal Lab</strong> — record vocal takes, add harmony layers, and place <strong>Cantor</strong> vocals (your Lead Sheet melodies, sung) on the vocal timeline.</li>
         </ul>
         <Box tone="emerald" title="💚 What counts as yours">
           <p>Chord progressions you write, takes you record and patterns you tap count as human. Cadence beds, Cantor vocals, AI harmony layers and AI-written patterns are logged as AI in the ownership meter shown in each workspace.</p>
         </Box>
+      </>
+    ),
+  },
+  {
+    id: 'audiotool-chord-compass',
+    title: 'Chord suggestions — Chord Compass',
+    icon: Compass,
+    keywords: 'chord compass suggestions next chord progression chordseqai genre decade blend weight harmony on-device privacy',
+    body: (
+      <>
+        <p><strong className="text-foreground">Chord Compass</strong> suggests the next chord for your progression in the Harmony & Arrangement workspace.</p>
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>Start a progression on the chord pads, type a chart, or import one from a Lead Sheet (or leave it empty for opening-chord ideas).</li>
+          <li>Pick a <strong>Genre blend</strong> and <strong>Decade blend</strong>.</li>
+          <li>Press <strong>Suggest next chord</strong>. Tap a suggestion to add it to your progression. Percentages show how likely each fit is.</li>
+          <li>Press <strong>Write</strong> to send the progression to Audiotool.</li>
+        </ol>
+        <p><strong className="text-foreground">How weights work:</strong> tap a style to add it at ×1, then use + / − (up to ×5). Each weight is its share of the blend, so Rock ×2 + Jazz ×1 leans two-thirds Rock. With nothing selected the blend is "any".</p>
+        <Box tone="emerald" title="🔒 Private & counted fairly">
+          <p>The model runs entirely in your browser — your chords are never uploaded. Chords you choose yourself count as human; a progression that includes an accepted suggestion is logged as AI-assisted, listing exactly which chords were suggested.</p>
+        </Box>
+        <p className="text-xs">Credit: Chord Compass is powered by ChordSeqAI by Petr Ivan / Student Trainee Center (MIT licence, © 2023). Not endorsed by the original authors.</p>
       </>
     ),
   },

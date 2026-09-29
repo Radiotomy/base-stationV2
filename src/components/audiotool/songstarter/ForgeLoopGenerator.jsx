@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { runForgeLoop, errorText } from '@/lib/audiotool/songstarterGen';
 import AssetPreviewPlayer from './AssetPreviewPlayer';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const CATEGORIES = ['loop', 'drum_loop', 'bass_loop', 'melodic_loop', 'vocal_chop', 'one_shot'];
 // Length is edited as free text and only clamped to 1–30s on blur/generate,
@@ -32,7 +34,7 @@ export default function ForgeLoopGenerator() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Tempo-locked loops from BASE Forge (Stable Audio 2.5) — trimmed, bar-locked and exported as WAV. 2 credits each.
+        Tempo-locked loops from BASE Forge (Stable Audio 2.5) — trimmed, bar-locked and exported as WAV. 2 credits each. <InfoTip text={TIPS.forgeLoop} />
       </p>
       <Textarea rows={2} value={prompt} onChange={(e) => setPrompt(e.target.value)}
         placeholder="Dusty boom-bap break with swung hats and a vinyl-warm snare" />

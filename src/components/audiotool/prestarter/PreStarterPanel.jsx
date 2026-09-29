@@ -10,6 +10,8 @@ import { LANES, bedChordsFor, vibeById, promptsFor, generateLane, arrangeLane, l
 import usePreStarterPlayer from '@/hooks/usePreStarterPlayer';
 import PreStarterLane from './PreStarterLane';
 import PreStarterSendBar from './PreStarterSendBar';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -49,7 +51,7 @@ export default function PreStarterPanel() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Builds a ~60s song sketch — chord bed, drums that drop in after a 4-bar intro, and a riser into the drop. Preview it here, then send it to Audiotool. The bed is played by Cadence from the chords below (free, non-commercial drafting only); drums and riser use credits for 1 Forge loop + 1 sound effect.
+        Builds a ~60s song sketch — chord bed, drums that drop in after a 4-bar intro, and a riser into the drop. Preview it here, then send it to Audiotool. The bed is played by Cadence from the chords below (free, non-commercial drafting only); drums and riser use credits for 1 Forge loop + 1 sound effect. <InfoTip text={TIPS.preStarter} />
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {VIBES.map((v) => (

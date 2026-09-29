@@ -3,6 +3,8 @@ import { Mic, Square, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import SendToAudiotoolButton from '@/components/audiotool/songstarter/SendToAudiotoolButton';
 import { loadAsWavFile } from '@/lib/audiotool/localAudio';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 /** Record or import a vocal take and place it on the timeline. Human-made — no telemetry. */
 export default function VocalTakeRecorder() {
@@ -38,7 +40,7 @@ export default function VocalTakeRecorder() {
   return (
     <section className="merc-card rounded-3xl p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Mic className="w-4 h-4 text-accent" /> Vocal Take</h3>
+        <h3 className="font-bold flex items-center gap-2"><Mic className="w-4 h-4 text-accent" /> Vocal Take <InfoTip text={TIPS.vocalTake} /></h3>
         <p className="text-sm text-muted-foreground">Sing it in or bring a file — your take becomes an audio region on the timeline.</p>
       </div>
       <div className="flex items-center gap-4">

@@ -9,6 +9,8 @@ import { unwrap } from '@/lib/audiotool/nexusErrors';
 import ChordPadGrid from './ChordPadGrid';
 import LeadSheetChordImport from './LeadSheetChordImport';
 import ChordSuggestPanel from './ChordSuggestPanel';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { logInvocation, deleteInvocation } from '@/lib/audiotool/nexusTelemetry';
 
 const lbl = 'flex flex-col gap-1 text-[10px] uppercase tracking-widest text-muted-foreground';
@@ -53,7 +55,7 @@ export default function ChordProgressionPanel({ nexus, projectUrl, connected, on
   return (
     <section className="merc-card rounded-3xl p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Music2 className="w-4 h-4 text-accent" /> Chord Progression</h3>
+        <h3 className="font-bold flex items-center gap-2"><Music2 className="w-4 h-4 text-accent" /> Chord Progression <InfoTip text={TIPS.chordProgression} /></h3>
         <p className="text-sm text-muted-foreground">Tap pads or type a chart — it lands on its own pad synth track. Written by you, so it all counts as human.</p>
       </div>
       <ChordPadGrid onPick={(c) => setChart((v) => (v.trim() ? `${v} | ${c}` : c))} />

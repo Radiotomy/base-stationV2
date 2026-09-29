@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { suggestNext, GENRES, DECADES } from '@/lib/chordseq/chordSeqModel';
 
 import StyleWeightPicker from './StyleWeightPicker';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 export default function ChordSuggestPanel({ chords, onPick }) {
   const [genre, setGenre] = useState({ Pop: 1 });
@@ -21,6 +23,7 @@ export default function ChordSuggestPanel({ chords, onPick }) {
 
   return (
     <div className="rounded-2xl border border-border p-3 space-y-2">
+      <p className="text-sm font-semibold flex items-center gap-1.5">Chord Compass <InfoTip text={TIPS.chordCompass} /></p>
       <StyleWeightPicker label="Genre blend" options={GENRES} weights={genre} onChange={setGenre} />
       <StyleWeightPicker label="Decade blend" options={DECADES} weights={decade} onChange={setDecade} format={(d) => `${d}s`} />
       <div className="flex flex-wrap items-center gap-2">
@@ -39,7 +42,7 @@ export default function ChordSuggestPanel({ chords, onPick }) {
           ))}
         </div>
       )}
-      <p className="text-[10px] text-muted-foreground">Runs on your device with ChordSeqAI (MIT). Accepted suggestions are logged as AI-assisted; chords you choose yourself stay human.</p>
+      <p className="text-[10px] text-muted-foreground">Chord Compass runs on your device, powered by ChordSeqAI (MIT, © 2023 Student Trainee Center). Accepted suggestions are logged as AI-assisted; chords you choose yourself stay human.</p>
     </div>
   );
 }

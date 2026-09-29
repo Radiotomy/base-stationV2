@@ -3,6 +3,8 @@ import { Loader2, Sparkles, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useBridgeSession } from './BridgeSessionContext';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import { buildDemoSong, DEMO, SECTIONS } from '@/lib/audiotool/demoSong';
 
 const BAR_SEC = (60 / DEMO.bpm) * 4;
@@ -28,7 +30,7 @@ export default function DemoSongPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <h4 className="font-semibold">{DEMO.title} — hackathon demo song</h4>
+        <h4 className="font-semibold flex items-center gap-1.5">{DEMO.title} — hackathon demo song <InfoTip text={TIPS.demoSong} /></h4>
         <p className="text-sm text-muted-foreground">
           A complete melodic house arrangement ({DEMO.key}, {DEMO.bpm} BPM, {DEMO.bars} bars ≈ {fmt(DEMO.bars)}).
           It adds 5 tracks (kick, sub bass, pad chords, pluck arp, lead hook) with named, coloured regions for every section,

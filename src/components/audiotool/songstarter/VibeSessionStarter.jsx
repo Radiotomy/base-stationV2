@@ -7,6 +7,8 @@ import { VIBES } from '@/lib/audiotool/vibes';
 import { runForgeLoop, runSfx, errorText } from '@/lib/audiotool/songstarterGen';
 import { loadAsWavFile } from '@/lib/audiotool/localAudio';
 import { sendToAudiotool } from '@/lib/audiotool/sendToAudiotool';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 /** Pick a mood → a Forge loop and a riser are generated and placed on the timeline in one go. */
 export default function VibeSessionStarter() {
@@ -39,7 +41,7 @@ export default function VibeSessionStarter() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Pick a mood and BASE Station writes your first bars: a tempo-locked BASE Forge loop plus a transition riser, both dropped straight onto the Audiotool timeline. 5 credits.
+        Pick a mood and BASE Station writes your first bars: a tempo-locked BASE Forge loop plus a transition riser, both dropped straight onto the Audiotool timeline. 5 credits. <InfoTip text={TIPS.vibeStarter} />
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {VIBES.map((v) => (

@@ -1,4 +1,6 @@
 import { Minus, Plus } from 'lucide-react';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 // Weighted multi-select: each chip's weight is its share of the blend (0 = off).
 export default function StyleWeightPicker({ label, options, weights, onChange, format = (o) => o }) {
@@ -9,7 +11,7 @@ export default function StyleWeightPicker({ label, options, weights, onChange, f
   };
   return (
     <div className="space-y-1">
-      <p className="text-[10px] uppercase tracking-widest text-muted-foreground">{label} {!Object.keys(weights).length && '· any'}</p>
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-1">{label} {!Object.keys(weights).length && '· any'} <InfoTip text={TIPS.styleBlend} /></p>
       <div className="flex flex-wrap gap-1.5">
         {options.map((o) => {
           const w = weights[o] || 0;

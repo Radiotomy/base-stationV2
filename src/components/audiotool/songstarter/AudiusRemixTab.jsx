@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
 import { loadAsWavFile } from '@/lib/audiotool/localAudio';
 import SendToAudiotoolButton from './SendToAudiotoolButton';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 /** Pull an openly licensed Audius release into the live session as a remix starting point. */
 export default function AudiusRemixTab() {
@@ -31,7 +33,7 @@ export default function AudiusRemixTab() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Search Audius and drop a Creative Commons or open-remix release onto your timeline. All Rights Reserved tracks stay locked.
+        Search Audius and drop a Creative Commons or open-remix release onto your timeline. All Rights Reserved tracks stay locked. <InfoTip text={TIPS.audiusRemix} />
       </p>
       <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (query.trim()) search(); }}>
         <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Artist, track or genre" />

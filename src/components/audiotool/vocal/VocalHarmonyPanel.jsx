@@ -6,6 +6,8 @@ import { Loader2, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 import SendToAudiotoolButton from '@/components/audiotool/songstarter/SendToAudiotoolButton';
 
 const HARMONIES = [['3rd', 'Third above'], ['5th', 'Fifth above'], ['octave', 'Octave'], ['unison', 'Unison double']];
@@ -35,7 +37,7 @@ export default function VocalHarmonyPanel() {
   return (
     <section className="merc-card rounded-3xl p-5 space-y-4">
       <div>
-        <h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4 text-accent" /> Harmony Layers</h3>
+        <h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4 text-accent" /> Harmony Layers <InfoTip text={TIPS.harmonyLayers} /></h3>
         <p className="text-sm text-muted-foreground">Pick a vocal from your library, stack an AI harmony, and place either on the timeline.</p>
       </div>
       {!assets ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : !assets.length ? (

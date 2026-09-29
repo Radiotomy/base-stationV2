@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { runSfx, errorText } from '@/lib/audiotool/songstarterGen';
 import AssetPreviewPlayer from './AssetPreviewPlayer';
+import InfoTip from '@/components/common/InfoTip';
+import TIPS from '@/lib/audiotool/bridgeTips';
 
 const PRESETS = [
   { label: 'Riser', text: 'Tension-building white-noise riser sweeping up into a drop', duration: 8, loop: false },
@@ -33,7 +35,7 @@ export default function SfxGenerator() {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Risers, impacts and textures from ElevenLabs Sound Effects, converted to WAV. 3 credits each.</p>
+      <p className="text-sm text-muted-foreground">Risers, impacts and textures from ElevenLabs Sound Effects, converted to WAV. 3 credits each. <InfoTip text={TIPS.sfx} /></p>
       <div className="flex flex-wrap gap-1.5">
         {PRESETS.map((p) => (
           <button key={p.label} onClick={() => applyPreset(p)}
