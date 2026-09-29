@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import CostMatrixTab from "@/components/admin/CostMatrixTab";
 import ReplicatePanel from "@/components/admin/ReplicatePanel";
+import HfSpacesPanel from "@/components/admin/HfSpacesPanel";
 
 const PROVIDER_META = {
   sonic:     { label: "Sonic",      color: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",    dot: "bg-cyan-400" },
@@ -235,6 +236,7 @@ export default function AdminAIIntegrations() {
           { key: "usage",  label: "📊 Usage & Logs" },
           { key: "costs",  label: "💰 Cost Matrix" },
           { key: "replicate", label: "🧠 Replicate Model" },
+          { key: "hf", label: "🤗 HF Engines" },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setActiveTab(key)}
             className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-all ${activeTab === key ? "border-purple-500 text-purple-400" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
@@ -245,6 +247,7 @@ export default function AdminAIIntegrations() {
 
       {activeTab === "costs" && <CostMatrixTab />}
       {activeTab === "replicate" && <ReplicatePanel />}
+      {activeTab === "hf" && <HfSpacesPanel />}
       {activeTab === "usage" && (<div className="space-y-8">
 
       {/* Provider Status Cards */}
