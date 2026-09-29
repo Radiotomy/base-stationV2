@@ -368,6 +368,13 @@ grant any licence to its code, models or methods.
   [`src/docs/NOTICES.md`](src/docs/NOTICES.md).
 - **MiniMax attribution:** Aurora (MiniMax-Music3) and Nova (MiniMax-H3) credit
   their models in the app UI, as their community licences require.
+- **Chord Compass:** powered by ChordSeqAI — MIT, Copyright (c) 2023 Student
+  Trainee Center. It runs unmodified in the browser.
+- **Audius:** streaming, discovery, publishing and remix contests are
+  *Powered by Audius*. Artists are always credited and linked back to Audius.
+- **Audiotool:** the Bridge is built on Audiotool's Nexus SDK and API.
+- **Scribe:** built on Spotify Basic Pitch, CPJKU beat_this and BTC-ISMIR19.
+- **SheetSage2 (m-a-p):** CC-BY-NC 4.0, non-commercial use only.
 - **Cadence:** its CC-BY-NC 4.0 weights are used for internal testing only and
   are not shipped to users. BASE Forge is the commercial chord-bed engine.
 
