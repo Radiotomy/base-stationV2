@@ -21,6 +21,7 @@
 //                  ([verse], [chorus], [bridge], [outro], …) — see
 //                  src/utils/aceStepLyrics.js for the normalization grammar.
 
+import { ensureAwake } from './hfWake.ts';
 export const CODA_BASE_URL = 'https://radiotomy-coda.hf.space';
 export const CODA_MODEL_VERSION = 'Coda (ACE-Step 1.5 XL Turbo · 4B DiT)';
 export const CODA_FIXED_PARAMS = { num_inference_steps: 8, guidance_scale: 1.0 };
@@ -42,6 +43,7 @@ export const CODA_TONE_HINT = 'crisp airy high end, clear detailed treble, polis
 export async function submitCodaGeneration({ tags, lyrics, maxMs, seed }) {
   let res;
   try {
+    await ensureAwake(CODA_BASE_URL);
     res = await fetch(`${CODA_BASE_URL}/generate/audio`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -116,6 +118,7 @@ export async function submitCodaEdit({
 
   let res;
   try {
+    await ensureAwake(CODA_BASE_URL);
     res = await fetch(`${CODA_BASE_URL}/generate/audio`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -33,6 +33,7 @@
 // paid GPU time for. A job record on the engine can be asked the same question
 // as many times as a creator's tab needs.
 
+import { ensureAwake } from './hfWake.ts';
 const ENGINE_BASE = 'https://radiotomy-nova-h3.hf.space';
 
 const SUBMIT_TIMEOUT_MS = 60000;
@@ -188,6 +189,7 @@ export async function submitNovaJob({
     references: (references || []).filter(Boolean),
   };
 
+  await ensureAwake(ENGINE_BASE);
   const res = await fetch(`${ENGINE_BASE}/nova/submit`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

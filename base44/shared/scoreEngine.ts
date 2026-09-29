@@ -5,6 +5,7 @@
 // BTC MIT, librosa ISC), so output is commercially usable. Replaces SheetSage2
 // (CC-BY-NC-4.0).
 
+import { ensureAwake } from './hfWake.ts';
 export const SCORE_ENGINE_URL = (Deno.env.get('SCORE_ENGINE_URL') || 'https://radiotomy-scribe.hf.space').replace(/\/$/, '');
 export const SCORE_ENGINE = 'scribe';
 export const SCORE_MODEL_ID = 'scribe-v1 (basic-pitch + beat_this + BTC)';
@@ -21,6 +22,7 @@ export async function transcribeScore(audioUrl: string, { melodyOnly = false, ti
   form.append('melody_only', melodyOnly ? 'true' : 'false');
   if (title) form.append('title', title);
 
+  await ensureAwake(SCORE_ENGINE_URL);
   const res = await fetch(`${SCORE_ENGINE_URL}/transcribe`, {
     method: 'POST',
     body: form,

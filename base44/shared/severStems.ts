@@ -13,6 +13,7 @@
  * reported as 'processing', never as a failure.
  */
 
+import { ensureAwake } from './hfWake.ts';
 const SEVER_HOST = 'https://radiotomy-sever.hf.space';
 
 export const SEVER_MODEL = 'htdemucs_6s';
@@ -47,6 +48,7 @@ export interface SeverStatus {
 
 /** Submit a separation. Returns the engine's job id. */
 export async function submitSeverJob(audioUrl: string, stems?: string[]): Promise<string> {
+  await ensureAwake(SEVER_HOST);
   const res = await fetch(`${SEVER_HOST}/separate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

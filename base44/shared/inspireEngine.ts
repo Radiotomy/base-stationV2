@@ -35,6 +35,7 @@
 import { readWavFormat } from './skyeEngine.ts';
 
 // Overridable so the Space can be moved or duplicated without a code change.
+import { ensureAwake } from './hfWake.ts';
 const ENGINE_BASE = (Deno.env.get('INSPIRE_ENGINE_URL') || 'https://radiotomy-inspire.hf.space')
   .replace(/\/+$/, '');
 
@@ -93,6 +94,7 @@ export async function submitInspireJob({
   model: string;
   seed?: number;
 }) {
+  await ensureAwake(ENGINE_BASE);
   const res = await fetch(`${ENGINE_BASE}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

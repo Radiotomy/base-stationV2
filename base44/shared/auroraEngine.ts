@@ -32,6 +32,7 @@
 //   duration — native full-song window up to 300s. max_new_tokens is derived on
 //              the Space at 25 frames per second, which is the model's frame rate.
 
+import { ensureAwake } from './hfWake.ts';
 const ENGINE_BASE = 'https://radiotomy-aurora.hf.space';
 
 const SUBMIT_TIMEOUT_MS = 90000;
@@ -108,6 +109,7 @@ export async function submitAuroraJob({
     seed,
     response_format: 'wav',
   };
+  await ensureAwake(ENGINE_BASE);
   const res = await fetch(`${ENGINE_BASE}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

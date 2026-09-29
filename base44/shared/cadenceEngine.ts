@@ -16,6 +16,7 @@
  * model raise "Cannot copy out of meta tensor"), so a queued job waits rather than fails.
  */
 
+import { ensureAwake } from './hfWake.ts';
 const CADENCE_HOST = 'https://radiotomy-cadence.hf.space';
 
 export const CADENCE_ENGINE = 'cadence/musicgen-chord';
@@ -53,6 +54,7 @@ function headers(): Record<string, string> {
 }
 
 export async function submitBed(req: CadenceRequest): Promise<string> {
+  await ensureAwake(CADENCE_HOST);
   const res = await fetch(`${CADENCE_HOST}/generate`, {
     method: 'POST',
     headers: headers(),

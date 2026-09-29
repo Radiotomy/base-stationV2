@@ -16,6 +16,7 @@
 // The fetched bytes are uploaded into Base44 storage immediately: Space
 // storage is ephemeral, so an hf.space link must never be handed to the player.
 
+import { ensureAwake } from './hfWake.ts';
 const ENGINE_BASE = 'https://radiotomy-basestation-ltx-engine.hf.space';
 
 const SUBMIT_TIMEOUT_MS = 30000;
@@ -31,6 +32,7 @@ export async function tryPrivateLtxVideo(base44, { prompt, seed }) {
     const usedSeed = Number.isFinite(Number(seed)) ? Number(seed) : 42;
 
     // ── Submit ──────────────────────────────────────────────────────────────
+    await ensureAwake(ENGINE_BASE);
     const res = await fetch(`${ENGINE_BASE}/generate/video`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

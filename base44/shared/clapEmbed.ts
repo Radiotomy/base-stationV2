@@ -7,6 +7,7 @@
 // comparable when they came from the same checkpoint, which is why CLAP_MODEL
 // is stamped onto every stored embedding rather than assumed.
 
+import { ensureAwake } from './hfWake.ts';
 export const CLAP_BASE_URL = 'https://radiotomy-clap.hf.space';
 export const CLAP_MODEL = 'laion/larger_clap_music_and_speech';
 export const CLAP_DIM = 512;
@@ -17,6 +18,7 @@ const TEXT_TIMEOUT_MS = 120000;
 const AUDIO_TIMEOUT_MS = 180000;
 
 async function callClap(path, body, timeoutMs) {
+  await ensureAwake(CLAP_BASE_URL);
   let res;
   try {
     res = await fetch(`${CLAP_BASE_URL}${path}`, {

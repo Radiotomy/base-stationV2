@@ -5,6 +5,7 @@
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.49';
 import { secrets } from 'base44:runtime';
+import { ensureAwake } from '../../shared/hfWake.ts';
 
 export default async function (req: Request): Promise<Response> {
   try {
@@ -20,6 +21,7 @@ export default async function (req: Request): Promise<Response> {
     const bridge = (secrets.get('AUDIOTOOL_BRIDGE_URL') || '').replace(/\/+$/, '');
     if (!bridge) return Response.json({ error: 'The BASE Nexus Bridge engine is not connected yet' }, { status: 503 });
 
+    await ensureAwake(bridge);
     const res = await fetch(`${bridge}/audiotool/ingest`, {
       method: 'POST',
       headers: {

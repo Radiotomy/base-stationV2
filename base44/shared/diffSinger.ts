@@ -26,6 +26,7 @@
  *   available banks is discovered at runtime rather than hardcoded here.
  */
 
+import { ensureAwake } from './hfWake.ts';
 const CANTOR_HOST = 'https://radiotomy-cantor.hf.space';
 
 export const CANTOR_ENGINE = 'diffsinger';
@@ -82,6 +83,7 @@ export async function submitCantorJob(params: {
   bpm: number;
   notes: CantorNote[];
 }): Promise<string> {
+  await ensureAwake(CANTOR_HOST);
   const res = await fetch(`${CANTOR_HOST}/render`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -141,6 +143,7 @@ export async function submitCantorInstall(params: {
   replace?: boolean;
   hfToken: string;
 }): Promise<string> {
+  await ensureAwake(CANTOR_HOST);
   const res = await fetch(`${CANTOR_HOST}/install`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${params.hfToken}` },

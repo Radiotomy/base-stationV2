@@ -14,6 +14,7 @@
 //   lyrics — plain text with bracketed section headers ([Verse], [Chorus], …)
 // A descriptive sentence in the tags channel is a misuse of the interface.
 
+import { ensureAwake } from './hfWake.ts';
 const ENGINE_BASE = 'https://radiotomy-sirens-song.hf.space';
 
 const SUBMIT_TIMEOUT_MS = 30000;
@@ -35,6 +36,7 @@ export async function submitSirenSongAudio({ tags, lyrics, maxMs, seed }) {
   // request must also carry the 'instrumental' tag.
   const tagList = String(tags).split(',').map(t => t.trim()).filter(Boolean);
   if (instrumental && !tagList.includes('instrumental')) tagList.unshift('instrumental');
+  await ensureAwake(ENGINE_BASE);
   const res = await fetch(`${ENGINE_BASE}/generate/audio`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

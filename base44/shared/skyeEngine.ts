@@ -26,6 +26,7 @@
 //                           itself and cleans up its own temp file, so we only
 //                           ever hand it a public https URL, never file bytes.
 
+import { ensureAwake } from './hfWake.ts';
 const ENGINE_BASE = 'https://radiotomy-skye.hf.space';
 
 // Generous, because a Space that has scaled to zero (or just had its GPU
@@ -155,6 +156,7 @@ export async function submitSkyeAudio({
   body.cfg_strength = Math.max(SKYE_CFG_RANGE.min, Math.min(cfg, SKYE_CFG_RANGE.max));
   body.sample_steps = Math.round(Math.max(SKYE_STEPS_RANGE.min, Math.min(steps, SKYE_STEPS_RANGE.max)));
 
+  await ensureAwake(ENGINE_BASE);
   const res = await fetch(`${ENGINE_BASE}/generate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
