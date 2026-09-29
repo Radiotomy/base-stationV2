@@ -26,7 +26,7 @@ export default function ArrangementRegionBlock({ region, selected, onSelect, onM
         background: `linear-gradient(90deg, ${fam.wash.replace(/[\d.]+\)$/, '.22)')}, #241c14 100%)`,
         borderLeft: `2px solid ${fam.color}`,
       }}
-      className={`absolute top-1.5 bottom-1.5 rounded-lg px-2 flex items-center text-[11px] font-semibold text-[#f1ece5] select-none cursor-grab active:cursor-grabbing border border-[#30271f] transition-shadow
+      className={`absolute top-1.5 bottom-1.5 rounded-lg px-2 flex items-center text-[11px] font-semibold text-[#f1ece5] select-none cursor-grab active:cursor-grabbing border border-[#FFC26E]/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.14)] transition-shadow
         ${selected ? 'ring-2 ring-accent' : ''} ${dx ? 'z-10 shadow-2xl' : ''}`}
     >
       <span className="truncate">{region.name}</span>

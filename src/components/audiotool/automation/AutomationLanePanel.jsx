@@ -49,7 +49,7 @@ export default function AutomationLanePanel({ nexus, projectUrl, version, connec
   };
 
   return (
-    <section className="rounded-2xl border border-border p-5 space-y-4">
+    <section className="rack-unit !pt-8 space-y-4">
       <div>
         <h3 className="font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Automation Lanes <InfoTip text={TIPS.automation} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Pick a device knob, draw a movement, and it lands as an automation region on the timeline.</p>

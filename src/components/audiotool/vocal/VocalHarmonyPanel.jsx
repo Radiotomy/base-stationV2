@@ -35,7 +35,7 @@ export default function VocalHarmonyPanel() {
   const generate = () => job.start('generateHarmonies', { assetId: sourceId, harmonyType: type, voiceModelId: voice?.model_id });
 
   return (
-    <section className="merc-card rounded-3xl p-5 space-y-4">
+    <section className="rack-unit !pt-8 space-y-4">
       <div>
         <h3 className="font-bold flex items-center gap-2"><Layers className="w-4 h-4 text-accent" /> Harmony Layers <InfoTip text={TIPS.harmonyLayers} /></h3>
         <p className="text-sm text-muted-foreground">Pick a vocal from your library, stack an AI harmony, and place either on the timeline.</p>

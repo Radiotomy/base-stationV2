@@ -7,6 +7,7 @@ import ArrangementRegionBlock from './ArrangementRegionBlock';
 import RegionInspector from './RegionInspector';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
+import MercuryDisplayHeader from '@/components/audiotool/mercury/MercuryDisplayHeader';
 
 const grid = { backgroundImage: `repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 1px, transparent 1px ${BAR_PX}px)` };
 
@@ -21,17 +22,16 @@ export default function ArrangementView({ nexus, version, onChanged, title = 'Ar
   };
 
   return (
-    <section className="merc-card rounded-3xl p-4 sm:p-5 space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-bold flex items-center gap-2"><LayoutList className="w-4 h-4 text-accent" /> {title} <InfoTip text={TIPS.arrangement} /></h2>
-        <p className="text-xs text-muted-foreground">Drag a region to move it · tap to edit or label a section</p>
-      </div>
+    <section className="rack-unit space-y-3">
+      <MercuryDisplayHeader icon={LayoutList} title={title} status={`${bars} bars · ${tracks.length} tracks`} live={tracks.length > 0}
+        extra={<InfoTip text={TIPS.arrangement} />} />
+      <p className="text-xs text-muted-foreground px-1">Drag a region to move it · tap to edit or label a section</p>
       {tracks.length === 0 ? (
         <p className="text-sm text-muted-foreground rounded-xl border border-dashed border-border px-4 py-6 text-center">
           Nothing on the timeline yet — anything you write below lands here live.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-xl bg-background/50 border border-border">
+        <div className="overflow-x-auto rack-screen">
           <div style={{ width: bars * BAR_PX }}>
             <div className="flex h-6 border-b border-border">
               {Array.from({ length: bars }, (_, i) => (

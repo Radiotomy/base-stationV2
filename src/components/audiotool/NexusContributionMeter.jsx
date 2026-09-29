@@ -28,7 +28,7 @@ export default function NexusContributionMeter({ nexus, projectUrl, counts, onCh
   useEffect(() => { if (c) onChange?.({ log, contribution: c }); }, [log, counts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <section className="rounded-2xl border border-border p-5 space-y-3">
+    <section className="rack-module space-y-3">
       <div>
         <h3 className="font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Creative Ownership — live <InfoTip text={TIPS.ownership} size="sm" side="bottom" /></h3>
         <p className="text-sm text-muted-foreground">Every AI call made from this bridge is logged. Everything else in the project counts as yours.</p>

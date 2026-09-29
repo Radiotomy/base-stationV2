@@ -38,7 +38,7 @@ export default function VocalTakeRecorder() {
   };
 
   return (
-    <section className="merc-card rounded-3xl p-5 space-y-4">
+    <section className="rack-unit !pt-8 space-y-4">
       <div>
         <h3 className="font-bold flex items-center gap-2"><Mic className="w-4 h-4 text-accent" /> Vocal Take <InfoTip text={TIPS.vocalTake} /></h3>
         <p className="text-sm text-muted-foreground">Sing it in or bring a file — your take becomes an audio region on the timeline.</p>

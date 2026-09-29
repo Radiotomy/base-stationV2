@@ -35,14 +35,17 @@ export default function WorkspaceShell({ workspace, children }) {
     <div className="min-h-screen bg-background">
       <BetaGate feature="Audiotool Bridge">
         {s.synced ? (
-          <WorkspaceTransportBar workspace={workspace} projectUrl={s.projectUrl} meta={s.meta} connected={project.connected} onRefresh={project.refresh}
-            onToggleSplit={popOut} />
+          <div className="border-b border-[#FFC26E]/15 shadow-[inset_0_-1px_0_rgba(255,255,255,0.05),0_8px_24px_-12px_rgba(0,0,0,0.8)]">
+            <WorkspaceTransportBar workspace={workspace} projectUrl={s.projectUrl} meta={s.meta} connected={project.connected} onRefresh={project.refresh}
+              onToggleSplit={popOut} />
+          </div>
         ) : (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-2">
             <Link to="/audiotool" className="text-sm text-muted-foreground inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
               <ArrowLeft className="w-4 h-4" /> Audiotool Bridge
             </Link>
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight mt-4">{workspace.label}</h1>
+            <p className="rack-readout text-[10px] mt-4">Liquid Mercury Rack</p>
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight mt-1">{workspace.label}</h1>
             <p className="text-muted-foreground mt-2 max-w-2xl">{workspace.desc}</p>
           </div>
         )}

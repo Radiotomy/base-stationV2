@@ -20,11 +20,11 @@ export default function WorkspaceSessionStart({ at, workspace, opening, error, o
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_22rem] gap-5">
-      <section className="merc-card rounded-3xl p-6 space-y-3">
+      <section className="rack-unit !p-6 !pt-9 space-y-3">
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-accent">Open existing</p>
         <AudiotoolProjectList at={at} activeUrl="" busy={opening} onOpen={onOpen} />
       </section>
-      <section className="merc-card rounded-3xl p-6 flex flex-col gap-4">
+      <section className="rack-unit !p-6 !pt-9 flex flex-col gap-4">
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-accent">Start new</p>
         <h3 className="text-2xl font-black tracking-tight">A blank canvas</h3>
         <p className="text-sm text-muted-foreground flex-1">

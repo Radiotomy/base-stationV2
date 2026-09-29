@@ -19,7 +19,7 @@ export default function EngineRenderPicker({ provider, aiTool, title, hint, link
   }, [user, provider]);
 
   return (
-    <section className="merc-card rounded-3xl p-5 space-y-3">
+    <section className="rack-module space-y-3">
       <div>
         <h3 className="font-bold flex items-center gap-1.5">{title} <InfoTip text={TIPS.engineRender} /></h3>
         <p className="text-xs text-muted-foreground">{hint}</p>

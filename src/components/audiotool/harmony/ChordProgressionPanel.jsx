@@ -53,7 +53,7 @@ export default function ChordProgressionPanel({ nexus, projectUrl, connected, on
   };
 
   return (
-    <section className="merc-card rounded-3xl p-5 space-y-4">
+    <section className="rack-unit !pt-8 space-y-4">
       <div>
         <h3 className="font-bold flex items-center gap-2"><Music2 className="w-4 h-4 text-accent" /> Chord Progression <InfoTip text={TIPS.chordProgression} /></h3>
         <p className="text-sm text-muted-foreground">Tap pads or type a chart — it lands on its own pad synth track. Written by you, so it all counts as human.</p>

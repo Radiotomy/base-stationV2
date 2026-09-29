@@ -59,7 +59,7 @@ export default function MidiCoProducerPanel({ nexus, projectUrl, version, onChan
   };
 
   return (
-    <section className="rounded-2xl border border-border p-5 space-y-3">
+    <section className="rack-unit !pt-8 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-bold flex items-center gap-2"><Wand2 className="w-4 h-4" /> Nexus Co-Producer <InfoTip text={TIPS.coProducer} size="sm" side="bottom" /></h3>
