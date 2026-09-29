@@ -116,7 +116,7 @@ export default function StudioHub() {
                   <BarChart3 className="w-4 h-4" /> My Workspace
                 </Button>
               </Link>
-              <Link to="/asset-gallery">
+              <Link to="/creator-dashboard?tab=library">
                 <Button variant="outline" className="rounded-full gap-2">
                   <Folder className="w-4 h-4" /> My Library
                 </Button>
