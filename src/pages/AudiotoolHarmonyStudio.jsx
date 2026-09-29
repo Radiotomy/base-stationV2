@@ -9,9 +9,11 @@ import { WORKSPACES } from '@/lib/audiotool/workspaces';
 import { useState } from 'react';
 import MercuryResultModule from '@/components/audiotool/mercury/MercuryResultModule';
 import CadenceBedMaker from '@/components/cadence/CadenceBedMaker';
+import ChordSyncRolls from '@/components/cadence/ChordSyncRolls';
 
 export default function AudiotoolHarmonyStudio() {
   const [bedKey, setBedKey] = useState(0);
+  const [lastBed, setLastBed] = useState(null);
   return (
     <WorkspaceShell workspace={WORKSPACES.harmony}>
       {({ project, projectUrl }) => {
@@ -28,8 +30,13 @@ export default function AudiotoolHarmonyStudio() {
                 <NotesCompanionCard projectUrl={projectUrl} />
                 <NexusContributionMeter nexus={project.nexus} projectUrl={projectUrl} counts={project.counts} onChange={() => {}} />
                 <MercuryResultModule title="Render a Cadence bed" hint="Type a progression — Cadence plays it. The finished bed appears in the list below, ready to place.">
-                  <CadenceBedMaker key={bedKey} title="Harmony bed" onReady={() => setBedKey((k) => k + 1)} />
+                  <CadenceBedMaker key={bedKey} title="Harmony bed" onReady={(asset) => { setLastBed(asset); setBedKey((k) => k + 1); }} />
                 </MercuryResultModule>
+                {lastBed?.file_url && (
+                  <MercuryResultModule title="Written vs played" hint="Your chart on top, the chords heard in the rendered bed below — on one playhead.">
+                    <ChordSyncRolls key={lastBed.id} asset={lastBed} />
+                  </MercuryResultModule>
+                )}
                 <EngineRenderPicker key={`picker-${bedKey}`} provider="musicgenchord" aiTool="cadence_bed" title="Cadence beds"
                   hint="Instrumental beds Cadence rendered from your chords."
                   linkTo="/lead-sheet-studio" linkLabel="Write a full score in Lead Sheet Studio" />
