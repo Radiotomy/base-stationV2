@@ -49,7 +49,7 @@ export default function PreStarterSendBar({ session, lanes, gainOf, bpm, title, 
           <InfoTip text="Mixes the three lanes exactly as you hear them (volume, mute, solo) into one 60s WAV on a single new track." />
         </div>
         <div className="flex items-center gap-1.5">
-          <Button variant="outline" className="flex-1" disabled={disabled} onClick={() => send('stems')}>
+          <Button className="merc-button-dark flex-1 hover:brightness-125" disabled={disabled} onClick={() => send('stems')}>
             {sending === 'stems' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />} Send as stems
           </Button>
           <InfoTip text="Sends Bed, Drums and Riser as three separate regions starting on the same bar, so you can edit each one in Audiotool." />
