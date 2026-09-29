@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { openAudiotoolWindow } from '@/lib/audiotool/sideBySide';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import BetaGate from '@/components/auth/BetaGate';
 import AudiotoolConnectCard from '@/components/audiotool/AudiotoolConnectCard';
 import { BridgeSessionContext } from '@/components/audiotool/songstarter/BridgeSessionContext';
 import useWorkspaceSession from '@/hooks/useWorkspaceSession';
@@ -33,7 +32,7 @@ export default function WorkspaceShell({ workspace, children }) {
 
   return (
     <div className="min-h-screen bg-background">
-      <BetaGate feature="Audiotool Bridge">
+      <>
         {s.synced ? (
           <div className="border-b border-[#FFC26E]/15 shadow-[inset_0_-1px_0_rgba(255,255,255,0.05),0_8px_24px_-12px_rgba(0,0,0,0.8)]">
             <WorkspaceTransportBar workspace={workspace} projectUrl={s.projectUrl} meta={s.meta} connected={project.connected} onRefresh={project.refresh}
@@ -55,7 +54,7 @@ export default function WorkspaceShell({ workspace, children }) {
           </p>
         )}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">{body}</div>
-      </BetaGate>
+      </>
     </div>
   );
 }

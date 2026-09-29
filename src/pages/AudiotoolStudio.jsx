@@ -1,6 +1,5 @@
 import AudiotoolTab from '@/components/audiotool/AudiotoolTab';
 import AudiotoolNextSteps from '@/components/audiotool/AudiotoolNextSteps';
-import BetaGate from '@/components/auth/BetaGate';
 import MercuryRackHero from '@/components/audiotool/mercury/MercuryRackHero';
 
 export default function AudiotoolStudio() {
@@ -8,12 +7,10 @@ export default function AudiotoolStudio() {
     <div className="min-h-screen bg-background">
       <MercuryRackHero />
       <div className="max-w-5xl mx-auto px-6 pb-16">
-        <BetaGate feature="Audiotool Bridge">
-          <div className="space-y-6">
-            <AudiotoolTab />
-            <AudiotoolNextSteps />
-          </div>
-        </BetaGate>
+        <div className="space-y-6">
+          <AudiotoolTab />
+          <AudiotoolNextSteps />
+        </div>
       </div>
     </div>
   );
