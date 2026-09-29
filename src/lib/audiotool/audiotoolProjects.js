@@ -42,6 +42,11 @@ export const templateProjectName = (url) => {
   return id ? `projects/${id}` : null;
 };
 
+/** Permanently delete "projects/{id}" from the creator's Audiotool account. */
+export async function deleteProject(at, name) {
+  ok(await at.projects.deleteProject({ name }));
+}
+
 /** Blank project, or a copy of `templateName` ("projects/{id}") when given. */
 export async function createProject(at, displayName, templateName) {
   const project = templateName ? { displayName, copyOfProjectName: templateName } : { displayName };

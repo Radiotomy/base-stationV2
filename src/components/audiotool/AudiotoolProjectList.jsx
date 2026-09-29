@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Music2, Check } from 'lucide-react';
+import { Loader2, RefreshCw, Music2, Check, Trash2 } from 'lucide-react';
 import CreateProjectMenu from '@/components/audiotool/CreateProjectMenu';
 import { Button } from '@/components/ui/button';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
-import { listMyProjects, createProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
+import { listMyProjects, createProject, deleteProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 
 const when = (ts) => (ts?.seconds ? new Date(Number(ts.seconds) * 1000).toLocaleDateString() : '');
 
@@ -19,6 +19,20 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
     listMyProjects(at).then(setProjects).catch((e) => { setError(e.message); setProjects([]); });
   }, [at]);
   useEffect(load, [load]);
+
+  const [deleting, setDeleting] = useState('');
+  const remove = async (p) => {
+    if (!window.confirm(`Permanently delete "${p.displayName || 'Untitled project'}" from Audiotool? This cannot be undone.`)) return;
+    setDeleting(p.name);
+    setError('');
+    try {
+      await deleteProject(at, p.name);
+      setProjects((list) => list.filter((x) => x.name !== p.name));
+    } catch (e) {
+      setError(e.message);
+    }
+    setDeleting('');
+  };
 
   const create = async (templateName) => {
     // Opened synchronously inside the click so the browser doesn't block it.
@@ -61,8 +75,9 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
             const url = studioUrl(p);
             const active = url === activeUrl;
             return (
-              <button key={p.name} onClick={() => onOpen(url)} disabled={busy || active}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-left border transition-colors disabled:cursor-default ${active ? 'border-accent bg-accent/10' : 'border-border bg-secondary/50 hover:bg-secondary'}`}>
+              <div key={p.name} className="relative group">
+              <button onClick={() => onOpen(url)} disabled={busy || active}
+                className={`w-full pr-10 flex items-center gap-3 rounded-xl px-3 py-2 text-left border transition-colors disabled:cursor-default ${active ? 'border-accent bg-accent/10' : 'border-border bg-secondary/50 hover:bg-secondary'}`}>
                 {p.coverUrl
                   ? <img src={p.coverUrl.replace('600x600', '60x60')} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                   : <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0"><Music2 className="w-4 h-4 text-muted-foreground" /></div>}
@@ -72,6 +87,13 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
                 </div>
                 {active && <Check className="w-4 h-4 text-accent flex-shrink-0" />}
               </button>
+              {!active && (
+                <button onClick={() => remove(p)} disabled={busy || deleting === p.name} title="Delete project"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                  {deleting === p.name ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                </button>
+              )}
+              </div>
             );
           })}
         </div>
