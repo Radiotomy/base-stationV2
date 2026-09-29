@@ -4,9 +4,11 @@
 //
 // Current as of the LTX docs audit (Aug 2026):
 //   • Host  https://api.ltx.io  (api.ltx.video still resolves, but is legacy)
-//   • Sync  POST /v1/{endpoint}  → returns the raw MP4 body
-//   • Async POST /v2/{endpoint}  → 202 { id }, then GET /v2/{endpoint}/{id}
-//     We use ASYNC everywhere: video renders outlive an HTTP connection.
+//   • V1 sync endpoints (/v1/text-to-video, image-to-video, audio-to-video,
+//     retake, extend) are RETIRED on 2026-10-26 — never call /v1 for video.
+//   • V2 async: POST /v2/{endpoint} → 202 { id } → GET /v2/{endpoint}/{id}
+//     until completed → download result.video_url into our storage.
+//     Every LTX call in this app (generateVideoLTX + jobFinalize) is V2 only.
 //   • ltx-2-fast / ltx-2-pro were REMOVED on 2026-08-16 — requests error out.
 //     Live models: ltx-2-5-{fast,pro} and ltx-2-3-{fast,pro}.
 //   • Results (and their URLs) are retained for 24h only, so every finished
