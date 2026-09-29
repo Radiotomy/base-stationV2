@@ -1,0 +1,53 @@
+// Descriptive hover tooltips for the Studio Hub, keyed by route / category title.
+export const CATEGORY_TIPS = {
+  "Create": "Start a song from nothing — AI generation, songwriting, beat-making, loops, sound design and the Audiotool live workspaces.",
+  "Enhance & Edit": "Take audio you already have and make it better — master it, split stems, remix, extend, harmonize, transcribe or retag it.",
+  "Visuals": "Give your music a look — album art, music videos and audio-reactive visualizers.",
+  "Perform Live": "Stream to fans in real time with synced playback, 3D venues, chat and live drops.",
+  "Podcast Studio": "Everything for spoken-word shows — recording, guest links, AI voiceovers, transcripts and publishing.",
+  "Publish & Promote": "Get your finished work out there — submit to charts and radio, protect it with BASE Mark, manage rights and create promo material.",
+};
+
+export const STUDIO_TIPS = {
+  "/audiotool": "Sign in with Audiotool, pick or create a project, then use BASE Station tools on it and protect & publish the final export.",
+  "/pre-starter": "Sketch a 60-second song idea from lanes (drums, bass, chords, melody), preview it here, then send it into an Audiotool project.",
+  "/studios/audiotool/beat": "Program Beatbox drum patterns, Bassline and Tonematrix parts — written straight into your live Audiotool session.",
+  "/studios/audiotool/harmony": "Write chord progressions with pads and next-chord suggestions, use the MIDI co-producer, arrange song sections and render Cadence beds.",
+  "/studios/audiotool/vocal": "Record vocal takes, add AI harmony layers and place Cantor-sung vocals directly on your Audiotool timeline.",
+  "/music-studio": "Generate complete songs from a prompt or your lyrics using BASE Station's engines — pick genre, mood, length and model.",
+  "/lyrics-studio": "Write lyrics with an AI co-writer or on your own — choose topic, genre and language, then send them to music generation.",
+  "/lead-sheet-studio": "Type chords, lyrics and a note-by-note melody. Cantor sings your melody and Cadence plays your exact chords — your authorship is recorded.",
+  "/sub-station": "A browser-based multi-track workstation: import clips, arrange on a timeline, add effects and automation, then mix down.",
+  "/sfx-studio": "Describe a sound (\"glass shattering in a cathedral\") and get a ready-to-use sound effect from ElevenLabs.",
+  "/loop-studio": "Generate tempo- and key-matched loops, search free samples and community loops, and save them to your library.",
+  "/foundry": "Design your own audio effects and synths by wiring DSP nodes together — audition them, share them and use them in other studios.",
+  "/mastering-studio": "Make a track sound loud, balanced and release-ready with AI mastering, EQ, compression and a before/after comparison.",
+  "/audio-remix-studio": "Trim, cut and edit audio, apply effects and create remixes of your tracks.",
+  "/eleven-music": "Generate with the Eleven Music model, or train a personal \"My Sound\" model on your own tracks.",
+  "/sonic-tools": "Remaster a track, regenerate just one section, or add vocals / an instrumental to existing audio.",
+  "/stem-creator": "Split a song into six stems (vocals, drums, bass, guitar, piano, other) — on our Sever engine or free, privately in your browser.",
+  "/mashup-studio": "Combine two or more tracks into a single blended mashup.",
+  "/vocal-harmonizer": "Upload a vocal and add AI-generated harmony layers above or below it.",
+  "/cover-song-studio": "Re-imagine an uploaded track in a new style, or extend it with more bars.",
+  "/voice-creator": "Build custom AI voices and personas you can reuse for vocals and voiceovers.",
+  "/scribe-studio": "Transcribe any track into readable sheet music and a downloadable MIDI file.",
+  "/id3-studio": "Edit a file's title, artist, album, artwork and AI-disclosure tags before you distribute it.",
+  "/cover-art-studio": "Generate album and single artwork from a description, sized for streaming platforms.",
+  "/video-studio": "Create music videos and b-roll from prompts or images, and edit them on a timeline.",
+  "/visualizer-studio": "Render visuals that move with your music — great for socials and live shows.",
+  "/live-studio": "Go live: play tracks in sync for every listener, run chat and reactions, and host in 3D venues.",
+  "/live-manager": "Review past and upcoming sessions, manage your venues and moderate chat.",
+  "/studios/orvo": "ORVO: create podcasts, upload or record episodes, invite guests, generate AI voiceovers, transcripts and chapters, and publish.",
+  "/submit": "Submit a finished track to BASE Station charts, radio channels and distribution.",
+  "/rights": "See your whole catalog in one place — ownership proof, DDEX export and verification status.",
+  "/base-mark": "Embed an inaudible BASE Mark watermark into your audio, or scan a file to detect one.",
+  "/promo-studio": "Bundle a visualizer with promo cards into a ready-to-post release package.",
+  "/social-automation": "Design promo cards sized for Instagram, TikTok, X and more.",
+  "/asset-gallery": "Browse, play and download every video you've generated.",
+};
+
+export const QUICK_ACTION_TIPS = {
+  workspace: "Your creator dashboard — stats, projects, submissions and workspaces.",
+  library: "Every track, stem, lyric, loop and image you've made or uploaded.",
+  history: "A log of all your AI generations, with their status and results.",
+};

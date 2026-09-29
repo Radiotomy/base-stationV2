@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { CATEGORY_TIPS, STUDIO_TIPS } from "@/lib/studios/studioTips";
 
 export default function StudioCategoryCard({ title, subtitle, icon: Icon, accent, studios, index = 0 }) {
   return (
@@ -10,7 +11,7 @@ export default function StudioCategoryCard({ title, subtitle, icon: Icon, accent
       transition={{ delay: index * 0.05 }}
       className="merc-card rounded-2xl p-5 space-y-4"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3" title={CATEGORY_TIPS[title]}>
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${accent}`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
@@ -25,7 +26,7 @@ export default function StudioCategoryCard({ title, subtitle, icon: Icon, accent
           <Link
             key={to}
             to={to}
-            title={beta ? "Beta — requires admin approval to access" : undefined}
+            title={`${STUDIO_TIPS[to] || desc}${beta ? " (Beta)" : ""}`}
             className="group flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-white/15 transition-all"
           >
             <span className="text-xl flex-shrink-0">{emoji}</span>

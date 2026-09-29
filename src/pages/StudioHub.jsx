@@ -4,6 +4,7 @@ import { Sparkles, Music, Sliders, Palette, Send, BarChart3, Folder, Radio } fro
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StudioCategoryCard from "@/components/studios/StudioCategoryCard";
+import { QUICK_ACTION_TIPS } from "@/lib/studios/studioTips";
 
 const CATEGORIES = [
   {
@@ -111,17 +112,17 @@ export default function StudioHub() {
 
             {/* Quick actions */}
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/creator-dashboard">
+              <Link to="/creator-dashboard" title={QUICK_ACTION_TIPS.workspace}>
                 <Button variant="outline" className="rounded-full gap-2">
                   <BarChart3 className="w-4 h-4" /> My Workspace
                 </Button>
               </Link>
-              <Link to="/creator-dashboard?tab=library">
+              <Link to="/creator-dashboard?tab=library" title={QUICK_ACTION_TIPS.library}>
                 <Button variant="outline" className="rounded-full gap-2">
                   <Folder className="w-4 h-4" /> My Library
                 </Button>
               </Link>
-              <Link to="/ai-studio/history">
+              <Link to="/ai-studio/history" title={QUICK_ACTION_TIPS.history}>
                 <Button variant="outline" className="rounded-full gap-2">
                   <Sparkles className="w-4 h-4" /> Generation History
                 </Button>
