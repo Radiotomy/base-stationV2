@@ -3,11 +3,11 @@ import { Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { suggestNext, GENRES, DECADES } from '@/lib/chordseq/chordSeqModel';
 
-const sel = 'h-8 rounded-md border border-input bg-popover px-2 text-sm text-foreground';
+import StyleWeightPicker from './StyleWeightPicker';
 
 export default function ChordSuggestPanel({ chords, onPick }) {
-  const [genre, setGenre] = useState('Pop');
-  const [decade, setDecade] = useState(2020);
+  const [genre, setGenre] = useState({ Pop: 1 });
+  const [decade, setDecade] = useState({ 2020: 1 });
   const [items, setItems] = useState([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -21,9 +21,9 @@ export default function ChordSuggestPanel({ chords, onPick }) {
 
   return (
     <div className="rounded-2xl border border-border p-3 space-y-2">
+      <StyleWeightPicker label="Genre blend" options={GENRES} weights={genre} onChange={setGenre} />
+      <StyleWeightPicker label="Decade blend" options={DECADES} weights={decade} onChange={setDecade} format={(d) => `${d}s`} />
       <div className="flex flex-wrap items-center gap-2">
-        <select value={genre} onChange={(e) => setGenre(e.target.value)} className={sel}><option value="">Any genre</option>{GENRES.map((g) => <option key={g}>{g}</option>)}</select>
-        <select value={decade} onChange={(e) => setDecade(Number(e.target.value))} className={sel}><option value={0}>Any decade</option>{DECADES.map((d) => <option key={d} value={d}>{d}s</option>)}</select>
         <Button size="sm" variant="outline" disabled={busy} onClick={run}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />} Suggest next chord
         </Button>

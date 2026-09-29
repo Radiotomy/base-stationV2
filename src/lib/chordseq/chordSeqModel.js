@@ -62,9 +62,16 @@ export async function suggestNext(chords, { genre, decade }, limit = 8) {
   }
   // Upstream normalizes each group to sum 1; an empty group stays all-zero
   // (the model was trained to tolerate missing style).
+  // `genre`/`decade` may be a single value or a weights map ({ Rock: 1, Pop: 2 }).
   const style = new Float32Array(28);
-  if (GENRES.includes(genre)) style[GENRES.indexOf(genre)] = 1;
-  if (DECADES.includes(decade)) style[20 + DECADES.indexOf(decade)] = 1;
+  const fill = (sel, list, offset) => {
+    const w = sel && typeof sel === 'object' ? sel : { [sel]: 1 };
+    const pairs = list.map((v, i) => [i, Number(w[v]) || 0]);
+    const total = pairs.reduce((a, [, x]) => a + x, 0);
+    if (total) pairs.forEach(([i, x]) => { style[offset + i] = x / total; });
+  };
+  fill(genre, GENRES, 0);
+  fill(decade, DECADES, 20);
   const out = Object.values(await session.run({
     'input.1': new ort.Tensor('int64', data, [1, 256]),
     'onnx::Gemm_1': new ort.Tensor('float32', style, [1, 28]),
