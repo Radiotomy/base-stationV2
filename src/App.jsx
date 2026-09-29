@@ -253,7 +253,7 @@ const AuthenticatedApp = () => {
               <Route path="/cover-art-studio" element={<CoverArtStudio />} />
               <Route path="/video-studio" element={<BetaGate feature="Video Studio"><VideoStudio /></BetaGate>} />
               <Route path="/asset-gallery" element={<AssetGallery />} />
-              <Route path="/live-studio" element={<BetaGate feature="Live Studio"><LiveStudio /></BetaGate>} />
+              <Route path="/live-studio" element={<LiveStudio />} />
               <Route path="/live-manager" element={<LiveManager />} />
               <Route path="/live-venues" element={<LiveVenues />} />
               <Route path="/live-venues/:venueId" element={<LiveVenueDetail />} />
