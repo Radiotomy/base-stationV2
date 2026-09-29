@@ -7,7 +7,7 @@ import useSubStationEngine from '@/hooks/useSubStationEngine';
 import TransportHeader from '@/components/substation/TransportHeader';
 import TrackManager from '@/components/substation/TrackManager';
 import AssetImportBrowser from '@/components/substation/AssetImportBrowser';
-import CadenceBedMaker from '@/components/cadence/CadenceBedMaker';
+import ForgePanel from '@/components/substation/ForgePanel';
 import ClipInspector from '@/components/substation/ClipInspector';
 import TimelineStage from '@/components/substation/TimelineStage';
 import SpectrumCanvas from '@/components/substation/SpectrumCanvas';
@@ -262,8 +262,9 @@ export default function SubStation() {
             </div>
             <AssetImportBrowser onImport={importAsset} />
             <div>
-              <p className="text-[10px] uppercase tracking-widest text-white/45 font-mono mb-2">Cadence Bed</p>
-              <CadenceBedMaker dark bpm={active?.bpm || 120} title="SUB-Station bed" onReady={importAsset} />
+              {/* Cadence bed hidden for now (non-commercial model licence) — BASE Forge takes its slot. */}
+              <p className="text-[10px] uppercase tracking-widest text-white/45 font-mono mb-2">BASE Forge</p>
+              <ForgePanel bpm={active?.bpm || 120} onReady={importAsset} />
             </div>
           </div>
 
