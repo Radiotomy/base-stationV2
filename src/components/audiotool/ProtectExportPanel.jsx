@@ -95,7 +95,7 @@ export default function ProtectExportPanel({ at, nexus, projectUrl, telemetry, p
           <ProvenancePipelineStatus pipeline={pipeline} />
           {pipeline.asset && <DistributeToAudiusPanel asset={pipeline.asset} stages={pipeline.stages} />}
           <p className="text-muted-foreground">
-            Download the protected file from your <Link to="/asset-gallery" className="underline">library</Link> once it's marked,
+            Download the protected file from your <Link to="/creator-dashboard?tab=library" className="underline">library</Link> once it's marked,
             and see its chain record in <Link to="/creator-dashboard?tab=proof" className="underline">Proof of Ownership</Link>.
           </p>
         </div>

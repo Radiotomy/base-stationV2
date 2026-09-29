@@ -165,7 +165,7 @@ export default function CoverSongResult({ data, sourceUrl, title, participation 
 
       <div className="flex items-center justify-between text-[11px] px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
         <span className="text-emerald-300">✓ Auto-saved to your Library</span>
-        <Link to="/asset-gallery" className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
+        <Link to="/creator-dashboard?tab=library" className="text-emerald-400 hover:text-emerald-300 font-bold flex items-center gap-1">
           <Library className="w-3 h-3" /> View Library
         </Link>
       </div>

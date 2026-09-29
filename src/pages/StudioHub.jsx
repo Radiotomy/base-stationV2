@@ -86,7 +86,7 @@ const CATEGORIES = [
       { to: "/base-mark",          emoji: "〰️", label: "BASE Mark Studio",  desc: "Acoustic watermark & detection" },
       { to: "/promo-studio",       emoji: "📣", label: "Promo Package",     desc: "Visualizer + promo card bundle" },
       { to: "/social-automation",  emoji: "📱", label: "Social Automation", desc: "Promo cards for socials" },
-      { to: "/asset-gallery",      emoji: "🖼️", label: "Asset Gallery",     desc: "Browse public creations" },
+      { to: "/asset-gallery",      emoji: "🖼️", label: "Video Gallery",     desc: "Your generated videos in one place" },
     ],
   },
 ];

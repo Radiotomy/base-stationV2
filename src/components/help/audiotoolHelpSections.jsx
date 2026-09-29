@@ -187,7 +187,7 @@ const AUDIOTOOL_HELP_SECTIONS = [
         <Box title="📦 File limits">
           <p>Exports must be under <strong className="text-foreground">40 MB</strong>. For long songs, export as <strong>FLAC</strong> (same quality, about half the size) or register shorter sections. MP3s are accepted, but only lossless audio gets the strongest watermark.</p>
         </Box>
-        <p>Download the protected file from your <Link to="/asset-gallery" className="text-purple-400 hover:underline">library</Link> and view its chain record in <Link to="/creator-dashboard?tab=proof" className="text-blue-400 hover:underline">Proof of Ownership</Link>.</p>
+        <p>Download the protected file from your <Link to="/creator-dashboard?tab=library" className="text-purple-400 hover:underline">library</Link> and view its chain record in <Link to="/creator-dashboard?tab=proof" className="text-blue-400 hover:underline">Proof of Ownership</Link>.</p>
       </>
     ),
   },

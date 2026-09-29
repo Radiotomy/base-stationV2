@@ -41,7 +41,7 @@ const PAGES = [
   { to: '/playlists', label: '🎧 Playlists', keywords: 'collections' },
   { to: '/challenges', label: '⚡ Challenges', keywords: 'weekly contests' },
   { to: '/leaderboard', label: '🏆 Leaderboard', keywords: 'top creators xp' },
-  { to: '/asset-gallery', label: '🖼️ Asset Gallery', keywords: 'public creations browse' },
+  { to: '/asset-gallery', label: '🎬 Video Gallery', keywords: 'videos gallery my videos asset' },
   { to: '/ai-studio/history', label: '🕘 Generation History', keywords: 'past generations jobs' },
   { to: '/news-hub', label: '📰 News & Legal', keywords: 'ai music news legal policy' },
   { to: '/credits', label: '⚡ Credits & Plans', keywords: 'buy credits pricing' },
