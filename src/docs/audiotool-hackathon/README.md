@@ -43,6 +43,8 @@ BASE Station opens the same live Nexus document your Audiotool desktop has open 
 
 What BASE Station adds that Audiotool doesn't offer on its own:
 
+- Mobile & tablet session access — Audiotool's own pages don't load on phones, but every BASE Station tool does. Sign into the Audiotool Bridge from BASE Station and keep working on your project from a phone or tablet: patterns, chords, loops, vocals and samples still push live into the session. Only Audiotool's in-browser interface is unavailable on mobile.
+
 - Authorship provenance — a hashed lead sheet proves melody and chords were human-written before any AI render.
 - Forensic watermarking and a public verifier that traces a file to its registered source.
 - On-chain Base anchoring of the delivered, watermarked file.
