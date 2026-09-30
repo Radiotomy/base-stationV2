@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getProjectByUrl } from '@/lib/audiotool/audiotoolProjects';
-import { loadProjectCovers } from '@/lib/audiotool/projectCovers';
+import { loadProjectCovers, DEFAULT_PROJECT_COVER } from '@/lib/audiotool/projectCovers';
 
 /** Name, snapshot and tempo of the synced Audiotool project. */
 export default function useAudiotoolProjectMeta(at, projectUrl) {
@@ -25,7 +25,7 @@ export default function useAudiotoolProjectMeta(at, projectUrl) {
     error,
     setMeta,
     title: meta?.displayName || '',
-    image: cover || meta?.snapshotUrl || meta?.coverUrl || '',
+    image: cover || meta?.snapshotUrl || meta?.coverUrl || DEFAULT_PROJECT_COVER,
     bpm: meta?.bpm ? Math.round(meta.bpm) : null,
   };
 }

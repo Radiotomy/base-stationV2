@@ -1,5 +1,12 @@
 import { base44 } from '@/api/base44Client';
 
+export const DEFAULT_PROJECT_COVER = 'https://media.base44.com/images/public/69f37db5a0cc60c31a7afc80/225d3fa27_generated_image.png';
+
+/** onError handler: swap a broken cover for the branded default once. */
+export const coverFallback = (e) => {
+  if (e.currentTarget.src !== DEFAULT_PROJECT_COVER) e.currentTarget.src = DEFAULT_PROJECT_COVER;
+};
+
 /** Generate (or reuse) the BASE Station cover for a project. Never throws. */
 export async function requestProjectCover(payload) {
   try {

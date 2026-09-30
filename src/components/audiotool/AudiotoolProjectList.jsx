@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, RefreshCw, Music2, Check, Trash2 } from 'lucide-react';
+import { Loader2, RefreshCw, Check, Trash2 } from 'lucide-react';
 import CreateProjectMenu from '@/components/audiotool/CreateProjectMenu';
 import { Button } from '@/components/ui/button';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
-import { requestProjectCover, loadProjectCovers } from '@/lib/audiotool/projectCovers';
+import { requestProjectCover, loadProjectCovers, DEFAULT_PROJECT_COVER, coverFallback } from '@/lib/audiotool/projectCovers';
 import { listMyProjects, createProject, deleteProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 
 const when = (ts) => (ts?.seconds ? new Date(Number(ts.seconds) * 1000).toLocaleDateString() : '');
@@ -92,11 +92,8 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
                 className={`w-full pr-10 flex items-center gap-3 rounded-xl px-3 py-2 text-left border transition-colors disabled:cursor-default ${active ? 'border-accent bg-accent/10' : 'border-border bg-secondary/50 hover:bg-secondary'}`}>
                 {pendingCover === url && !covers[url]
                   ? <div className="w-10 h-10 rounded-lg bg-muted animate-pulse flex-shrink-0" />
-                  : covers[url]
-                  ? <img src={covers[url]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                  : p.coverUrl
-                  ? <img src={p.coverUrl.replace('600x600', '60x60')} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                  : <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0"><Music2 className="w-4 h-4 text-muted-foreground" /></div>}
+                  : <img src={covers[url] || p.coverUrl?.replace('600x600', '60x60') || DEFAULT_PROJECT_COVER} onError={coverFallback}
+                      alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold truncate">{p.displayName || 'Untitled project'}</p>
                   <p className="text-xs text-muted-foreground">{[p.bpm ? `${Math.round(p.bpm)} BPM` : '', when(p.updateTime)].filter(Boolean).join(' · ')}</p>
