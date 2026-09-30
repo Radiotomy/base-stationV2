@@ -96,7 +96,7 @@ export default function PreStarterPanel() {
       </div>
 
       <PreStarterSendBar session={session} lanes={lanes} gainOf={player.gainOf} bpm={bpm}
-        title={`${vibe.label} pre-starter`} prompts={prompts} />
+        title={`${vibe.label} pre-starter`} prompts={prompts} vibeLabel={vibe.label} />
     </div>
   );
 }

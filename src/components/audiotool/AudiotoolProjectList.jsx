@@ -4,6 +4,7 @@ import CreateProjectMenu from '@/components/audiotool/CreateProjectMenu';
 import { Button } from '@/components/ui/button';
 import InfoTip from '@/components/common/InfoTip';
 import TIPS from '@/lib/audiotool/bridgeTips';
+import { requestProjectCover, loadProjectCovers } from '@/lib/audiotool/projectCovers';
 import { listMyProjects, createProject, deleteProject, studioUrl } from '@/lib/audiotool/audiotoolProjects';
 
 const when = (ts) => (ts?.seconds ? new Date(Number(ts.seconds) * 1000).toLocaleDateString() : '');
@@ -34,19 +35,30 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
     setDeleting('');
   };
 
-  const create = async (templateName) => {
+  const [covers, setCovers] = useState({});
+  const [pendingCover, setPendingCover] = useState('');
+  useEffect(() => { loadProjectCovers().then(setCovers).catch(() => {}); }, []);
+
+  const create = async (templateName, cover = { source: 'blank_default' }) => {
     // Opened synchronously inside the click so the browser doesn't block it.
     const tab = window.open('about:blank', '_blank');
     setCreating(true);
     setError('');
     try {
-      const label = templateName ? 'BASE Songstarter' : 'BASE Station session';
-      const p = await createProject(at, `${label} ${new Date().toLocaleString()}`, templateName);
+      const label = cover.label || (templateName ? 'BASE Songstarter' : 'BASE Station session');
+      const displayName = `${label} ${new Date().toLocaleString()}`;
+      const p = await createProject(at, displayName, templateName);
       const url = studioUrl(p);
       if (tab) tab.location.href = url;
       window.focus();
       setProjects((list) => [p, ...(list || [])]);
       onOpen(url);
+      // Cover art is best-effort and never blocks the new project.
+      setPendingCover(url);
+      requestProjectCover({ project_url: url, title: displayName, ...cover }).then((img) => {
+        if (img) setCovers((c) => ({ ...c, [url]: img }));
+        setPendingCover('');
+      });
     } catch (e) {
       tab?.close();
       setError(e.message);
@@ -78,7 +90,11 @@ export default function AudiotoolProjectList({ at, activeUrl, busy, onOpen }) {
               <div key={p.name} className="relative group">
               <button onClick={() => onOpen(url)} disabled={busy || active}
                 className={`w-full pr-10 flex items-center gap-3 rounded-xl px-3 py-2 text-left border transition-colors disabled:cursor-default ${active ? 'border-accent bg-accent/10' : 'border-border bg-secondary/50 hover:bg-secondary'}`}>
-                {p.coverUrl
+                {pendingCover === url && !covers[url]
+                  ? <div className="w-10 h-10 rounded-lg bg-muted animate-pulse flex-shrink-0" />
+                  : covers[url]
+                  ? <img src={covers[url]} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                  : p.coverUrl
                   ? <img src={p.coverUrl.replace('600x600', '60x60')} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                   : <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0"><Music2 className="w-4 h-4 text-muted-foreground" /></div>}
                 <div className="min-w-0 flex-1">

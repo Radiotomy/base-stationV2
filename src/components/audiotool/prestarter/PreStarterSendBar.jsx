@@ -6,9 +6,10 @@ import InfoTip from '@/components/common/InfoTip';
 import { sendToAudiotool, endOfAudioTimeline } from '@/lib/audiotool/sendToAudiotool';
 import { mixToFile, bufferToFile } from '@/lib/audiotool/preStarter';
 import { errorText } from '@/lib/audiotool/songstarterGen';
+import { requestProjectCover } from '@/lib/audiotool/projectCovers';
 
 /** Push the approved pre-starter to Audiotool — as one mix or as aligned stems. */
-export default function PreStarterSendBar({ session, lanes, gainOf, bpm, title, prompts }) {
+export default function PreStarterSendBar({ session, lanes, gainOf, bpm, title, prompts, vibeLabel = '' }) {
   const [sending, setSending] = useState('');
   const ready = lanes.every((l) => l.buffer);
   const disabled = !!sending || !ready || !session?.nexus;
@@ -32,6 +33,8 @@ export default function PreStarterSendBar({ session, lanes, gainOf, bpm, title, 
         toast.success(`3 aligned stems placed at bar ${bar} — Bed, Drums, Riser.`);
       }
       session.onChanged?.();
+      // Non-blocking; the function reuses an existing cover for this project.
+      if (session.projectUrl) requestProjectCover({ project_url: session.projectUrl, source: 'prestarter', vibe_label: vibeLabel, prompt: prompts.bed, title });
     } catch (e) {
       toast.error(`Couldn't send to Audiotool: ${errorText(e)}`);
     } finally {

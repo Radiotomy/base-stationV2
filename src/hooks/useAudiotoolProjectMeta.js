@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react';
 import { getProjectByUrl } from '@/lib/audiotool/audiotoolProjects';
+import { loadProjectCovers } from '@/lib/audiotool/projectCovers';
 
 /** Name, snapshot and tempo of the synced Audiotool project. */
 export default function useAudiotoolProjectMeta(at, projectUrl) {
   const [meta, setMeta] = useState(null);
   const [error, setError] = useState('');
+
+  const [cover, setCover] = useState('');
+  useEffect(() => {
+    setCover('');
+    if (projectUrl) loadProjectCovers().then((m) => setCover(m[projectUrl] || '')).catch(() => {});
+  }, [projectUrl]);
 
   useEffect(() => {
     if (!at || !projectUrl) return;
@@ -18,7 +25,7 @@ export default function useAudiotoolProjectMeta(at, projectUrl) {
     error,
     setMeta,
     title: meta?.displayName || '',
-    image: meta?.snapshotUrl || meta?.coverUrl || '',
+    image: cover || meta?.snapshotUrl || meta?.coverUrl || '',
     bpm: meta?.bpm ? Math.round(meta.bpm) : null,
   };
 }
