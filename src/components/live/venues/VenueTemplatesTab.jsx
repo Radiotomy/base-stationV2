@@ -23,6 +23,9 @@ export default function VenueTemplatesTab({ venue, onUpdated }) {
         templateKey: selected,
       });
       if (!res?.data?.ok) throw new Error(res?.data?.error || 'Could not apply that template');
+      // Re-hang the current track's artwork + spatial audio on the new stage right
+      // away instead of waiting for the next scheduled idle sweep.
+      await base44.functions.invoke('advanceVenueStages', { venueId: venue.id });
       toast.success(`${getVenueTemplate(selected).name} applied — reload the stage to see it`);
       onUpdated?.();
     } catch (err) {
