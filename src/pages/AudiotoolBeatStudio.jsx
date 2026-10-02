@@ -6,20 +6,22 @@ import AutomationLanePanel from '@/components/audiotool/automation/AutomationLan
 import SongstarterModule from '@/components/audiotool/songstarter/SongstarterModule';
 import NexusContributionMeter from '@/components/audiotool/NexusContributionMeter';
 import DemoSongPanel from '@/components/audiotool/songstarter/DemoSongPanel';
+import DemoProjectStarter from '@/components/audiotool/songstarter/DemoProjectStarter';
 import { BridgeSessionContext } from '@/components/audiotool/songstarter/BridgeSessionContext';
 import { WORKSPACES } from '@/lib/audiotool/workspaces';
 
 export default function AudiotoolBeatStudio() {
   const showDemo = new URLSearchParams(window.location.search).get('demo') === '1';
   return (
-    <WorkspaceShell workspace={WORKSPACES.beat}>
+    <WorkspaceShell workspace={WORKSPACES.beat}
+      beforeStart={showDemo ? (s) => <DemoProjectStarter at={s.at} onOpen={s.open} /> : undefined}>
       {({ at, project, projectUrl }) => {
         const live = { nexus: project.nexus, projectUrl, connected: project.connected, version: project.version, onChanged: project.refresh };
         return (
           <div className="space-y-5">
             {showDemo && (
               <BridgeSessionContext.Provider value={{ at, nexus: project.nexus, projectUrl, onChanged: project.refresh }}>
-                <section className="rack-module"><DemoSongPanel /></section>
+                <section className="rack-module"><DemoSongPanel autoBuild /></section>
               </BridgeSessionContext.Provider>
             )}
             <ArrangementView {...live} title="Beat timeline" />

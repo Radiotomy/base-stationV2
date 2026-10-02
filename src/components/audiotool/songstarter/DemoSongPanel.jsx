@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, Sparkles, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -10,10 +10,18 @@ import { buildDemoSong, DEMO, SECTIONS } from '@/lib/audiotool/demoSong';
 const BAR_SEC = (60 / DEMO.bpm) * 4;
 const fmt = (bars) => { const s = Math.round(bars * BAR_SEC); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
-export default function DemoSongPanel() {
-  const { nexus, onChanged } = useBridgeSession() || {};
+export default function DemoSongPanel({ autoBuild = false }) {
+  const { nexus, onChanged, projectUrl } = useBridgeSession() || {};
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null);
+
+  // A project freshly created for the demo gets the song written straight away.
+  useEffect(() => {
+    if (!autoBuild || !nexus || !projectUrl) return;
+    if (sessionStorage.getItem('demoAutoBuild') !== projectUrl) return;
+    sessionStorage.removeItem('demoAutoBuild');
+    build();
+  }, [autoBuild, nexus, projectUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const build = async () => {
     setBusy(true);

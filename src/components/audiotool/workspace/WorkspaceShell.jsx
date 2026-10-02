@@ -9,7 +9,7 @@ import WorkspaceSessionStart from './WorkspaceSessionStart';
 import WorkspaceTransportBar from './WorkspaceTransportBar';
 
 /** Full-screen frame for a creative workspace: sign-in → pick/start a project → the instrument. */
-export default function WorkspaceShell({ workspace, children }) {
+export default function WorkspaceShell({ workspace, children, beforeStart }) {
   const s = useWorkspaceSession();
   const { audiotool, project } = s;
   const [blocked, setBlocked] = useState(false);
@@ -21,7 +21,12 @@ export default function WorkspaceShell({ workspace, children }) {
   } else if (audiotool.status !== 'authenticated') {
     body = <div className="max-w-2xl"><AudiotoolConnectCard {...audiotool} /></div>;
   } else if (!s.synced) {
-    body = <WorkspaceSessionStart at={s.at} workspace={workspace} opening={project.status === 'opening'} error={project.error} onOpen={s.open} />;
+    body = (
+      <>
+        {beforeStart?.(s)}
+        <WorkspaceSessionStart at={s.at} workspace={workspace} opening={project.status === 'opening'} error={project.error} onOpen={s.open} />
+      </>
+    );
   } else {
     body = (
       <BridgeSessionContext.Provider value={{ at: s.at, nexus: project.nexus, projectUrl: s.projectUrl, onChanged: project.refresh }}>
