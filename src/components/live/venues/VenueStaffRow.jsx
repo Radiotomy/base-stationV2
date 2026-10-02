@@ -28,11 +28,12 @@ export default function VenueStaffRow({ role, member, onChange }) {
               placeholder={`Name (e.g. ${role.label})`}
               className="rounded-xl h-10 text-sm"
             />
-            <Select value={member.animation ?? role.defaultAnimation} onValueChange={(v) => set({ animation: v })}>
+            {/* Idle is stored as '' but Select can't hold an empty item value */}
+            <Select value={(member.animation ?? role.defaultAnimation) || '__idle'} onValueChange={(v) => set({ animation: v === '__idle' ? '' : v })}>
               <SelectTrigger className="rounded-xl h-10 text-sm"><SelectValue placeholder="Animation" /></SelectTrigger>
               <SelectContent>
                 {NPC_ANIMATIONS.map((a) => (
-                  <SelectItem key={a.value || 'idle'} value={a.value}>{a.label}</SelectItem>
+                  <SelectItem key={a.value || 'idle'} value={a.value || '__idle'}>{a.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
