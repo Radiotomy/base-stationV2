@@ -9,6 +9,7 @@ import VenueNowPlayingStage from '@/components/venue/VenueNowPlayingStage';
 import VenueQueuePanel from '@/components/venue/VenueQueuePanel';
 import VenueCoopChat from '@/components/venue/VenueCoopChat';
 import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
+import JoinRoomHowTo from '@/components/venue/JoinRoomHowTo';
 
 /**
  * Public venue page — the reliable playback surface for a venue's programme.
@@ -121,6 +122,7 @@ export default function VenueStage() {
                 </a>
               </Button>
             )}
+            {roomUrl && <JoinRoomHowTo />}
           </div>
 
           <div className="lg:col-span-1 space-y-5">
