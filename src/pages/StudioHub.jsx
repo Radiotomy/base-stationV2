@@ -65,6 +65,7 @@ const CATEGORIES = [
     studios: [
       { to: "/live-studio",   emoji: "🔴", label: "Live Studio",   desc: "Go live with synced playback & 3D venues", beta: true },
       { to: "/live-manager",  emoji: "🗂️", label: "Live Manager",  desc: "Manage sessions, venues & moderation" },
+      { to: "/live-venues",   emoji: "🏟️", label: "Live Venues",   desc: "Your 3D rooms: stage, playlist, welcome panel" },
     ],
   },
   {
