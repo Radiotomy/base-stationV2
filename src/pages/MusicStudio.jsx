@@ -60,7 +60,8 @@ export default function MusicStudio() {
                 <tab.icon className="w-4 h-4" />
                 <span>{tab.label}</span>
                 {tab.beta && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[9px] font-mono uppercase tracking-wider">
+                  <span title="Limited beta due to current GPU availability. Access is open to approved beta testers only — request access and you'll be notified once you're approved."
+                    className="cursor-help px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/30 text-amber-300 text-[9px] font-mono uppercase tracking-wider">
                     Beta
                   </span>
                 )}
