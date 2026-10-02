@@ -22,7 +22,9 @@ export default function WelcomePanelToggle({ venue, onUpdated }) {
       // Pass the room id + name in the URL: the panel is loaded by every fan in
       // the room, so it must work without reading the owner-only venue record.
       const embedUrl = next
-        ? `${window.location.origin}/venue-panel?roomId=${encodeURIComponent(venue.room_id)}&name=${encodeURIComponent(venue.name)}`
+        // Always the public live site: the builder preview's origin needs a
+        // sign-in session and refuses to load inside Portals' iframe.
+        ? `https://basestation.live/venue-panel?roomId=${encodeURIComponent(venue.room_id)}&name=${encodeURIComponent(venue.name)}`
         : '';
       await base44.functions.invoke('updatePortalRoomSettings', {
         venueId: venue.id,
