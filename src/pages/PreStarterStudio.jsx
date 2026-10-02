@@ -1,5 +1,4 @@
 import { Timer } from 'lucide-react';
-import BetaGate from '@/components/auth/BetaGate';
 import StudioPageHeader from '@/components/studio/StudioPageHeader';
 import AudiotoolConnectCard from '@/components/audiotool/AudiotoolConnectCard';
 import WorkspaceSessionStart from '@/components/audiotool/workspace/WorkspaceSessionStart';
@@ -13,7 +12,6 @@ export default function PreStarterStudio() {
   const session = s.synced ? { at: s.at, nexus: s.project.nexus, projectUrl: s.projectUrl, onChanged: s.project.refresh } : null;
 
   return (
-    <BetaGate feature="Audiotool">
       <div className="min-h-screen">
         <StudioPageHeader icon={Timer} title="60s Pre-Starter" accent="amber" backTo="/studios"
           subtitle="Generate a full 60-second song sketch, preview it here, then send it to Audiotool" />
@@ -30,6 +28,5 @@ export default function PreStarterStudio() {
           </section>
         </div>
       </div>
-    </BetaGate>
   );
 }
