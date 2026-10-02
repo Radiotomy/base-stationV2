@@ -60,6 +60,10 @@ export default async function (req) {
     await base44.asServiceRole.entities.PortalVenue.update(venue.id, {
       template_key: preset.key,
       last_published_at: new Date().toISOString(),
+      // The rig rebuild drops the hidden audio speaker, so forget what the idle
+      // driver last pushed — its next pass re-hangs the current track + audio.
+      idle_now_playing: {},
+      idle_last_pushed_at: null,
       settings_snapshot: {
         ...(venue.settings_snapshot || {}),
         roomBase: roomData.settings?.roomBase,
