@@ -18,6 +18,9 @@ import { buildPortalShareUrl } from '@/lib/live/portalEmbedUrl';
 export default function LiveVenueDetail() {
   const { venueId } = useParams();
   const [venue, setVenue] = useState(null);
+  // Full screen opens a second copy of the room — unload the embedded one so
+  // the two don't play over each other.
+  const [poppedOut, setPoppedOut] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const load = () => {
@@ -74,7 +77,16 @@ export default function LiveVenueDetail() {
         </div>
 
         <div className="h-[420px] max-h-[60vh]">
-          <PortalStageViewer roomId={venue.room_id} guardian />
+          {poppedOut ? (
+            <div className="w-full h-full rounded-2xl border border-dashed border-border flex flex-col items-center justify-center gap-3">
+              <p className="text-sm text-muted-foreground">The room is open in full screen, so the preview here is paused.</p>
+              <Button variant="outline" onClick={() => setPoppedOut(false)} className="rounded-xl h-10 text-sm">
+                Show the preview here again
+              </Button>
+            </div>
+          ) : (
+            <PortalStageViewer roomId={venue.room_id} guardian />
+          )}
         </div>
 
         <div className="flex gap-2 flex-wrap">
@@ -83,7 +95,7 @@ export default function LiveVenueDetail() {
             <Copy className="w-4 h-4" /> Copy Fan Link
           </Button>
           <Button variant="outline" asChild className="rounded-xl h-10 gap-2 text-sm">
-            <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+            <a href={shareUrl} target="_blank" rel="noopener noreferrer" onClick={() => setPoppedOut(true)}>
               <ExternalLink className="w-4 h-4" /> Open Full Screen
             </a>
           </Button>
