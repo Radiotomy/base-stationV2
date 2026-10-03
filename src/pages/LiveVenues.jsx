@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Box, Loader2 } from 'lucide-react';
+import { Plus, Box, Loader2, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import VenueCard from '@/components/live/venues/VenueCard';
@@ -31,9 +32,14 @@ export default function LiveVenues() {
               your fans walk straight in from the browser.
             </p>
           </div>
-          <Button onClick={() => setCreating(true)} className="rounded-xl h-10 gap-2 font-bold">
-            <Plus className="w-4 h-4" /> Create Venue
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" className="rounded-xl h-10 gap-2 font-bold">
+              <Link to="/venue-architect"><Sparkles className="w-4 h-4" /> Build with AI</Link>
+            </Button>
+            <Button onClick={() => setCreating(true)} className="rounded-xl h-10 gap-2 font-bold">
+              <Plus className="w-4 h-4" /> Create Venue
+            </Button>
+          </div>
         </div>
 
         <PortalsKeyPanel />
