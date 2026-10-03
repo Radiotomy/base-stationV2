@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 import VenueTemplateGrid from './VenueTemplateGrid';
-import { DEFAULT_TEMPLATE_KEY } from '@/lib/live/venueTemplates';
+import { DEFAULT_TEMPLATE_KEY, getVenueTemplate } from '@/lib/live/venueTemplates';
+import VenueImageField from './VenueImageField';
 
 export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
   const [templateKey, setTemplateKey] = useState(DEFAULT_TEMPLATE_KEY);
@@ -16,6 +17,12 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
   const [cover, setCover] = useState('');
   const [loadingImage, setLoadingImage] = useState('');
   const [busy, setBusy] = useState(false);
+  const tpl = getVenueTemplate(templateKey);
+  const artContext = [
+    tpl && `Style: ${tpl.name}${tpl.description ? ` (${tpl.description})` : ''}`,
+    name.trim() && `Venue name: ${name.trim()}`,
+    description.trim() && `Vibe: ${description.trim()}`,
+  ].filter(Boolean).join('. ');
 
   const create = async () => {
     if (!name.trim()) { toast.error('Give your venue a name'); return; }
@@ -57,10 +64,8 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
               placeholder="Venue name" className="h-9 text-sm rounded-lg" />
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe your venue (optional)" rows={2} className="text-sm rounded-lg resize-none" />
-            <Input value={cover} onChange={(e) => setCover(e.target.value)}
-              placeholder="Cover image URL (https, optional)" className="h-9 text-sm rounded-lg" />
-            <Input value={loadingImage} onChange={(e) => setLoadingImage(e.target.value)}
-              placeholder="Loading screen image URL (https, optional)" className="h-9 text-sm rounded-lg" />
+            <VenueImageField label="Cover image (optional)" kind="cover" value={cover} onChange={setCover} context={artContext} disabled={busy} />
+            <VenueImageField label="Loading screen (optional)" kind="loading" value={loadingImage} onChange={setLoadingImage} context={artContext} disabled={busy} />
           </div>
 
           <Button onClick={create} disabled={busy} className="w-full rounded-lg h-10 font-bold gap-2">
