@@ -15,7 +15,6 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [cover, setCover] = useState('');
-  const [loadingImage, setLoadingImage] = useState('');
   const [busy, setBusy] = useState(false);
   const tpl = getVenueTemplate(templateKey);
   const artContext = [
@@ -33,11 +32,10 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
         description: description.trim(),
         templateKey,
         coverImageUrl: cover.trim(),
-        loadingImageUrl: loadingImage.trim(),
       });
       if (!res?.data?.roomId) throw new Error(res?.data?.error || 'Venue creation failed');
       toast.success('Your 3D venue is ready');
-      setName(''); setDescription(''); setCover(''); setLoadingImage(''); setTemplateKey(DEFAULT_TEMPLATE_KEY);
+      setName(''); setDescription(''); setCover(''); setTemplateKey(DEFAULT_TEMPLATE_KEY);
       onOpenChange(false);
       onCreated?.();
     } catch (err) {
@@ -65,7 +63,6 @@ export default function CreateVenueDialog({ open, onOpenChange, onCreated }) {
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe your venue (optional)" rows={2} className="text-sm rounded-lg resize-none" />
             <VenueImageField label="Cover image (optional)" kind="cover" value={cover} onChange={setCover} context={artContext} disabled={busy} />
-            <VenueImageField label="Loading screen (optional)" kind="loading" value={loadingImage} onChange={setLoadingImage} context={artContext} disabled={busy} />
           </div>
 
           <Button onClick={create} disabled={busy} className="w-full rounded-lg h-10 font-bold gap-2">

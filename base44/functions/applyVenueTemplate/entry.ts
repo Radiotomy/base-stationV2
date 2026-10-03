@@ -58,6 +58,16 @@ export default async function (req) {
       extraSettings: '',
     });
 
+    // If the old room was asleep, its welcome config could not be read — rebuild
+    // it from the venue record so the in-world panel ("i" button) is never lost.
+    if (!extraSettings && venue.welcome_embed_enabled) {
+      extraSettings = JSON.stringify({
+        welcomeEmbed: `https://basestation.live/venue-panel?roomId=__NEW_ROOM__&name=${encodeURIComponent(venue.name)}`,
+        showWelcomeOnEntry: true,
+        addWelcomeIframeToInfoButton: true,
+      });
+    }
+
     // The welcome panel URL names the room, so it can only be written once the
     // new id exists.
     if (extraSettings) {

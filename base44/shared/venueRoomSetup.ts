@@ -9,7 +9,9 @@ export async function createVenueRoom(key: string, preset: any, opts: {
   name: string; description?: string; coverImageUrl?: string; loadingImageUrl?: string;
   screenUrl?: string | null; extraSettings?: string;
 }) {
-  const { name, description, coverImageUrl, loadingImageUrl, screenUrl, extraSettings } = opts;
+  // Loading-screen art is not settable through the Portals API (LoadingImages is
+  // outside the update allowlist), so it is intentionally not written here.
+  const { name, description, coverImageUrl, screenUrl, extraSettings } = opts;
   const roomId = await createRoom(key, preset.portalTemplate, name);
 
   // Best-effort from here: the room exists and is usable.
@@ -18,7 +20,6 @@ export async function createVenueRoom(key: string, preset: any, opts: {
       Name: name.slice(0, 60),
       Description: description || `A BASE Station live venue — ${name}`,
       ...(coverImageUrl && { Image: coverImageUrl }),
-      ...(loadingImageUrl && { LoadingImages: [loadingImageUrl] }),
       // Publishing needs a ShortDescription; AccessLevel is what actually lets fans in.
       ShortDescription: `${name} — a BASE Station live music venue.`.slice(0, 160),
       Status: 'Published',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -14,6 +14,8 @@ export default function VenueTemplatesTab({ venue, onUpdated }) {
   const current = venue.template_key;
   const [selected, setSelected] = useState(current);
   const [busy, setBusy] = useState(false);
+  // Keep the picker in step when the template is changed elsewhere (e.g. by the Venue Architect).
+  useEffect(() => { setSelected(current); }, [current]);
 
   const apply = async () => {
     setBusy(true);
@@ -23,10 +25,10 @@ export default function VenueTemplatesTab({ venue, onUpdated }) {
         templateKey: selected,
       });
       if (!res?.data?.ok) throw new Error(res?.data?.error || 'Could not apply that template');
-      // Re-hang the current track's artwork + spatial audio on the new stage right
-      // away instead of waiting for the next scheduled idle sweep.
-      await base44.functions.invoke('advanceVenueStages', { venueId: venue.id });
-      toast.success(`${getVenueTemplate(selected).name} applied — reload the stage to see it`);
+      // Best-effort: a brand-new room can still be warming up, and the next
+      // scheduled sweep will hang the artwork anyway — never fail the switch on it.
+      base44.functions.invoke('advanceVenueStages', { venueId: venue.id }).catch(() => {});
+      toast.success(`${getVenueTemplate(selected).name} applied — your fan link has changed, share the new one`);
       onUpdated?.();
     } catch (err) {
       toast.error(err?.response?.data?.error || err.message);
@@ -41,8 +43,8 @@ export default function VenueTemplatesTab({ venue, onUpdated }) {
           <Sparkles className="w-4 h-4 text-accent" /> Venue Template
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Switch worlds anytime. Your venue name, cover image, fan link and stage screen stay exactly as they are —
-          only the space and its lighting change.
+          Switch worlds anytime. Switching builds a fresh room in the new style and carries over your name, cover,
+          stage screen and in-world panel — but it gives you a new fan link, so share the updated one.
         </p>
       </div>
 

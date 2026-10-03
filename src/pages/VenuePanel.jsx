@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import VenueEmbedPanel from '@/components/live/venues/VenueEmbedPanel';
 import VenueRoomAudioControls from '@/components/live/venues/VenueRoomAudioControls';
+import VenueListenAlong from '@/components/live/venues/VenueListenAlong';
 import { useVenueNowPlaying } from '@/hooks/useVenueNowPlaying';
 
 /**
@@ -49,11 +50,20 @@ export default function VenuePanel() {
       // Transport only makes sense for the venue's own programme — a live show's
       // audio is driven by the performer, not by a room object.
       audioControls={venueId && !state?.is_live ? (
+        <>
+        {item?.file_url && item.media_kind !== 'video' && !state?.venue?.idle_paused && (
+          <VenueListenAlong
+            url={item.file_url}
+            offsetSeconds={state?.now_playing?.offset_seconds || 0}
+            volume={typeof state?.venue?.idle_volume === 'number' ? state.venue.idle_volume : 0.8}
+          />
+        )}
         <VenueRoomAudioControls
           venueId={venueId}
           volume={typeof state?.venue?.idle_volume === 'number' ? state.venue.idle_volume : 0.8}
           paused={!!state?.venue?.idle_paused}
         />
+        </>
       ) : null}
     />
   );

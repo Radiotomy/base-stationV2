@@ -85,7 +85,7 @@ export default function LiveVenueDetail() {
               </Button>
             </div>
           ) : (
-            <PortalStageViewer roomId={venue.room_id} guardian />
+            <PortalStageViewer key={venue.room_id} roomId={venue.room_id} guardian />
           )}
         </div>
 

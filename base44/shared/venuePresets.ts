@@ -290,37 +290,10 @@ export function buildIdleScreen(
       hoverTitle: title,
       hoverBodyContent: subtitle,
     });
-    // The sound itself. Kept as its own item rather than folded into 105 so the
-    // artwork stays visible: one item cannot be both a painting and a player.
-    // Tucked just behind the stage wall at minimal scale — it is a speaker, not
-    // something a fan should see.
-    if (audioUrl && !paused) {
-      // TRUE spatial audio: the emitter sits ON the stage, just in FRONT of the
-      // wall (+z, toward the audience) rather than tucked behind it, so the sound
-      // is not occluded by the stage geometry and genuinely comes from where the
-      // artwork is. Walking toward the stage gets louder, walking away quieter.
-      //
-      // Falloff scales with the preset, because a fixed pair of distances cannot
-      // serve both an apartment and an arena: an intimate room would be flooded
-      // and a festival field would be silent at the back. `fStart` is the radius
-      // of full volume, `sEnd` the radius where it reaches silence — both derived
-      // from the stage's own distance from the floor centre.
-      const depth = Math.abs(preset.screen.pos.z) || 8;
-      items['106'] = item(
-        'DefaultVideo',
-        { x: preset.screen.pos.x, y: 1.6, z: preset.screen.pos.z + 0.6 },
-        { x: 0.02, y: 0.02, z: 0.02 },
-        { contentString: audioUrl },
-      );
-      logic['106'] = JSON.stringify({
-        b: true,
-        e: Math.min(1, Math.max(0, volume)),
-        fStart: Math.max(3, depth * 0.6),
-        sEnd: Math.max(18, depth * 3.5),
-        Tasks: [],
-        ViewNodes: [],
-      });
-    }
+    // No in-room audio carrier for audio entries: Portals' video prefab only
+    // plays MP4, so an MP3 handed to it stayed silent. Audio-only tracks play
+    // through the in-world panel's listen-along player instead.
+    void audioUrl; void volume; void paused;
   }
   return { items, logic };
 }
