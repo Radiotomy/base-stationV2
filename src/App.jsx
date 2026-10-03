@@ -34,6 +34,7 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const OAuthConsent = lazy(() => import('./pages/OAuthConsent'));
 const Home = lazy(() => import('./pages/Home.jsx'));
 const Playlists = lazy(() => import('./pages/Playlists'));
 const PlaylistDetail = lazy(() => import('./pages/PlaylistDetail'));
@@ -162,7 +163,7 @@ const PageLoader = () => (
 const AuthenticatedApp = () => {
   const { isLoadingPublicSettings, user } = useAuth();
   const location = useLocation();
-  const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password", "/audiotool-callback"].includes(location.pathname);
+  const isAuthPage = ["/login", "/register", "/forgot-password", "/reset-password", "/oauth/consent", "/audiotool-callback"].includes(location.pathname);
 
   if (isLoadingPublicSettings) {
     return (
@@ -193,6 +194,7 @@ const AuthenticatedApp = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/oauth/consent" element={<OAuthConsent />} />
           {/* In-world venue panel — loaded inside the Portals 3D room by every
               fan, so it sits outside MobileLayout and needs no account */}
           <Route path="/venue-panel" element={<VenuePanel />} />
