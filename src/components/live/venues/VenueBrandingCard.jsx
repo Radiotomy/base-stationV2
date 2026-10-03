@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Loader2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import VenueImageField from './VenueImageField';
+import { getVenueTemplate } from '@/lib/live/venueTemplates';
 import { base44 } from '@/api/base44Client';
 import { toast } from 'sonner';
 
@@ -9,6 +10,12 @@ export default function VenueBrandingCard({ venue, onUpdated }) {
   const [cover, setCover] = useState(venue.cover_image_url || '');
   const [loadingImage, setLoadingImage] = useState('');
   const [busy, setBusy] = useState(false);
+  const tpl = getVenueTemplate(venue.template_key);
+  const artContext = [
+    tpl && `Style: ${tpl.name}${tpl.description ? ` (${tpl.description})` : ''}`,
+    venue.name && `Venue name: ${venue.name}`,
+    venue.description && `Vibe: ${venue.description}`,
+  ].filter(Boolean).join('. ');
 
   const save = async () => {
     setBusy(true);
@@ -38,13 +45,8 @@ export default function VenueBrandingCard({ venue, onUpdated }) {
       </p>
 
       <div className="space-y-2">
-        <Input value={cover} onChange={(e) => setCover(e.target.value)} disabled={busy}
-          placeholder="Cover / room card image URL (https)" className="h-9 text-sm rounded-lg" />
-        <Input value={loadingImage} onChange={(e) => setLoadingImage(e.target.value)} disabled={busy}
-          placeholder="Loading screen image URL (https)" className="h-9 text-sm rounded-lg" />
-        {cover ? (
-          <img src={cover} alt="Venue cover preview" className="w-full h-32 object-cover rounded-lg border border-border" />
-        ) : null}
+        <VenueImageField label="Cover / room card" kind="cover" value={cover} onChange={setCover} context={artContext} disabled={busy} />
+        <VenueImageField label="Loading screen" kind="loading" value={loadingImage} onChange={setLoadingImage} context={artContext} disabled={busy} />
       </div>
 
       <Button onClick={save} disabled={busy} className="rounded-lg h-9 text-sm font-bold gap-2">
