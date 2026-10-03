@@ -1,4 +1,4 @@
-const SECTIONS = ['Start Building', 'Getting Started', 'Space Dashboard', 'Building Tools', 'Item Settings', 'Space Options', 'Interactive Studio', 'AI Lab'];
+const SECTIONS = ['Start Building', 'Getting Started', 'Space Dashboard', 'Building Tools', 'Item Settings', 'Space Options', 'Interactive Studio', 'AI Lab', 'API Reference'];
 
 export default function GuideSidebar({ pages, activeSlug, onSelect }) {
   return (
