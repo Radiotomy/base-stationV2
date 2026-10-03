@@ -1,0 +1,50 @@
+{
+  "name": "PortalsDocPage",
+  "type": "object",
+  "description": "Reference copy of a Portals (portals.to) building documentation page, used by creators and the Venue Architect when designing venues.",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Path under portals.to, e.g. documentation/building-basics/portals-building-tools/spotlight"
+    },
+    "section": {
+      "type": "string",
+      "description": "Group, e.g. Getting Started, Building Tools, Item Settings, Space Options, AI Lab"
+    },
+    "url": {
+      "type": "string"
+    },
+    "order": {
+      "type": "number"
+    },
+    "content": {
+      "type": "string",
+      "description": "Page body as plain text / markdown"
+    }
+  },
+  "required": [
+    "title",
+    "slug"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": null,
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
