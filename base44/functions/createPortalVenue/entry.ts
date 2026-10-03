@@ -11,15 +11,9 @@
 // account so no Portals account is required to go live.
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import {
-  resolveAccessKey,
-  createRoom,
-  setRoomSettings,
-  downloadRoomData,
-  uploadRoomData,
-  roomUrl,
-} from '../../shared/portalsApi.ts';
-import { getPreset, buildVenueRig, DEFAULT_PRESET_KEY } from '../../shared/venuePresets.ts';
+import { resolveAccessKey, roomUrl } from '../../shared/portalsApi.ts';
+import { getPreset, DEFAULT_PRESET_KEY } from '../../shared/venuePresets.ts';
+import { createVenueRoom } from '../../shared/venueRoomSetup.ts';
 
 export default async function (req) {
   try {
@@ -76,63 +70,13 @@ export default async function (req) {
 
     let roomId;
     try {
-      roomId = await createRoom(key, preset.portalTemplate, name);
+      roomId = await createVenueRoom(key, preset, { name, description, coverImageUrl, loadingImageUrl });
     } catch (err) {
       await base44.asServiceRole.entities.PortalVenue.update(venue.id, {
         status: 'failed',
         error_message: err.message,
       });
       return Response.json({ error: err.message, venueId: venue.id }, { status: 502 });
-    }
-
-    // Branding. Best-effort: the room already exists and is usable, so a
-    // settings hiccup must not fail the whole venue.
-    try {
-      await setRoomSettings(roomId, key, {
-        Name: name.slice(0, 60),
-        Description: description || `A BASE Station live venue — ${name}`,
-        ...(coverImageUrl && { Image: coverImageUrl }),
-        // Creator's own entry artwork. Portals takes an ARRAY here, and falls
-        // back to its default splash when it is empty.
-        ...(loadingImageUrl && { LoadingImages: [loadingImageUrl] }),
-        // A new room starts unpublished, which is what makes fans hit "this space
-        // is private". Publishing requires a non-empty ShortDescription, so it is
-        // sent in the same patch rather than left to a later call.
-        ShortDescription: `${name} — a BASE Station live music venue.`.slice(0, 160),
-        Status: 'Published',
-        ShowOnDirectory: true,
-        // The actual door: `AccessLevel`. A room MISSING this field is treated as
-        // private, which is what produced "this space is private" on a published,
-        // directory-listed room — publishing controls listing, AccessLevel
-        // controls entry, and they are independent. (Not `AccessType`: that name
-        // is accepted and silently stored, but nothing reads it.)
-        AccessLevel: 'public',
-      });
-    } catch (err) {
-      console.warn('Venue settings failed:', err.message);
-    }
-
-    // Hang the preset's lighting rig and stage screen on top of the template's
-    // own geometry, and set its day/night mode.
-    try {
-      const roomData = await downloadRoomData(roomId, key);
-      const rig = buildVenueRig(preset, { name, coverImageUrl });
-      // Never write an `allowedUsers` value here. Portals treats ANY stored value
-      // for it as a whitelist — including 0 — which locked fans out of the room
-      // with "this space is private". A fresh room leaves it unset, and unset is
-      // what "open to everyone" actually looks like.
-      await uploadRoomData(roomId, key, {
-        ...roomData,
-        roomItems: { ...(roomData.roomItems || {}), ...rig.items },
-        logic: { ...(roomData.logic || {}), ...rig.logic },
-        settings: {
-          ...(roomData.settings || {}),
-          isNight: preset.isNight,
-          onlyNftHolders: false,
-        },
-      });
-    } catch (err) {
-      console.warn('Stage rig build failed (room still usable):', err.message);
     }
 
     await base44.asServiceRole.entities.PortalVenue.update(venue.id, {

@@ -1,19 +1,18 @@
 // Switches an existing venue to a different performance preset.
 //
-// A Portals room's world can only be chosen at create time via /rooms/create —
-// but the scene it produces is recorded in settings.roomBase, which IS writable
-// through room data. So a switch rewrites roomBase + night mode in place instead
-// of creating a new room: the artist keeps their room id, fan link, quests and
-// anything they built themselves.
+// A Portals room's 3D world is fixed when the room is created — rewriting
+// settings.roomBase afterwards is stored but ignored by the 3D client, which left
+// fans in the old building with the new stage rig hanging in the wrong place.
+// So a switch creates a FRESH room from the new template and points the venue at
+// it. The fan link changes; the old room is left untouched.
 //
-// Preserved on purpose (the preset changes the ENVIRONMENT only):
-//   - venue name, description, cover image (display metadata, untouched here)
-//   - the main screen's stream URL, re-hung at the new stage's position
-//   - every item outside BASE Station's reserved rig id range
+// Carried over: venue name, description, cover art, the main screen's stream URL
+// and the welcome panel / UI settings (re-pointed at the new room id).
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { resolveKeyForVenue, downloadRoomData, uploadRoomData, roomUrl } from '../../shared/portalsApi.ts';
-import { getPreset, buildVenueRig, withoutRig, currentScreenUrl, VENUE_PRESETS } from '../../shared/venuePresets.ts';
+import { resolveKeyForVenue, downloadRoomData, mergeRoomSettings, roomUrl } from '../../shared/portalsApi.ts';
+import { getPreset, currentScreenUrl, VENUE_PRESETS } from '../../shared/venuePresets.ts';
+import { createVenueRoom } from '../../shared/venueRoomSetup.ts';
 
 export default async function (req) {
   try {
@@ -33,49 +32,58 @@ export default async function (req) {
     if (venue.user_id !== user.id && user.role !== 'admin') {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
-    if (!venue.room_id) return Response.json({ error: 'This venue has no 3D room yet' }, { status: 400 });
 
     const preset = getPreset(templateKey);
     const { key } = await resolveKeyForVenue(base44, venue);
+    const oldRoomId = venue.room_id;
 
-    const roomData = await downloadRoomData(venue.room_id, key);
-    const screenUrl = currentScreenUrl(roomData.roomItems);
-    const rig = buildVenueRig(preset, {
+    // Best-effort read of the old room — a sleeping room must not block the switch.
+    let screenUrl = null;
+    let extraSettings = '';
+    if (oldRoomId) {
+      try {
+        const old = await downloadRoomData(oldRoomId, key);
+        screenUrl = currentScreenUrl(old.roomItems);
+        extraSettings = (old.settings?.roomSettingsExtraData || '').split(oldRoomId).join('__NEW_ROOM__');
+      } catch (err) {
+        console.warn('Old room unreadable, switching without carry-over:', err.message);
+      }
+    }
+
+    const roomId = await createVenueRoom(key, preset, {
       name: venue.name,
+      description: venue.description,
       coverImageUrl: venue.cover_image_url,
       screenUrl,
+      extraSettings: '',
     });
 
-    await uploadRoomData(venue.room_id, key, {
-      ...roomData,
-      roomItems: { ...withoutRig(roomData.roomItems), ...rig.items },
-      logic: { ...withoutRig(roomData.logic), ...rig.logic },
-      settings: {
-        ...(roomData.settings || {}),
-        roomBase: preset.roomBase,
-        isNight: preset.isNight,
-      },
-    });
+    // The welcome panel URL names the room, so it can only be written once the
+    // new id exists.
+    if (extraSettings) {
+      try {
+        await mergeRoomSettings(roomId, key, {}, JSON.parse(extraSettings.split('__NEW_ROOM__').join(roomId)));
+      } catch (err) {
+        console.warn('Welcome settings carry-over failed:', err.message);
+      }
+    }
 
     await base44.asServiceRole.entities.PortalVenue.update(venue.id, {
+      room_id: roomId,
       template_key: preset.key,
+      status: 'ready',
       last_published_at: new Date().toISOString(),
-      // The rig rebuild drops the hidden audio speaker, so forget what the idle
-      // driver last pushed — its next pass re-hangs the current track + audio.
       idle_now_playing: {},
       idle_last_pushed_at: null,
-      settings_snapshot: {
-        ...(venue.settings_snapshot || {}),
-        roomBase: roomData.settings?.roomBase,
-        isNight: roomData.settings?.isNight,
-      },
+      settings_snapshot: { ...(venue.settings_snapshot || {}), previous_room_id: oldRoomId },
     });
 
     return Response.json({
       ok: true,
       templateKey: preset.key,
-      roomId: venue.room_id,
-      fanUrl: roomUrl(venue.room_id),
+      roomId,
+      previousRoomId: oldRoomId,
+      fanUrl: roomUrl(roomId),
       screenPreserved: !!screenUrl,
     });
   } catch (error) {
