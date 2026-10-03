@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Box, Loader2, Sparkles, BookOpen } from 'lucide-react';
+import { Plus, Box, Loader2, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -33,9 +33,6 @@ export default function LiveVenues() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline" className="rounded-xl h-10 gap-2 font-bold">
-              <Link to="/venue-build-guide"><BookOpen className="w-4 h-4" /> Build Guide</Link>
-            </Button>
             <Button asChild variant="outline" className="rounded-xl h-10 gap-2 font-bold">
               <Link to="/venue-architect"><Sparkles className="w-4 h-4" /> Build with AI</Link>
             </Button>

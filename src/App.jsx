@@ -56,7 +56,6 @@ const LiveVenues = lazy(() => import('./pages/LiveVenues'));
 const LiveVenueDetail = lazy(() => import('./pages/LiveVenueDetail'));
 const VenuePanel = lazy(() => import('./pages/VenuePanel'));
 const VenueArchitect = lazy(() => import('./pages/VenueArchitect'));
-const VenueBuildGuide = lazy(() => import('./pages/VenueBuildGuide'));
 const VenueStage = lazy(() => import('./pages/VenueStage'));
 const Venues = lazy(() => import('./pages/Venues'));
 const LiveWatch = lazy(() => import('./pages/LiveWatch'));
@@ -259,7 +258,6 @@ const AuthenticatedApp = () => {
               <Route path="/live-manager" element={<LiveManager />} />
               <Route path="/live-venues" element={<LiveVenues />} />
               <Route path="/venue-architect" element={<VenueArchitect />} />
-              <Route path="/venue-build-guide" element={<VenueBuildGuide />} />
               <Route path="/live-venues/:venueId" element={<LiveVenueDetail />} />
               <Route path="/live-watch" element={<LiveWatch />} />
               <Route path="/live-summary" element={<LiveSummary />} />
