@@ -33,7 +33,7 @@ export interface VenuePreset {
   roomBase: string;
   isNight: boolean;
   lightingLabel: string;
-  screen: { pos: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number } };
+  screen: { pos: { x: number; y: number; z: number }; scale: { x: number; y: number; z: number }; rot?: { x: number; y: number; z: number; w: number } };
   lights: Array<{
     prefab: 'SpotLight' | 'Light' | 'BlinkLight';
     pos: { x: number; y: number; z: number };
@@ -57,7 +57,8 @@ export const VENUE_PRESETS: VenuePreset[] = [
     roomBase: 'ExpoHallSimple',
     isNight: false,
     lightingLabel: 'Dual white spotlights, day mode',
-    screen: { pos: { x: 0, y: 6, z: -14 }, scale: { x: 16, y: 9, z: 0.05 } },
+    // Placed by hand in the demo room — sits clear of the stage geometry.
+    screen: { pos: { x: -28.34, y: 5.23, z: -0.16 }, rot: { x: 0, y: 0.7071068, z: 0, w: 0.7071068 }, scale: { x: 16, y: 9, z: 0.05 } },
     lights: [
       { prefab: 'SpotLight', pos: { x: -6, y: 9, z: -8 }, rot: TILT, color: 'FFFFFF', brightness: 4, range: 26, angle: 42 },
       { prefab: 'SpotLight', pos: { x: 6, y: 9, z: -8 }, rot: TILT, color: 'FFFFFF', brightness: 4, range: 26, angle: 42 },
@@ -228,12 +229,14 @@ export function buildVenueRig(
   });
 
   if (screenUrl) {
-    items['105'] = item('DefaultVideo', preset.screen.pos, preset.screen.scale, { contentString: screenUrl });
+    items['105'] = item('DefaultVideo', preset.screen.pos, preset.screen.scale, {
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}), contentString: screenUrl });
     logic['105'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
   } else if (coverImageUrl) {
     // No stream yet — the cover art holds the stage wall so the space doesn't
     // read as unfinished before the first show.
     items['105'] = item('DefaultPainting', preset.screen.pos, preset.screen.scale, {
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}),
       contentString: coverImageUrl,
       hoverTitle: name,
       hoverBodyContent: 'Now Playing',
@@ -279,6 +282,7 @@ export function buildIdleScreen(
 
   if (kind === 'video') {
     items['105'] = item('DefaultVideo', preset.screen.pos, preset.screen.scale, {
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}),
       contentString: url,
       hoverTitle: title,
       hoverBodyContent: subtitle,
@@ -286,6 +290,7 @@ export function buildIdleScreen(
     logic['105'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
   } else {
     items['105'] = item('DefaultPainting', preset.screen.pos, preset.screen.scale, {
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}),
       contentString: url,
       hoverTitle: title,
       hoverBodyContent: subtitle,
