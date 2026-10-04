@@ -58,7 +58,7 @@ export const VENUE_PRESETS: VenuePreset[] = [
     isNight: false,
     lightingLabel: 'Dual white spotlights, day mode',
     // Placed by hand in the demo room — sits clear of the stage geometry.
-    screen: { pos: { x: -28.34, y: 5.23, z: -0.16 }, rot: { x: 0, y: 0.7071068, z: 0, w: 0.7071068 }, scale: { x: 16.5, y: 9, z: 0.05 } },
+    screen: { pos: { x: -28.24, y: 5.23, z: 0.09 }, rot: { x: 0, y: 0.7071068, z: 0, w: 0.7071068 }, scale: { x: 16.5, y: 9, z: 0.05 } },
     lights: [
       { prefab: 'SpotLight', pos: { x: -6, y: 9, z: -8 }, rot: TILT, color: 'FFFFFF', brightness: 4, range: 26, angle: 42 },
       { prefab: 'SpotLight', pos: { x: 6, y: 9, z: -8 }, rot: TILT, color: 'FFFFFF', brightness: 4, range: 26, angle: 42 },
