@@ -230,13 +230,13 @@ export function buildVenueRig(
 
   if (screenUrl) {
     items['105'] = item('DefaultVideo', preset.screen.pos, preset.screen.scale, {
-      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}), contentString: screenUrl });
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}), locked: true, superLocked: true, contentString: screenUrl });
     logic['105'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
   } else if (coverImageUrl) {
     // No stream yet — the cover art holds the stage wall so the space doesn't
     // read as unfinished before the first show.
     items['105'] = item('DefaultPainting', preset.screen.pos, preset.screen.scale, {
-      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}),
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}), locked: true, superLocked: true,
       contentString: coverImageUrl,
       hoverTitle: name,
       hoverBodyContent: 'Now Playing',
@@ -282,7 +282,7 @@ export function buildIdleScreen(
 
   if (kind === 'video') {
     items['105'] = item('DefaultVideo', preset.screen.pos, preset.screen.scale, {
-      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}),
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}), locked: true, superLocked: true,
       contentString: url,
       hoverTitle: title,
       hoverBodyContent: subtitle,
@@ -290,7 +290,7 @@ export function buildIdleScreen(
     logic['105'] = JSON.stringify({ b: true, e: 1.0, fStart: 8.0, sEnd: 40.0, Tasks: [], ViewNodes: [] });
   } else {
     items['105'] = item('DefaultPainting', preset.screen.pos, preset.screen.scale, {
-      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}),
+      ...(preset.screen.rot ? { rot: preset.screen.rot } : {}), locked: true, superLocked: true,
       contentString: url,
       hoverTitle: title,
       hoverBodyContent: subtitle,
